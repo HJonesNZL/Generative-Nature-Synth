@@ -51,4 +51,6 @@ python3 -B tests/ui_fixture.py build/ui-browser-fixture.sqlite3
 
 The script refuses to replace an existing file. Start Vite with that library (absolute path), then from this directory run `node tests/browser-checks.mjs`. It requires Playwright and an installed Chrome, used only for development tests. Set `PLAYWRIGHT_MODULE` to an existing module path when it is not on normal module resolution, and `ATLAS_TEST_URL`/`ATLAS_BROWSER` to override the defaults. Never run this fixture workflow against the owner database. Results/screenshots go to ignored `test-results/`.
 
+For static browser checks, serve `dist` with `npm run preview` and `dist-demo` with `npm run preview -- --outDir dist-demo --port 4174`, then run `node tests/static-browser-checks.mjs` with the same Playwright setup.
+
 See [integration evidence](../../docs/milestones/UI_HANDOFF_INTEGRATION.md). Original delivery docs are preserved in `HANDOFF_README.md` and `docs/`; their claims are the designer's record, not native qualification.

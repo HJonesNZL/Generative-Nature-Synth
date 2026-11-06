@@ -2,7 +2,7 @@
 
 Audit baseline: 6 November 2026 UTC; final consistency review: 7 November NZDT. Status: **development plan, not a release qualification**. This replaces earlier suggested delivery sequences and unqualified estimates. It incorporates three GPT-6 Astra audits, isolated counterexamples, the owner's portable-C++ and zero-cost requirements, and Direction H. Findings and remediation evidence are indexed in [the audit](audits/AUDIT_AND_REVISED_BUILD_PLAN.md).
 
-Implementation update, 7 November: [M1 verified native data pieces](milestones/M1_VERIFIED_PIECE.md) is complete on beta-1 in the qualified macOS fixture environment. 70 Python tests and native Debug/Release/ASan+UBSan suites pass. The first audible engine is the next M2 gate; platform packaging and DAW qualification remain later milestones.
+Implementation update, 7 November: [M1 verified native data pieces](milestones/M1_VERIFIED_PIECE.md) is complete on beta-1 in the qualified macOS fixture environment. 70 Python tests and native Debug/Release/ASan+UBSan suites pass. The [H2 UI handoff integration](milestones/UI_HANDOFF_INTEGRATION.md) now provides a read-only native Atlas/Studio preview and separate interactive demo; this is an early M3 slice, not M2/M3 completion. The first audible engine is the next M2 gate; platform packaging and DAW qualification remain later milestones.
 
 ## 1. Product objective and authority
 
@@ -18,12 +18,12 @@ Distinguish owner decisions from engineering recommendations. Standalone first, 
 |---|---|---|
 | Acquisition | Python polling of bounded NZ BirdWeather detections and Great White App latest-position snapshots | Cleared release permissions, comprehensive archives, long-duration qualification, native acquisition |
 | Data library | SQLite revisions, baseline suppression, transactions, source status, change cursors | Backup/restore tooling, retention, robust rejection quarantine, complete coverage evidence |
-| Sessions | Recordings, frozen event snapshots, portable local JSON bundles, Python checksums | Complete provenance roundtrip, hashed interpretation envelope, musical performance recall |
-| Native core | C++20 event validation, rational-speed timelines, bounded block lookup, read-only SQLite CLI | Native hash verification, write-side sessions, musical actions, audio/DSP |
-| UI | Direction H images and proposed TypeScript DTOs | Running React/JUCE interface, complete bridge, accessibility and graphics qualification |
+| Sessions | Recordings, sealed metadata, verified frozen snapshots, provenance-preserving portable bundles and historical windows (M1) | Write-side native sessions and complete musical performance recall |
+| Native core | C++20 full event validation, SHA-256 verification, rational-speed timelines, bounded lookup, read-only SQLite CLI/UI host | Write-side sessions, musical actions, audio/DSP |
+| UI | Running H2 React Atlas/Studio, C++ read-only data integration and separate mock demo | JUCE webview, audio/editing capabilities, accessibility and graphics qualification |
 | Release | Local source/launcher workflow | Shippable standalone, plug-in, installers, signing decision, clean-machine support |
 
-Post-audit checks: 50 Python tests; 17 native cases passing in Debug, Release and ASan/UBSan builds. Earlier real-library parity compared 18,992 scheduled events over 16 scenarios. That historical parity evidence does not replace clean-checkout storage fixtures, integrity tests, audio tests or DAW qualification. There is no audible engine, product CPU result or working VST3 yet.
+M1 qualification: 70 Python tests; native Debug/Release/ASan+UBSan suites cover 18 core cases, SHA vectors and 18 storage tests. UI integration adds seven native UI and seven client/store regressions plus browser/artifact checks; see its evidence for the exact exercised scope. Earlier real-library parity compared 18,992 scheduled events over 16 scenarios. That historical parity evidence does not replace clean-checkout storage fixtures, integrity tests, audio tests or DAW qualification. There is no audible engine, product CPU result or working VST3 yet.
 
 Two contained repairs are complete: interrupted recordings are recovered under writer ownership before `collect-once` acquires material; timeline sorting no longer constructs owning string tuples per comparison. Project warnings now fail builds by default, including test targets. Open audit findings remain open until their own acceptance tests pass.
 

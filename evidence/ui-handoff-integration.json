@@ -1,0 +1,99 @@
+{
+  "recordedUtc": "2026-11-06T13:09:28.688584+00:00",
+  "implementationCommit": "36e36a877704906bdac41061a7babba3ec2a841b",
+  "sourceArchiveSha256": "f977a729eccbee4c04973dee7b6107070a172c98a5340bd07a6d229219c3e4ab",
+  "environment": {
+    "platform": "macOS arm64",
+    "compiler": "Apple clang 17",
+    "sqlite": "3.53.3 Homebrew",
+    "node": "24.22.1",
+    "npm": "10.9.9",
+    "typescript": "5.9.3",
+    "vite": "8.3.5",
+    "playwright": "1.62.1",
+    "chrome": "156.0.8078.80"
+  },
+  "checks": {
+    "cleanNpmCi": true,
+    "strictTypeScript": true,
+    "nativeAndDemoBuilds": true,
+    "clientStoreTestsPassed": 7,
+    "nativeUiTestsPassed": 7,
+    "ctest": {
+      "native": {
+        "suitesPassed": 4,
+        "suitesFailed": 0,
+        "lastTestLogSha256": "3233ca00b5d086d065d45dcbd5f78c321cddf35ea1666b7ac91f40c847d5ba86"
+      },
+      "native-release": {
+        "suitesPassed": 4,
+        "suitesFailed": 0,
+        "lastTestLogSha256": "89144ef482ebefa35bb1a93a05ee8b72d52aa9698edc3890b91f9254a234463c"
+      },
+      "native-sanitized": {
+        "suitesPassed": 4,
+        "suitesFailed": 0,
+        "lastTestLogSha256": "9e2bb6aae4917d69cc041e31e873f14093b021a5413130626dd955f3e12e0f0a"
+      }
+    },
+    "artifactChecks": "Passed: production mock separation, no dev HTTP, CSP, local licence notices, lazy globe",
+    "browser": {
+      "checks": [
+        "Native capabilities, verified historical bounds and explicit 2000-record display limit",
+        "Empty historical hour preserved; Studio capability gating; repeated globe mount/disposal",
+        "WebGL context loss switches to 2D without losing data",
+        "Demo keyboard parameter edit and mock voice save",
+        "Explicit demo, keyboard map control, both screens at 1280/1440/1920 widths, reduced motion",
+        "Startup without WebGL uses 2D",
+        "HTTP origin, verb, size, malformed JSON and unsupported-mutation rejection",
+        "No uncaught page errors or external HTTP requests in exercised native/demo flows"
+      ],
+      "browser": "156.0.8078.80",
+      "errors": [],
+      "external": []
+    },
+    "staticBrowser": {
+      "browser": "156.0.8078.80",
+      "errors": [],
+      "failures": [],
+      "checks": [
+        "Production without native injection fails closed",
+        "Static demo globe and Studio load with CSP and local assets",
+        "No external HTTP or development bridge requests"
+      ]
+    },
+    "launcher": "zsh syntax and shell launch with disposable fixture passed; Finder not exercised"
+  },
+  "ownerLibraryAccessed": false,
+  "ownerCollectorModified": false,
+  "providerRequestsMade": false,
+  "audioOrDawTested": false,
+  "limitations": [
+    "Read-only development preview, not JUCE standalone/VST3",
+    "Audio/playback/DSP/effects/rendering and history mutation remain unavailable",
+    "Chrome software rendering is not native GPU/CPU qualification",
+    "Only synthetic fixtures used in this task; no current live-provider qualification"
+  ],
+  "sourceSha256": {
+    "native/src/ui_host.cpp": "fc50c548b8583571a5bc99c18b51f0e78fd0471e2e177926aceec9e08e25cea3",
+    "native/src/main.cpp": "26fbf4c38241c0016217cbaef9a3551bfa4ebd50b0a1f2fd11adadbb8ad14677",
+    "native/src/json_text.hpp": "5d02ade4aeb31aad1ccf78bfd7262d4a1251d9d338e9a71b9f8159f73430ba97",
+    "native/include/atlas/ui_host.hpp": "2828775de3faab590cd3193c31b2205a7143bcbdacc004a93b81b6a28c4366ac",
+    "tests/native_ui_checks.py": "b1d7eda46fa2e3bf95a01514a6e1e9a77d50f5a0a7f06d370be9246e55879207",
+    "tests/ui_fixture.py": "e8d38d2ab73777119237e32877f2bf2efab1d98855688679b411cb0bbbde9a0e",
+    "ui/contracts.ts": "5dae9b9a435551ba1da61f612d7a5e4df549040eb66dd3c4779a588d01ba9746",
+    "ui/app/package-lock.json": "c00e4258abb856dc18ad6f832d2c8767b4f03d3d7c826514a4b123ea844c04a5",
+    "ui/app/src/host/nativeHost.ts": "e81dd616000f1e028a8e85cbfd9acefe1ce717510743da637e0f41f7a98980d0",
+    "ui/app/src/host/client.ts": "bfec151b38b835b081e676827c7d2b48b24186b191ae5a250b18cf3f165bc0bf",
+    "ui/app/src/app/HostContext.tsx": "a8a13053f30bec9e468b440d467004f4fd27ebc0e621cc20f412299f2a59344a",
+    "ui/app/src/app/eventStore.ts": "9427d9ca060fb941cc7460d6eac3397b8188555e53b5d14ccd5ed22c523bfa62",
+    "ui/app/src/components/map/GlobeView.tsx": "9a8f74e8602c25318ef9bf76836ff04d77e0173d1c998bf65092a9b800b7211b",
+    "ui/app/dev/nativeBridge.mjs": "232034fb56e3012db95f4b5c3e682ba4f0836fdcd909c8ec03a8721c18453d4b",
+    "ui/app/vite.config.mjs": "9e7973fb441e2d3162018fc5b6ac8163da8bad0202bee6191dcf856e7833598b",
+    "ui/app/tests/boundaries.test.mjs": "0761ca8b9327579f889dba584d8d33cf5aa6afbc0a5925fc9302e428b1240085",
+    "ui/app/tests/browser-checks.mjs": "2794a88bdb09fb54cbb825ddbf1920c96d3de7a9008e606c5e497cada236f4e1",
+    "ui/app/tests/static-browser-checks.mjs": "736ef7bd41bac796d322fadb2acde2906c3fb302f5a9aea9afecdb002e83f1c7",
+    "ui/app/tests/build-checks.mjs": "c14969ed174626c9e1d7fa023cda4383854f2a90aae7fc88648e3289eb36b14d",
+    "Start Atlas UI.command": "0973b4e2701e795f3ca2f89860ad8390a5728bc7f6957cc6e08abfd25b067828"
+  }
+}
