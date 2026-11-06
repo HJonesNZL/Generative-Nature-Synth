@@ -1,0 +1,25 @@
+COMMAND ["/tmp/atlas-device-sanitizers-kmh1r2b5/atlas-device-playback-asan-ubsan"]
+CWD /Users/henryjones/Documents/ChatGPT/Generative Nature Synth
+
+PASS preparation requires deliberate enable and never autoplays
+PASS callback output equals existing renderer across device partitions
+PASS pause freezes callback position; stop and panic advance generations
+PASS plan replacement retires off callback and invalidates old preparation
+PASS failed preparation retains identity and disables audio
+PASS partial start failure and disable are recoverable and quiescent
+PASS device fault and invalid callback produce silence
+PASS missing callbacks time out safely and can restart
+PASS callback lease expires without worker heartbeat
+PASS unsupported device and complete start failure remain observable
+PASS concurrent callback replacement establishes quiescence
+PASS wet regional renderer replacement retires buffers off callback
+PASS coherent snapshot reader while callback progresses
+PASS optional output catalog is unavailable without opening hardware
+PASS guarded device selection stops quietly and requires deliberate restart
+PASS device discovery and configuration failures remain observable
+PASS catalog changes invalidate revisions and disconnected selections never fall back
+SUSTAINED synthetic_frames=51782400 callbacks=38400 recovery_epochs=24
+PASS sustained synthetic callbacks remain finite through fault and quiet recovery epochs
+PASS callback has no C++ allocation or deallocation
+
+RESULT {"name": "asan-ubsan-runtime", "command": ["/tmp/atlas-device-sanitizers-kmh1r2b5/atlas-device-playback-asan-ubsan"], "exitCode": 0, "elapsedSeconds": 5.123948833999997, "log": "asan-ubsan-runtime.log"}

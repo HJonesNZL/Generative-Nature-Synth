@@ -1,17 +1,19 @@
 #include <algorithm>
 #include <atlas/playback.hpp>
 #include <atomic>
+#include <cmath>
 #include <exception>
 #include <functional>
 #include <juce_audio_devices/juce_audio_devices.h>
 #include <juce_events/juce_events.h>
+#include <map>
+#include <set>
 #include <utility>
 
 namespace atlas {
 namespace {
 static_assert(std::atomic<PlaybackRuntime *>::is_always_lock_free);
-// Device lifecycle belongs to JUCE's message thread; the serial stdin worker
-// waits off audio.
+// All device objects and metadata belong to JUCE's message thread.
 void onMessageThread(std::function<void()> operation) {
     auto *manager = juce::MessageManager::getInstance();
     if (manager->isThisTheMessageThread()) {
@@ -36,56 +38,97 @@ void onMessageThread(std::function<void()> operation) {
     if (invocation.failure)
         std::rethrow_exception(invocation.failure);
 }
+std::string deviceId(const std::string &type, const std::string &name) {
+    std::uint64_t hash = 14695981039346656037ull;
+    const auto append = [&](unsigned char byte) {
+        hash ^= byte;
+        hash *= 1099511628211ull;
+    };
+    for (char byte : type)
+        append(static_cast<unsigned char>(byte));
+    append(0);
+    for (char byte : name)
+        append(static_cast<unsigned char>(byte));
+    constexpr char digits[] = "0123456789abcdef";
+    std::string id = "juce-";
+    for (int shift = 60; shift >= 0; shift -= 4)
+        id += digits[(hash >> shift) & 15];
+    return id;
+}
 class JuceOutput final : public OutputDriver,
                          private juce::AudioIODeviceCallback,
                          private juce::AudioIODeviceType::Listener {
   public:
-    ~JuceOutput() override { stop(); }
+    ~JuceOutput() override {
+        stop();
+        onMessageThread([this] { types_.clear(); });
+    }
+    void
+    configureOutput(const AudioDeviceConfiguration &configuration) override {
+        onMessageThread([&] { configuration_ = configuration; });
+    }
+    AudioDeviceCatalog audioDevices() override {
+        AudioDeviceCatalog catalog;
+        onMessageThread([&] { catalog = discover(); });
+        return catalog;
+    }
+    std::optional<ActiveAudioDevice> activeDevice() override {
+        std::optional<ActiveAudioDevice> result;
+        onMessageThread([&] { result = active_; });
+        return result;
+    }
     std::string start(PlaybackRuntime &runtime, std::uint32_t rate) override {
         std::string error;
         onMessageThread([&] {
             close();
-            runtime_.store(&runtime, std::memory_order_release);
-            intentionalStop_.store(false, std::memory_order_release);
-            // Discovery only: AudioDeviceManager is never inserted into the
-            // signal callback path.
-            juce::AudioDeviceManager discovery;
-            discovery.createAudioDeviceTypes(types_);
-            for (auto *type : types_) {
-                type->scanForDevices();
-                const auto names = type->getDeviceNames(false);
-                const auto index = type->getDefaultDeviceIndex(false);
-                if (index < 0 || index >= names.size())
-                    continue;
-                device_.reset(type->createDevice(names[index], {}));
-                if (device_) {
+            const auto catalog = discover();
+            if (!catalog.error.empty()) {
+                error = catalog.error;
+                return;
+            }
+            const auto selected = std::find_if(
+                catalog.devices.begin(), catalog.devices.end(),
+                [&](const AudioDeviceInfo &info) {
+                    return configuration_.mode == AudioDeviceMode::systemDefault
+                               ? info.isDefault
+                               : info.id == configuration_.deviceId;
+                });
+            if (selected == catalog.devices.end()) {
+                error = "selected output unavailable";
+                return;
+            }
+            for (auto *type : types_)
+                if (type->getTypeName().toStdString() == selected->type) {
                     selectedType_ = type;
-                    chosenOutput_ = names[index];
                     break;
                 }
-            }
+            if (selectedType_)
+                device_.reset(selectedType_->createDevice(
+                    juce::String(selected->name), {}));
             if (!device_) {
-                error = "default output device unavailable";
+                error = "selected output could not be created";
                 close();
                 return;
             }
+            chosenOutput_ = juce::String(selected->name);
+            const auto block = configuration_.bufferFrames
+                                   ? configuration_.bufferFrames
+                                   : device_->getDefaultBufferSize();
             if (device_->getOutputChannelNames().size() < 2 ||
                 !device_->getAvailableSampleRates().contains(
-                    static_cast<double>(rate))) {
+                    static_cast<double>(rate)) ||
+                block <= 0 ||
+                block > static_cast<int>(AudioRenderer::maxBlockFrames) ||
+                (configuration_.bufferFrames &&
+                 !device_->getAvailableBufferSizes().contains(block))) {
                 runtime.deviceFailed(PlaybackError::unsupportedDevice);
-                error = "default output does not support stereo at the "
-                        "prepared sample rate";
+                error = "selected output does not support the prepared stereo "
+                        "rate or buffer";
                 close();
                 return;
             }
-            auto block = device_->getDefaultBufferSize();
-            if (block <= 0 ||
-                block > static_cast<int>(AudioRenderer::maxBlockFrames)) {
-                runtime.deviceFailed(PlaybackError::unsupportedDevice);
-                error = "default output block size unsupported";
-                close();
-                return;
-            }
+            runtime_.store(&runtime, std::memory_order_release);
+            intentionalStop_.store(false, std::memory_order_release);
             juce::BigInteger outputs;
             outputs.setRange(0, 2, true);
             error = device_->open({}, outputs, static_cast<double>(rate), block)
@@ -98,15 +141,28 @@ class JuceOutput final : public OutputDriver,
             listening_ = true;
             device_->start(this);
             if (!device_->isPlaying()) {
-                error = "default output did not start";
+                error = "selected output did not start";
                 close();
+                return;
             }
+            if (device_->getCurrentBufferSizeSamples() != block) {
+                runtime.deviceFailed(PlaybackError::unsupportedDevice);
+                error = "selected output changed the requested buffer size";
+                close();
+                return;
+            }
+            active_ = ActiveAudioDevice{
+                selected->id,
+                selected->name,
+                selected->type,
+                static_cast<std::uint32_t>(device_->getCurrentSampleRate()),
+                device_->getCurrentBufferSizeSamples(),
+                device_->getActiveOutputChannels().countNumberOfSetBits()};
         });
         return error;
     }
     void stop() noexcept override {
-        // JUCE AudioIODevice::stop guarantees all pending callback calls are
-        // flushed before return.
+        // JUCE flushes all callbacks before stop returns.
         onMessageThread([this] { close(); });
     }
 
@@ -115,9 +171,74 @@ class JuceOutput final : public OutputDriver,
     std::unique_ptr<juce::AudioIODevice> device_;
     juce::AudioIODeviceType *selectedType_{};
     juce::String chosenOutput_;
+    AudioDeviceConfiguration configuration_;
+    std::optional<ActiveAudioDevice> active_;
     std::atomic<PlaybackRuntime *> runtime_{};
     std::atomic<bool> intentionalStop_{true};
     bool listening_{};
+    AudioDeviceCatalog discover() {
+        AudioDeviceCatalog result;
+        result.available = true;
+        if (types_.isEmpty()) {
+            juce::AudioDeviceManager discovery;
+            discovery.createAudioDeviceTypes(types_);
+        }
+        std::set<std::string> ids;
+        bool foundDefault{};
+        for (auto *type : types_) {
+            type->scanForDevices();
+            const auto names = type->getDeviceNames(false);
+            const auto defaultIndex = type->getDefaultDeviceIndex(false);
+            for (int index = 0; index < names.size(); ++index) {
+                AudioDeviceInfo info;
+                info.name = names[index].toStdString();
+                info.type = type->getTypeName().toStdString();
+                info.id = deviceId(info.type, info.name);
+                if (result.devices.size() >= 128 || info.name.size() > 256 ||
+                    info.type.size() > 256 || !ids.insert(info.id).second) {
+                    result.devices.clear();
+                    result.error = "output catalog is too large or has "
+                                   "ambiguous identities";
+                    return result;
+                }
+                std::unique_ptr<juce::AudioIODevice> metadata(
+                    type->createDevice(names[index], {}));
+                if (!metadata) {
+                    result.devices.clear();
+                    result.error = "output metadata could not be inspected";
+                    return result;
+                }
+                info.isDefault = !foundDefault && index == defaultIndex;
+                foundDefault = foundDefault || info.isDefault;
+                info.outputChannels = metadata->getOutputChannelNames().size();
+                for (double rate : metadata->getAvailableSampleRates()) {
+                    if (std::isfinite(rate) && rate >= 8000 && rate <= 384000 &&
+                        rate == std::floor(rate))
+                        info.sampleRates.push_back(
+                            static_cast<std::uint32_t>(rate));
+                    if (info.sampleRates.size() > 64)
+                        break;
+                }
+                for (int block : metadata->getAvailableBufferSizes()) {
+                    if (block > 0 &&
+                        block <=
+                            static_cast<int>(AudioRenderer::maxBlockFrames))
+                        info.bufferFrames.push_back(block);
+                    if (info.bufferFrames.size() > 64)
+                        break;
+                }
+                if (info.sampleRates.size() > 64 ||
+                    info.bufferFrames.size() > 64) {
+                    result.devices.clear();
+                    result.error = "output format catalog exceeds capacity";
+                    return result;
+                }
+                info.defaultBufferFrames = metadata->getDefaultBufferSize();
+                result.devices.push_back(std::move(info));
+            }
+        }
+        return result;
+    }
     void close() {
         intentionalStop_.store(true, std::memory_order_release);
         if (listening_ && selectedType_)
@@ -131,14 +252,14 @@ class JuceOutput final : public OutputDriver,
         runtime_.store(nullptr, std::memory_order_release);
         selectedType_ = nullptr;
         chosenOutput_.clear();
-        types_.clear();
+        active_.reset();
     }
     void audioDeviceIOCallbackWithContext(
         const float *const *, int, float *const *outputs, int channels,
         int frames, const juce::AudioIODeviceCallbackContext &) override {
         if (auto *runtime = runtime_.load(std::memory_order_acquire))
             runtime->process(outputs, channels, frames);
-        else if (outputs && frames > 0) {
+        else if (outputs && frames > 0)
             for (int channel = 0;
                  channel < std::min(channels, OutputDriver::maxOutputChannels);
                  ++channel)
@@ -147,7 +268,6 @@ class JuceOutput final : public OutputDriver,
                         outputs[channel],
                         std::min(frames, OutputDriver::maxCallbackFrames),
                         0.0f);
-        }
     }
     void audioDeviceAboutToStart(juce::AudioIODevice *device) override {
         if (auto *runtime = runtime_.load(std::memory_order_acquire))
@@ -166,17 +286,17 @@ class JuceOutput final : public OutputDriver,
             runtime->deviceFailed(PlaybackError::deviceUnavailable);
     }
     void audioDeviceListChanged() override {
-        // At the pinned CoreAudio implementation this is
-        // AsyncUpdater::handleAsyncUpdate, hence message-thread metadata work.
-        // Creating JUCE's private aggregate output also emits this
-        // notification; that must not invalidate our unchanged default.
+        // The pinned CoreAudio implementation dispatches this on the message
+        // thread.
         if (!selectedType_ || !device_)
             return;
         const auto names = selectedType_->getDeviceNames(false);
-        const auto defaultIndex = selectedType_->getDefaultDeviceIndex(false);
-        const bool changed = defaultIndex < 0 || defaultIndex >= names.size() ||
-                             !names.contains(chosenOutput_) ||
-                             names[defaultIndex] != chosenOutput_;
+        const auto index = selectedType_->getDefaultDeviceIndex(false);
+        const bool changed =
+            !names.contains(chosenOutput_) ||
+            (configuration_.mode == AudioDeviceMode::systemDefault &&
+             (index < 0 || index >= names.size() ||
+              names[index] != chosenOutput_));
         if (changed)
             if (auto *runtime = runtime_.load(std::memory_order_acquire))
                 runtime->deviceFailed();

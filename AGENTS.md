@@ -22,6 +22,10 @@ These rules apply now to this project. Read only the design/API documents releva
 - Do not import unrelated Field/Eva hardware, six-string, dry/wet or effect-bank assumptions. Do not let skill templates narrow research, synthesis families, modulation, species/individual mappings, regional effects, historical composition or the complete instrument plan.
 - A minimal first voice/resource setting is an engineering milestone experiment, not a final product ceiling or approved sound. Keep the full synth targets visible and distinguish engineering evidence from owner listening decisions.
 
+## Playback scope — owner clarification, 7 November 2026
+
+The Field audio skills' real-time/live-input constraints do not apply to this project. It generates music from animal data and renders/plays it; it does not process live audio input. Do not import live-input latency targets or use synthetic microsecond deadline budgets to limit sound-design scope or block delivery. Retain ordinary playback-thread safety, bounded resource ownership, responsive UI, explicit device recovery and accurate output. Performance evidence should distinguish offline render throughput from actual listening playback; do not equate an offline scalar timing outlier with an audible glitch.
+
 ## Parallel work — owner instruction, 7 November 2026
 
 - Use subagents for independent workstreams when it improves speed/efficiency. Subagents must run on GPT-6.1 SOL. Assign disjoint file ownership and integrate their results with shared verification.

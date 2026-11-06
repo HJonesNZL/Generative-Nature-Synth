@@ -1,0 +1,11 @@
+Independent output-device sanitizer qualification
+Compiler: Apple clang 17.0.0 (clang-1700.6.4.2), arm64-apple-darwin24.6.0.
+TSan runtime: 19/19 PASS, 24.521 s, exit 0, no race diagnostics.
+ASan/UBSan runtime: 19/19 PASS, 5.124 s, exit 0, no memory/undefined-behavior diagnostics.
+ASan/UBSan protocol: 4/4 PASS before and after the libraryAvailable capability addition.
+Sustained runtime workload: 51,782,400 synthetic frames; 38,400 callbacks; 24 fault/recovery epochs; 1,078.8 virtual seconds at 48 kHz.
+The workload checks finite output, progress, silent reconfiguration/recovery, cumulative counters, quiescent ownership, and missing-callback failure.
+Per-binary SHA256, source manifests, exact compiler/build/run commands, elapsed times, and logs are in device-sanitizers.json.
+All builds and executables were isolated under /tmp; no shared CMake build directory or production source was changed.
+No physical output, microphone, owner database, physical hotplug, listening judgment, timing deadline, or physical-duration claim.
+Apple ASan on this macOS runtime does not support detect_leaks=1; no leak-detector claim.

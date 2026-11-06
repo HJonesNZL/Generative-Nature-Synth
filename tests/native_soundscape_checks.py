@@ -31,6 +31,7 @@ class SoundscapeTests(NativeVoiceTests):
         return data
 
     def test_scene_complete_recall_immutable_render_and_no_source(self):
+        self.assertTrue(self.client.request('getCapabilities')['libraryAvailable'])
         self.prepare()
         self.edit(1)
         before=self.client.request('getVoice',dict(voiceId='species:studio:bird'))
@@ -58,6 +59,7 @@ class SoundscapeTests(NativeVoiceTests):
         hidden=self.path.with_suffix('.hidden'); self.path.rename(hidden)
         try:
             self.client=self.new_client()
+            self.assertFalse(self.client.request('getCapabilities')['libraryAvailable'])
             self.client.request('recallSoundscape',dict(soundscapeId=scene['id']))
             self.assertEqual(self.render(scene),first)
             cli_output=Path(self.temp.name)/'self-contained-cli.wav'

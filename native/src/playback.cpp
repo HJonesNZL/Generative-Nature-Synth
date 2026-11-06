@@ -2,6 +2,7 @@
 #include <array>
 #include <atlas/playback.hpp>
 #include <atomic>
+#include <cctype>
 #include <chrono>
 #include <stdexcept>
 #include <thread>
@@ -12,12 +13,63 @@ static_assert(std::atomic<std::uint64_t>::is_always_lock_free);
 static_assert(std::atomic<unsigned>::is_always_lock_free);
 static_assert(std::atomic<bool>::is_always_lock_free);
 using Clock = std::chrono::steady_clock;
+bool validConfiguration(const AudioDeviceConfiguration &configuration) {
+    if (configuration.bufferFrames < 0 ||
+        configuration.bufferFrames >
+            static_cast<int>(AudioRenderer::maxBlockFrames))
+        return false;
+    if (configuration.mode == AudioDeviceMode::systemDefault)
+        return configuration.deviceId.empty();
+    return configuration.mode == AudioDeviceMode::explicitDevice &&
+           !configuration.deviceId.empty() &&
+           configuration.deviceId.size() <= 64 &&
+           std::all_of(configuration.deviceId.begin(),
+                       configuration.deviceId.end(), [](unsigned char c) {
+                           return (c >= 'a' && c <= 'z') ||
+                                  (c >= 'A' && c <= 'Z') ||
+                                  (c >= '0' && c <= '9') || c == '-';
+                       });
+}
+PlaybackError validateDevice(const AudioDeviceCatalog &catalog,
+                             const AudioDeviceConfiguration &configuration,
+                             std::uint32_t rate) {
+    if (!validConfiguration(configuration))
+        return PlaybackError::invalidDeviceConfiguration;
+    if (!catalog.available)
+        return PlaybackError::deviceUnavailable;
+    const auto selected = std::find_if(
+        catalog.devices.begin(), catalog.devices.end(),
+        [&](const AudioDeviceInfo &device) {
+            return configuration.mode == AudioDeviceMode::systemDefault
+                       ? device.isDefault
+                       : device.id == configuration.deviceId;
+        });
+    if (selected == catalog.devices.end())
+        return PlaybackError::deviceUnavailable;
+    const auto block = configuration.bufferFrames
+                           ? configuration.bufferFrames
+                           : selected->defaultBufferFrames;
+    if (selected->outputChannels < 2 || block <= 0 ||
+        block > static_cast<int>(AudioRenderer::maxBlockFrames) ||
+        (configuration.bufferFrames &&
+         std::find(selected->bufferFrames.begin(), selected->bufferFrames.end(),
+                   block) == selected->bufferFrames.end()) ||
+        (rate &&
+         std::find(selected->sampleRates.begin(), selected->sampleRates.end(),
+                   rate) == selected->sampleRates.end()))
+        return PlaybackError::unsupportedDevice;
+    return PlaybackError::none;
+}
 constexpr auto leaseDuration = std::chrono::seconds(5);
 } // namespace
 const char *playbackErrorText(PlaybackError error) noexcept {
     switch (error) {
     case PlaybackError::none:
         return "none";
+    case PlaybackError::staleControlRevision:
+        return "stale_control_revision";
+    case PlaybackError::invalidDeviceConfiguration:
+        return "invalid_device_configuration";
     case PlaybackError::notPrepared:
         return "not_prepared";
     case PlaybackError::disabled:
@@ -46,12 +98,23 @@ const char *playbackErrorText(PlaybackError error) noexcept {
     return "unknown";
 }
 struct PlaybackRuntime::Impl {
-    explicit Impl(std::unique_ptr<OutputDriver> output)
-        : driver(std::move(output)) {
+    explicit Impl(std::unique_ptr<OutputDriver> output,
+                  AudioDeviceConfiguration initial)
+        : driver(std::move(output)), configuration(std::move(initial)) {
+        if (!validConfiguration(configuration))
+            throw std::invalid_argument(
+                "invalid initial audio device configuration");
         if (!driver)
             throw std::invalid_argument("playback requires an output driver");
     }
     std::unique_ptr<OutputDriver> driver;
+    AudioDeviceConfiguration configuration;
+    AudioDeviceCatalog catalog;
+    std::optional<ActiveAudioDevice> activeDevice;
+    bool catalogInitialized{};
+    std::uint64_t controlRevision{1};
+    std::atomic<std::uint64_t> callbackCount{}, callbackFrames{}, faultCount{};
+    std::atomic<unsigned> deviceRate{}, deviceBlock{}, deviceChannels{};
     std::unique_ptr<AudioPlan> plan;
     std::unique_ptr<AudioRenderer> renderer;
     std::uint64_t preparationId{};
@@ -119,14 +182,23 @@ struct PlaybackRuntime::Impl {
         if (renderer)
             renderer->panic(renderer->generation());
         started.store(false, std::memory_order_release);
+        activeDevice.reset();
+        deviceRate.store(0, std::memory_order_release);
+        deviceBlock.store(0, std::memory_order_release);
+        deviceChannels.store(0, std::memory_order_release);
         acknowledged.store(request.load(std::memory_order_relaxed),
                            std::memory_order_release);
-        failure.store(static_cast<unsigned>(error), std::memory_order_release);
+        const auto previousError = failure.exchange(
+            static_cast<unsigned>(error), std::memory_order_acq_rel);
+        if (error != PlaybackError::none &&
+            previousError == static_cast<unsigned>(PlaybackError::none))
+            faultCount.fetch_add(1, std::memory_order_relaxed);
         publish();
     }
 };
-PlaybackRuntime::PlaybackRuntime(std::unique_ptr<OutputDriver> driver)
-    : impl_(std::make_unique<Impl>(std::move(driver))) {}
+PlaybackRuntime::PlaybackRuntime(std::unique_ptr<OutputDriver> driver,
+                                 AudioDeviceConfiguration initial)
+    : impl_(std::make_unique<Impl>(std::move(driver), std::move(initial))) {}
 PlaybackRuntime::~PlaybackRuntime() { impl_->close(PlaybackError::none); }
 PlaybackSnapshot PlaybackRuntime::snapshot() const noexcept {
     const auto &p = *impl_;
@@ -160,7 +232,87 @@ PlaybackSnapshot PlaybackRuntime::snapshot() const noexcept {
     value.error = p.error();
     value.enabled = p.enabled.load(std::memory_order_acquire) &&
                     value.error == PlaybackError::none;
+    value.callbackCount = p.callbackCount.load(std::memory_order_relaxed);
+    value.callbackFrames = p.callbackFrames.load(std::memory_order_relaxed);
+    value.faultCount = p.faultCount.load(std::memory_order_relaxed);
+    if (value.enabled) {
+        value.deviceSampleRate = p.deviceRate.load(std::memory_order_acquire);
+        value.deviceBufferFrames =
+            static_cast<int>(p.deviceBlock.load(std::memory_order_acquire));
+        value.deviceOutputChannels =
+            static_cast<int>(p.deviceChannels.load(std::memory_order_acquire));
+    }
     return value;
+}
+const AudioDeviceConfiguration &
+PlaybackRuntime::outputConfiguration() const noexcept {
+    return impl_->configuration;
+}
+AudioDeviceCatalog PlaybackRuntime::audioDevices(bool refresh) {
+    auto &p = *impl_;
+    if (refresh) {
+        service();
+        AudioDeviceCatalog next;
+        try {
+            next = p.driver->audioDevices();
+            if (next.devices.size() > 128)
+                throw std::runtime_error(
+                    "audio device catalog exceeds capacity");
+            for (const auto &device : next.devices)
+                if (device.id.empty() || device.id.size() > 64 ||
+                    device.name.size() > 256 || device.type.size() > 256 ||
+                    device.sampleRates.size() > 64 ||
+                    device.bufferFrames.size() > 64)
+                    throw std::runtime_error(
+                        "audio device metadata exceeds capacity");
+        } catch (...) {
+            next = {};
+            next.available = true;
+            next.error =
+                "Audio device discovery failed or exceeded supported capacity.";
+        }
+        if (p.catalogInitialized && (p.catalog.devices != next.devices ||
+                                     p.catalog.available != next.available ||
+                                     p.catalog.error != next.error))
+            ++p.controlRevision;
+        p.catalog = std::move(next);
+        p.catalogInitialized = true;
+    }
+    auto result = p.catalog;
+    result.configuration = p.configuration;
+    result.controlRevision = p.controlRevision;
+    const auto state = snapshot();
+    result.active = state.enabled ? p.activeDevice : std::nullopt;
+    if (result.error.empty() && state.error != PlaybackError::none)
+        result.error = playbackErrorText(state.error);
+    return result;
+}
+PlaybackResult PlaybackRuntime::setAudioDevice(
+    AudioDeviceConfiguration configuration, std::uint64_t revision,
+    std::uint64_t preparation, std::uint64_t generation) {
+    auto &p = *impl_;
+    const auto catalog = audioDevices();
+    const auto current = snapshot();
+    if (revision != p.controlRevision)
+        return {false, PlaybackError::staleControlRevision, current};
+    if (preparation != current.preparationId)
+        return {false, PlaybackError::stalePreparation, current};
+    if (generation != current.generation)
+        return {false, PlaybackError::staleGeneration, current};
+    const auto error =
+        validateDevice(catalog, configuration, current.sampleRate);
+    if (error != PlaybackError::none)
+        return {false, error, current};
+    p.close(PlaybackError::none);
+    try {
+        p.driver->configureOutput(configuration);
+    } catch (...) {
+        p.close(PlaybackError::deviceUnavailable);
+        return {false, PlaybackError::deviceUnavailable, snapshot()};
+    }
+    p.configuration = std::move(configuration);
+    ++p.controlRevision;
+    return {true, PlaybackError::none, snapshot()};
 }
 PlaybackResult PlaybackRuntime::prepare(const Timeline &timeline,
                                         AudioSettings settings,
@@ -214,6 +366,17 @@ PlaybackResult PlaybackRuntime::enable(bool enabled) {
     if (p.enabled.load(std::memory_order_acquire) &&
         p.error() == PlaybackError::none)
         return {true, PlaybackError::none, snapshot()};
+    const auto catalog = audioDevices();
+    if (catalog.available ||
+        p.configuration.mode != AudioDeviceMode::systemDefault ||
+        p.configuration.bufferFrames) {
+        const auto error = validateDevice(catalog, p.configuration,
+                                          p.plan->settings().sampleRate);
+        if (error != PlaybackError::none) {
+            p.close(error);
+            return {false, error, snapshot()};
+        }
+    }
     p.close(PlaybackError::none);
     heartbeat();
     p.callbackHeartbeat = p.heartbeatSerial.load(std::memory_order_acquire);
@@ -222,7 +385,9 @@ PlaybackResult PlaybackRuntime::enable(bool enabled) {
     p.enabled.store(true, std::memory_order_release);
     std::string deviceError;
     try {
+        p.driver->configureOutput(p.configuration);
         deviceError = p.driver->start(*this, p.plan->settings().sampleRate);
+        p.activeDevice = p.driver->activeDevice();
     } catch (...) {
         p.close(PlaybackError::deviceUnavailable);
         return {false, PlaybackError::deviceUnavailable, snapshot()};
@@ -306,17 +471,30 @@ void PlaybackRuntime::deviceStarted(double rate, int frames,
     if (!p.plan || rate != static_cast<double>(p.plan->settings().sampleRate) ||
         frames <= 0 ||
         frames > static_cast<int>(AudioRenderer::maxBlockFrames) ||
-        channels < 2 || channels > OutputDriver::maxOutputChannels)
+        channels < 2 || channels > OutputDriver::maxOutputChannels) {
         deviceFailed(PlaybackError::unsupportedDevice);
+        return;
+    }
+    p.deviceRate.store(static_cast<unsigned>(rate), std::memory_order_release);
+    p.deviceBlock.store(static_cast<unsigned>(frames),
+                        std::memory_order_release);
+    p.deviceChannels.store(static_cast<unsigned>(channels),
+                           std::memory_order_release);
 }
 void PlaybackRuntime::deviceFailed(PlaybackError error) noexcept {
     unsigned expected = static_cast<unsigned>(PlaybackError::none);
-    impl_->failure.compare_exchange_strong(
-        expected, static_cast<unsigned>(error), std::memory_order_acq_rel);
+    if (error != PlaybackError::none &&
+        impl_->failure.compare_exchange_strong(
+            expected, static_cast<unsigned>(error), std::memory_order_acq_rel))
+        impl_->faultCount.fetch_add(1, std::memory_order_relaxed);
 }
 void PlaybackRuntime::process(float *const *outputs, int channels,
                               int frames) noexcept {
     auto &p = *impl_;
+    p.callbackCount.fetch_add(1, std::memory_order_relaxed);
+    if (frames > 0)
+        p.callbackFrames.fetch_add(static_cast<std::uint64_t>(frames),
+                                   std::memory_order_relaxed);
     if (frames < 0 || channels < 0) {
         deviceFailed(PlaybackError::callbackFailure);
         return;

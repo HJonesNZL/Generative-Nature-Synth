@@ -25,6 +25,36 @@ class FakeOutputDriver final : public atlas::OutputDriver {
     explicit FakeOutputDriver(std::filesystem::path startsPath)
         : startsPath_(std::move(startsPath)) {}
     ~FakeOutputDriver() override { stop(); }
+    atlas::AudioDeviceCatalog audioDevices() override {
+        atlas::AudioDeviceCatalog catalog;
+        catalog.available = true;
+        catalog.devices.push_back({"fixture-default",
+                                   "Synthetic default output",
+                                   "Fixture",
+                                   true,
+                                   2,
+                                   {44100, 48000},
+                                   {64, 128, 256, 512},
+                                   64});
+        if (!missingExternal_)
+            catalog.devices.push_back({"fixture-external",
+                                       "Synthetic external output",
+                                       "Fixture",
+                                       false,
+                                       2,
+                                       {48000},
+                                       {128, 256, 512},
+                                       128});
+        return catalog;
+    }
+    void configureOutput(
+        const atlas::AudioDeviceConfiguration &configuration) override {
+        configuration_ = configuration;
+    }
+    std::optional<atlas::ActiveAudioDevice> activeDevice() override {
+        return active_;
+    }
+    void setExternalMissing(bool missing) { missingExternal_ = missing; }
     std::string start(atlas::PlaybackRuntime &runtime,
                       std::uint32_t rate) override {
         stop();
@@ -34,19 +64,38 @@ class FakeOutputDriver final : public atlas::OutputDriver {
             if (!counter)
                 throw std::runtime_error("fixture counter write failed");
         }
+        const bool external =
+            configuration_.mode == atlas::AudioDeviceMode::explicitDevice &&
+            configuration_.deviceId == "fixture-external";
+        if (external && missingExternal_)
+            return "selected synthetic output missing";
+        const auto block = configuration_.bufferFrames
+                               ? configuration_.bufferFrames
+                           : external ? 128
+                                      : 64;
+        active_ = atlas::ActiveAudioDevice{
+            external ? "fixture-external" : "fixture-default",
+            external ? "Synthetic external output" : "Synthetic default output",
+            "Fixture",
+            rate,
+            block,
+            2};
         stalled_ = false;
-        runtime.deviceStarted(rate, 64, 2);
+        runtime.deviceStarted(rate, block, 2);
         running_ = true;
-        callbacks_ = std::thread([this, &runtime, rate] {
-            std::array<float, 64> left{}, right{};
+        callbacks_ = std::thread([this, &runtime, rate, block] {
+            std::array<float, atlas::AudioRenderer::maxBlockFrames> left{},
+                right{};
             std::array<float *, 2> outputs{left.data(), right.data()};
-            const auto period = std::chrono::duration<double>(64.0 / rate);
+            const auto period = std::chrono::duration<double>(
+                static_cast<double>(block) / rate);
             auto next = std::chrono::steady_clock::now();
             while (running_.load()) {
                 if (!stalled_.load()) {
-                    runtime.process(outputs.data(), 2, 64);
+                    runtime.process(outputs.data(), 2, block);
                     float blockPeak{};
-                    for (std::size_t frame = 0; frame < left.size(); ++frame) {
+                    for (std::size_t frame = 0;
+                         frame < static_cast<std::size_t>(block); ++frame) {
                         blockPeak = std::max(blockPeak, std::abs(left[frame]));
                         blockPeak = std::max(blockPeak, std::abs(right[frame]));
                     }
@@ -69,11 +118,15 @@ class FakeOutputDriver final : public atlas::OutputDriver {
         running_ = false;
         if (callbacks_.joinable())
             callbacks_.join();
+        active_.reset();
     }
 
   private:
     std::filesystem::path startsPath_;
     std::uint64_t starts_{};
+    bool missingExternal_{};
+    atlas::AudioDeviceConfiguration configuration_;
+    std::optional<atlas::ActiveAudioDevice> active_;
     static_assert(std::atomic<float>::is_always_lock_free);
     std::atomic<float> peak_{};
     std::atomic<bool> running_{}, stalled_{};
@@ -134,7 +187,18 @@ int main(int argc, char **argv) {
             for (ssize_t index = 0; index < count; ++index) {
                 const auto value = bytes[static_cast<std::size_t>(index)];
                 if (value == '\n') {
-                    if (request == "fixture:stall") {
+                    if (request == "fixture:remove-device") {
+                        fakeOutput->setExternalMissing(true);
+                        playback.deviceFailed(
+                            atlas::PlaybackError::deviceUnavailable);
+                        playback.service();
+                        std::cout << "{\"fixture\":\"device-removed\"}\n"
+                                  << std::flush;
+                    } else if (request == "fixture:restore-device") {
+                        fakeOutput->setExternalMissing(false);
+                        std::cout << "{\"fixture\":\"device-restored\"}\n"
+                                  << std::flush;
+                    } else if (request == "fixture:stall") {
                         fakeOutput->stall();
                         std::cout << "{\"fixture\":\"stalled\"}\n"
                                   << std::flush;

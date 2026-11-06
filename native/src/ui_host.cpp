@@ -330,6 +330,11 @@ const char *playbackMessage(PlaybackError error) noexcept {
     switch (error) {
     case PlaybackError::none:
         return "";
+    case PlaybackError::staleControlRevision:
+        return "Audio devices changed. Refresh the output choices and try "
+               "again.";
+    case PlaybackError::invalidDeviceConfiguration:
+        return "Choose a listed output and supported buffer size.";
     case PlaybackError::invalidVoiceSettings:
         return "Voice settings are outside supported limits.";
     case PlaybackError::notPrepared:
@@ -342,10 +347,12 @@ const char *playbackMessage(PlaybackError error) noexcept {
     case PlaybackError::invalidTransition:
         return "Playback is changing state. Wait briefly and try again.";
     case PlaybackError::deviceUnavailable:
-        return "The default audio output could not be opened. Check the device "
+        return "The selected audio output could not be opened. Check the "
+               "device "
                "and enable Listening again.";
     case PlaybackError::unsupportedDevice:
-        return "The default output does not support the prepared stereo sample "
+        return "The selected output does not support the prepared stereo "
+               "sample "
                "rate or buffer size.";
     case PlaybackError::deviceChanged:
         return "Audio output changed. Playback stopped; enable Listening to "
@@ -361,18 +368,92 @@ const char *playbackMessage(PlaybackError error) noexcept {
     }
     return "Audio output is unavailable.";
 }
-std::string audioView(const PlaybackSnapshot &snapshot) {
+std::string deviceCatalogView(const AudioDeviceCatalog &catalog,
+                              const PlaybackSnapshot &snapshot) {
+    std::string devices = "[";
+    for (const auto &device : catalog.devices) {
+        if (devices.size() > 1)
+            devices += ',';
+        std::string rates = "[", buffers = "[";
+        for (auto rate : device.sampleRates) {
+            if (rates.size() > 1)
+                rates += ',';
+            rates += std::to_string(rate);
+        }
+        for (auto frames : device.bufferFrames) {
+            if (buffers.size() > 1)
+                buffers += ',';
+            buffers += std::to_string(frames);
+        }
+        devices +=
+            "{\"id\":" + quoteJson(device.id) +
+            ",\"name\":" + quoteJson(device.name) +
+            ",\"type\":" + quoteJson(device.type) +
+            ",\"isDefault\":" + (device.isDefault ? "true" : "false") +
+            ",\"outputChannels\":" + std::to_string(device.outputChannels) +
+            ",\"sampleRates\":" + rates + "],\"bufferFrames\":" + buffers +
+            "],\"defaultBufferFrames\":" +
+            std::to_string(device.defaultBufferFrames) + "}";
+    }
+    const auto &configuration = catalog.configuration;
+    std::string active = "null";
+    if (catalog.active && snapshot.enabled) {
+        const auto &device = *catalog.active;
+        active =
+            "{\"deviceId\":" + quoteJson(device.deviceId) +
+            ",\"name\":" + quoteJson(device.name) +
+            ",\"type\":" + quoteJson(device.type) +
+            ",\"sampleRate\":" + std::to_string(snapshot.deviceSampleRate) +
+            ",\"bufferFrames\":" + std::to_string(snapshot.deviceBufferFrames) +
+            ",\"outputChannels\":" +
+            std::to_string(snapshot.deviceOutputChannels) + "}";
+    }
+    return "{\"available\":" +
+           std::string(catalog.available ? "true" : "false") +
+           ",\"devices\":" + devices + "],\"configuration\":{\"mode\":" +
+           quoteJson(configuration.mode == AudioDeviceMode::systemDefault
+                         ? "systemDefault"
+                         : "explicitDevice") +
+           ",\"deviceId\":" +
+           (configuration.deviceId.empty()
+                ? "null"
+                : quoteJson(configuration.deviceId)) +
+           ",\"bufferFrames\":" + std::to_string(configuration.bufferFrames) +
+           "},\"active\":" + active + ",\"controlRevision\":" +
+           quoteJson(std::to_string(catalog.controlRevision)) + ",\"error\":" +
+           (catalog.error.empty() ? "null" : quoteJson(catalog.error)) +
+           ",\"preparationId\":" +
+           (snapshot.prepared ? quoteJson(preparationId(snapshot)) : "null") +
+           ",\"generation\":" + quoteJson(std::to_string(snapshot.generation)) +
+           "}";
+}
+std::string audioView(const PlaybackSnapshot &snapshot,
+                      const AudioDeviceCatalog &catalog) {
     const auto status = snapshot.error != PlaybackError::none ? "device_lost"
                         : snapshot.enabled                    ? "running"
                                                               : "disabled";
-    return "{\"status\":" + quoteJson(status) +
-           ",\"deviceName\":null,\"masterGainDb\":" +
-           std::to_string(snapshot.gainDb) +
+    return "{\"status\":" + quoteJson(status) + ",\"deviceName\":" +
+           (catalog.active ? quoteJson(catalog.active->name) : "null") +
+           ",\"masterGainDb\":" + std::to_string(snapshot.gainDb) +
            ",\"peakDbfs\":null,\"meterIsSimulated\":false,\"clipping\":false,"
            "\"activeSynthVoices\":null,\"maxSynthVoices\":8," +
            "\"sampleRate\":" +
-           (snapshot.sampleRate ? std::to_string(snapshot.sampleRate)
-                                : "null") +
+           (snapshot.deviceSampleRate
+                ? std::to_string(snapshot.deviceSampleRate)
+                : "null") +
+           ",\"bufferFrames\":" +
+           (snapshot.deviceBufferFrames
+                ? std::to_string(snapshot.deviceBufferFrames)
+                : "null") +
+           ",\"outputChannels\":" +
+           (snapshot.deviceOutputChannels
+                ? std::to_string(snapshot.deviceOutputChannels)
+                : "null") +
+           ",\"callbackCount\":" +
+           quoteJson(std::to_string(snapshot.callbackCount)) +
+           ",\"callbackFrames\":" +
+           quoteJson(std::to_string(snapshot.callbackFrames)) +
+           ",\"faultCount\":" + quoteJson(std::to_string(snapshot.faultCount)) +
            ",\"error\":" +
            (snapshot.error == PlaybackError::none
                 ? "null"
@@ -938,7 +1019,7 @@ std::string UiHost::request(std::string_view envelope) {
                 R"({"protocolVersion":1,"implementation":"native","supportedMethods":["getCapabilities","getChanges","getCatalog","listSessions","prepareReplay","getMaterialEvents")";
             if (impl_->playback)
                 result +=
-                    R"(,"getTransport","setTransport","getAudioState","setAudioEnabled")";
+                    R"(,"getTransport","setTransport","getAudioState","setAudioEnabled","getAudioDevices","setAudioDevice")";
             if (impl_->voices)
                 result +=
                     R"(,"getVoiceLibrary","getVoice","setVoiceParameter","saveVoice","revertVoice","getComposition","setComposition","getSpatial","setSpatial")";
@@ -952,6 +1033,8 @@ std::string UiHost::request(std::string_view envelope) {
                 result += R"(,"listVoicePresets","applyVoicePreset")";
             result += std::string("],\"audioAvailable\":") +
                       (impl_->playback ? "true" : "false") +
+                      ",\"libraryAvailable\":" +
+                      (impl_->library ? "true" : "false") +
                       ",\"maxEventBatch\":500,\"maxVisibleMarkers\":500}";
         } else if (impl_->playback &&
                    (method == "getTransport" || method == "getAudioState")) {
@@ -962,14 +1045,70 @@ std::string UiHost::request(std::string_view envelope) {
             if (method == "getTransport")
                 impl_->playback->heartbeat();
             const auto snapshot = impl_->playback->snapshot();
-            result = method == "getTransport" ? transportView(snapshot)
-                                              : audioView(snapshot);
+            result =
+                method == "getTransport"
+                    ? transportView(snapshot)
+                    : audioView(snapshot, impl_->playback->audioDevices(false));
+        } else if (impl_->playback && method == "getAudioDevices") {
+            Object args(impl_->db.get(), arguments);
+            if (args.size())
+                throw std::invalid_argument("unexpected arguments");
+            const auto catalog = impl_->playback->audioDevices();
+            result = deviceCatalogView(catalog, impl_->playback->snapshot());
+        } else if (impl_->playback && method == "setAudioDevice") {
+            Object args(impl_->db.get(), arguments,
+                        {"controlRevision", "preparationId", "generation",
+                         "configuration"});
+            Object config(impl_->db.get(), args.object("configuration"),
+                          {"mode", "deviceId", "bufferFrames"});
+            AudioDeviceConfiguration configuration;
+            const auto mode = config.text("mode", 16);
+            if (mode == "systemDefault")
+                configuration.mode = AudioDeviceMode::systemDefault;
+            else if (mode == "explicitDevice")
+                configuration.mode = AudioDeviceMode::explicitDevice;
+            else
+                throw std::invalid_argument("unknown audio device mode");
+            if (!config.null("deviceId"))
+                configuration.deviceId = config.text("deviceId", 64);
+            configuration.bufferFrames = static_cast<int>(
+                config.number("bufferFrames", AudioRenderer::maxBlockFrames));
+            std::uint64_t preparation{};
+            if (!args.null("preparationId")) {
+                const auto identity = args.text("preparationId", 32);
+                if (!identity.starts_with("audio-"))
+                    throw std::invalid_argument("invalid preparation ID");
+                preparation = static_cast<std::uint64_t>(
+                    integer(std::string_view(identity).substr(6), INT64_MAX));
+            }
+            const auto reply = impl_->playback->setAudioDevice(
+                std::move(configuration),
+                static_cast<std::uint64_t>(
+                    integer(args.text("controlRevision", 20), INT64_MAX)),
+                preparation,
+                static_cast<std::uint64_t>(
+                    integer(args.text("generation", 20), INT64_MAX)));
+            if (!reply.ok) {
+                const auto code =
+                    reply.error == PlaybackError::staleControlRevision
+                        ? "stale_generation"
+                    : reply.error == PlaybackError::stalePreparation ||
+                            reply.error == PlaybackError::staleGeneration
+                        ? "stale_generation"
+                    : reply.error == PlaybackError::invalidDeviceConfiguration
+                        ? "invalid_request"
+                        : "unavailable";
+                return failure(code, playbackMessage(reply.error));
+            }
+            result = deviceCatalogView(impl_->playback->audioDevices(false),
+                                       reply.snapshot);
         } else if (impl_->playback && method == "setAudioEnabled") {
             Object args(impl_->db.get(), arguments, {"enabled"});
             const auto reply = impl_->playback->enable(args.boolean("enabled"));
             if (!reply.ok)
                 return failure("unavailable", playbackMessage(reply.error));
-            result = audioView(reply.snapshot);
+            result =
+                audioView(reply.snapshot, impl_->playback->audioDevices(false));
         } else if (impl_->playback && method == "setTransport") {
             Object args(
                 impl_->db.get(), arguments,

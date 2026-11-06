@@ -1,0 +1,10 @@
+COMMAND ["python3", "-B", "tests/native_audio_device_checks.py", "/tmp/atlas-device-sanitizers-kmh1r2b5/atlas-device-studio-asan-ubsan"]
+CWD /Users/henryjones/Documents/ChatGPT/Generative Nature Synth
+
+....
+----------------------------------------------------------------------
+Ran 4 tests in 0.668s
+
+OK
+
+RESULT {"name": "asan-ubsan-protocol", "command": ["python3", "-B", "tests/native_audio_device_checks.py", "/tmp/atlas-device-sanitizers-kmh1r2b5/atlas-device-studio-asan-ubsan"], "exitCode": 0, "elapsedSeconds": 0.7374913340000049, "log": "asan-ubsan-protocol.log"}

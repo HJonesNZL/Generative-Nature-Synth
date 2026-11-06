@@ -1,10 +1,41 @@
 #pragma once
 #include <atlas/audio.hpp>
 #include <memory>
+#include <optional>
 #include <string>
+#include <vector>
 
 namespace atlas {
 class PlaybackRuntime;
+enum class AudioDeviceMode { systemDefault, explicitDevice };
+struct AudioDeviceConfiguration {
+    AudioDeviceMode mode{AudioDeviceMode::systemDefault};
+    std::string deviceId;
+    int bufferFrames{};
+    bool operator==(const AudioDeviceConfiguration &) const = default;
+};
+struct AudioDeviceInfo {
+    std::string id, name, type;
+    bool isDefault{};
+    int outputChannels{};
+    std::vector<std::uint32_t> sampleRates;
+    std::vector<int> bufferFrames;
+    int defaultBufferFrames{};
+    bool operator==(const AudioDeviceInfo &) const = default;
+};
+struct ActiveAudioDevice {
+    std::string deviceId, name, type;
+    std::uint32_t sampleRate{};
+    int bufferFrames{}, outputChannels{};
+};
+struct AudioDeviceCatalog {
+    bool available{};
+    std::vector<AudioDeviceInfo> devices;
+    AudioDeviceConfiguration configuration;
+    std::optional<ActiveAudioDevice> active;
+    std::uint64_t controlRevision{1};
+    std::string error;
+};
 // start/stop run on the serial control worker. stop must establish callback
 // quiescence.
 class OutputDriver {
@@ -13,6 +44,9 @@ class OutputDriver {
     virtual ~OutputDriver() = default;
     virtual std::string start(PlaybackRuntime &, std::uint32_t sampleRate) = 0;
     virtual void stop() noexcept = 0;
+    virtual AudioDeviceCatalog audioDevices() { return {}; }
+    virtual void configureOutput(const AudioDeviceConfiguration &) {}
+    virtual std::optional<ActiveAudioDevice> activeDevice() { return {}; }
 };
 std::unique_ptr<OutputDriver> makeJuceOutputDriver();
 enum class PlaybackError : unsigned {
@@ -28,7 +62,9 @@ enum class PlaybackError : unsigned {
     callbackFailure,
     commandTimeout,
     leaseExpired,
-    invalidVoiceSettings
+    invalidVoiceSettings,
+    staleControlRevision,
+    invalidDeviceConfiguration
 };
 const char *playbackErrorText(PlaybackError) noexcept;
 enum class PlaybackCommandKind : unsigned {
@@ -57,6 +93,9 @@ struct PlaybackSnapshot {
     AudioState state{AudioState::ready};
     PlaybackError error{PlaybackError::none};
     double gainDb{-18};
+    std::uint64_t callbackCount{}, callbackFrames{}, faultCount{};
+    std::uint32_t deviceSampleRate{};
+    int deviceBufferFrames{}, deviceOutputChannels{};
 };
 struct PlaybackResult {
     bool ok{};
@@ -67,7 +106,9 @@ struct PlaybackResult {
 // concurrently with stop.
 class PlaybackRuntime {
   public:
-    explicit PlaybackRuntime(std::unique_ptr<OutputDriver>);
+    explicit PlaybackRuntime(
+        std::unique_ptr<OutputDriver>,
+        AudioDeviceConfiguration initialConfiguration = {});
     ~PlaybackRuntime();
     PlaybackRuntime(const PlaybackRuntime &) = delete;
     PlaybackRuntime &operator=(const PlaybackRuntime &) = delete;
@@ -77,6 +118,12 @@ class PlaybackRuntime {
                            bool editableVoices = false);
     PlaybackResult updateVoice(VoiceSlot, const VoiceSettings &);
     PlaybackResult enable(bool);
+    AudioDeviceCatalog audioDevices(bool refresh = true);
+    const AudioDeviceConfiguration &outputConfiguration() const noexcept;
+    PlaybackResult setAudioDevice(AudioDeviceConfiguration,
+                                  std::uint64_t controlRevision,
+                                  std::uint64_t preparationId,
+                                  std::uint64_t generation);
     PlaybackResult command(PlaybackCommand);
     PlaybackSnapshot snapshot() const noexcept;
     void heartbeat() noexcept;

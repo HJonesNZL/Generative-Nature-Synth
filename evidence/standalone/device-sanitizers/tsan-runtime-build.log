@@ -1,0 +1,5 @@
+COMMAND ["clang++", "-std=c++20", "-O1", "-g", "-Wall", "-Wextra", "-Wpedantic", "-Wconversion", "-Werror", "-fno-omit-frame-pointer", "-I", "native/include", "-fsanitize=thread", "native/src/core.cpp", "native/src/audio.cpp", "native/src/composition.cpp", "native/src/spatial.cpp", "native/src/playback.cpp", "native/tests/playback_tests.cpp", "-o", "/tmp/atlas-device-sanitizers-kmh1r2b5/atlas-device-playback-tsan"]
+CWD /Users/henryjones/Documents/ChatGPT/Generative Nature Synth
+
+
+RESULT {"name": "tsan-runtime-build", "command": ["clang++", "-std=c++20", "-O1", "-g", "-Wall", "-Wextra", "-Wpedantic", "-Wconversion", "-Werror", "-fno-omit-frame-pointer", "-I", "native/include", "-fsanitize=thread", "native/src/core.cpp", "native/src/audio.cpp", "native/src/composition.cpp", "native/src/spatial.cpp", "native/src/playback.cpp", "native/tests/playback_tests.cpp", "-o", "/tmp/atlas-device-sanitizers-kmh1r2b5/atlas-device-playback-tsan"], "exitCode": 0, "elapsedSeconds": 4.608388333, "log": "tsan-runtime-build.log"}

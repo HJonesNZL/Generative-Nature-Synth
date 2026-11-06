@@ -1,0 +1,5 @@
+COMMAND ["clang++", "-std=c++20", "-O1", "-g", "-Wall", "-Wextra", "-Wpedantic", "-Wconversion", "-Werror", "-fno-omit-frame-pointer", "-I", "native/include", "-fsanitize=address,undefined", "native/src/core.cpp", "native/src/audio.cpp", "native/src/composition.cpp", "native/src/spatial.cpp", "native/src/playback.cpp", "native/tests/playback_tests.cpp", "-o", "/tmp/atlas-device-sanitizers-kmh1r2b5/atlas-device-playback-asan-ubsan"]
+CWD /Users/henryjones/Documents/ChatGPT/Generative Nature Synth
+
+
+RESULT {"name": "asan-ubsan-runtime-build", "command": ["clang++", "-std=c++20", "-O1", "-g", "-Wall", "-Wextra", "-Wpedantic", "-Wconversion", "-Werror", "-fno-omit-frame-pointer", "-I", "native/include", "-fsanitize=address,undefined", "native/src/core.cpp", "native/src/audio.cpp", "native/src/composition.cpp", "native/src/spatial.cpp", "native/src/playback.cpp", "native/tests/playback_tests.cpp", "-o", "/tmp/atlas-device-sanitizers-kmh1r2b5/atlas-device-playback-asan-ubsan"], "exitCode": 0, "elapsedSeconds": 6.939627792, "log": "asan-ubsan-runtime-build.log"}
