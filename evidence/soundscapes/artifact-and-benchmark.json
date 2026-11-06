@@ -1,0 +1,16 @@
+{
+  "sourceSha256": "67ebca4ad3ccb383f16a658342a86c71c177c3c50fff9596eccba2c14cbb1827",
+  "platform": "macOS-15.6.1-arm64-arm-64bit",
+  "recordedAtUtc": "2026-11-06T21:34:15.543590+00:00",
+  "nativeArtifact": "build/soundscapes-qualified-67ebca4ad3cc/atlas-audio-host",
+  "nativeArtifactSha256": "f4d03260feeda51a4278a800fbeccdf724d25cc3c285eefdf6c89b3085137b15",
+  "benchmarkArtifactSha256": "8560e0d8aa789f4c9d76ada296165e9f81943509e8732c84cae3b65d12b99eb7",
+  "benchmark": {
+    "cases": 42,
+    "calls": 2257464,
+    "deadlineMisses": 2,
+    "worstP99DeadlineFraction": 0.16299567400865198,
+    "hardwareQualified": false,
+    "notes": "Scalar wall-clock synthetic process calls; no audio device, GUI or DAW qualification. Two misses pulse/192k/32. OS scheduling and other processes uncontrolled."
+  }
+}

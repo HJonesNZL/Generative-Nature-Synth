@@ -1,0 +1,271 @@
+{
+  "sourceSha256": "67ebca4ad3ccb383f16a658342a86c71c177c3c50fff9596eccba2c14cbb1827",
+  "sampleRate": 48000,
+  "notes": "Synthetic 3-onset probe; numerical levels only, not listening approval.",
+  "items": [
+    {
+      "id": "candidate:birdweather:species:2298:v1",
+      "file": "1.wav",
+      "sha256": "1855896b586e5104ad50d115d95c1cc917aa8f922c6d25549060ee23c88aaebd",
+      "frames": 236160,
+      "peakDbfs": -47.74262915400075,
+      "rmsDbfs": -67.6893954300572
+    },
+    {
+      "id": "candidate:birdweather:species:102:v1",
+      "file": "2.wav",
+      "sha256": "f9bae61d333d7ea82ed994609efa5e55112fc3091e9d7c578b125e7f41f9c1a2",
+      "frames": 236160,
+      "peakDbfs": -47.79657816593104,
+      "rmsDbfs": -80.57135157016705
+    },
+    {
+      "id": "candidate:birdweather:species:420:v1",
+      "file": "3.wav",
+      "sha256": "428141f23eb72dfa8329fa5c4480f981c5eea99b83e7bfe3a741f7c985c0d785",
+      "frames": 236160,
+      "peakDbfs": -48.50482994195136,
+      "rmsDbfs": -72.99620120586212
+    },
+    {
+      "id": "candidate:birdweather:species:4456:v1",
+      "file": "4.wav",
+      "sha256": "b6d1c47236123a600708ec8686d480b774a3e4508f919252ef983e184c19cb48",
+      "frames": 236160,
+      "peakDbfs": -47.06831117676347,
+      "rmsDbfs": -79.39315294715641
+    },
+    {
+      "id": "candidate:birdweather:species:1276:v1",
+      "file": "5.wav",
+      "sha256": "f39e629a2b0adb66861b994a8b95357d179c6aa34a88e026631e63b8c210e6f0",
+      "frames": 236160,
+      "peakDbfs": -46.30777119773078,
+      "rmsDbfs": -69.29902257053826
+    },
+    {
+      "id": "candidate:birdweather:species:4452:v1",
+      "file": "6.wav",
+      "sha256": "3c4bb8080fba5499618f08276aef2039ba3d001b751293637029030c3ff02d0c",
+      "frames": 236160,
+      "peakDbfs": -49.64869558682277,
+      "rmsDbfs": -72.25787976783735
+    },
+    {
+      "id": "candidate:birdweather:species:2561:v1",
+      "file": "7.wav",
+      "sha256": "ba7259c59c5fdc581ee74181512095d60e01db3857935172ee23c68e068fea3e",
+      "frames": 236160,
+      "peakDbfs": -50.1346670976245,
+      "rmsDbfs": -76.90416227554431
+    },
+    {
+      "id": "candidate:birdweather:species:2195:v1",
+      "file": "8.wav",
+      "sha256": "ca89f1ef46ce64b0aed98802898cd778992dad5a56e0923f7196eace1b33d741",
+      "frames": 236160,
+      "peakDbfs": -50.26365207297701,
+      "rmsDbfs": -77.15963057696683
+    },
+    {
+      "id": "candidate:birdweather:species:4251:v1",
+      "file": "9.wav",
+      "sha256": "bb4baeb97919bef4b35c3a96a76002c5fe07e90951474dbbf44727633a3c358b",
+      "frames": 236160,
+      "peakDbfs": -51.418188654004844,
+      "rmsDbfs": -79.8353870185419
+    },
+    {
+      "id": "candidate:birdweather:species:4459:v1",
+      "file": "10.wav",
+      "sha256": "1e39103904141a7e74b7bbfab4831d3a2552ae8a78db99362b1569d3671e8f2d",
+      "frames": 236160,
+      "peakDbfs": -47.763105510947625,
+      "rmsDbfs": -71.11800969597716
+    },
+    {
+      "id": "candidate:birdweather:species:591:v1",
+      "file": "11.wav",
+      "sha256": "19e1b3550165f05c3ba042cf8dfd97de4801b05091a38fa7e5245a7ec70d8157",
+      "frames": 236160,
+      "peakDbfs": -47.78261554677932,
+      "rmsDbfs": -69.0995102899518
+    },
+    {
+      "id": "candidate:birdweather:species:1:v1",
+      "file": "12.wav",
+      "sha256": "d3318d4aa584fac4e27e49c15805c4ead6a3b91efe59a646c65a9473255c2c12",
+      "frames": 236160,
+      "peakDbfs": -47.51805784196354,
+      "rmsDbfs": -77.10013773591564
+    },
+    {
+      "id": "candidate:birdweather:species:35:v1",
+      "file": "13.wav",
+      "sha256": "25dfaf03252ab3ef4d4d18b6773a036f207b9471115706df10c606edb526910b",
+      "frames": 236160,
+      "peakDbfs": -47.83273123514412,
+      "rmsDbfs": -63.551747991652974
+    },
+    {
+      "id": "candidate:birdweather:species:89:v1",
+      "file": "14.wav",
+      "sha256": "7b8053c01cb565ee31c3d707220c2b72e16e36181f2bed5de2c425fa8ff99b9d",
+      "frames": 236160,
+      "peakDbfs": -50.13167465757949,
+      "rmsDbfs": -75.47587163791374
+    },
+    {
+      "id": "candidate:birdweather:species:294:v1",
+      "file": "15.wav",
+      "sha256": "ddb4ebd9a40b5b945a2fc16f11454f9e76342a6aad584052747bfb19078b19f3",
+      "frames": 236160,
+      "peakDbfs": -48.98510173179619,
+      "rmsDbfs": -71.88006318952928
+    },
+    {
+      "id": "candidate:birdweather:species:25:v1",
+      "file": "16.wav",
+      "sha256": "865154d98a2af49c16289437d811a92d12f463a70f4c71865d4caea2bbc1601c",
+      "frames": 236160,
+      "peakDbfs": -50.64980120325586,
+      "rmsDbfs": -78.27801254878861
+    },
+    {
+      "id": "candidate:birdweather:species:61:v1",
+      "file": "17.wav",
+      "sha256": "58d212b25b959e463a55fa5da18d4e5e87f1c4dc96b090014fc77f7dbc93291a",
+      "frames": 236160,
+      "peakDbfs": -48.72622205107207,
+      "rmsDbfs": -70.19051788164215
+    },
+    {
+      "id": "candidate:birdweather:species:534:v1",
+      "file": "18.wav",
+      "sha256": "96d3b5e096766f6fb4a0c9f7b85f6a908659bb8ad0535fd02d65799da1cf68f8",
+      "frames": 236160,
+      "peakDbfs": -51.01298200483778,
+      "rmsDbfs": -74.67650722353537
+    },
+    {
+      "id": "candidate:birdweather:species:44:v1",
+      "file": "19.wav",
+      "sha256": "22c46db1891cca6804cc234965db89e200af12815ac56c86c751c73d59ca0f78",
+      "frames": 236160,
+      "peakDbfs": -50.5473695903154,
+      "rmsDbfs": -73.36991144574655
+    },
+    {
+      "id": "candidate:birdweather:species:2952:v1",
+      "file": "20.wav",
+      "sha256": "7906e5b186399e670efb403ee2294a639803778211dbaa9b00b6f8c76e683802",
+      "frames": 236160,
+      "peakDbfs": -48.72028588023166,
+      "rmsDbfs": -83.19703625712376
+    },
+    {
+      "id": "candidate:birdweather:species:100:v1",
+      "file": "21.wav",
+      "sha256": "13bae24e30c1893e1a5be9f7e6759fc7a1a160785519de24d44c2d169d5a75c1",
+      "frames": 236160,
+      "peakDbfs": -52.80144227811847,
+      "rmsDbfs": -69.93492186584359
+    },
+    {
+      "id": "candidate:birdweather:species:106:v1",
+      "file": "22.wav",
+      "sha256": "321c712ddd2e3b45e01886f908ae945fb30883faca0de4038ff4de8cf7866ec6",
+      "frames": 236160,
+      "peakDbfs": -47.57904635891592,
+      "rmsDbfs": -75.3822246769475
+    },
+    {
+      "id": "candidate:birdweather:species:12:v1",
+      "file": "23.wav",
+      "sha256": "fb38302cee5d4649f1194c8594eab1f2ba1567477d138e58f09a5465f7346690",
+      "frames": 236160,
+      "peakDbfs": -48.193208452633726,
+      "rmsDbfs": -64.69075891327199
+    },
+    {
+      "id": "candidate:birdweather:species:46:v1",
+      "file": "24.wav",
+      "sha256": "38528675699cdc0d77dd435857fa1a905c5a561190dd114ad488288b3eb39246",
+      "frames": 236160,
+      "peakDbfs": -47.09709606187228,
+      "rmsDbfs": -62.29361355974098
+    },
+    {
+      "id": "candidate:birdweather:species:53:v1",
+      "file": "25.wav",
+      "sha256": "3eb45df1874c5725b89fad378985159b27f1aed411ecd2da79ae72ce38ef83c3",
+      "frames": 236160,
+      "peakDbfs": -53.077003813894564,
+      "rmsDbfs": -79.13224527424148
+    },
+    {
+      "id": "candidate:birdweather:species:130:v1",
+      "file": "26.wav",
+      "sha256": "98b1ba3015219d5c36337d183dab5e9d2f874b9a2035ada66bd49c3c85e20884",
+      "frames": 236160,
+      "peakDbfs": -56.4443556654266,
+      "rmsDbfs": -76.41321296749057
+    },
+    {
+      "id": "candidate:birdweather:species:1051:v1",
+      "file": "27.wav",
+      "sha256": "869bd8877326cfaeb7306eb517109f7de1d8c7df289d7f0f98abdfe504d649cb",
+      "frames": 236160,
+      "peakDbfs": -50.62407983104989,
+      "rmsDbfs": -75.6213593255153
+    },
+    {
+      "id": "candidate:birdweather:species:113:v1",
+      "file": "28.wav",
+      "sha256": "90897313d38fc9072c4896e6533fcf8e2d82dba68dca780aa149f50619a4e423",
+      "frames": 236160,
+      "peakDbfs": -50.76310242722718,
+      "rmsDbfs": -73.34951535215039
+    },
+    {
+      "id": "candidate:birdweather:species:64:v1",
+      "file": "29.wav",
+      "sha256": "41e0d0dcab4af85cb3f21656f948d75da9007c196907bae49ef57fa2a3af953a",
+      "frames": 236160,
+      "peakDbfs": -47.814381295689905,
+      "rmsDbfs": -77.9981993805326
+    },
+    {
+      "id": "candidate:birdweather:species:928:v1",
+      "file": "30.wav",
+      "sha256": "cb87718b19d26850906977d6eaa280333060ac18a1f0e9e7eba021ce1893518a",
+      "frames": 236160,
+      "peakDbfs": -48.95340508400504,
+      "rmsDbfs": -71.7217660159534
+    },
+    {
+      "id": "candidate:birdweather:species:913:v1",
+      "file": "31.wav",
+      "sha256": "3ea5cfa104e8ad87db9981301f9808e898dd0ef85e963876f1f5ef475dae5258",
+      "frames": 236160,
+      "peakDbfs": -50.832015632125334,
+      "rmsDbfs": -77.59815957270555
+    },
+    {
+      "id": "candidate:nzsharks:species:great_white_shark:v1",
+      "file": "32.wav",
+      "sha256": "8a31211671526dfbcc28f6cfcecaff3d0f5624592d79feac11be3cf904bae587",
+      "frames": 236160,
+      "peakDbfs": -48.75284331827484,
+      "rmsDbfs": -67.75339011335086
+    },
+    {
+      "id": "candidate:birdweather:species:17651:v1",
+      "file": "33.wav",
+      "sha256": "25c1469b33bc21fc7d8bd68cd01a93819c2c5ad9a8ccdcf70b2c60f6577bd6f9",
+      "frames": 236160,
+      "peakDbfs": -45.82991793312462,
+      "rmsDbfs": -64.37324680286989
+    }
+  ]
+}

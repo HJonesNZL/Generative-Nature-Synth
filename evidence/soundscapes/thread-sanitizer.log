@@ -1,0 +1,20 @@
+Working directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth
+Production source SHA-256: 67ebca4ad3ccb383f16a658342a86c71c177c3c50fff9596eccba2c14cbb1827
+ThreadSanitizer suppressions: none
+
+$ clang++ -std=c++20 -O1 -g -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror -fsanitize=thread -fno-omit-frame-pointer -I native/include -I /opt/homebrew/opt/sqlite/include native/src/core.cpp native/src/audio.cpp native/src/wav.cpp native/src/voices.cpp native/src/presets.cpp native/src/storage.cpp native/src/sha256.cpp native/src/event_validation.cpp native/src/soundscapes.cpp native/src/render_jobs.cpp native/tests/render_job_tests.cpp -L /opt/homebrew/opt/sqlite/lib -Wl,-rpath,/opt/homebrew/opt/sqlite/lib -lsqlite3 -pthread -o /var/folders/m2/hl8x2mb154g59qtbrxb3w0b80000gp/T/atlas-soundscapes-tsan-x34z0y77/atlas-render-jobs-tsan
+
+$ TSAN_OPTIONS=halt_on_error=1:exitcode=66 /var/folders/m2/hl8x2mb154g59qtbrxb3w0b80000gp/T/atlas-soundscapes-tsan-x34z0y77/atlas-render-jobs-tsan
+Offline jobs: exact frozen scene PCM/rate/tails, bounded async control/history, cancellation/shutdown, no overwrite, failures and recipe traceability passed
+
+
+$ clang++ -std=c++20 -O1 -g -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror -fsanitize=thread -fno-omit-frame-pointer -I native/include -I /opt/homebrew/opt/sqlite/include native/src/core.cpp native/src/audio.cpp native/src/wav.cpp native/src/voices.cpp native/src/presets.cpp native/src/playback.cpp native/tests/voice_audio_tests.cpp -L /opt/homebrew/opt/sqlite/lib -Wl,-rpath,/opt/homebrew/opt/sqlite/lib -lsqlite3 -pthread -o /var/folders/m2/hl8x2mb154g59qtbrxb3w0b80000gp/T/atlas-soundscapes-tsan-x34z0y77/atlas-voice-audio-tsan
+
+$ TSAN_OPTIONS=halt_on_error=1:exitcode=66 /var/folders/m2/hl8x2mb154g59qtbrxb3w0b80000gp/T/atlas-soundscapes-tsan-x34z0y77/atlas-voice-audio-tsan
+PASS profile controls follow independent pitch envelope and gain equations
+PASS default profiles preserve legacy PCM and deterministic species pitches
+PASS actual store defaults and saved normalized roundtrips preserve legacy PCM
+PASS normalized endpoints adjacent values and random settings compile into bounded audio updates
+PASS edits affect new notes of one species and retain captured ringing voices
+PASS bounded bank and invalid parameter boundaries are explicit
+PASS runtime acknowledges edits without changing device preparation or transport
