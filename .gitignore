@@ -10,3 +10,8 @@ build/
 .env
 .env.*
 evidence/private/
+
+node_modules/
+ui/app/dist/
+ui/app/dist-demo/
+ui/app/test-results/

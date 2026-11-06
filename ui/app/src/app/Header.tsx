@@ -1,0 +1,199 @@
+/**
+ * Persistent header shared by both screens: navigation, material context,
+ * transport, collection, listening (audio enable), master level, panic.
+ * Transport, collection and listening are deliberately separate controls.
+ */
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Icon } from "../components/Icon";
+import { Popover } from "../components/Popover";
+import { SegmentedControl } from "../components/SegmentedControl";
+import { Toggle } from "../components/Toggle";
+import type { CollectionState } from "../host/provisional";
+import { useHost, useHostQuery, valueOf } from "./HostContext";
+import { useAppState, useDispatch, type ViewMode } from "./store";
+import { formatTime, formatUs, zoneAbbreviation } from "./time";
+import { useCoalescedGesture } from "./useCoalescedGesture";
+
+export function Header({ demoMenu }: { demoMenu?: ReactNode }) {
+  const state = useAppState();
+  const dispatch = useDispatch();
+  const { client, caps, onNotification } = useHost();
+  const [audioQ, refreshAudio] = useHostQuery("getAudioState", {}, []);
+  const [collectionQ, refreshCollection] = useHostQuery("getCollectionState", {}, [], { refreshMs: 1000 });
+  const audio = valueOf(audioQ);
+  const collection = valueOf(collectionQ);
+  const [now, setNow] = useState(() => Date.now());
+  const [transportError, setTransportError] = useState<string | null>(null);
+  const [confirmStop, setConfirmStop] = useState(false);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  useEffect(() => onNotification((n) => {
+    if (n.type === "audioStateChanged") refreshAudio();
+    if (n.type === "collectionChanged") refreshCollection();
+    if (n.type === "transportChanged") dispatch({ type: "transport", transport: { generation: n.generation, state: n.state, positionUs: n.positionUs } });
+  }), [onNotification, refreshAudio, refreshCollection, dispatch]);
+
+  const live = state.mode === "live";
+  const canTransport = !live && !!state.transport.preparationId && client.supports("setTransport");
+  const transport = async (action: "play" | "pause" | "stop" | "panic") => {
+    setTransportError(null);
+    const result = await client.call("setTransport", action === "panic" ? { action } : { action, preparationId: state.transport.preparationId ?? undefined });
+    if (result.ok) dispatch({ type: "transport", transport: { generation: result.value.generation, state: result.value.state } });
+    else setTransportError(result.error.code === "stale_generation" ? "Playback was re-prepared elsewhere. Prepare again." : result.error.message);
+  };
+
+  const gain = useCoalescedGesture((value, gesture) => client.call("setMasterGain", { gainDb: value, gesture }));
+  const [gainLocal, setGainLocal] = useState<number | null>(null);
+  const gainShown = gainLocal ?? audio?.masterGainDb ?? -6;
+  const dragging = useRef(false);
+
+  const audioUsable = audio?.status === "running" || audio?.status === "disabled";
+  const collecting = collection?.state === "collecting";
+  const elapsedMinutes = collection ? Number(BigInt(collection.elapsedUs) / 60_000_000n) : 0;
+
+  return (
+    <header className="app-header">
+      <span className="wordmark">ANIMAL ATLAS</span>
+      <nav aria-label="Screens" className="screen-nav">
+        <button type="button" className={`pill${state.screen === "atlas" ? " is-current" : ""}`} aria-current={state.screen === "atlas" ? "page" : undefined} onClick={() => dispatch({ type: "screen", screen: "atlas" })}>
+          <Icon name="globe" size={14} /> Atlas
+        </button>
+        <button type="button" className={`pill${state.screen === "studio" ? " is-current" : ""}`} aria-current={state.screen === "studio" ? "page" : undefined} onClick={() => dispatch({ type: "screen", screen: "studio" })}>
+          <Icon name="studio" size={14} /> Sound Studio
+        </button>
+      </nav>
+      {caps?.implementation === "mock" ? <span className="badge badge--demo" title="Mock host: deterministic demo data, no audio">DEMO</span> : null}
+      <div className="header-spacer" />
+      <SegmentedControl<ViewMode>
+        label="Material"
+        size="sm"
+        value={state.mode}
+        onChange={(mode) => dispatch({ type: "mode", mode })}
+        options={[
+          { value: "live", label: "Live", hint: "Newly arriving records" },
+          { value: "replay", label: "Replay", hint: "Play a saved piece" },
+          { value: "history", label: "History", hint: "Select archived material" },
+        ]}
+        disabledValues={client.supports("queryHistory") ? [] : ["history"]}
+      />
+
+      <div className="header-group" role="group" aria-label="Transport">
+        <button type="button" className="icon-btn" aria-label="Return to start" disabled={!canTransport} onClick={() => void client.call("setTransport", { action: "seek", preparationId: state.transport.preparationId ?? undefined, positionUs: "0" })}>
+          <Icon name="to-start" size={13} />
+        </button>
+        {state.transport.state === "playing" ? (
+          <button type="button" className="icon-btn icon-btn--primary" aria-label="Pause playback" disabled={!canTransport} onClick={() => void transport("pause")}><Icon name="pause" size={13} /></button>
+        ) : (
+          <button type="button" className="icon-btn icon-btn--primary" aria-label={live ? "Play (not available for live arrivals)" : "Play"} disabled={!canTransport} onClick={() => void transport("play")}><Icon name="play" size={13} /></button>
+        )}
+        <button type="button" className="icon-btn" aria-label="Stop playback" disabled={!canTransport} onClick={() => void transport("stop")}><Icon name="stop" size={11} /></button>
+        <button type="button" className="btn btn--outline btn--sm" onClick={() => void transport("panic")} disabled={!client.supports("setTransport")} title="Release every sounding note and effect tail now">
+          <Icon name="panic" size={13} /> All off
+        </button>
+      </div>
+
+      <div className="header-group" role="group" aria-label="Collection">
+        <Popover
+          label={collecting ? "Collection running — options" : "Start collection"}
+          trigger={<span className={`collect-chip${collecting ? " is-on" : ""}`}><Icon name="collect" size={14} />{collecting ? `Collecting ${Math.floor(elapsedMinutes / 60)}:${String(elapsedMinutes % 60).padStart(2, "0")}` : "Collect"}</span>}
+        >
+          {(close) => <CollectionMenu collection={collection} onDone={() => { refreshCollection(); close(); }} confirmStop={confirmStop} setConfirmStop={setConfirmStop} />}
+        </Popover>
+      </div>
+
+      <div className="header-clock" aria-live="off">
+        {live ? (
+          <>
+            <span className="mono">{formatTime(now)}</span>
+            <span className="label">{zoneAbbreviation(now)} · arrival</span>
+          </>
+        ) : (
+          <>
+            <span className="mono">{formatUs(state.transport.positionUs)}</span>
+            <span className="label">{state.transport.durationUs ? `of ${formatUs(state.transport.durationUs)}` : "nothing ready"}</span>
+          </>
+        )}
+      </div>
+
+      <div className="header-group master" role="group" aria-label="Output">
+        <Toggle
+          label={audio?.status === "running" ? "Listening (audio on)" : "Listening (audio off)"}
+          checked={audio?.status === "running"}
+          disabled={!audioUsable || !client.supports("setAudioEnabled")}
+          onChange={(enabled) => void client.call("setAudioEnabled", { enabled }).then(refreshAudio)}
+          showState={false}
+        />
+        <label className="sr-only" htmlFor="master-gain">Master level</label>
+        <input
+          id="master-gain"
+          type="range"
+          min={-60}
+          max={6}
+          step={0.5}
+          value={gainShown}
+          disabled={!client.supports("setMasterGain")}
+          aria-valuetext={`${gainShown.toFixed(1)} dB`}
+          onPointerDown={() => { dragging.current = true; gain.push("begin", gainShown); }}
+          onChange={(e) => { const v = Number(e.target.value); setGainLocal(v); if (!dragging.current) gain.push("begin", gainShown); gain.push("change", v); if (!dragging.current) { gain.push("end", v); } }}
+          onPointerUp={(e) => { dragging.current = false; gain.push("end", Number((e.target as HTMLInputElement).value)); window.setTimeout(() => setGainLocal(null), 300); }}
+          className="range range--master"
+        />
+        <span className="mono master__db">{gainShown.toFixed(1)} dB</span>
+        <span className="meter" role="img" aria-label={audio?.peakDbfs == null ? "Output level unavailable" : `Output peak ${audio.peakDbfs} dBFS${audio.meterIsSimulated ? " (simulated)" : ""}`}>
+          {Array.from({ length: 8 }, (_, i) => {
+            const threshold = -48 + i * 6;
+            const lit = audio?.peakDbfs != null && audio.peakDbfs >= threshold;
+            return <span key={i} className={`meter__seg${lit ? " is-lit" : ""}${i >= 7 ? " is-hot" : ""}`} />;
+          })}
+          {audio?.meterIsSimulated ? <span className="meter__sim">SIM</span> : null}
+        </span>
+      </div>
+
+      {demoMenu}
+      {transportError ? <span className="sr-only" role="alert">{transportError}</span> : null}
+    </header>
+  );
+}
+
+function CollectionMenu({ collection, onDone, confirmStop, setConfirmStop }: {
+  collection: CollectionState | null;
+  onDone: () => void;
+  confirmStop: boolean;
+  setConfirmStop: (v: boolean) => void;
+}) {
+  const { client } = useHost();
+  const [minutes, setMinutes] = useState(240);
+  const [listening, setListening] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  if (!client.supports("setCollection")) return <div className="menu"><p className="menu__note">This host does not offer collection control.</p></div>;
+  if (collection?.state === "collecting") {
+    return (
+      <div className="menu">
+        <p className="menu__title">Collection running</p>
+        <p className="menu__note">{collection.recordCount} records · {collection.listening ? "collect and play" : "collect only"}. Stopping keeps every record; playback is unaffected.</p>
+        {confirmStop ? (
+          <div className="menu__row">
+            <button type="button" className="btn btn--warn btn--sm" onClick={async () => { const r = await client.call("setCollection", { action: "stop" }); if (!r.ok) setError(r.error.message); else { setConfirmStop(false); onDone(); } }}>Stop now</button>
+            <button type="button" className="btn btn--quiet btn--sm" onClick={() => setConfirmStop(false)}>Keep collecting</button>
+          </div>
+        ) : (
+          <button type="button" className="btn btn--outline btn--sm" onClick={() => setConfirmStop(true)}>Stop collection…</button>
+        )}
+        {error ? <p className="menu__error" role="alert">{error}</p> : null}
+      </div>
+    );
+  }
+  return (
+    <div className="menu">
+      <p className="menu__title">Start collection</p>
+      <SegmentedControl<string> label="Duration" size="sm" value={String(minutes)} onChange={(v) => setMinutes(Number(v))} options={[{ value: "60", label: "1 h" }, { value: "120", label: "2 h" }, { value: "240", label: "4 h" }]} />
+      <label className="menu__check"><input type="checkbox" checked={listening} onChange={(e) => setListening(e.target.checked)} /> Play while collecting</label>
+      <p className="menu__note">Collection runs in the host and continues if this window closes. It is independent of playback.</p>
+      <button type="button" className="btn btn--primary btn--sm" onClick={async () => { const r = await client.call("setCollection", { action: "start", durationMinutes: minutes, listening }); if (!r.ok) setError(r.error.message); else onDone(); }}>Start</button>
+      {error ? <p className="menu__error" role="alert">{error}</p> : null}
+    </div>
+  );
+}
