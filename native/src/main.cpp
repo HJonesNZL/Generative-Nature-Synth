@@ -49,8 +49,8 @@ int main(int argc, char** argv) {
             const auto mode = get("--mode", "observed");
             if (mode != "observed" && mode != "arrival") throw std::invalid_argument("invalid time basis");
             const auto speed = atlas::Speed::parse(get("--speed", "1"));
-            const auto saved = library.session(get("--session", "latest"));
-            const auto timeline = library.load(saved.id, mode == "observed" ? atlas::TimeBasis::observed : atlas::TimeBasis::arrival, speed);
+            atlas::SavedSession saved;
+            const auto timeline = library.load(get("--session", "latest"), mode == "observed" ? atlas::TimeBasis::observed : atlas::TimeBasis::arrival, speed, &saved);
             const auto limitText = get("--limit", "5");
             unsigned limit{};
             const auto parsed = std::from_chars(limitText.data(), limitText.data() + limitText.size(), limit);
@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
                       << ",\"mode\":" << quote(mode) << ",\"event_count\":" << timeline.events().size()
                       << ",\"duration_us\":" << timeline.durationUs() << ",\"peak_events_in_one_second\":" << timeline.peakEventsPerSecond()
                       << ",\"capture_truncated\":" << (saved.truncated ? "true" : "false")
-                      << ",\"integrity\":\"sha256-event-content-verified; metadata-envelope-unverified\",\"events\":[";
+                      << ",\"integrity\":" << quote("sha256-event-content-verified; " + saved.metadataIntegrity) << ",\"events\":[";
             const auto count = std::min<std::size_t>(limit, timeline.schedule().size());
             for (std::size_t i = 0; i < count; ++i) {
                 if (i) std::cout << ',';

@@ -153,7 +153,7 @@ class SessionTests(SessionCase):
             db.execute("DROP TABLE sessions")
         migrated = Store(self.root / "db")
         self.assertEqual(migrated.status()["event_count"], 1)
-        self.assertEqual(migrated.status()["schema_version"], 2)
+        self.assertEqual(migrated.status()["schema_version"], 3)
         self.assertEqual(Sessions(migrated).snapshot("Migrated")["event_count"], 1)
 
 

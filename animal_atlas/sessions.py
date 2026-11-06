@@ -6,6 +6,7 @@ import tempfile
 import uuid
 from datetime import timedelta
 from pathlib import Path
+from .integrity import strict_json, verify, seal, projection, SESSION_FIELDS, SEAL_FIELDS
 from .model import canonical, stamp, utcnow, parse_time, event as normalize_event
 
 MAX_EVENTS = 50000
@@ -114,6 +115,7 @@ class Sessions:
                        [(sid, i, item["original_seq"], canonical(item["event"])) for i, item in enumerate(frozen)])
         db.execute("UPDATE sessions SET state=?,ended_at=?,end_seq=?,event_count=?,content_hash=? WHERE id=?",
                    (state, finished, end_seq, len(frozen), checksum, sid))
+        seal(db, sid)
 
     def stop(self, sid, interrupted=False):
         with self.store.connect() as db:
@@ -164,7 +166,9 @@ class Sessions:
     @staticmethod
     def _summary(row):
         result = dict(row)
-        result["options"] = json.loads(result.pop("options_json"))
+        result["options"] = strict_json(result.pop("options_json"))
+        if result["state"] in ("frozen", "interrupted"):
+            result["metadata_integrity"] = verify(result)
         return result
 
     def get(self, sid):
@@ -210,7 +214,7 @@ class Sessions:
         rows = [{k: v for k, v in row.items() if k != "ordinal"} for row in self.rows(sid, limit=MAX_EVENTS)]
         if content_hash(rows) != session["content_hash"]:
             raise ValueError("session integrity check failed")
-        result = dict(format="animal-atlas-session", bundle_version=1, session=session, events=rows,
+        result = dict(format="animal-atlas-session", bundle_version=2, session=session, events=rows,
                       redistribution_permission="not_established; local archive only")
         result["bundle_sha256"] = hashlib.sha256(canonical(result).encode()).hexdigest()
         if len(canonical(result).encode()) > MAX_BUNDLE_BYTES:
@@ -237,25 +241,25 @@ class Sessions:
             payload = source.read(MAX_BUNDLE_BYTES + 1)
         if len(payload) > MAX_BUNDLE_BYTES:
             raise ValueError("bundle exceeds capacity")
-        bundle = json.loads(payload)
+        bundle = strict_json(payload)
+        if not isinstance(bundle, dict):
+            raise ValueError("invalid bundle object")
         if set(bundle) != {"format", "bundle_version", "session", "events", "redistribution_permission", "bundle_sha256"}:
             raise ValueError("unexpected bundle fields")
         checksum = bundle.pop("bundle_sha256")
-        if bundle["format"] != "animal-atlas-session" or bundle["bundle_version"] != 1 or hashlib.sha256(canonical(bundle).encode()).hexdigest() != checksum:
+        if bundle["format"] != "animal-atlas-session" or type(bundle["bundle_version"]) is not int or bundle["bundle_version"] not in (1, 2) or hashlib.sha256(canonical(bundle).encode()).hexdigest() != checksum:
             raise ValueError("invalid bundle or checksum")
         original, rows = bundle["session"], bundle["events"]
         if not isinstance(rows, list) or len(rows) > MAX_EVENTS:
             raise ValueError("too many session events")
-        options = self.options(original["name"], original["options"]["sources"], original["options"]["seed"])
-        options["selection_policy"] = "imported_frozen_timeline"
-        bounds = original["options"].get("timeline_bounds", {})
-        if not isinstance(bounds, dict) or set(bounds) != {"observed", "arrival"}:
-            raise ValueError("missing timeline bounds")
-        for pair in bounds.values():
-            if not isinstance(pair, list) or len(pair) != 2 or parse_time(pair[0]) > parse_time(pair[1]):
-                raise ValueError("invalid timeline bounds")
-        options["timeline_bounds"] = bounds
-        options["capture_truncated"] = bool(original["options"].get("capture_truncated", False))
+        allowed = SESSION_FIELDS | (SEAL_FIELDS | {"metadata_integrity"} if bundle["bundle_version"] == 2 else set())
+        if not isinstance(original, dict) or set(original) != allowed:
+            raise ValueError("unexpected session fields")
+        original_integrity = verify(original)
+        options = dict(original["options"])
+        options.setdefault("original_session", dict(
+            {key: value for key, value in projection(original).items() if key != "options"},
+            metadata_integrity=original_integrity))
         for row in rows:
             if set(row) != {"original_seq", "event"} or type(row["original_seq"]) is not int or row["original_seq"] < 1:
                 raise ValueError("invalid frozen event")
@@ -266,8 +270,9 @@ class Sessions:
         with self.store.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             db.execute("""INSERT INTO sessions(id,name,state,created_at,ended_at,start_seq,end_seq,origin,options_json,event_count,content_hash)
-                VALUES (?,?,'frozen',?,?,0,0,'imported_bundle',?,?,?)""",
-                (sid, original["name"], stamp(), stamp(), canonical(options), len(rows), content_hash(rows)))
+                VALUES (?,?,?,?,?,0,0,'imported_bundle',?,?,?)""",
+                (sid, original["name"], original["state"], stamp(), stamp(), canonical(options), len(rows), content_hash(rows)))
             db.executemany("INSERT INTO session_events VALUES (?,?,?,?)",
                            [(sid, i, row["original_seq"], canonical(row["event"])) for i, row in enumerate(rows)])
+            seal(db, sid)
         return self.get(sid)

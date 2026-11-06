@@ -54,7 +54,7 @@ class NativeStorageTests(unittest.TestCase):
     def test_valid_content_and_explicit_verification(self):
         before = self.db.read_bytes()
         result = self.replay()
-        self.assertEqual(result['integrity'],'sha256-event-content-verified; metadata-envelope-unverified')
+        self.assertEqual(result['integrity'],'sha256-event-content-verified; legacy-metadata-unverified')
         self.assertEqual(self.db.read_bytes(),before)
 
     def test_actual_python_writer_and_bundle_import_verify(self):
@@ -78,6 +78,30 @@ class NativeStorageTests(unittest.TestCase):
         imported = Sessions(Store(self.db))
         self.session_id = imported.import_bundle(bundle)['id']
         self.assertEqual(self.replay()['events'],original)
+
+    def test_native_metadata_categories_and_envelope_versions(self):
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+        from animal_atlas.store import Store
+        from animal_atlas.sessions import Sessions
+        self.db = Path(self.temp.name) / 'sealed.sqlite3'
+        store = Store(self.db)
+        original = Sessions(store).snapshot('Tūī 🐦', seed=3)
+        self.session_id = original['id']
+        self.assertIn('sha256-envelope-v1-verified',self.replay()['integrity'])
+        changes = dict(name='other',state='interrupted',created_at='2000-01-01T00:00:00Z',
+            ended_at=None,start_seq=3,end_seq=8,intended_end_at='2000-01-01T00:00:00Z',
+            origin='other',event_count=1,content_hash='0'*64,options_json='{}',
+            envelope_version=2,envelope_json=None,envelope_hash='0'*64)
+        for field,value in changes.items():
+            with self.subTest(field=field):
+                with store.connect() as db:
+                    previous=db.execute('SELECT '+field+' FROM sessions').fetchone()[0]
+                    db.execute('UPDATE sessions SET '+field+'=?',(value,))
+                self.replay(expected=1)
+                with store.connect() as db: db.execute('UPDATE sessions SET '+field+'=?',(previous,))
+        with store.connect() as db:
+            db.execute('UPDATE sessions SET envelope_version=0,envelope_json=NULL,envelope_hash=NULL')
+        self.assertIn('legacy-metadata-unverified',self.replay()['integrity'])
 
     def test_modified_payload_rejected(self):
         with sqlite3.connect(self.db) as db:

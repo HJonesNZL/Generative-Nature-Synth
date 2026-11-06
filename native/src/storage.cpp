@@ -49,7 +49,7 @@ public:
         const auto* value = sqlite3_column_text(value_, column);
         if (!value) throw std::runtime_error("required text field missing");
         const auto size = sqlite3_column_bytes(value_, column);
-        if (size > 16384) throw std::runtime_error("text field exceeds native capacity");
+        if (size > 32768) throw std::runtime_error("text field exceeds native capacity");
         return {reinterpret_cast<const char*>(value), static_cast<std::size_t>(size)};
     }
     std::optional<std::string> optionalText(int column) const {
@@ -87,10 +87,58 @@ SavedSession readSession(const Statement& query) {
     session.contentHash = query.optionalText(10).value_or("");
     return session;
 }
+std::string verifyMetadata(sqlite3* db, std::string_view id, int schema) {
+    if (schema == 2) return "legacy-metadata-unverified";
+    Statement seal(db, "SELECT envelope_version,envelope_json,envelope_hash FROM sessions WHERE id=?");
+    seal.bind(id);
+    if (!seal.next()) throw std::runtime_error("session disappeared");
+    const auto version = seal.integer(0);
+    if (version == 0) {
+        if (!seal.null(1) || !seal.null(2)) throw std::runtime_error("partial legacy metadata envelope");
+        return "legacy-metadata-unverified";
+    }
+    if (version != 1) throw std::runtime_error("unsupported metadata envelope version");
+    detail::Sha256 hash;
+    hash.update(seal.text(1));
+    if (hash.hexDigest() != seal.text(2)) throw std::runtime_error("metadata integrity checksum mismatch");
+    // Bind every sealed field to the actual columns, without reserialising JSON numbers/Unicode.
+    Statement binding(db, R"SQL(
+        SELECT json_type(envelope_json)='object'
+          AND (SELECT count(*) FROM json_each(envelope_json))=2
+          AND json_type(envelope_json,'$.version')='integer'
+          AND json_extract(envelope_json,'$.version')=1
+          AND json_type(envelope_json,'$.session')='object'
+          AND (SELECT count(*) FROM json_each(envelope_json,'$.session'))=12
+          AND NOT EXISTS (
+            SELECT 1 FROM json_each(envelope_json,'$.session') field
+            WHERE CASE field.key
+              WHEN 'id' THEN field.type='text' AND field.value IS sessions.id
+              WHEN 'name' THEN field.type='text' AND field.value IS name
+              WHEN 'state' THEN field.type='text' AND field.value IS state
+              WHEN 'created_at' THEN field.type='text' AND field.value IS created_at
+              WHEN 'ended_at' THEN field.type IN ('text','null') AND field.value IS ended_at
+              WHEN 'start_seq' THEN field.type='integer' AND field.value IS start_seq
+              WHEN 'end_seq' THEN field.type='integer' AND field.value IS end_seq
+              WHEN 'intended_end_at' THEN field.type IN ('text','null') AND field.value IS intended_end_at
+              WHEN 'origin' THEN field.type='text' AND field.value IS origin
+              WHEN 'options' THEN field.type='object' AND field.value IS options_json
+              WHEN 'event_count' THEN field.type='integer' AND field.value IS event_count
+              WHEN 'content_hash' THEN field.type='text' AND field.value IS content_hash
+              ELSE 0 END IS NOT 1)
+          AND (SELECT count(DISTINCT key) FROM json_each(envelope_json,'$.session'))=12
+          AND (SELECT count(DISTINCT key) FROM json_each(envelope_json))=2
+        FROM sessions WHERE id=?
+    )SQL");
+    binding.bind(id);
+    if (!binding.next() || binding.null(0) || binding.integer(0) != 1)
+        throw std::runtime_error("metadata integrity failure: envelope does not match session");
+    return "sha256-envelope-v1-verified";
+}
 } // namespace
 
 struct ReadOnlyLibrary::Impl {
     sqlite3* db{};
+    int schema{};
     ~Impl() { if (db) sqlite3_close(db); }
 };
 
@@ -101,7 +149,9 @@ ReadOnlyLibrary::ReadOnlyLibrary(const std::filesystem::path& path) : impl_(std:
         throw std::runtime_error("unable to open existing library read-only");
     sqlite3_busy_timeout(impl_->db, 5000);
     Statement version(impl_->db, "PRAGMA user_version");
-    if (!version.next() || version.integer(0) != 2) throw std::runtime_error("native reader requires database schema v2");
+    if (!version.next() || (version.integer(0) != 2 && version.integer(0) != 3))
+        throw std::runtime_error("native reader requires database schema v2 or v3");
+    impl_->schema = static_cast<int>(version.integer(0));
     Statement jsonSupport(impl_->db, "SELECT json_valid('{}')");
     if (!jsonSupport.next() || jsonSupport.integer(0) != 1) throw std::runtime_error("SQLite JSON functions required");
     if (sqlite3_db_readonly(impl_->db, "main") != 1) throw std::runtime_error("library must be read-only");
@@ -114,7 +164,12 @@ std::vector<SavedSession> ReadOnlyLibrary::sessions(std::size_t limit) const {
     Statement query(impl_->db, sql.c_str());
     query.bindLimit(limit);
     std::vector<SavedSession> result;
-    while (query.next()) result.push_back(readSession(query));
+    while (query.next()) {
+        auto saved = readSession(query);
+        if (saved.state == "frozen" || saved.state == "interrupted")
+            saved.metadataIntegrity = verifyMetadata(impl_->db, saved.id, impl_->schema);
+        result.push_back(std::move(saved));
+    }
     return result;
 }
 
@@ -124,10 +179,13 @@ SavedSession ReadOnlyLibrary::session(std::string_view id) const {
     Statement query(impl_->db, sql.c_str());
     if (id != "latest") query.bind(id);
     if (!query.next()) throw std::invalid_argument("saved session not found");
-    return readSession(query);
+    auto saved = readSession(query);
+    if (saved.state == "frozen" || saved.state == "interrupted")
+        saved.metadataIntegrity = verifyMetadata(impl_->db, saved.id, impl_->schema);
+    return saved;
 }
 
-Timeline ReadOnlyLibrary::load(std::string_view id, TimeBasis basis, Speed speed) const {
+Timeline ReadOnlyLibrary::load(std::string_view id, TimeBasis basis, Speed speed, SavedSession* verifiedSession) const {
     // One consistent SQLite read transaction for metadata and frozen payloads.
     ReadSnapshot snapshot(impl_->db);
     const auto saved = session(id);
@@ -157,6 +215,7 @@ Timeline ReadOnlyLibrary::load(std::string_view id, TimeBasis basis, Speed speed
             throw std::runtime_error("session ordinal/count invalid");
         Event event;
         event.revisionSequence = query.integer(0); event.normalizedJson = query.text(1);
+        if (event.normalizedJson.size() > 16384) throw std::runtime_error("event exceeds native capacity");
         bytes += event.normalizedJson.size();
         if (bytes > 64 * 1024 * 1024) throw std::runtime_error("native session memory capacity exceeded");
         // Schema-v2 writers persist Python canonical event JSON verbatim.
@@ -185,7 +244,9 @@ Timeline ReadOnlyLibrary::load(std::string_view id, TimeBasis basis, Speed speed
     if (events.size() != saved.eventCount) throw std::runtime_error("saved session count mismatch");
     if (checksum.hexDigest() != saved.contentHash)
         throw std::runtime_error("session integrity failure: frozen event content changed");
-    return Timeline(std::move(events), basis, speed,
-                    basis == TimeBasis::observed ? saved.observedBounds : saved.arrivalBounds);
+    Timeline timeline(std::move(events), basis, speed,
+                      basis == TimeBasis::observed ? saved.observedBounds : saved.arrivalBounds);
+    if (verifiedSession) *verifiedSession = saved;
+    return timeline;
 }
 } // namespace atlas

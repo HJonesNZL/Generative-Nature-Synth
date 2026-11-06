@@ -14,10 +14,14 @@ class Store:
         Path(path).parent.mkdir(parents=True, exist_ok=True)
         with self.connect() as db:
             version = db.execute("PRAGMA user_version").fetchone()[0]
-            if version not in (0, 1, 2):
+            if version not in (0, 1, 2, 3):
                 raise ValueError("unsupported database schema")
             db.execute("PRAGMA journal_mode=WAL")
-            db.executescript("""
+            db.execute("BEGIN IMMEDIATE")
+            version = db.execute("PRAGMA user_version").fetchone()[0]
+            if version not in (0, 1, 2, 3):
+                raise ValueError("unsupported database schema")
+            schema = """
                 CREATE TABLE IF NOT EXISTS sources (
                     id TEXT PRIMARY KEY, status TEXT NOT NULL);
                 CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY,value TEXT NOT NULL);
@@ -49,8 +53,15 @@ class Store:
                     session_id TEXT NOT NULL REFERENCES sessions(id),
                     ordinal INTEGER NOT NULL, original_seq INTEGER NOT NULL,
                     event_json TEXT NOT NULL, PRIMARY KEY(session_id,ordinal));
-                PRAGMA user_version=2;
-            """)
+            """
+            for statement in schema.split(";"):
+                if statement.strip():
+                    db.execute(statement)
+            if version < 3:
+                db.execute("ALTER TABLE sessions ADD COLUMN envelope_version INTEGER NOT NULL DEFAULT 0")
+                db.execute("ALTER TABLE sessions ADD COLUMN envelope_json TEXT")
+                db.execute("ALTER TABLE sessions ADD COLUMN envelope_hash TEXT")
+                db.execute("PRAGMA user_version=3")
             db.execute("INSERT OR IGNORE INTO metadata VALUES ('store_id',?)", (str(uuid.uuid4()),))
             self.store_id = db.execute("SELECT value FROM metadata WHERE key='store_id'").fetchone()[0]
 
@@ -168,6 +179,6 @@ class Store:
             for sid, info in sources.items():
                 row = db.execute("SELECT COUNT(*),MAX(observed_at) FROM events WHERE source_id=?", (sid,)).fetchone()
                 info.update(unique_events=row[0], latest_observation_at_utc=row[1])
-        return dict(protocol_version=1, schema_version=2, store_id=self.store_id, event_count=count,
+        return dict(protocol_version=1, schema_version=3, store_id=self.store_id, event_count=count,
                     high_water_seq=self.high_water(), sources=sources,
                     database_bytes=self.disk_bytes(), collection_soft_limit_bytes=512 * 1024 * 1024)
