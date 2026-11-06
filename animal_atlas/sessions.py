@@ -15,6 +15,13 @@ def clean_event(value):
     return validate_event(value, frozen=True)
 
 
+def validate_window_event(value, options):
+    if options.get("window_policy") == "preserve_requested":
+        lower, upper = options["timeline_bounds"]["observed"]
+        if not parse_time(lower) <= parse_time(value["observed_at_utc"]) < parse_time(upper):
+            raise ValueError("event outside requested half-open window")
+
+
 def content_hash(rows):
     result = hashlib.sha256()
     for row in rows:
@@ -36,7 +43,7 @@ class Sessions:
                 any(not isinstance(s, str) or not 1 <= len(s) <= 128 for s in sources)):
             raise ValueError("invalid source filter")
         return dict(sources=sorted(set(sources)) if sources is not None else None,
-                    seed=seed, software_version="0.2.0", event_schema_version=1,
+                    seed=seed, software_version="0.3.0", event_schema_version=1,
                     selection_policy="new_live_eligible_revisions", permissions="local_archive_only")
 
     def start(self, name, sources=None, seed=0, duration_seconds=None):
@@ -75,11 +82,13 @@ class Sessions:
         if state == "interrupted":
             options["interruption_detected_at_utc"] = finished
             options["end_time_quality"] = "last_captured_arrival; actual process exit unknown"
-            finished = max([session["created_at"]] + [item["event"]["first_seen_at_utc"] for item in frozen])
+            finished = max([session["created_at"]] + [stamp(parse_time(item["event"]["first_seen_at_utc"])) for item in frozen])
         bounds = {}
         for mode, key in (("observed", "observed_at_utc"), ("arrival", "first_seen_at_utc")):
-            times = [item["event"][key] for item in frozen]
-            if mode == "arrival" and session["origin"] == "collection":
+            times = [stamp(parse_time(item["event"][key])) for item in frozen]
+            if mode == "observed" and options.get("window_policy") == "preserve_requested":
+                bounds[mode] = [options["observed_from"], options["observed_to"]]
+            elif mode == "arrival" and session["origin"] == "collection":
                 bounds[mode] = [session["created_at"], max([finished, session["created_at"]] + times)]
             elif times:
                 bounds[mode] = [min(times), max(times)]
@@ -114,14 +123,17 @@ class Sessions:
             self._materialize(db, sid, db.execute(query, args), "interrupted" if interrupted else "frozen", high)
         return self.get(sid)
 
-    def snapshot(self, name, sources=None, seed=0, observed_from=None, observed_to=None):
+    def snapshot(self, name, sources=None, seed=0, observed_from=None, observed_to=None, window_policy=None):
         options = self.options(name, sources, seed)
         options["selection_policy"] = "latest_event_revisions_at_snapshot"
-        lower = stamp(parse_time(observed_from)) if observed_from else None
-        upper = stamp(parse_time(observed_to)) if observed_to else None
+        lower = stamp(parse_time(observed_from)) if observed_from is not None else None
+        upper = stamp(parse_time(observed_to)) if observed_to is not None else None
         if lower and upper and lower >= upper:
             raise ValueError("observation range must be increasing")
-        options.update(observed_from=lower, observed_to=upper)
+        policy = window_policy if window_policy is not None else ("preserve_requested" if lower and upper else "trim_to_material")
+        if policy not in ("preserve_requested", "trim_to_material") or (policy == "preserve_requested" and not (lower and upper)):
+            raise ValueError("preserve_requested requires both observation boundaries")
+        options.update(observed_from=lower, observed_to=upper, window_policy=policy, window_policy_version=1)
         sid = str(uuid.uuid4())
         with self.store.connect() as db:
             db.execute("BEGIN IMMEDIATE")
@@ -205,6 +217,7 @@ class Sessions:
                 if size > MAX_BUNDLE_BYTES:
                     raise ValueError("frozen session exceeds capacity")
                 value = clean_event(strict_json(payload))
+                validate_window_event(value, session["options"])
                 if payload != canonical(value):
                     raise ValueError("frozen event is not canonical")
                 rows.append(dict(original_seq=row["original_seq"], event=value))
@@ -264,6 +277,7 @@ class Sessions:
             if not isinstance(row, dict) or set(row) != {"original_seq", "event"} or type(row["original_seq"]) is not int or not 1 <= row["original_seq"] < 2**63:
                 raise ValueError("invalid frozen event")
             clean_event(row["event"])
+            validate_window_event(row["event"], options)
         if content_hash(rows) != original["content_hash"] or len(rows) != original["event_count"]:
             raise ValueError("event checksum/count mismatch")
         sid = str(uuid.uuid4())

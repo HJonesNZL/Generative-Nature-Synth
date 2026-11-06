@@ -2,6 +2,8 @@
 
 This folder is the canonical workspace from 7 November 2026. All future development continues here.
 
+- [M1 completed: verified native data pieces](docs/milestones/M1_VERIFIED_PIECE.md)
+- [Commit checkpoints and validation](docs/milestones/M1_BUILD_LOG.md)
 - [Current build plan](docs/BUILD_PLAN.md)
 - [Audit and outstanding work](docs/audits/AUDIT_AND_REVISED_BUILD_PLAN.md)
 - [Active engineering rules](AGENTS.md)

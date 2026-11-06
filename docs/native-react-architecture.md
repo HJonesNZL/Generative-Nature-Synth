@@ -4,7 +4,7 @@ Decision recorded 6 November 2026 after the owner specified portable C++ and ide
 
 The [revised build plan](BUILD_PLAN.md) is authoritative for delivery order and qualification. This document records the architecture milestone. Current repairs and open verification gates are in [the audit index](audits/AUDIT_AND_REVISED_BUILD_PLAN.md).
 
-Beta 1 update: native event-content checksums are now implemented for canonical schema-v2 storage. Metadata-envelope verification and other M1 work remain open. See [current evidence and SQLite requirements](milestones/BETA_1_NATIVE_INTEGRITY.md). The remaining sections preserve the original architecture milestone.
+Beta 1 update: [M1 data/session verification is complete](milestones/M1_VERIFIED_PIECE.md), including schema 3 metadata seals and historical windows. The native collector, audio engine, webview bridge and UI remain future gates. [SQLite runtime requirements](milestones/BETA_1_NATIVE_INTEGRITY.md#sqlite-runtime-qualification) still apply. The remaining sections preserve the original architecture milestone.
 
 ## Recommended arrangement
 

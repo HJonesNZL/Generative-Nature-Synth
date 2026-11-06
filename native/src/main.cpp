@@ -60,6 +60,8 @@ int main(int argc, char** argv) {
                       << ",\"mode\":" << quote(mode) << ",\"event_count\":" << timeline.events().size()
                       << ",\"duration_us\":" << timeline.durationUs() << ",\"peak_events_in_one_second\":" << timeline.peakEventsPerSecond()
                       << ",\"capture_truncated\":" << (saved.truncated ? "true" : "false")
+                      << ",\"observed_window_policy\":" << quote(saved.observedWindowPolicy)
+                      << ",\"empty_material_meaning\":\"no selected records; not evidence of ecological silence\""
                       << ",\"integrity\":" << quote("sha256-event-content-verified; " + saved.metadataIntegrity) << ",\"events\":[";
             const auto count = std::min<std::size_t>(limit, timeline.schedule().size());
             for (std::size_t i = 0; i < count; ++i) {

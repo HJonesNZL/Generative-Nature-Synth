@@ -58,6 +58,7 @@ def main():
     snapshot.add_argument("--source", action="append", dest="sources")
     snapshot.add_argument("--observed-from")
     snapshot.add_argument("--observed-to")
+    snapshot.add_argument("--window-policy", choices=("preserve_requested", "trim_to_material"))
     export = sub.add_parser("session-export")
     export.add_argument("session_id")
     export.add_argument("path", type=Path)
@@ -90,7 +91,7 @@ def main():
         if args.command == "sessions":
             result = sessions.list()
         elif args.command == "snapshot":
-            result = sessions.snapshot(args.name, args.sources, observed_from=args.observed_from, observed_to=args.observed_to)
+            result = sessions.snapshot(args.name, args.sources, observed_from=args.observed_from, observed_to=args.observed_to, window_policy=args.window_policy)
         elif args.command == "session-export":
             result = sessions.export(args.session_id, args.path)
         elif args.command == "session-import":

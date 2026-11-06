@@ -1,4 +1,8 @@
-# Recording and replay milestone — v0.2
+# Recording and replay — v0.3
+
+M1 adds schema 3 metadata seals, bundle v2 and provenance-preserving imports. Old sessions remain explicitly metadata-unverified. See [M1 format/verification notes](milestones/M1_VERIFIED_PIECE.md).
+
+A snapshot with both `--observed-from` and `--observed-to` preserves that full half-open interval by default, including empty material. Use `--window-policy trim_to_material` to trim; `preserve_requested` requires both boundaries. The local snapshot API accepts the same `window_policy` values. Replay reports the saved policy, `capture_truncated` and metadata integrity. Empty records are not evidence of ecological silence. Arrival replay uses separate receipt-time bounds.
 
 Everything in this milestone is local and uses the Python standard library. No hosted storage, paid SDK, account, API key, or subscription is introduced.
 

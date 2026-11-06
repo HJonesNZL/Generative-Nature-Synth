@@ -108,7 +108,7 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError()
                 result = self.server.sessions.start(**body)
             elif path == "/v1/sessions/snapshot":
-                if set(body) - {"name", "sources", "seed", "observed_from", "observed_to"}:
+                if set(body) - {"name", "sources", "seed", "observed_from", "observed_to", "window_policy"}:
                     raise ValueError()
                 result = self.server.sessions.snapshot(**body)
             elif len(path.strip("/").split("/")) == 4 and path.startswith("/v1/sessions/") and path.endswith("/stop"):

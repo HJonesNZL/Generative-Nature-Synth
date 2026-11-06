@@ -5,7 +5,7 @@ import uuid
 import shutil
 from contextlib import contextmanager
 from pathlib import Path
-from .model import canonical, digest, stamp, validate_event
+from .model import canonical, digest, stamp, validate_event, parse_time
 
 
 class Store:
@@ -112,6 +112,7 @@ class Store:
                 if normalized["source_id"] != source_id:
                     raise ValueError("source mismatch")
                 fingerprint = digest(normalized)
+                indexed_observed = stamp(parse_time(normalized["observed_at_utc"]))
                 previous = db.execute("""SELECT r.* FROM events e JOIN revisions r
                     ON r.seq=e.revision_seq WHERE e.id=?""", (normalized["event_id"],)).fetchone()
                 if previous and previous["fingerprint"] == fingerprint:
@@ -124,10 +125,10 @@ class Store:
                 cur = db.execute("""INSERT INTO revisions
                     (event_id,source_id,fingerprint,observed_at,first_seen_at,ingested_at,
                      change_kind,live_eligible,event_json,raw_json) VALUES (?,?,?,?,?,?,?,?,?,?)""",
-                    (payload["event_id"], source_id, fingerprint, payload["observed_at_utc"],
+                    (payload["event_id"], source_id, fingerprint, indexed_observed,
                      first_seen, now, kind, int(live), canonical(payload), canonical(raw)))
                 db.execute("INSERT OR REPLACE INTO events VALUES (?,?,?,?)",
-                           (payload["event_id"], source_id, payload["observed_at_utc"], cur.lastrowid))
+                           (payload["event_id"], source_id, indexed_observed, cur.lastrowid))
                 corrected += bool(previous)
                 inserted += not bool(previous)
             status.update(metadata or {})

@@ -294,6 +294,16 @@ class APITests(unittest.TestCase):
         rows = self.client.get("/v1/sessions/" + session["id"] + "/events")
         self.assertEqual(rows["next_ordinal"], 0)
 
+    def test_api_historical_window_and_trim(self):
+        for policy, expected in (('preserve_requested',3600000000),('trim_to_material',0)):
+            session=self.client.post('/v1/sessions/snapshot',dict(name='Empty hour',sources=[],
+                observed_from='1900-01-01T00:00:00Z',observed_to='1900-01-01T01:00:00Z',window_policy=policy))
+            timeline=self.client.get('/v1/sessions/'+session['id']+'/timeline')
+            self.assertEqual(timeline['duration_us'],expected)
+            self.assertEqual(timeline['observed_window_policy'],policy)
+            self.assertIn('capture_truncated',timeline)
+            self.assertEqual(timeline['metadata_integrity'],'sha256-envelope-v1-verified')
+
     def test_session_api_rejects_extra_fields_and_missing_session(self):
         with self.assertRaises(urllib.error.HTTPError) as error:
             self.client.post("/v1/sessions/snapshot", {"name": "bad", "api_token": "not_allowed"})

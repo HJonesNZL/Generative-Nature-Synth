@@ -43,8 +43,8 @@ class NativeStorageTests(unittest.TestCase):
             db.executemany('INSERT INTO session_events VALUES (?,?,?,?)',
                 [('fixture',i,row['original_seq'],encode(row['event'])) for i,row in enumerate(rows)])
 
-    def replay(self, expected=0):
-        result = subprocess.run([str(BINARY),'replay','--db',str(self.db),'--session',self.session_id],
+    def replay(self, expected=0, mode="observed", speed="1"):
+        result = subprocess.run([str(BINARY),'replay','--db',str(self.db),'--session',self.session_id,'--mode',mode,'--speed',speed],
                                 capture_output=True,text=True,timeout=15)
         self.assertEqual(result.returncode,expected,result.stderr or result.stdout)
         if expected:
@@ -122,6 +122,107 @@ class NativeStorageTests(unittest.TestCase):
             db.execute('UPDATE session_events SET event_json=?',(payload,))
             db.execute('UPDATE sessions SET content_hash=?',(checksum,))
         self.replay(expected=1)
+
+    def test_requested_empty_trimmed_and_truncated_window_parity(self):
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+        from unittest.mock import patch
+        from animal_atlas.store import Store
+        from animal_atlas.sessions import Sessions
+        from animal_atlas.model import event
+        from animal_atlas.replay import Timeline
+        self.db=Path(self.temp.name)/'window.sqlite3'
+        store=Store(self.db); sessions=Sessions(store)
+        bounds=dict(observed_from='1900-01-01T00:00:00Z',observed_to='1900-01-01T01:00:00Z')
+        self.session_id=sessions.snapshot('Empty hour',**bounds)['id']
+        self.assertEqual(self.replay()['duration_us'],3600000000)
+        self.session_id=sessions.snapshot('Empty trim',window_policy='trim_to_material',**bounds)['id']
+        self.assertEqual(self.replay()['duration_us'],0)
+        for identity,time in (('first','00:10:00'),('last','00:50:00'),('excluded','01:00:00')):
+            value=event('birds',identity,'1900-01-01T'+time+'Z','acoustic_species_detection','station_detection')
+            store.ingest('birds',[(value,{})],True)
+        for policy,expected_due,expected_duration in (
+            ('preserve_requested',[600000000,3000000000],3600000000),
+            ('trim_to_material',[0,2400000000],2400000001)):
+            with self.subTest(policy=policy):
+                self.session_id=sessions.snapshot('Historical hour',window_policy=policy,**bounds)['id']
+                result=self.replay()
+                self.assertEqual(result['duration_us'],expected_duration)
+                self.assertEqual([row['due_us'] for row in result['events']],expected_due)
+                self.assertEqual(result['observed_window_policy'],policy)
+                python=Timeline(sessions,self.session_id)
+                self.assertEqual(result['events'],python.items)
+                self.assertEqual(result['duration_us'],python.duration_us)
+                for mode in ('observed','arrival'):
+                    scaled=self.replay(mode=mode,speed='60')
+                    oracle=Timeline(sessions,self.session_id,mode,speed='60')
+                    self.assertEqual(scaled['events'],oracle.items)
+                    self.assertEqual(scaled['duration_us'],oracle.duration_us)
+        with patch('animal_atlas.sessions.MAX_EVENTS',1):
+            self.session_id=sessions.snapshot('Truncated hour',**bounds)['id']
+        result=self.replay()
+        self.assertTrue(result['capture_truncated'])
+        self.assertEqual(result['duration_us'],3600000000)
+        from animal_atlas.model import canonical
+        from animal_atlas.integrity import projection
+        from animal_atlas.sessions import content_hash
+        metadata,rows=sessions.frozen(self.session_id)
+        rows[0]['event']['observed_at_utc']=bounds['observed_to']
+        metadata['content_hash']=content_hash(rows)
+        payload=canonical({'version':1,'session':projection(metadata)})
+        with store.connect() as db:
+            db.execute('UPDATE session_events SET event_json=? WHERE session_id=?',
+                       (canonical(rows[0]['event']),self.session_id))
+            db.execute('UPDATE sessions SET content_hash=?,envelope_json=?,envelope_hash=? WHERE id=?',
+                (metadata['content_hash'],payload,hashlib.sha256(payload.encode()).hexdigest(),self.session_id))
+        self.assertIn('outside requested',self.replay(expected=1))
+        with self.assertRaises(ValueError): Timeline(sessions,self.session_id)
+
+    def test_invalid_options_rejected_even_with_recomputed_envelope(self):
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+        from animal_atlas.store import Store
+        from animal_atlas.sessions import Sessions
+        from animal_atlas.model import canonical
+        from animal_atlas.integrity import projection
+        self.db=Path(self.temp.name)/'invalid-options.sqlite3'
+        store=Store(self.db); sessions=Sessions(store)
+        original=sessions.snapshot('Options')
+        self.session_id=original['id']
+        changes=[{'seed':True},{'seed':-1},{'seed':2**63},{'event_schema_version':2},
+                 {'capture_truncated':1},{'sources':'birds'},{'sources':[7]},
+                 {'window_policy_version':2},{'window_policy':'preserve_requested'},
+                 {'window_policy':'unknown','window_policy_version':1},
+                 {'timeline_bounds':{'observed':[], 'arrival':[]}}, {'unknown_field':5}]
+        for change in changes:
+            with self.subTest(change=change):
+                metadata=projection(original); metadata['options']=dict(original['options'],**change)
+                payload=canonical({'version':1,'session':metadata})
+                with store.connect() as db:
+                    db.execute('UPDATE sessions SET options_json=?,envelope_json=?,envelope_hash=?',
+                        (canonical(metadata['options']),payload,hashlib.sha256(payload.encode()).hexdigest()))
+                self.replay(expected=1)
+                with self.assertRaises(ValueError): sessions.get(self.session_id)
+
+    def test_native_interrupted_import_and_overflow_rejection(self):
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+        from animal_atlas.store import Store
+        from animal_atlas.sessions import Sessions
+        from animal_atlas.model import event
+        self.db=Path(self.temp.name)/'interrupted.sqlite3'
+        store=Store(self.db); sessions=Sessions(store)
+        recording=sessions.start('Interrupted')
+        for identity in ('baseline','during'):
+            value=event('birds',identity,'2026-01-01T00:00:00Z','acoustic_species_detection','station_detection')
+            store.ingest('birds',[(value,{})],True)
+        self.session_id=sessions.stop(recording['id'],interrupted=True)['id']
+        expected=self.replay()['events']
+        self.assertEqual(len(expected),1)
+        path=Path(self.temp.name)/'interrupted.json'; sessions.export(self.session_id,path)
+        imported=sessions.import_bundle(path); self.session_id=imported['id']
+        self.assertEqual(imported['state'],'interrupted')
+        self.assertEqual(self.replay()['events'],expected)
+        self.session_id=sessions.snapshot('Calendar range',sources=[],observed_from='0001-01-01T00:00:00Z',
+                                        observed_to='9999-12-31T23:59:59Z')['id']
+        self.assertIn('overflow',self.replay(expected=1,speed='0.01'))
 
     def test_modified_payload_rejected(self):
         with sqlite3.connect(self.db) as db:

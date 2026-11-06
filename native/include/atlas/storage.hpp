@@ -5,7 +5,7 @@
 
 namespace atlas {
 struct SavedSession {
-    std::string id, name, state, origin, contentHash, metadataIntegrity;
+    std::string id, name, state, origin, contentHash, metadataIntegrity, observedWindowPolicy;
     std::size_t eventCount{};
     bool truncated{};
     std::optional<std::pair<Microseconds, Microseconds>> observedBounds, arrivalBounds;

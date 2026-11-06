@@ -77,6 +77,16 @@ def validate_metadata(session):
     for key in ("observed_from", "observed_to", "interruption_detected_at_utc"):
         if options.get(key) is not None:
             parse_time(options[key])
+    if options.get("observed_from") and options.get("observed_to") and parse_time(options["observed_from"]) >= parse_time(options["observed_to"]):
+        raise ValueError("observation query bounds must increase")
+    if "end_time_quality" in options and (not isinstance(options["end_time_quality"], str) or not 1 <= len(options["end_time_quality"]) <= 256):
+        raise ValueError("invalid end time quality")
+    if "window_policy" in options or "window_policy_version" in options:
+        if type(options.get("window_policy_version")) is not int or options["window_policy_version"] != 1 or options.get("window_policy") not in ("preserve_requested", "trim_to_material"):
+            raise ValueError("unsupported window policy/version")
+        if options["window_policy"] == "preserve_requested":
+            if not options.get("observed_from") or not options.get("observed_to") or bounds["observed"] != [options["observed_from"], options["observed_to"]]:
+                raise ValueError("requested window does not match saved bounds")
     original = options.get("original_session")
     if original is not None:
         fields = SESSION_FIELDS - {"options"}

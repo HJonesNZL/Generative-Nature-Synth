@@ -30,7 +30,8 @@ constexpr auto sessionColumns = R"SQL(
  json_extract(options_json,'$.timeline_bounds.observed[1]'),
  json_extract(options_json,'$.timeline_bounds.arrival[0]'),
  json_extract(options_json,'$.timeline_bounds.arrival[1]'),
- COALESCE(json_extract(options_json,'$.capture_truncated'),0),content_hash
+ COALESCE(json_extract(options_json,'$.capture_truncated'),0),content_hash,
+ COALESCE(json_extract(options_json,'$.window_policy'),'legacy_saved_bounds')
  FROM sessions
 )SQL";
 
@@ -45,7 +46,69 @@ SavedSession readSession(const Statement& query) {
     if (!query.null(7) && !query.null(8)) session.arrivalBounds = {parseUtc(query.text(7)), parseUtc(query.text(8))};
     session.truncated = query.integer(9) != 0;
     session.contentHash = query.optionalText(10).value_or("");
+    session.observedWindowPolicy = query.text(11);
     return session;
+}
+void validateOptions(sqlite3* db, std::string_view id) {
+    Statement query(db, R"SQL(
+        SELECT length(CAST(options_json AS BLOB))<=16384
+          AND json_type(options_json)='object'
+          AND json_type(options_json,'$.seed')='integer'
+          AND typeof(json_extract(options_json,'$.seed'))='integer'
+          AND json_extract(options_json,'$.seed')>=0
+          AND json_type(options_json,'$.event_schema_version')='integer'
+          AND json_extract(options_json,'$.event_schema_version')=1
+          AND json_type(options_json,'$.software_version')='text'
+          AND json_type(options_json,'$.selection_policy')='text'
+          AND json_type(options_json,'$.permissions')='text'
+          AND json_type(options_json,'$.timeline_bounds')='object'
+          AND (SELECT count(*) FROM json_each(options_json,'$.timeline_bounds'))=2
+          AND json_type(options_json,'$.timeline_bounds.observed')='array'
+          AND json_array_length(options_json,'$.timeline_bounds.observed')=2
+          AND json_type(options_json,'$.timeline_bounds.arrival')='array'
+          AND json_array_length(options_json,'$.timeline_bounds.arrival')=2
+          AND NOT EXISTS (
+            SELECT 1 FROM json_each(options_json) field WHERE CASE field.key
+              WHEN 'sources' THEN field.type='null' OR (field.type='array' AND json_array_length(field.value)<=30
+                AND NOT EXISTS (SELECT 1 FROM json_each(field.value) source
+                                WHERE source.type!='text' OR length(source.value) NOT BETWEEN 1 AND 128))
+              WHEN 'seed' THEN 1 WHEN 'event_schema_version' THEN 1
+              WHEN 'timeline_bounds' THEN 1
+              WHEN 'software_version' THEN length(field.value) BETWEEN 1 AND 256
+              WHEN 'selection_policy' THEN length(field.value) BETWEEN 1 AND 256
+              WHEN 'permissions' THEN length(field.value) BETWEEN 1 AND 256
+              WHEN 'capture_truncated' THEN field.type IN ('true','false')
+              WHEN 'observed_from' THEN field.type IN ('text','null')
+              WHEN 'observed_to' THEN field.type IN ('text','null')
+              WHEN 'interruption_detected_at_utc' THEN field.type IN ('text','null')
+              WHEN 'end_time_quality' THEN field.type='text' AND length(field.value) BETWEEN 1 AND 256
+              WHEN 'original_session' THEN field.type='object'
+              WHEN 'window_policy' THEN field.type='text' AND field.value IN ('preserve_requested','trim_to_material')
+              WHEN 'window_policy_version' THEN field.type='integer' AND field.value=1
+              ELSE 0 END IS NOT 1)
+          AND (SELECT count(*)=count(DISTINCT key) FROM json_each(options_json)),
+          json_extract(options_json,'$.window_policy'),json_type(options_json,'$.window_policy_version'),
+          json_extract(options_json,'$.observed_from'),json_extract(options_json,'$.observed_to'),
+          json_extract(options_json,'$.timeline_bounds.observed[0]'),json_extract(options_json,'$.timeline_bounds.observed[1]'),
+          json_extract(options_json,'$.timeline_bounds.arrival[0]'),json_extract(options_json,'$.timeline_bounds.arrival[1]'),
+          created_at,ended_at,intended_end_at,start_seq,end_seq,
+          json_extract(options_json,'$.interruption_detected_at_utc')
+        FROM sessions WHERE id=?
+    )SQL");
+    query.bind(id);
+    if (!query.next() || query.null(0) || query.integer(0) != 1) throw std::runtime_error("invalid saved session options");
+    if (query.null(1) != query.null(2)) throw std::runtime_error("missing window policy/version");
+    for (const int index : {3, 4, 9, 10, 11, 14}) if (!query.null(index)) (void)parseUtc(query.text(index));
+    if (query.null(9) || query.integer(12) < 0 || query.integer(13) < 0)
+        throw std::runtime_error("invalid session time/sequence");
+    for (const int index : {5, 7}) {
+        if (parseUtc(query.text(index)) > parseUtc(query.text(index + 1))) throw std::runtime_error("reversed timeline bounds");
+    }
+    if (!query.null(3) && !query.null(4) && parseUtc(query.text(3)) >= parseUtc(query.text(4)))
+        throw std::runtime_error("reversed observation query");
+    if (!query.null(1) && query.text(1) == "preserve_requested" &&
+        (query.null(3) || query.null(4) || query.text(3) != query.text(5) || query.text(4) != query.text(6)))
+        throw std::runtime_error("requested window does not match saved bounds");
 }
 std::string verifyMetadata(sqlite3* db, std::string_view id, int schema) {
     if (schema == 2) return "legacy-metadata-unverified";
@@ -92,6 +155,7 @@ std::string verifyMetadata(sqlite3* db, std::string_view id, int schema) {
     binding.bind(id);
     if (!binding.next() || binding.null(0) || binding.integer(0) != 1)
         throw std::runtime_error("metadata integrity failure: envelope does not match session");
+    validateOptions(db, id);
     return "sha256-envelope-v1-verified";
 }
 } // namespace
@@ -199,6 +263,9 @@ Timeline ReadOnlyLibrary::load(std::string_view id, TimeBasis basis, Speed speed
         }
         event.observedAt = parseUtc(query.text(12)); event.firstSeenAt = parseUtc(query.text(13));
         event.ingestedAt = parseUtc(query.text(14));
+        if (saved.observedWindowPolicy == "preserve_requested" && (!saved.observedBounds ||
+            event.observedAt < saved.observedBounds->first || event.observedAt >= saved.observedBounds->second))
+            throw std::runtime_error("event outside requested half-open window");
         if (query.integer(15) != 1) throw std::runtime_error("unsupported event schema");
         events.push_back(std::move(event));
     }

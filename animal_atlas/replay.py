@@ -21,7 +21,7 @@ class Timeline:
             ratio = Fraction(str(speed))
         except (ValueError, ZeroDivisionError):
             raise ValueError("invalid replay speed") from None
-        if not Fraction(1, 100) <= ratio <= 10000:
+        if not Fraction(1, 100) <= ratio <= 10000 or ratio.numerator > 1000000 or ratio.denominator > 1000000:
             raise ValueError("speed must be 0.01-10000")
         self.session, rows = sessions.frozen(sid)
         key = "observed_at_utc" if mode == "observed" else "first_seen_at_utc"
@@ -37,6 +37,8 @@ class Timeline:
         self.times = [item["due_us"] for item in self.items]
         self.duration_us = max((max(0, end - start) * ratio.denominator // ratio.numerator),
                                self.times[-1] + 1 if self.times else 0)
+        if self.duration_us >= 2**63:
+            raise ValueError("replay duration exceeds signed 64-bit capacity")
         self.mode, self.speed = mode, str(ratio)
         self.fingerprint = digest(dict(content_hash=self.session["content_hash"], mode=mode,
             speed=str(ratio), seed=self.session["options"]["seed"], bounds=bounds, ordering_version=1))
@@ -48,7 +50,11 @@ class Timeline:
                 recent.popleft()
             recent.append(when)
             peak = max(peak, len(recent))
-        return dict(mode=self.mode, speed=self.speed, event_count=len(self.items), duration_us=self.duration_us,
+        return dict(capture_truncated=self.session["options"].get("capture_truncated", False),
+                    metadata_integrity=self.session["metadata_integrity"],
+                    observed_window_policy=self.session["options"].get("window_policy", "legacy_saved_bounds"),
+                    empty_material_meaning="no selected records; not evidence of ecological silence",
+                    mode=self.mode, speed=self.speed, event_count=len(self.items), duration_us=self.duration_us,
                     fingerprint=self.fingerprint, peak_events_in_one_second=peak,
                     duration_policy="scale event spacing only; no audio pitch/duration processing",
                     ordering_policy="timeline timestamp, original revision sequence, event ID",

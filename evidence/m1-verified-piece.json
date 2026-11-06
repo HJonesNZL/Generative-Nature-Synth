@@ -1,0 +1,90 @@
+{
+  "date_local": "2026-11-07",
+  "branch": "beta-1",
+  "milestone": "M1 verified native data piece",
+  "status": "complete on qualified macOS arm64 fixture environment",
+  "prior_checkpoints": [
+    "f21a082",
+    "04f754d",
+    "1059336"
+  ],
+  "python_tests": 70,
+  "python_environments": [
+    {
+      "python": "3.9.6",
+      "sqlite": "3.43.2"
+    },
+    {
+      "python": "3.12.13",
+      "sqlite": "3.53.3"
+    }
+  ],
+  "native_configurations_passed": [
+    "Debug",
+    "Release",
+    "Debug ASan+UBSan"
+  ],
+  "ctest_suites_per_configuration": 3,
+  "native_core_cases": 18,
+  "native_storage_cases": 18,
+  "shared_event_semantic_cases": 69,
+  "compiler": "Apple clang 17.0.0 clang-1700.6.4.2",
+  "warnings_as_errors": true,
+  "sqlite_qualified_version": "3.53.3",
+  "database_schema": 3,
+  "envelope_version": 1,
+  "bundle_version": 2,
+  "legacy": "schema2 read-only native; schema1/2 transactional prototype migration; bundle1 import; old metadata never silently resealed",
+  "owner_library_access": false,
+  "provider_requests": 0,
+  "new_runtime_dependencies": [],
+  "open_m1_work": [],
+  "not_qualified": [
+    "audio/DSP",
+    "JUCE standalone or VST3",
+    "DAW use",
+    "UI/webview",
+    "Windows/Linux",
+    "packaged clean-machine runtime",
+    "CPU deadline/soak",
+    "general backup/restore/native writer"
+  ],
+  "sha256": {
+    "CMakeLists.txt": "bb2c060f4290e9fd9e075d2571cd0ec1b7345a084a948692b23718ec5e149c36",
+    "animal_atlas/__init__.py": "ca9baae098aa6375b68ed550f9111fdc11934edb8b0297f6e545927aee841969",
+    "animal_atlas/__main__.py": "09b1050950add8e8a6c91db6338ea6c55c4ec7e874807114cc7a7bfd577fec70",
+    "animal_atlas/api.py": "5ae6bc07d6374e057b99f5d3d119956945bf883c0af095eff70eb5434b29e0fa",
+    "animal_atlas/client.py": "44e0f97c8be6b136d2ef2f8e67d506616cf115e9e574a11381aab5ba12d94b35",
+    "animal_atlas/collector.py": "1ed6e54ffd2c3840bf2fd5f591b6131afae0c1c949c6c5bb445e870b0b6f6398",
+    "animal_atlas/integrity.py": "0020062f2593b6afa161599c1955d375e7fb7ddd55baf720c6a46d482cf95966",
+    "animal_atlas/model.py": "d0141e7b384ca3e8f9b7942c500a394c40325521491f9a24aed21fe8b6eb5b07",
+    "animal_atlas/replay.py": "b6ca77185e35217a998404c2ed3af635de74dd00779601fb90c70117a7a177f0",
+    "animal_atlas/sessions.py": "7d2ea4862aed7452e5f63aa0affdaa0e30dd779deada6314dd2e46cd21a5a896",
+    "animal_atlas/sources.py": "0b42347edb0baabcd5e822c49226d26cc589043ffc65d83ff3f4cf8232034fe0",
+    "animal_atlas/store.py": "a61491422b0af0c14dd213ff840314dd799e267ebc909e5694d06726c0eabe15",
+    "native/include/atlas/core.hpp": "86c5e72c5e0723a382032574e395f6fac9492d64349b81b08a1d0da3ac767e49",
+    "native/include/atlas/storage.hpp": "d0fcb14739ecafa966a62b7a70b73839f0eb65515c683697ec59f6f26943bf5a",
+    "native/src/core.cpp": "9451fa0dd37ccf76d15e856b15d36a28f1d8a1340ec1e273a3f6e149738117eb",
+    "native/src/event_validation.cpp": "92496c5b4030fd98b74e06a15ff949f2b7f39e114e9a269247751c08fd694a56",
+    "native/src/event_validation.hpp": "bab21215216f5e0166ec16dfe34e49691992fd8706b4679509e9271c0bafa675",
+    "native/src/main.cpp": "984489048c3c1500588f11abad857b87e5d5b577ee51ad1037eeb24729522d8a",
+    "native/src/sha256.cpp": "2b4ee63b0eb803a6b4b920f25a96162c12920b4b994e2f51d564528fa6038975",
+    "native/src/sha256.hpp": "0b28ae813895efb324f9c6d51293a8eade15f292f69ebe9f27fba4ffe2c635ef",
+    "native/src/sqlite_statement.hpp": "8c7371d136977107b373a83c996fcf1def4ee96a27daa14060e9aa37a6255ef6",
+    "native/src/storage.cpp": "2267bba105f30970580c910e2e5af7d10e4da06e8cd5f05fd4c666827cf85c1d",
+    "native/tests/core_tests.cpp": "93a3ff83813d5f7003cafe03252f7e421067a0c50da35f2b0f586a1ebe61dad8",
+    "native/tests/sha256_tests.cpp": "d871e1bcc07b51ce2287cffd0800c87fc695ff11eea97edf0eb5825470681a56",
+    "pyproject.toml": "059f6e5f46f0541b7a44463a41f3426d72186dd6874bf5680341ddbd5970d39d",
+    "tests/fixtures/event_semantics_v1.json": "34941dc633476334fd6dcf2c6df8fdfdccf1509c9125f734af8fbf44843d8870",
+    "tests/live_smoke.py": "0b8d8d3c006aa54bc59b0799dd6d3cf0c55ad005c55ae46910c20087972583b8",
+    "tests/native_compatibility.py": "e38660ed9c88b670dc6f7ab5e17d53ef0b834dd163908f9e8293550147b56767",
+    "tests/native_storage_checks.py": "e4ebc351f25636135ef211c04f98c43d9d5c05f68fe18797638d913588a1e194",
+    "tests/session_smoke.py": "b0a6f66a0eba3df5c5aed4eabb2ac21ab0ef838c366769d3379ed4f61022c8bb",
+    "tests/test_backend.py": "da516cad6fc577e0f0e291857c70deb96f0d887e1e83b540cabf54306307e9aa",
+    "tests/test_cli_lifecycle.py": "6ecfd3567aa513969998868599be67f7c5f79e6d9277704a7822bbbe1e6e1167",
+    "tests/test_event_schema.py": "d9511e4f455d13a6fbce1357705317f09a5809b828066822f10fe5a1a66184f3",
+    "tests/test_integrity.py": "422466b19f317ef02fd2240aa0a2f4fd0a1c0964c74526eca97be5dadb0b883f",
+    "tests/test_sessions.py": "9209511bf38f68c4459803b5294319731e4c31120fbd415ede1968f23db2bc3b",
+    "tests/test_windows.py": "de139b55358f08a8cc0077e03bf42955fb2ee623a7d1b09c25c2083fef6335da"
+  }
+}

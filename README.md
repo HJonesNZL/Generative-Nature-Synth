@@ -1,6 +1,6 @@
 # Animal Atlas backend
 
-Beta 1 has begun: [native event-content verification and build requirements](docs/milestones/BETA_1_NATIVE_INTEGRITY.md). The native reader now checks saved event SHA-256; metadata-envelope verification remains open. [Claude design handoff prompt](<Claude Design/CLAUDE_DESIGN_HANDOFF_PROMPT.md>).
+M1 is complete on `beta-1`: [verified native data pieces, historical windows and test evidence](docs/milestones/M1_VERIFIED_PIECE.md). [Build checkpoint log](docs/milestones/M1_BUILD_LOG.md). [Claude design handoff prompt](<Claude Design/CLAUDE_DESIGN_HANDOFF_PROMPT.md>).
 
 The [revised build plan](docs/BUILD_PLAN.md) is the current product/engineering sequence. See the [consolidated Astra audit](docs/audits/AUDIT_AND_REVISED_BUILD_PLAN.md) for demonstrated issues, repaired items and release gates, and [AGENTS.md](AGENTS.md) for the active C++/realtime/agent rules. Standalone first with a shared C++ engine and later VST3 remains the recommendation; no audible engine or graphical product is implemented yet.
 
@@ -22,7 +22,7 @@ The C++ core needs no JUCE, React or Python runtime. CTest storage fixtures requ
 
 Local wildlife collection and a real-time application import bridge. Runtime uses **Python 3.9+ standard library and SQLite only**: no paid services, accounts, API keys, hosted infrastructure, or package downloads are needed to run it. Run from source; the optional packaging metadata is not needed.
 
-Version 0.2 adds recording, immutable saved sessions, observation/arrival replay plans, speed control and portable local bundles. This is a backend, not a synthesizer, atlas GUI, DAW plug-in or production service. Collection is periodic polling, not a provider push stream. Commercial source reuse is unresolved; local research access is not represented as permission to distribute a product or dataset.
+Version 0.3 adds sealed metadata, provenance-preserving bundles and full historical playback windows to recording, immutable saved sessions, observation/arrival replay plans, speed control and portable local bundles. This is a backend, not a synthesizer, atlas GUI, DAW plug-in or production service. Collection is periodic polling, not a provider push stream. Commercial source reuse is unresolved; local research access is not represented as permission to distribute a product or dataset.
 
 ## Open without entering commands
 

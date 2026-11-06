@@ -4,7 +4,7 @@ Audit baseline 6 November 2026 UTC; final review 7 November NZDT. Three independ
 
 ## Beta 1 follow-up, 7 November
 
-[The first M1 implementation slice](../milestones/BETA_1_NATIVE_INTEGRITY.md) now verifies native stored event-content hashes, exposes native replay truncation and adds self-contained storage tests. Metadata-envelope, provenance, full semantic parity and historical-window work remain open. The findings below retain the audit baseline; this follow-up records the later change and its strict canonical-storage-byte boundary.
+[M1 is complete for supported data/session formats](../milestones/M1_VERIFIED_PIECE.md): metadata and content verification, original provenance, 69-case shared event corpus, historical window policy and clean-checkout storage fixtures. The table below reflects this follow-up; individual audit reports retain their original evidence. Audio and release gates remain open.
 
 ## Decision
 
@@ -25,12 +25,12 @@ The reviewers read relevant implementation and specifications, used isolated fix
 | Finding | Evidence | Current action/status |
 |---|---|---|
 | A1, P1: later `collect-once` acquisitions enter an abandoned recording | Actual CLI path with mocked polling/temp library | **Fixed.** Recover under exclusive writer ownership before acquisition; regression fails before fix and passes after. |
-| A2, P1: native reader accepts altered frozen payload without verifying saved hash | Changed latitude accepted natively, rejected by Python | **Open M1 gate.** Native verification with canonical-byte fixtures before authoritative recall/render. |
-| A3, P2: import loses historical query/origin metadata | Export/import drops requested bounds and original policy | **Open M1 gate.** Validated original envelope plus separate import metadata. |
-| A4, P2: Python/C++ disagree on optional event semantics/types | Invented individual on station detection accepted only by Python | **Open M1 gate.** Shared typed/cross-field schema and independent positive/negative corpus. |
-| A5, P2: stored timing bounds are outside event hash | Bounds change shifts playback while event hash passes | **Open M1 gate.** Versioned interpretation/provenance envelope hash. |
-| A6, P2: replay responses omit capture-truncation warning | Saved cap flag absent from replay summary | **Open M1 gate.** Propagate completeness through preparation/UI/render/export. |
-| A7, P2: normal native checks omit self-contained storage/CLI coverage | Real-library parity depends on owner `.state` | **Open M1 gate.** Temporary clean-checkout storage/malformed fixtures; retain optional real-library comparison separately. |
+| A2, P1: native reader accepts altered frozen payload without verifying saved hash | Changed latitude accepted natively, rejected by Python | **Fixed in M1.** Canonical-byte native content verification and corruption fixtures pass. |
+| A3, P2: import loses historical query/origin metadata | Export/import drops requested bounds and original policy | **Fixed in M1.** Bundle v2 preserves original context through repeated imports; separate local identity/time. |
+| A4, P2: Python/C++ disagree on optional event semantics/types | Invented individual on station detection accepted only by Python | **Fixed in M1.** Both implementations pass 69 independently labelled semantic cases. |
+| A5, P2: stored timing bounds are outside event hash | Bounds change shifts playback while event hash passes | **Fixed in M1.** Versioned envelope binds stored metadata; legacy metadata remains explicitly unverified. |
+| A6, P2: replay responses omit capture-truncation warning | Saved cap flag absent from replay summary | **Fixed in M1 replay/API/export.** UI and audio render consumers must retain these flags in M3/M5. |
+| A7, P2: normal native checks omit self-contained storage/CLI coverage | Real-library parity depends on owner `.state` | **Fixed in M1.** 18 disposable native storage/CLI tests include corruption, semantics and historical timing; no owner library required. |
 | Audio, P2: comparator copies long IDs during sorting | 1,745,605 counted allocations for 50,000 synthetic events | **Fixed.** Compare time/sequence/ID without owning tuples; preparation-allocation regression added. |
 | Audio, P1 integration: overload selection depends on block size | Four-event fixture with capacity two yields different surviving IDs | **Open M2 gate.** Freeze musical admission before callback; current data scheduler remains disclosed as incomplete for this purpose. |
 | Audio, P1 integration: actions/voice releases/clock/publication/retirement absent | No audio engine exists yet | **Design gates, not bugs in existing DSP.** Executable lifecycle contracts, fixed capacities and stress tests before integration. |
@@ -67,7 +67,7 @@ Rules draw on [C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/C
 
 ## Next milestone and owner decisions
 
-M1 closes native verification, schema and preservation before the first authoritative native render. M2 follows with one intentionally small audible slice. The detailed M0–M8 table and every exit criterion are in [the canonical plan](../BUILD_PLAN.md#19-gated-delivery-sequence).
+M1 has closed native data verification, schema and preservation on the qualified fixture environment. M2 follows with one intentionally small audible slice. The detailed M0–M8 table and every exit criterion are in [the canonical plan](../BUILD_PLAN.md#19-gated-delivery-sequence).
 
 The final Astra consistency pass also corrected three ambiguities: admission invariance holds for fixed playback settings across block partitions/offline execution rates; historical playback must version requested-window preservation versus trimming, including empty material; and M3 needs native portable-piece save/load even while library acquisition remains read-only until M4. Those are planned contracts, not features implemented by this audit.
 
