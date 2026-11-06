@@ -1,0 +1,23 @@
+{
+  "sourceSha256": {
+    "CMakeLists.txt": "ac1c067c3d7eba13c7fbfc59c8a38c0ac1221800cd8287a27849f5cb7577ce20",
+    "native/include/atlas/playback.hpp": "5a5af586a2fd5e181f54597226cdc5378b14687490309a0a0ca6b5118bad8b0e",
+    "native/include/atlas/ui_host.hpp": "3d159e592b6f02dab9dbc28fc954de7777f2e4d9d9d56cbf607d0f9872c3e38c",
+    "native/src/playback.cpp": "f1a4238c044d04327019754ac8cad5615beeb8b9080f6f24bb0ac07bbd60b028",
+    "native/src/juce_output.cpp": "ccff4fdfda8062015f1bd012bf48caec7af31453bf7ed94bb4bda6412e64f5ed",
+    "native/src/audio_host_main.cpp": "2671874e6dfd1324c2c862b3722d7d2677edfcf952f9468f5f5716aeaba66407",
+    "native/src/ui_host.cpp": "3beeb822b076d2efe966ce42b430872e69cdb95bda82068e1d58de6b689306c7",
+    "native/tests/playback_tests.cpp": "e6b044e6e651fb213c4b91711877512e1513b1e2c555668a23deadbb4daad714",
+    "native/tests/playback_host.cpp": "e8e8bdef937e5b862bf793a039e6192e176e6e3a1f327583375509ab14d7082a",
+    "tests/native_playback_checks.py": "10bda81878ea94f1b3d82eb91e3a077eecc1c82859816fa76ea28fe0e9d53ac8",
+    "docs/milestones/NATIVE_PLAYBACK_CONTRACT.md": "50a93cec0e3288c155b983d6e78dd2c902592bebca0be0e1a935ec08e503eb73"
+  },
+  "version": {
+    "engine": "animal-atlas-native-audio",
+    "source_sha256": "8fce20ecd31d657f135d6a65fb414ed0b62c6ca44053067e0b015a7385415f80"
+  },
+  "juceRevision": "f8f8864172464b9adf9eba6101e1f784838d1597",
+  "juceVersion": "9.0.0",
+  "deviceOpened": false,
+  "scope": "Release build and all eight suites; manual output driver only."
+}

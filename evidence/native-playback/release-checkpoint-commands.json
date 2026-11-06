@@ -1,0 +1,23 @@
+[
+  {
+    "command": [
+      "cmake",
+      "--build",
+      "build/native-playback",
+      "-j",
+      "4"
+    ],
+    "exitCode": 0,
+    "elapsedSeconds": 1.242638875
+  },
+  {
+    "command": [
+      "ctest",
+      "--test-dir",
+      "build/native-playback",
+      "--output-on-failure"
+    ],
+    "exitCode": 0,
+    "elapsedSeconds": 4.043581208
+  }
+]
