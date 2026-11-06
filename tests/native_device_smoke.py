@@ -8,6 +8,7 @@ import argparse
 from datetime import datetime, timezone
 import hashlib
 import json
+import os
 from pathlib import Path
 import platform
 import selectors
@@ -55,7 +56,8 @@ class Host:
         self.start = time.monotonic()
         self.sequence = 0
         self.process = subprocess.Popen([str(binary), 'ui-host', '--db', str(database)],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+            env={**os.environ, "ATLAS_VOICE_LIBRARY": str(database.parent / "voices.sqlite3")})
         self.selector = selectors.DefaultSelector()
         self.selector.register(self.process.stdout, selectors.EVENT_READ)
 

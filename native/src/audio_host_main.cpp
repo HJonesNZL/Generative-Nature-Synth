@@ -1,7 +1,9 @@
 #include "atlas_build_identity.hpp"
 #include <atlas/playback.hpp>
 #include <atlas/ui_host.hpp>
+#include <atlas/voices.hpp>
 #include <atomic>
+#include <cstdlib>
 #include <filesystem>
 #include <iostream>
 #include <juce_events/juce_events.h>
@@ -72,7 +74,20 @@ class AudioHostApplication final : public juce::JUCEApplicationBase {
         worker_ = std::thread([this, library] {
             try {
                 atlas::PlaybackRuntime playback(atlas::makeJuceOutputDriver());
-                atlas::UiHost host(library, &playback);
+                const auto configured = std::getenv("ATLAS_VOICE_LIBRARY");
+                const auto sidecar =
+                    configured && *configured
+                        ? std::filesystem::path(configured)
+                        : library.parent_path() / "voices.sqlite3";
+                if (std::filesystem::weakly_canonical(library) ==
+                        std::filesystem::weakly_canonical(sidecar) ||
+                    (std::filesystem::exists(sidecar) &&
+                     std::filesystem::equivalent(library, sidecar)))
+                    throw std::invalid_argument(
+                        "Voice sidecar must be separate from the wildlife "
+                        "library");
+                atlas::VoiceStore voices(sidecar);
+                atlas::UiHost host(library, &playback, &voices);
                 serve(host, playback, closing_);
             } catch (const std::exception &exception) {
                 std::cerr << "audio host unavailable: " << exception.what()

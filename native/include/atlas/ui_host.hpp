@@ -6,12 +6,14 @@
 
 namespace atlas {
 class PlaybackRuntime;
+class VoiceStore;
 // One worker owns this bounded presentation adapter. Optional playback is
 // borrowed. Library access stays read-only. Never call on an audio thread.
 class UiHost {
   public:
     explicit UiHost(const std::filesystem::path &library,
-                    PlaybackRuntime *playback = nullptr);
+                    PlaybackRuntime *playback = nullptr,
+                    VoiceStore *voices = nullptr);
     ~UiHost();
     UiHost(const UiHost &) = delete;
     UiHost &operator=(const UiHost &) = delete;

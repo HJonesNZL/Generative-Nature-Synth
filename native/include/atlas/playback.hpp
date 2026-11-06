@@ -27,13 +27,23 @@ enum class PlaybackError : unsigned {
     deviceChanged,
     callbackFailure,
     commandTimeout,
-    leaseExpired
+    leaseExpired,
+    invalidVoiceSettings
 };
 const char *playbackErrorText(PlaybackError) noexcept;
-enum class PlaybackCommandKind : unsigned { play, pause, stop, seek, panic };
+enum class PlaybackCommandKind : unsigned {
+    play,
+    pause,
+    stop,
+    seek,
+    panic,
+    updateVoice
+};
 struct PlaybackCommand {
     PlaybackCommandKind kind{};
     std::uint64_t preparationId{}, generation{}, frame{};
+    VoiceSlot voiceSlot{};
+    VoiceCoefficients voiceCoefficients{};
 };
 struct PlaybackSnapshot {
     bool prepared{}, enabled{};
@@ -58,7 +68,10 @@ class PlaybackRuntime {
     PlaybackRuntime(const PlaybackRuntime &) = delete;
     PlaybackRuntime &operator=(const PlaybackRuntime &) = delete;
     PlaybackResult prepare(const Timeline &,
-                           AudioSettings = {48000, 60, .008, .650, -18});
+                           AudioSettings = {48000, 60, .008, .650, -18},
+                           std::span<const VoiceProfile> = {},
+                           bool editableVoices = false);
+    PlaybackResult updateVoice(VoiceSlot, const VoiceSettings &);
     PlaybackResult enable(bool);
     PlaybackResult command(PlaybackCommand);
     PlaybackSnapshot snapshot() const noexcept;

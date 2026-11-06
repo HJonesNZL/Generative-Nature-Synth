@@ -1,41 +1,81 @@
 #pragma once
-#include <atlas/core.hpp>
 #include <array>
+#include <atlas/core.hpp>
 
 namespace atlas {
+using VoiceSlot = std::uint16_t;
+inline constexpr std::size_t voiceSlotCapacity = 513;
+struct VoiceSettings {
+    int tuningSemitones{};
+    double attackSeconds{.008}, decaySeconds{.650}, gainDb{};
+};
+bool validVoiceSettings(const VoiceSettings &) noexcept;
+struct VoiceProfile {
+    std::string speciesId;
+    VoiceSettings settings;
+};
+// Numeric, prepared off-thread. Pitch multiplies each action's legacy pitch.
+struct VoiceCoefficients {
+    std::uint32_t attackFrames{}, decayFrames{}, releaseFrames{};
+    double pitchMultiplier{1}, decayFactor{}, gain{1};
+};
 struct AudioSettings {
     std::uint32_t sampleRate{48000};
     unsigned rootMidi{60};
     double attackSeconds{0.008}, decaySeconds{0.650}, masterDb{};
 };
 enum class Admission { accepted, density };
-struct AudioDecision { std::size_t eventIndex{}; Admission reason{}; };
+struct AudioDecision {
+    std::size_t eventIndex{};
+    Admission reason{};
+};
 struct MusicalAction {
     std::uint64_t frame{};
     double phaseStep{};
     std::size_t eventIndex{};
     unsigned midiNote{};
+    VoiceSlot voiceSlot{};
 };
 
-// Worker-owned immutable numeric plan. Do not move/destroy while a renderer borrows it.
+// Worker-owned immutable numeric plan. Do not move/destroy while a renderer
+// borrows it.
 class AudioPlan {
-public:
-    explicit AudioPlan(const Timeline&, AudioSettings = {});
-    const AudioSettings& settings() const noexcept { return settings_; }
+  public:
+    explicit AudioPlan(const Timeline &, AudioSettings = {},
+                       std::span<const VoiceProfile> = {},
+                       bool editableVoices = false);
+    const AudioSettings &settings() const noexcept { return settings_; }
     std::span<const MusicalAction> actions() const noexcept { return actions_; }
-    std::span<const AudioDecision> decisions() const noexcept { return decisions_; }
+    std::span<const AudioDecision> decisions() const noexcept {
+        return decisions_;
+    }
     std::uint64_t totalFrames() const noexcept { return totalFrames_; }
     std::size_t missingSpecies() const noexcept { return missingSpecies_; }
-    std::uint32_t voiceFrames() const noexcept { return attackFrames_ + decayFrames_ + releaseFrames_; }
-private:
+    std::uint32_t voiceFrames() const noexcept {
+        return attackFrames_ + decayFrames_ + releaseFrames_;
+    }
+    std::span<const VoiceProfile> voiceProfiles() const noexcept {
+        return voiceProfiles_;
+    }
+    VoiceSlot voiceSlot(std::string_view speciesId) const noexcept;
+    bool editableVoices() const noexcept { return editableVoices_; }
+    // Worker-only validation and coefficient preparation, before publication.
+    bool prepareVoiceUpdate(VoiceSlot, const VoiceSettings &,
+                            VoiceCoefficients &) const noexcept;
+
+  private:
     friend class AudioRenderer;
     AudioSettings settings_;
     std::vector<MusicalAction> actions_;
     std::vector<AudioDecision> decisions_;
     std::uint64_t totalFrames_{};
     std::size_t missingSpecies_{};
-    std::uint32_t attackFrames_{}, decayFrames_{}, releaseFrames_{}, fadeFrames_{};
+    std::uint32_t attackFrames_{}, decayFrames_{}, releaseFrames_{},
+        fadeFrames_{};
     double decayFactor_{}, masterGain_{};
+    std::vector<VoiceProfile> voiceProfiles_;
+    std::array<VoiceCoefficients, voiceSlotCapacity> voiceBank_{};
+    bool editableVoices_{};
 };
 
 enum class AudioState { ready, playing, pausing, paused, draining, finished };
@@ -44,33 +84,38 @@ struct AudioStatistics {
     double peak{};
 };
 
-// One owner, controls between process calls. No owning plan reference on the audio path.
+// One owner, controls between process calls. No owning plan reference on the
+// audio path.
 class AudioRenderer {
-public:
+  public:
     static constexpr std::size_t voiceCapacity = 8, maxBlockFrames = 4096;
-    explicit AudioRenderer(const AudioPlan&) noexcept;
-    AudioRenderer(AudioPlan&&) = delete;
-    AudioRenderer(const AudioRenderer&) = delete;
-    AudioRenderer& operator=(const AudioRenderer&) = delete;
+    explicit AudioRenderer(const AudioPlan &) noexcept;
+    AudioRenderer(AudioPlan &&) = delete;
+    AudioRenderer(const AudioRenderer &) = delete;
+    AudioRenderer &operator=(const AudioRenderer &) = delete;
     bool play(std::uint64_t generation) noexcept;
     bool pause(std::uint64_t generation) noexcept;
     bool stop(std::uint64_t generation) noexcept;
     bool seek(std::uint64_t frame, std::uint64_t generation) noexcept;
     bool panic(std::uint64_t generation) noexcept;
+    bool updateVoice(VoiceSlot, const VoiceCoefficients &) noexcept;
     bool process(std::span<float> interleavedStereo) noexcept;
     AudioState state() const noexcept { return state_; }
     std::uint64_t generation() const noexcept { return generation_; }
     std::uint64_t position() const noexcept { return frame_; }
-    const AudioStatistics& statistics() const noexcept { return statistics_; }
-private:
+    const AudioStatistics &statistics() const noexcept { return statistics_; }
+
+  private:
     struct Voice {
         bool active{};
         std::uint64_t started{};
         std::uint32_t age{}, fadeAge{};
         double phase{}, phaseStep{}, decay{1};
+        VoiceCoefficients coefficients;
     };
-    const AudioPlan& plan_;
+    const AudioPlan &plan_;
     std::array<Voice, voiceCapacity> voices_{}, retiring_{};
+    std::array<VoiceCoefficients, voiceSlotCapacity> voiceBank_{};
     std::size_t nextAction_{};
     std::uint64_t frame_{}, generation_{1};
     AudioState state_{AudioState::ready};
@@ -80,7 +125,7 @@ private:
     void clearVoices() noexcept;
     void clearToStart() noexcept;
     void beginRamp(double target) noexcept;
-    void trigger(const MusicalAction&) noexcept;
-    double tick(Voice&, bool retiring) noexcept;
+    void trigger(const MusicalAction &) noexcept;
+    double tick(Voice &, bool retiring) noexcept;
 };
 } // namespace atlas

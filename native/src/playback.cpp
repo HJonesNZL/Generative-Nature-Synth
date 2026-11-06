@@ -40,6 +40,8 @@ const char *playbackErrorText(PlaybackError error) noexcept {
         return "command_timeout";
     case PlaybackError::leaseExpired:
         return "lease_expired";
+    case PlaybackError::invalidVoiceSettings:
+        return "invalid_voice_settings";
     }
     return "unknown";
 }
@@ -103,6 +105,9 @@ struct PlaybackRuntime::Impl {
             return renderer->seek(command.frame, current);
         case PlaybackCommandKind::panic:
             return renderer->panic(current);
+        case PlaybackCommandKind::updateVoice:
+            return renderer->updateVoice(command.voiceSlot,
+                                         command.voiceCoefficients);
         }
         return false;
     }
@@ -151,9 +156,12 @@ PlaybackSnapshot PlaybackRuntime::snapshot() const noexcept {
     return value;
 }
 PlaybackResult PlaybackRuntime::prepare(const Timeline &timeline,
-                                        AudioSettings settings) {
+                                        AudioSettings settings,
+                                        std::span<const VoiceProfile> profiles,
+                                        bool editableVoices) {
     impl_->close(PlaybackError::none);
-    auto nextPlan = std::make_unique<AudioPlan>(timeline, settings);
+    auto nextPlan = std::make_unique<AudioPlan>(timeline, settings, profiles,
+                                                editableVoices);
     auto nextRenderer = std::make_unique<AudioRenderer>(*nextPlan);
     impl_->renderer = std::move(
         nextRenderer); // Destroy borrower before retiring the old plan.
@@ -161,6 +169,22 @@ PlaybackResult PlaybackRuntime::prepare(const Timeline &timeline,
     ++impl_->preparationId;
     impl_->publish();
     return {true, PlaybackError::none, snapshot()};
+}
+PlaybackResult PlaybackRuntime::updateVoice(VoiceSlot slot,
+                                            const VoiceSettings &settings) {
+    auto &p = *impl_;
+    service();
+    const auto current = snapshot();
+    if (!p.plan)
+        return {false, PlaybackError::notPrepared, current};
+    PlaybackCommand update;
+    update.kind = PlaybackCommandKind::updateVoice;
+    update.preparationId = current.preparationId;
+    update.generation = current.generation;
+    update.voiceSlot = slot;
+    if (!p.plan->prepareVoiceUpdate(slot, settings, update.voiceCoefficients))
+        return {false, PlaybackError::invalidVoiceSettings, current};
+    return command(update);
 }
 PlaybackResult PlaybackRuntime::enable(bool enabled) {
     auto &p = *impl_;

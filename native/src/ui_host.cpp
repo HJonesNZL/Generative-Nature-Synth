@@ -5,7 +5,10 @@
 #include <atlas/playback.hpp>
 #include <atlas/storage.hpp>
 #include <atlas/ui_host.hpp>
+#include <atlas/voices.hpp>
 #include <charconv>
+#include <cmath>
+#include <limits>
 #include <map>
 #include <set>
 
@@ -33,7 +36,7 @@ class Object {
         if (!root.next() || root.integer(0) != 1 || root.text(1) != "object")
             throw std::invalid_argument("JSON object required");
         Statement fields(
-            db, "SELECT key,type,CAST(value AS TEXT) FROM json_each(?1)");
+            db, "SELECT key,type,CAST(value AS TEXT),value FROM json_each(?1)");
         fields.bindJson(json);
         while (fields.next()) {
             const auto key = fields.text(0);
@@ -43,7 +46,8 @@ class Object {
             if (!fields_
                      .emplace(key,
                               Field{fields.text(1),
-                                    fields.optionalText(2).value_or("null")})
+                                    fields.optionalText(2).value_or("null"),
+                                    fields.number(3)})
                      .second)
                 throw std::invalid_argument("duplicate JSON field");
         }
@@ -70,6 +74,14 @@ class Object {
             throw std::invalid_argument("integer argument required");
         return integer(field.value, maximum);
     }
+    double real(std::string_view key) const {
+        const auto &field = at(key);
+        if (field.type != "real" && field.type != "integer")
+            throw std::invalid_argument("numeric argument required");
+        if (!std::isfinite(field.numeric))
+            throw std::invalid_argument("finite numeric argument required");
+        return field.numeric;
+    }
     bool boolean(std::string_view key) const {
         const auto &field = at(key);
         if (field.type != "true" && field.type != "false")
@@ -95,6 +107,7 @@ class Object {
   private:
     struct Field {
         std::string type, value;
+        double numeric{};
     };
     std::map<std::string, Field> fields_;
     const Field &at(std::string_view key) const {
@@ -197,6 +210,8 @@ const char *playbackMessage(PlaybackError error) noexcept {
     switch (error) {
     case PlaybackError::none:
         return "";
+    case PlaybackError::invalidVoiceSettings:
+        return "Voice settings are outside supported limits.";
     case PlaybackError::notPrepared:
         return "Select a saved piece before enabling audio.";
     case PlaybackError::disabled:
@@ -250,6 +265,33 @@ boundsJson(const std::optional<std::pair<Microseconds, Microseconds>> &bounds) {
                         quoteJson(std::to_string(bounds->second)) + "]"
                   : "null";
 }
+std::string decimal(double value) {
+    std::array<char, 64> buffer{};
+    const auto result =
+        std::to_chars(buffer.data(), buffer.data() + buffer.size(), value);
+    if (result.ec != std::errc{})
+        throw std::runtime_error("numeric serialization failed");
+    return {buffer.data(), result.ptr};
+}
+std::string voiceView(const VoiceSnapshot &voice) {
+    std::string values = "{";
+    for (std::size_t i = 0; i < voiceParameterIds.size(); ++i) {
+        if (i)
+            values += ',';
+        values += quoteJson(voiceParameterIds[i]) + ":" +
+                  decimal(voice.normalizedValues[i]);
+    }
+    return "{\"id\":" + quoteJson(voice.id) +
+           ",\"name\":" + quoteJson(voice.name) +
+           ",\"scope\":" + quoteJson(voice.speciesId ? "species" : "group") +
+           ",\"targetId\":" + quoteJson(voice.speciesId.value_or("native")) +
+           ",\"inheritsFromId\":null,\"type\":\"struck\",\"values\":" + values +
+           "},\"overriddenParameterIds\":[],\"savedRevision\":" +
+           quoteJson(std::to_string(voice.savedRevision)) +
+           ",\"changeRevision\":" +
+           quoteJson(std::to_string(voice.changeRevision)) +
+           ",\"dirty\":" + (voice.dirty ? "true" : "false") + "}";
+}
 std::string sessionView(const SavedSession &s) {
     return "{\"id\":" + quoteJson(s.id) + ",\"name\":" + quoteJson(s.name) +
            ",\"state\":" + quoteJson(s.state) +
@@ -272,8 +314,63 @@ struct UiHost::Impl {
     SavedSession materialSaved;
     std::uint64_t generation{};
     PlaybackRuntime *playback{};
-    Impl(const std::filesystem::path &path, PlaybackRuntime *output)
-        : library(path), db(open(path)), playback(output) {}
+    VoiceStore *voices{};
+    std::map<std::string, VoiceSlot> voiceSlots;
+    Impl(const std::filesystem::path &path, PlaybackRuntime *output,
+         VoiceStore *presets)
+        : library(path), db(open(path)), playback(output), voices(presets) {}
+    void registerPayloads(const std::vector<std::string> &payloads) {
+        if (!voices)
+            return;
+        std::map<std::string, std::string> unique;
+        for (const auto &payload : payloads) {
+            detail::validateStoredEvent(db.get(), payload);
+            const Object e(db.get(), payload);
+            const auto id = e.optionalText("species_id");
+            if (!id.empty())
+                unique.try_emplace(id, e.optionalText("common_name"));
+        }
+        std::vector<VoiceSpecies> species;
+        for (const auto &[id, name] : unique)
+            species.push_back({id, name.empty() ? id : name});
+        voices->registerSpecies(species);
+    }
+    void applyVoice(const VoiceSnapshot &next, const VoiceSnapshot &rollback) {
+        const auto slot = voiceSlots.find(next.id);
+        if (!playback || slot == voiceSlots.end())
+            return;
+        const auto result = playback->updateVoice(slot->second, next.settings);
+        if (!result.ok) {
+            // A timed-out callback may already have applied the command.
+            // Quiesce and restore the authoritative draft before reporting
+            // failure.
+            playback->enable(false);
+            const auto restored =
+                playback->updateVoice(slot->second, rollback.settings);
+            if (!restored.ok)
+                throw std::runtime_error("Voice audio recovery failed");
+            throw std::runtime_error(playbackMessage(result.error));
+        }
+    }
+    std::string voiceLibrary() {
+        (void)catalog(Object(db.get(), "{}"), true);
+        std::string species = "[";
+        for (const auto &voice : voices->voices()) {
+            if (!voice.speciesId)
+                continue;
+            append(species, "{\"speciesId\":" + quoteJson(*voice.speciesId) +
+                                ",\"commonName\":" + quoteJson(voice.name) +
+                                ",\"scientificName\":\"\",\"voiceId\":" +
+                                quoteJson(voice.id) + ",\"individuals\":[]}");
+        }
+        return "{\"entries\":[{\"groupId\":\"native\",\"groupName\":\"Species "
+               "voices\",\"groupVoiceId\":\"default\",\"species\":" +
+               species + "]}],\"parameters\":" + parameterSpecs() +
+               ",\"types\":[{\"id\":\"struck\",\"label\":\"Struck "
+               "tone\",\"proposal\":false}],\"maxDefinitions\":513,"
+               "\"editingBehavior\":\"new_notes\"}";
+    }
+    std::string parameterSpecs();
     void load(std::string_view id, TimeBasis basis = TimeBasis::observed,
               Speed speed = {}) {
         // Stop prior sound before verification, including when the new
@@ -285,9 +382,33 @@ struct UiHost::Impl {
         SavedSession metadata;
         auto next = library.load(id, basis, speed, &metadata);
         if (playback) {
-            const auto result = playback->prepare(next);
+            std::vector<VoiceProfile> profiles;
+            std::map<std::string, VoiceSlot> nextVoiceSlots;
+            if (voices) {
+                std::vector<std::string> payloads;
+                for (const auto &event : next.events())
+                    payloads.push_back(event.normalizedJson);
+                registerPayloads(payloads);
+                profiles.push_back({"", voices->getVoice("default").settings});
+                nextVoiceSlots.emplace("default", 0);
+                std::set<std::string> species;
+                for (const auto &event : next.events())
+                    if (event.speciesId && !event.speciesId->empty())
+                        species.insert(*event.speciesId);
+                for (const auto &id : species) {
+                    const auto voice = voices->getVoice("species:" + id);
+                    nextVoiceSlots.emplace(
+                        voice.id, static_cast<VoiceSlot>(profiles.size()));
+                    profiles.push_back({id, voice.settings});
+                }
+            }
+            AudioSettings settings;
+            settings.masterDb = -18;
+            const auto result =
+                playback->prepare(next, settings, profiles, voices != nullptr);
             if (!result.ok)
                 throw std::runtime_error(playbackErrorText(result.error));
+            voiceSlots = std::move(nextVoiceSlots);
         }
         prepared = std::move(next);
         saved = std::move(metadata);
@@ -350,7 +471,7 @@ struct UiHost::Impl {
                ",\"nextSequence\":" + quoteJson(std::to_string(next)) +
                ",\"events\":" + events + "]}";
     }
-    std::string catalog(const Object &args) {
+    std::string catalog(const Object &args, bool registerVoices = false) {
         std::vector<std::string> payloads;
         if (!args.null("material")) {
             Object selection(db.get(), args.object("material"),
@@ -372,6 +493,8 @@ struct UiHost::Impl {
             while (rows.next())
                 payloads.push_back(rows.text(0));
         }
+        if (registerVoices)
+            registerPayloads(payloads);
         std::map<std::string, std::string> species, stations, sources;
         bool limited = payloads.size() == 2000;
         for (const auto &payload : payloads) {
@@ -427,8 +550,26 @@ struct UiHost::Impl {
                ",\"limited\":" + (limited ? "true" : "false") + "}";
     }
 };
-UiHost::UiHost(const std::filesystem::path &library, PlaybackRuntime *playback)
-    : impl_(std::make_unique<Impl>(library, playback)) {}
+std::string UiHost::Impl::parameterSpecs() {
+    std::string result = "[";
+    for (const auto &spec : voiceParameterSpecs) {
+        auto json = "{\"id\":" + quoteJson(spec.id) +
+                    ",\"label\":" + quoteJson(spec.label) +
+                    ",\"unit\":" + quoteJson(spec.unit) +
+                    ",\"curve\":" + quoteJson(spec.curve) +
+                    ",\"min\":" + decimal(spec.min) +
+                    ",\"max\":" + decimal(spec.max) +
+                    ",\"defaultValue\":" + decimal(spec.defaultValue) +
+                    ",\"proposal\":false";
+        if (spec.step > 0)
+            json += ",\"step\":" + decimal(spec.step);
+        append(result, json + "}");
+    }
+    return result + "]";
+}
+UiHost::UiHost(const std::filesystem::path &library, PlaybackRuntime *playback,
+               VoiceStore *voices)
+    : impl_(std::make_unique<Impl>(library, playback, voices)) {}
 UiHost::~UiHost() = default;
 
 std::string UiHost::request(std::string_view envelope) {
@@ -458,6 +599,9 @@ std::string UiHost::request(std::string_view envelope) {
             if (impl_->playback)
                 result +=
                     R"(,"getTransport","setTransport","getAudioState","setAudioEnabled")";
+            if (impl_->voices)
+                result +=
+                    R"(,"getVoiceLibrary","getVoice","setVoiceParameter","saveVoice","revertVoice")";
             result += std::string("],\"audioAvailable\":") +
                       (impl_->playback ? "true" : "false") +
                       ",\"maxEventBatch\":500,\"maxVisibleMarkers\":500}";
@@ -532,6 +676,80 @@ std::string UiHost::request(std::string_view envelope) {
                                playbackMessage(reply.error));
             }
             result = transportView(reply.snapshot);
+        } else if (impl_->voices && method == "getVoiceLibrary") {
+            Object args(impl_->db.get(), arguments);
+            if (args.size())
+                throw std::invalid_argument("unexpected arguments");
+            result = impl_->voiceLibrary();
+        } else if (impl_->voices && method == "getVoice") {
+            Object args(impl_->db.get(), arguments, {"voiceId"});
+            result = voiceView(impl_->voices->getVoice(args.text("voiceId")));
+        } else if (impl_->voices && method == "setVoiceParameter") {
+            Object args(
+                impl_->db.get(), arguments,
+                {"voiceId", "parameterId", "normalizedValue", "gesture"});
+            const auto voiceId = args.text("voiceId"),
+                       parameter = args.text("parameterId"),
+                       phase = args.text("gesture");
+            const auto value = args.real("normalizedValue");
+            VoiceGesture gesture;
+            if (phase == "begin")
+                gesture = VoiceGesture::begin;
+            else if (phase == "change")
+                gesture = VoiceGesture::change;
+            else if (phase == "end")
+                gesture = VoiceGesture::end;
+            else
+                throw std::invalid_argument("unknown gesture phase");
+            const auto before = impl_->voices->getVoice(voiceId);
+            const auto preview = impl_->voices->previewParameter(
+                voiceId, parameter, value, gesture);
+            try {
+                impl_->applyVoice(preview, before);
+            } catch (const std::exception &error) {
+                // A failed end must still release the gesture at the last
+                // acknowledged value, otherwise Save/Revert remain blocked.
+                if (gesture == VoiceGesture::end) {
+                    const auto index = static_cast<std::size_t>(
+                        std::find(voiceParameterIds.begin(),
+                                  voiceParameterIds.end(), parameter) -
+                        voiceParameterIds.begin());
+                    impl_->voices->setParameter(voiceId, parameter,
+                                                before.normalizedValues[index],
+                                                VoiceGesture::end);
+                }
+                return failure("unavailable", error.what());
+            }
+            const auto voice =
+                impl_->voices->setParameter(voiceId, parameter, value, gesture);
+            const auto index = static_cast<std::size_t>(
+                std::find(voiceParameterIds.begin(), voiceParameterIds.end(),
+                          parameter) -
+                voiceParameterIds.begin());
+            result = "{\"normalizedValue\":" +
+                     decimal(voice.normalizedValues[index]) +
+                     ",\"changeRevision\":" +
+                     quoteJson(std::to_string(voice.changeRevision)) +
+                     ",\"dirty\":" + (voice.dirty ? "true" : "false") + "}";
+        } else if (impl_->voices && method == "saveVoice") {
+            Object args(impl_->db.get(), arguments,
+                        {"voiceId", "expectedRevision"});
+            result = voiceView(impl_->voices->save(
+                args.text("voiceId"),
+                static_cast<std::uint64_t>(
+                    integer(args.text("expectedRevision", 20), INT64_MAX))));
+        } else if (impl_->voices && method == "revertVoice") {
+            Object args(impl_->db.get(), arguments, {"voiceId"});
+            const auto voice = impl_->voices->revert(args.text("voiceId"));
+            try {
+                impl_->applyVoice(voice, voice);
+            } catch (const std::exception &) {
+                return failure(
+                    "unavailable",
+                    "Voice reverted, but audio stopped during the update. Read "
+                    "the voice again and enable Listening to resume.");
+            }
+            result = voiceView(voice);
         } else if (method == "getChanges") {
             result =
                 impl_->changes(Object(impl_->db.get(), arguments,
@@ -610,6 +828,15 @@ std::string UiHost::request(std::string_view envelope) {
                 "This capability is not implemented by the native data host");
         return "{\"requestId\":" + quoteJson(id) +
                ",\"ok\":true,\"result\":" + result + "}";
+    } catch (const VoiceStoreError &e) {
+        const auto code = e.code() == VoiceStoreErrorCode::conflict
+                              ? "stale_generation"
+                          : e.code() == VoiceStoreErrorCode::invalidArgument ||
+                                  e.code() == VoiceStoreErrorCode::notFound ||
+                                  e.code() == VoiceStoreErrorCode::gestureActive
+                              ? "invalid_request"
+                              : "unavailable";
+        return failure(code, e.what());
     } catch (const std::invalid_argument &e) {
         return failure("invalid_request", e.what());
     } catch (const std::exception &) {
