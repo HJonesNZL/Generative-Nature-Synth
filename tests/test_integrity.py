@@ -109,3 +109,11 @@ class IntegrityTests(SessionCase):
         self.assertEqual(imported['state'],'interrupted')
         self.assertTrue(imported['options']['capture_truncated'])
         self.assertEqual(imported['options']['end_time_quality'],original['options']['end_time_quality'])
+
+    def test_frozen_read_rejects_duplicate_keys_and_noncanonical_bytes(self):
+        original=self.frozen()
+        for payload in (json.dumps(self.sessions.rows(original['id'])[0]['event'],indent=2),
+                        '{"schema_version":1,"schema_version":1}'):
+            with self.store.connect() as db:
+                db.execute('UPDATE session_events SET event_json=?',(payload,))
+            with self.assertRaises(ValueError): Timeline(self.sessions,original['id'])

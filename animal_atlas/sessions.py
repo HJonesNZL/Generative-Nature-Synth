@@ -7,35 +7,12 @@ import uuid
 from datetime import timedelta
 from pathlib import Path
 from .integrity import strict_json, verify, seal, projection, SESSION_FIELDS, SEAL_FIELDS
-from .model import canonical, stamp, utcnow, parse_time, event as normalize_event
+from .model import canonical, stamp, utcnow, parse_time, validate_event
 
 MAX_EVENTS = 50000
 MAX_BUNDLE_BYTES = 64 * 1024 * 1024
-EVENT_FIELDS = {
-    "schema_version", "event_id", "source_id", "provider_event_id", "provider_record_revision",
-    "observed_at_utc", "provider_published_at_utc", "event_kind", "location_kind",
-    "latitude", "longitude", "coordinate_order", "uncertainty_m", "species_id", "scientific_name",
-    "common_name", "individual_id", "deployment_id", "station_id", "confidence", "confidence_meaning",
-    "quality_flags", "provenance_mode", "permissions_status", "attribution", "source_url",
-    "provider_scores", "provider_subject_id", "individual_display_name", "first_seen_at_utc", "ingested_at_utc"
-}
-
-
 def clean_event(value):
-    if not isinstance(value, dict) or set(value) - EVENT_FIELDS:
-        raise ValueError("unexpected event fields")
-    if value.get("schema_version") != 1:
-        raise ValueError("unsupported event version")
-    # Revalidate semantics, including explicit timezone and coordinate ranges.
-    normalized = normalize_event(value["source_id"], value["provider_event_id"], value["observed_at_utc"],
-                                 value["event_kind"], value["location_kind"], value.get("latitude"), value.get("longitude"))
-    if normalized["event_id"] != value["event_id"]:
-        raise ValueError("event identity mismatch")
-    for key in ("first_seen_at_utc", "ingested_at_utc"):
-        parse_time(value[key])
-    if len(canonical(value).encode()) > 16384:
-        raise ValueError("event exceeds capacity")
-    return value
+    return validate_event(value, frozen=True)
 
 
 def content_hash(rows):
@@ -85,7 +62,7 @@ class Sessions:
             if len(frozen) >= MAX_EVENTS:
                 truncated = True
                 break
-            payload = clean_event(json.loads(row["event_json"]))
+            payload = clean_event(strict_json(row["event_json"]))
             size += len(canonical(payload).encode())
             if size > MAX_BUNDLE_BYTES - 1024 * 1024:
                 truncated = True
@@ -207,13 +184,36 @@ class Sessions:
         with self.store.connect() as db:
             return [row[0] for row in db.execute("SELECT id FROM sessions WHERE state='recording'")]
 
+    def frozen(self, sid):
+        """Verify metadata and canonical payloads in one worker-owned read snapshot."""
+        with self.store.connect() as db:
+            db.execute("BEGIN")
+            row = db.execute("SELECT * FROM sessions WHERE id=?", (sid,)).fetchone()
+            if row is None:
+                raise KeyError(sid)
+            session = self._summary(row)
+            if session["state"] not in ("frozen", "interrupted"):
+                raise ValueError("stop recording before replay/export")
+            rows, size = [], 0
+            for row in db.execute("SELECT * FROM session_events WHERE session_id=? ORDER BY ordinal LIMIT 50001", (sid,)):
+                if row["ordinal"] != len(rows) or len(rows) >= MAX_EVENTS or type(row["original_seq"]) is not int or not 1 <= row["original_seq"] < 2**63:
+                    raise ValueError("invalid frozen ordinal/sequence/count")
+                payload = row["event_json"]
+                if not isinstance(payload, str) or len(payload.encode()) > 16384:
+                    raise ValueError("invalid frozen event size/type")
+                size += len(payload.encode())
+                if size > MAX_BUNDLE_BYTES:
+                    raise ValueError("frozen session exceeds capacity")
+                value = clean_event(strict_json(payload))
+                if payload != canonical(value):
+                    raise ValueError("frozen event is not canonical")
+                rows.append(dict(original_seq=row["original_seq"], event=value))
+            if len(rows) != session["event_count"] or content_hash(rows) != session["content_hash"]:
+                raise ValueError("session integrity check failed")
+            return session, rows
+
     def bundle(self, sid):
-        session = self.get(sid)
-        if session["state"] == "recording":
-            raise ValueError("stop recording before exporting")
-        rows = [{k: v for k, v in row.items() if k != "ordinal"} for row in self.rows(sid, limit=MAX_EVENTS)]
-        if content_hash(rows) != session["content_hash"]:
-            raise ValueError("session integrity check failed")
+        session, rows = self.frozen(sid)
         result = dict(format="animal-atlas-session", bundle_version=2, session=session, events=rows,
                       redistribution_permission="not_established; local archive only")
         result["bundle_sha256"] = hashlib.sha256(canonical(result).encode()).hexdigest()
@@ -261,7 +261,7 @@ class Sessions:
             {key: value for key, value in projection(original).items() if key != "options"},
             metadata_integrity=original_integrity))
         for row in rows:
-            if set(row) != {"original_seq", "event"} or type(row["original_seq"]) is not int or row["original_seq"] < 1:
+            if not isinstance(row, dict) or set(row) != {"original_seq", "event"} or type(row["original_seq"]) is not int or not 1 <= row["original_seq"] < 2**63:
                 raise ValueError("invalid frozen event")
             clean_event(row["event"])
         if content_hash(rows) != original["content_hash"] or len(rows) != original["event_count"]:

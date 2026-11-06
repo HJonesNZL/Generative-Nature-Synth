@@ -12,7 +12,7 @@ target_compile_features(atlas_core PUBLIC cxx_std_20)
 set_target_properties(atlas_core PROPERTIES CXX_EXTENSIONS OFF)
 
 find_package(SQLite3 REQUIRED)
-add_library(atlas_storage native/src/storage.cpp native/src/sha256.cpp)
+add_library(atlas_storage native/src/storage.cpp native/src/sha256.cpp native/src/event_validation.cpp)
 target_link_libraries(atlas_storage PUBLIC atlas_core)
 if(TARGET SQLite3::SQLite3)
     target_link_libraries(atlas_storage PRIVATE SQLite3::SQLite3)

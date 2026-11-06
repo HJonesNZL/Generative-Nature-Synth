@@ -1,0 +1,664 @@
+{
+  "base": {
+    "schema_version": 1,
+    "event_id": "fixture:one",
+    "source_id": "fixture",
+    "provider_event_id": "one",
+    "event_kind": "acoustic_species_detection",
+    "location_kind": "station_detection",
+    "coordinate_order": "latitude,longitude",
+    "provenance_mode": "live_source",
+    "latitude": -41.0,
+    "longitude": 174,
+    "observed_at_utc": "2026-01-01T00:00:00Z",
+    "first_seen_at_utc": "2026-01-01T00:00:01Z",
+    "ingested_at_utc": "2026-01-01T00:00:02Z"
+  },
+  "cases": [
+    {
+      "name": "minimal known station event",
+      "accepted": true,
+      "changes": {},
+      "remove": []
+    },
+    {
+      "name": "unknown location and identity",
+      "accepted": true,
+      "changes": {
+        "latitude": null,
+        "longitude": null,
+        "individual_id": null,
+        "station_id": null
+      },
+      "remove": []
+    },
+    {
+      "name": "Unicode and provider-specific uncalibrated score",
+      "accepted": true,
+      "changes": {
+        "common_name": "T\u016b\u012b \ud83d\udc26",
+        "confidence": 95,
+        "confidence_meaning": "provider percent",
+        "provider_scores": {
+          "x": 1e+20,
+          "unknown": null
+        }
+      },
+      "remove": []
+    },
+    {
+      "name": "timezone and microsecond precision",
+      "accepted": true,
+      "changes": {
+        "observed_at_utc": "2026-01-01T12:00:00.123456+12:00"
+      },
+      "remove": []
+    },
+    {
+      "name": "gps_fix",
+      "accepted": true,
+      "changes": {
+        "event_kind": "gps_fix",
+        "location_kind": "individual_fix",
+        "individual_id": "fixture:animal:1",
+        "deployment_id": "fixture:deployment:1"
+      },
+      "remove": []
+    },
+    {
+      "name": "satellite_fix",
+      "accepted": true,
+      "changes": {
+        "event_kind": "satellite_fix",
+        "location_kind": "individual_fix",
+        "individual_id": "fixture:animal:1",
+        "deployment_id": "fixture:deployment:1"
+      },
+      "remove": []
+    },
+    {
+      "name": "acoustic_receiver_detection",
+      "accepted": true,
+      "changes": {
+        "event_kind": "acoustic_receiver_detection",
+        "location_kind": "receiver_detection",
+        "individual_id": "fixture:animal:1",
+        "deployment_id": "fixture:deployment:1"
+      },
+      "remove": []
+    },
+    {
+      "name": "human_observation",
+      "accepted": true,
+      "changes": {
+        "event_kind": "human_observation",
+        "location_kind": "reported_location",
+        "individual_id": "fixture:animal:1",
+        "deployment_id": "fixture:deployment:1"
+      },
+      "remove": []
+    },
+    {
+      "name": "required schema_version",
+      "accepted": false,
+      "changes": {},
+      "remove": [
+        "schema_version"
+      ]
+    },
+    {
+      "name": "required event_id",
+      "accepted": false,
+      "changes": {},
+      "remove": [
+        "event_id"
+      ]
+    },
+    {
+      "name": "required source_id",
+      "accepted": false,
+      "changes": {},
+      "remove": [
+        "source_id"
+      ]
+    },
+    {
+      "name": "required provider_event_id",
+      "accepted": false,
+      "changes": {},
+      "remove": [
+        "provider_event_id"
+      ]
+    },
+    {
+      "name": "required event_kind",
+      "accepted": false,
+      "changes": {},
+      "remove": [
+        "event_kind"
+      ]
+    },
+    {
+      "name": "required location_kind",
+      "accepted": false,
+      "changes": {},
+      "remove": [
+        "location_kind"
+      ]
+    },
+    {
+      "name": "required coordinate_order",
+      "accepted": false,
+      "changes": {},
+      "remove": [
+        "coordinate_order"
+      ]
+    },
+    {
+      "name": "required provenance_mode",
+      "accepted": false,
+      "changes": {},
+      "remove": [
+        "provenance_mode"
+      ]
+    },
+    {
+      "name": "required latitude",
+      "accepted": false,
+      "changes": {},
+      "remove": [
+        "latitude"
+      ]
+    },
+    {
+      "name": "required longitude",
+      "accepted": false,
+      "changes": {},
+      "remove": [
+        "longitude"
+      ]
+    },
+    {
+      "name": "required observed_at_utc",
+      "accepted": false,
+      "changes": {},
+      "remove": [
+        "observed_at_utc"
+      ]
+    },
+    {
+      "name": "required first_seen_at_utc",
+      "accepted": false,
+      "changes": {},
+      "remove": [
+        "first_seen_at_utc"
+      ]
+    },
+    {
+      "name": "required ingested_at_utc",
+      "accepted": false,
+      "changes": {},
+      "remove": [
+        "ingested_at_utc"
+      ]
+    },
+    {
+      "name": "reject schema_version True",
+      "accepted": false,
+      "changes": {
+        "schema_version": true
+      },
+      "remove": []
+    },
+    {
+      "name": "reject schema_version 1.0",
+      "accepted": false,
+      "changes": {
+        "schema_version": 1.0
+      },
+      "remove": []
+    },
+    {
+      "name": "reject schema_version 2",
+      "accepted": false,
+      "changes": {
+        "schema_version": 2
+      },
+      "remove": []
+    },
+    {
+      "name": "reject event_id 'other:one'",
+      "accepted": false,
+      "changes": {
+        "event_id": "other:one"
+      },
+      "remove": []
+    },
+    {
+      "name": "reject source_id 'bad:source'",
+      "accepted": false,
+      "changes": {
+        "source_id": "bad:source"
+      },
+      "remove": []
+    },
+    {
+      "name": "reject provider_event_id 5",
+      "accepted": false,
+      "changes": {
+        "provider_event_id": 5
+      },
+      "remove": []
+    },
+    {
+      "name": "reject station_id 'unscoped'",
+      "accepted": false,
+      "changes": {
+        "station_id": "unscoped"
+      },
+      "remove": []
+    },
+    {
+      "name": "reject individual_id 'fixture:invented'",
+      "accepted": false,
+      "changes": {
+        "individual_id": "fixture:invented"
+      },
+      "remove": []
+    },
+    {
+      "name": "reject deployment_id 'fixture:invented'",
+      "accepted": false,
+      "changes": {
+        "deployment_id": "fixture:invented"
+      },
+      "remove": []
+    },
+    {
+      "name": "reject species_id 'a::b'",
+      "accepted": false,
+      "changes": {
+        "species_id": "a::b"
+      },
+      "remove": []
+    },
+    {
+      "name": "reject station_id ':station'",
+      "accepted": false,
+      "changes": {
+        "station_id": ":station"
+      },
+      "remove": []
+    },
+    {
+      "name": "reject latitude True",
+      "accepted": false,
+      "changes": {
+        "latitude": true
+      },
+      "remove": []
+    },
+    {
+      "name": "reject longitude '174'",
+      "accepted": false,
+      "changes": {
+        "longitude": "174"
+      },
+      "remove": []
+    },
+    {
+      "name": "reject latitude 91",
+      "accepted": false,
+      "changes": {
+        "latitude": 91
+      },
+      "remove": []
+    },
+    {
+      "name": "reject longitude 181",
+      "accepted": false,
+      "changes": {
+        "longitude": 181
+      },
+      "remove": []
+    },
+    {
+      "name": "reject latitude None",
+      "accepted": false,
+      "changes": {
+        "latitude": null
+      },
+      "remove": []
+    },
+    {
+      "name": "reject uncertainty_m -1",
+      "accepted": false,
+      "changes": {
+        "uncertainty_m": -1
+      },
+      "remove": []
+    },
+    {
+      "name": "reject uncertainty_m True",
+      "accepted": false,
+      "changes": {
+        "uncertainty_m": true
+      },
+      "remove": []
+    },
+    {
+      "name": "reject confidence 0.7",
+      "accepted": false,
+      "changes": {
+        "confidence": 0.7
+      },
+      "remove": []
+    },
+    {
+      "name": "reject confidence_meaning []",
+      "accepted": false,
+      "changes": {
+        "confidence_meaning": []
+      },
+      "remove": []
+    },
+    {
+      "name": "reject coordinate_order 'longitude,latitude'",
+      "accepted": false,
+      "changes": {
+        "coordinate_order": "longitude,latitude"
+      },
+      "remove": []
+    },
+    {
+      "name": "reject provenance_mode 'actual-live'",
+      "accepted": false,
+      "changes": {
+        "provenance_mode": "actual-live"
+      },
+      "remove": []
+    },
+    {
+      "name": "reject event_kind 'x'",
+      "accepted": false,
+      "changes": {
+        "event_kind": "x"
+      },
+      "remove": []
+    },
+    {
+      "name": "reject location_kind 'individual_fix'",
+      "accepted": false,
+      "changes": {
+        "location_kind": "individual_fix"
+      },
+      "remove": []
+    },
+    {
+      "name": "reject quality_flags 'flag'",
+      "accepted": false,
+      "changes": {
+        "quality_flags": "flag"
+      },
+      "remove": []
+    },
+    {
+      "name": "reject quality_flags [None]",
+      "accepted": false,
+      "changes": {
+        "quality_flags": [
+          null
+        ]
+      },
+      "remove": []
+    },
+    {
+      "name": "reject quality_flags ['x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x',",
+      "accepted": false,
+      "changes": {
+        "quality_flags": [
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x"
+        ]
+      },
+      "remove": []
+    },
+    {
+      "name": "reject provider_scores {'x': []}",
+      "accepted": false,
+      "changes": {
+        "provider_scores": {
+          "x": []
+        }
+      },
+      "remove": []
+    },
+    {
+      "name": "reject provider_scores {'x': True}",
+      "accepted": false,
+      "changes": {
+        "provider_scores": {
+          "x": true
+        }
+      },
+      "remove": []
+    },
+    {
+      "name": "reject provider_scores None",
+      "accepted": false,
+      "changes": {
+        "provider_scores": null
+      },
+      "remove": []
+    },
+    {
+      "name": "reject common_name ''",
+      "accepted": false,
+      "changes": {
+        "common_name": ""
+      },
+      "remove": []
+    },
+    {
+      "name": "reject common_name 'bad\\x00text'",
+      "accepted": false,
+      "changes": {
+        "common_name": "bad\u0000text"
+      },
+      "remove": []
+    },
+    {
+      "name": "reject common_name '\\ud800'",
+      "accepted": false,
+      "changes": {
+        "common_name": "\ud800"
+      },
+      "remove": []
+    },
+    {
+      "name": "reject attribution 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "accepted": false,
+      "changes": {
+        "attribution": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      },
+      "remove": []
+    },
+    {
+      "name": "reject quality_flags ['xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "accepted": false,
+      "changes": {
+        "quality_flags": [
+          "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        ]
+      },
+      "remove": []
+    },
+    {
+      "name": "reject station_id 'a:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "accepted": false,
+      "changes": {
+        "station_id": "a:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      },
+      "remove": []
+    },
+    {
+      "name": "reject first_seen_at_utc None",
+      "accepted": false,
+      "changes": {
+        "first_seen_at_utc": null
+      },
+      "remove": []
+    },
+    {
+      "name": "reject api_key 'secret'",
+      "accepted": false,
+      "changes": {
+        "api_key": "secret"
+      },
+      "remove": []
+    },
+    {
+      "name": "reject timestamp 2026-01-01",
+      "accepted": false,
+      "changes": {
+        "observed_at_utc": "2026-01-01"
+      },
+      "remove": []
+    },
+    {
+      "name": "reject timestamp 2026-01-01 00:00:00Z",
+      "accepted": false,
+      "changes": {
+        "observed_at_utc": "2026-01-01 00:00:00Z"
+      },
+      "remove": []
+    },
+    {
+      "name": "reject timestamp 2026-01-01T00:00:00",
+      "accepted": false,
+      "changes": {
+        "observed_at_utc": "2026-01-01T00:00:00"
+      },
+      "remove": []
+    },
+    {
+      "name": "reject timestamp 2026-02-30T00:00:00Z",
+      "accepted": false,
+      "changes": {
+        "observed_at_utc": "2026-02-30T00:00:00Z"
+      },
+      "remove": []
+    },
+    {
+      "name": "reject timestamp 2026-01-01T00:00:60Z",
+      "accepted": false,
+      "changes": {
+        "observed_at_utc": "2026-01-01T00:00:60Z"
+      },
+      "remove": []
+    },
+    {
+      "name": "reject timestamp 2026-01-01T00:00:00.1234567Z",
+      "accepted": false,
+      "changes": {
+        "observed_at_utc": "2026-01-01T00:00:00.1234567Z"
+      },
+      "remove": []
+    },
+    {
+      "name": "reject timestamp 2026-01-01T00:00:00+01:60",
+      "accepted": false,
+      "changes": {
+        "observed_at_utc": "2026-01-01T00:00:00+01:60"
+      },
+      "remove": []
+    },
+    {
+      "name": "reject timestamp 0000-01-01T00:00:00Z",
+      "accepted": false,
+      "changes": {
+        "observed_at_utc": "0000-01-01T00:00:00Z"
+      },
+      "remove": []
+    },
+    {
+      "name": "UTC year overflow 0001-01-01T00:00:00+12:00",
+      "accepted": false,
+      "changes": {
+        "observed_at_utc": "0001-01-01T00:00:00+12:00"
+      },
+      "remove": []
+    },
+    {
+      "name": "UTC year overflow 9999-12-31T23:59:59-12:00",
+      "accepted": false,
+      "changes": {
+        "observed_at_utc": "9999-12-31T23:59:59-12:00"
+      },
+      "remove": []
+    }
+  ]
+}

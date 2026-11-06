@@ -5,7 +5,7 @@ import uuid
 import shutil
 from contextlib import contextmanager
 from pathlib import Path
-from .model import canonical, digest, stamp
+from .model import canonical, digest, stamp, validate_event
 
 
 class Store:
@@ -108,6 +108,7 @@ class Store:
             status = json.loads(row[0]) if row else {}
             baseline = not status.get("baseline_complete", False)
             for normalized, raw in records:
+                validate_event(normalized)
                 if normalized["source_id"] != source_id:
                     raise ValueError("source mismatch")
                 fingerprint = digest(normalized)

@@ -18,6 +18,7 @@ class NativeStorageTests(unittest.TestCase):
         self.session_id = 'fixture'
         self.events = [dict(schema_version=1, event_id='fixture:one', source_id='fixture',
             event_kind='acoustic_species_detection', location_kind='station_detection',
+            provider_event_id='one',coordinate_order='latitude,longitude',provenance_mode='live_source',
             species_id=None, individual_id=None, deployment_id=None, station_id='fixture:station',
             latitude=-41.0, longitude=174, observed_at_utc='2026-01-01T00:00:00Z',
             first_seen_at_utc='2026-01-01T00:00:00Z', ingested_at_utc='2026-01-01T00:00:00Z')]
@@ -103,6 +104,25 @@ class NativeStorageTests(unittest.TestCase):
             db.execute('UPDATE sessions SET envelope_version=0,envelope_json=NULL,envelope_hash=NULL')
         self.assertIn('legacy-metadata-unverified',self.replay()['integrity'])
 
+    def test_shared_semantic_corpus(self):
+        corpus=json.loads((Path(__file__).parent/'fixtures/event_semantics_v1.json').read_text())
+        for case in corpus['cases']:
+            value=dict(corpus['base'], **case['changes'])
+            for key in case['remove']: value.pop(key)
+            with self.subTest(case=case['name']):
+                self.events=[value]
+                self.write_fixture()
+                self.replay(expected=0 if case['accepted'] else 1)
+
+    def test_duplicate_event_keys_rejected_with_matching_hash(self):
+        payload=json.dumps(self.events[0],sort_keys=True,separators=(',',':'))
+        payload=payload[:-1]+',"schema_version":1}'
+        checksum=hashlib.sha256(('{"event":'+payload+',"original_seq":1}\n').encode()).hexdigest()
+        with sqlite3.connect(self.db) as db:
+            db.execute('UPDATE session_events SET event_json=?',(payload,))
+            db.execute('UPDATE sessions SET content_hash=?',(checksum,))
+        self.replay(expected=1)
+
     def test_modified_payload_rejected(self):
         with sqlite3.connect(self.db) as db:
             db.execute("UPDATE session_events SET event_json=replace(event_json,'-41.0','-42.0')")
@@ -122,7 +142,7 @@ class NativeStorageTests(unittest.TestCase):
 
     def test_unicode_numeric_edges_nested_values_and_large_sequence(self):
         self.events[0].update(common_name='Tūī 🐦 "quoted"\n', latitude=-0.0,
-                              provider_scores={'small':1e-07,'large':1e+20,'values':[None,True,2]})
+                              provider_scores={'small':1e-07,'large':1e+20,'unknown':None})
         self.write_fixture(sequence=9007199254740993)
         result=self.replay()
         self.assertEqual(result['events'][0]['event'],self.events[0])

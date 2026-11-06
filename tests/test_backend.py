@@ -137,7 +137,7 @@ class AdapterTests(unittest.TestCase):
             event("test", "x", stamp(utcnow() + timedelta(days=1)), "x", "x")
 
     def test_missing_location_preserved(self):
-        ev = event("test", "x", "2026-01-01T00:00:00Z", "x", "unknown")
+        ev = event("test", "x", "2026-01-01T00:00:00Z", "acoustic_species_detection", "station_detection")
         self.assertIn("location_missing", ev["quality_flags"])
 
     def test_pagination_and_invalid_record(self):

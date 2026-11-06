@@ -4,7 +4,6 @@ from collections import deque
 from datetime import datetime, timezone
 from fractions import Fraction
 from .model import parse_time, digest
-from .sessions import MAX_EVENTS, content_hash
 
 EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
@@ -24,12 +23,7 @@ class Timeline:
             raise ValueError("invalid replay speed") from None
         if not Fraction(1, 100) <= ratio <= 10000:
             raise ValueError("speed must be 0.01-10000")
-        self.session = sessions.get(sid)
-        if self.session["state"] not in ("frozen", "interrupted"):
-            raise ValueError("stop recording before replay")
-        rows = sessions.rows(sid, limit=MAX_EVENTS)
-        if content_hash([{k: v for k, v in row.items() if k != "ordinal"} for row in rows]) != self.session["content_hash"]:
-            raise ValueError("session integrity failure")
+        self.session, rows = sessions.frozen(sid)
         key = "observed_at_utc" if mode == "observed" else "first_seen_at_utc"
         ordered = sorted(rows, key=lambda row: (micros(row["event"][key]), row["original_seq"], row["event"]["event_id"]))
         bounds = self.session["options"].get("timeline_bounds", {}).get(mode)

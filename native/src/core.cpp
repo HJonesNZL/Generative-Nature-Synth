@@ -77,8 +77,12 @@ Microseconds parseUtc(std::string_view value) {
         if (zh > 23 || zm > 59) throw std::invalid_argument("invalid timezone offset");
         zoneMinutes = (zh * 60 + zm) * (value[cursor] == '-' ? -1 : 1);
     } else throw std::invalid_argument("explicit timezone required");
-    const auto daysSinceEpoch = sys_days{day}.time_since_epoch().count();
-    return ((daysSinceEpoch * 86400 + hour * 3600 + minute * 60 + second) - zoneMinutes * 60) * 1000000 + fraction;
+    const std::int64_t daysSinceEpoch = sys_days{day}.time_since_epoch().count();
+    const auto result = ((daysSinceEpoch * 86400 + hour * 3600 + minute * 60 + second) - zoneMinutes * 60) * 1000000 + fraction;
+    constexpr auto earliest = sys_days{year{1}/1/1}.time_since_epoch().count() * 86400000000LL;
+    constexpr auto latest = sys_days{year{10000}/1/1}.time_since_epoch().count() * 86400000000LL;
+    if (result < earliest || result >= latest) throw std::invalid_argument("timestamp outside UTC year range");
+    return result;
 }
 
 void Event::validate() const {

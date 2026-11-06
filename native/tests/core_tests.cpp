@@ -56,6 +56,14 @@ int main() {
         expect(atlas::parseUtc("1969-12-31T23:59:59.9Z") == -100000);
         expect(atlas::parseUtc("2000-02-29T00:00:00Z") > 0);
     });
+    test("historical and future dates avoid 32-bit day multiplication", [] {
+        expect(atlas::parseUtc("1900-01-01T00:00:00Z") == -2208988800000000LL);
+        expect(atlas::parseUtc("2040-01-01T00:00:00Z") == 2208988800000000LL);
+        expect(atlas::parseUtc("0001-01-01T00:00:00Z") == -62135596800000000LL);
+        expect(atlas::parseUtc("9999-12-31T23:59:59.999999Z") == 253402300799999999LL);
+        rejects([] { atlas::parseUtc("0001-01-01T00:00:00+12:00"); });
+        rejects([] { atlas::parseUtc("9999-12-31T23:59:59-12:00"); });
+    });
     test("invalid calendar and timezone rejection", [] {
         for (const auto* value : {"2026-02-29T00:00:00Z", "2026-11-06T24:00:00Z", "2026-11-06T00:00:00",
                                   "2026-11-06T00:00:00.0000001Z", "2026-11-06T00:00:00+24:00", "0000-01-01T00:00:00Z"})
