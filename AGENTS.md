@@ -10,6 +10,16 @@ These rules apply now to this project. Read only the design/API documents releva
 - Do not stop or modify the owner's active recording/collector/watch processes or write test fixtures to the owner's database. Tests use disposable state. Read-only inspection and isolated tests are authorised without repeated confirmation.
 - Open `.als` and `.amxd` only via Finder right-click → Open With → **Ableton Live 12 Suite**, choosing the entry without `_updated`. Never use default Open or double-click for those formats.
 
+## DSP skills — owner scope clarification, 7 November 2026
+
+- Apply only the relevant engineering/research/evaluation parts of Field Audio DSP and Field DSP V2. They are effect-oriented guidance, not the scope or architecture of this synthesizer. V2 supersedes V1 only for overlapping applicable methods.
+- Do not import unrelated Field/Eva hardware, six-string, dry/wet or effect-bank assumptions. Do not let skill templates narrow research, synthesis families, modulation, species/individual mappings, regional effects, historical composition or the complete instrument plan.
+- A minimal first voice/resource setting is an engineering milestone experiment, not a final product ceiling or approved sound. Keep the full synth targets visible and distinguish engineering evidence from owner listening decisions.
+
+## Parallel work — owner instruction, 7 November 2026
+
+- Use subagents for independent workstreams when it improves speed/efficiency. Subagents must run on GPT-6.1 SOL. Assign disjoint file ownership and integrate their results with shared verification.
+
 ## Scope and code clarity
 
 1. Make the smallest complete change that satisfies the task. Fix the cause and remove superseded code in the touched path. No speculative features, unused helpers, duplicate engines, compatibility layers without an actual consumer, or frameworks for hypothetical future needs.
