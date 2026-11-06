@@ -1,0 +1,139 @@
+Start testing: Nov 07 06:56 NZDT
+----------------------------------------------------------
+1/6 Testing: atlas-core
+1/6 Test: atlas-core
+Command: "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native/atlas-core-tests"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native
+"atlas-core" start time: Nov 07 06:56 NZDT
+Output:
+----------------------------------------------------------
+PASS explicit UTC and timezone equivalence
+PASS fractional and pre-epoch timestamps
+PASS historical and future dates avoid 32-bit day multiplication
+PASS invalid calendar and timezone rejection
+PASS station identity and position validation
+PASS bounded rational speeds
+PASS four hours into four minutes
+PASS late upload changes observation versus arrival ordering
+PASS simultaneous stable order and bounded omission
+PASS sample positions invariant across partitions
+PASS seek and half-open block boundary
+PASS recording bounds retain leading and trailing silence
+PASS empty timeline and zero-output capacity
+PASS invalid/overflow block inputs fail without throwing
+PASS duration overflow is explicit
+PASS sliding one-second density
+PASS timeline sorting avoids per-comparison ID allocations
+PASS prepared block lookup performs no C++ allocations
+18 passed, 0 failed
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-core" end time: Nov 07 06:56 NZDT
+"atlas-core" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/6 Testing: atlas-sha256
+2/6 Test: atlas-sha256
+Command: "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native/atlas-sha256-tests"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native
+"atlas-sha256" start time: Nov 07 06:56 NZDT
+Output:
+----------------------------------------------------------
+SHA-256 known answers, chunking and nonmutating digest passed
+<end of output>
+Test time =   0.33 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-sha256" end time: Nov 07 06:56 NZDT
+"atlas-sha256" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/6 Testing: atlas-audio
+3/6 Test: atlas-audio
+Command: "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native/atlas-audio-tests"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native
+"atlas-audio" start time: Nov 07 06:56 NZDT
+Output:
+----------------------------------------------------------
+PASS direct equation normal and parameter/rate extremes
+PASS absolute admission and upward timing
+PASS overload partition invariance and retiring capacity
+PASS oldest steals with eight simultaneous retiring states
+PASS pause resume stop panic seek and stale controls
+PASS normal-level analytical transport ramps and repeated retarget
+PASS dense stealing callback allocates and destroys nothing
+PASS near-end stop regression
+PASS zero invalid buffers and no callback allocation or destruction
+PASS empty windows and seek clear prior voices
+PASS invalid settings rejected
+<end of output>
+Test time =   0.27 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-audio" end time: Nov 07 06:56 NZDT
+"atlas-audio" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/6 Testing: atlas-storage
+4/6 Test: atlas-storage
+Command: "/opt/homebrew/Frameworks/Python.framework/Versions/3.12/bin/python3.12" "-B" "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/tests/native_storage_checks.py" "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native/atlas-native"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native
+"atlas-storage" start time: Nov 07 06:56 NZDT
+Output:
+----------------------------------------------------------
+..................
+----------------------------------------------------------------------
+Ran 18 tests in 1.003s
+
+OK
+<end of output>
+Test time =   1.07 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-storage" end time: Nov 07 06:56 NZDT
+"atlas-storage" time elapsed: 00:00:01
+----------------------------------------------------------
+
+5/6 Testing: atlas-ui-host
+5/6 Test: atlas-ui-host
+Command: "/opt/homebrew/Frameworks/Python.framework/Versions/3.12/bin/python3.12" "-B" "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/tests/native_ui_checks.py" "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native/atlas-native"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native
+"atlas-ui-host" start time: Nov 07 06:56 NZDT
+Output:
+----------------------------------------------------------
+........
+----------------------------------------------------------------------
+Ran 8 tests in 0.093s
+
+OK
+<end of output>
+Test time =   0.14 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-ui-host" end time: Nov 07 06:56 NZDT
+"atlas-ui-host" time elapsed: 00:00:00
+----------------------------------------------------------
+
+6/6 Testing: atlas-wav
+6/6 Test: atlas-wav
+Command: "/opt/homebrew/Frameworks/Python.framework/Versions/3.12/bin/python3.12" "-B" "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/tests/native_audio_checks.py" "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native/atlas-native"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native
+"atlas-wav" start time: Nov 07 06:56 NZDT
+Output:
+----------------------------------------------------------
+.............
+----------------------------------------------------------------------
+Ran 13 tests in 1.628s
+
+OK
+<end of output>
+Test time =   1.70 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-wav" end time: Nov 07 06:56 NZDT
+"atlas-wav" time elapsed: 00:00:01
+----------------------------------------------------------
+
+End testing: Nov 07 06:56 NZDT

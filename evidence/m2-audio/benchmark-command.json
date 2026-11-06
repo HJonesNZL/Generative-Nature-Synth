@@ -1,0 +1,8 @@
+{
+  "command": [
+    "build/native-release/atlas-audio-bench"
+  ],
+  "exitCode": 0,
+  "elapsedSeconds": 12.025256624999999,
+  "scope": "synthetic scalar process calls; no device callback or UI"
+}

@@ -4,7 +4,7 @@ Decision recorded 6 November 2026 after the owner specified portable C++ and ide
 
 The [revised build plan](BUILD_PLAN.md) is authoritative for delivery order and qualification. This document records the architecture milestone. Current repairs and open verification gates are in [the audit index](audits/AUDIT_AND_REVISED_BUILD_PLAN.md).
 
-Beta 1 update: [M1 data/session verification is complete](milestones/M1_VERIFIED_PIECE.md), including schema 3 metadata seals and historical windows. The [H2 UI integration](milestones/UI_HANDOFF_INTEGRATION.md) now supplies running React screens, a read-only C++ presentation adapter and a development transport. The native collector, audio engine and JUCE webview remain future gates. [SQLite runtime requirements](milestones/BETA_1_NATIVE_INTEGRITY.md#sqlite-runtime-qualification) still apply. The remaining sections preserve the original architecture milestone.
+Beta 1 update, 7 November: [M1 data/session verification is complete](milestones/M1_VERIFIED_PIECE.md), including schema 3 metadata seals and historical windows. [M2 first-sound engineering](milestones/M2_FIRST_SOUND.md) now supplies native numeric actions, bounded offline synthesis and WAV export; the launcher/corpus await human listening. The [H2 UI integration](milestones/UI_HANDOFF_INTEGRATION.md) supplies React screens, a read-only C++ presentation adapter and development transport. Audio-device, JUCE webview and UI audio integration remain future gates; whole M2 is not complete. See [frontend readiness](milestones/FRONTEND_INTEGRATION_READINESS.md). [SQLite runtime requirements](milestones/BETA_1_NATIVE_INTEGRITY.md#sqlite-runtime-qualification) still apply. The remaining sections preserve the original architecture milestone.
 
 ## Recommended arrangement
 
@@ -29,21 +29,22 @@ If “WebUI” means the `webui-dev/webui` library, it is an alternative host/br
 
 ## Current implementation and migration status
 
-Implemented in this milestone:
+Current implemented boundary:
 
 - `atlas_core`: C++20 event types, explicit-timezone parsing, rational-speed replay, deterministic observation/arrival ordering and immutable prepared schedules. No JUCE, React, SQLite or Python dependency in this library.
-- Caller-provided block output with no C++ allocation, I/O, locks or exceptions in `Timeline::block`. This is data-event scheduling, not synthesis yet. Construction and JSON/database access remain off the audio thread.
-- `atlas_storage`: read-only schema-v2 SQLite adapter for existing saved sessions. It neither creates databases nor writes to the owner's collector library. Requires SQLite JSON functions.
-- `atlas-native`: native session listing and replay-plan CLI. Uses C++ and SQLite at runtime; Python is only used as a development comparison oracle.
-- A proposed TypeScript presentation/bridge contract in `ui/contracts.ts`. No live JUCE/React bridge is implemented yet; unsupported methods must stay disabled in prototypes.
+- Caller-provided block output with no C++ allocation, I/O, locks or exceptions in `Timeline::block`. This function remains data-event scheduling; synthesis is implemented separately in `atlas_audio`. Construction and JSON/database access remain off the audio thread.
+- `atlas_storage`: read-only schema-v2/v3 SQLite adapter with native content/metadata verification for existing saved sessions. It neither creates databases nor writes to the owner's collector library. Requires SQLite JSON functions.
+- `atlas_audio`: immutable numeric plans, absolute-window admission, eight primary/eight retiring voice states, finite additive tone and single-owner transport. Plan preparation/destruction stay on the worker; the renderer borrows its stable plan. This first experiment does not cap the complete instrument.
+- `atlas-native`: session listing, replay and offline `render` CLI with 24-bit stereo WAV and embedded recipe, exclusive no-overwrite publication. Uses C++ and SQLite at runtime; Python is a development oracle, not a second production audio engine.
+- React/native presentation integration through the development bridge is implemented. JUCE hosting and audio/editing/render commands in the UI remain unavailable; unsupported methods stay disabled. See the frontend readiness document for current contract ownership.
 
-The Python v0.2 collector/API remains the operational temporary reference, not the intended production dependency. The later audit repaired startup recovery ordering without touching any running process. Collector acquisition, write-side storage/session management, native session hash verification, service IPC, musical mapping, regional audio, DSP and JUCE wrappers remain to migrate/build. Do not describe the product as fully ported.
+The Python collector/API remains the operational temporary reference, not the intended production dependency. The later audit repaired startup recovery ordering without touching any running process. Collector acquisition, write-side storage/session management, service IPC, richer mappings/modulation, regional audio, device integration and JUCE wrappers remain to migrate/build. Native session hash verification and the first offline voice/WAV are implemented. Do not describe the product as fully ported.
 
 Existing SQLite schema and event identities are preserved. Replacing the writer requires cross-language baseline/deduplication/correction tests and a controlled handover, not running two writers against the same collection state. Do not interrupt an active recording to switch implementations.
 
 ## Native build and use
 
-Requires a C++20 compiler, CMake 3.22+ and SQLite development headers/library. No paid dependency or network operation is part of configuring/building this target. On this Mac the installed Xcode SDK provides SQLite.
+Requires a C++20 compiler, CMake 3.22+ and SQLite development headers/library. No paid dependency or network operation is part of configuring/building this target. On this Mac use the qualified Homebrew SQLite headers/library documented in the linked runtime notes; the system runtime failed the closed-WAL fixture.
 
 ```sh
 cmake -S . -B build/native -DCMAKE_BUILD_TYPE=Debug
@@ -59,11 +60,11 @@ Development-only parity check:
 python3 -B tests/native_compatibility.py
 ```
 
-The native CLI reads an existing library; it does not yet collect data, record sessions or make sound. Cryptographic session verification has not yet been ported: the native reader checks schema, structure, counts, field validity and capacity. The Python session code remains the checksum reference.
+The native CLI reads verified saved material and can render native synthesized sound to WAV; it does not collect, record sessions or open an audio device. SHA-256 event content and metadata seals are verified in a consistent read snapshot before rendering. Final Debug, Release and ASan+UBSan qualification passes all six CTest suites after the GPS/receiver catalogue fix; evidence is under `evidence/m2-audio/final-*`.
 
 ## UI integration contract for the design agent
 
-Build the interface against an injected host adapter, not direct provider HTTP calls. `ui/contracts.ts` describes proposed DTOs and request/reply shapes independently of React/JUCE. It is a design integration contract, not an implemented RPC service.
+Build the interface against an injected host adapter, not direct provider HTTP calls. `ui/contracts.ts` describes proposed DTOs and request/reply shapes independently of React/JUCE. The original design contract is supplemented by the implemented read-only native UI host/development bridge; proposed product audio/editing methods are not implemented RPC capabilities.
 
 - Same React views can use a clearly labelled mock adapter in a normal browser and a native adapter inside JUCE. Production code selects one authoritative host adapter.
 - Fetch capabilities first. Unsupported source/history/audio/render functions show unavailable or disabled states; do not substitute invented live data.
@@ -91,9 +92,9 @@ JUCE uses platform browser engines. Validate WKWebView on macOS, select WebView2
 
 The portable core uses standard C++20 types and integer time. It avoids Objective-C, POSIX-only calls, compiler-specific 128-bit arithmetic and UI framework types. SQLite is isolated in the storage adapter; future networking is isolated behind an adapter. Platform-specific device, packaging and service-discovery code belongs outside the core.
 
-Prepare replay data off-thread, then publish immutable native state with a lifecycle strategy that does not free memory or acquire locks in the callback. Keep note releases/panic independent of overload admission. The current event scheduler reports block omissions; rendering with different block sizes can select different surviving events under overload. Freeze musical action admission before rendering when overload partition invariance is required.
+Prepare replay data off-thread. M2 compiles immutable musical actions with absolute-window admission, so offline audio is partition-independent under overload; the older `Timeline::block` data lookup separately reports caller-capacity omissions. M2 has one owner and a renderer borrowing a stable plan, with finite releases and panic independent of note admission. A future device adapter must add explicit cross-thread plan publication and retirement so the callback never destroys an owning plan or waits.
 
-The native scheduler is not a complete realtime audio system: mapping, voice management, audio queues, processor lifetime/automation, tail handling and callback deadline qualification remain.
+The offline engine has a bounded voice pool, finite tails, tested controls and synthetic process timing; this does not qualify a realtime device system. Audio queues/publication, device lifecycle, automation, JUCE/UI integration and actual callback deadlines remain open.
 
 ## Zero-cost and licensing constraint
 
@@ -103,11 +104,11 @@ JUCE offers AGPL and commercial licensing routes. A distribution model compatibl
 
 ## Validation and next gates
 
-This milestone was built/tested on macOS arm64. C++ core tests cover timezone/calendar parsing, station identity, invalid positions, exact speed scaling, late batches, simultaneous ordering, sample partitions, seek boundaries, silence bounds, overflow and allocation-free block lookup. Native plans are compared against frozen real-data sessions with the Python oracle without opening the owner database writable.
+The current engineering slice was built/tested on macOS arm64. Historical architecture-milestone checks below are retained as earlier evidence, not a claim of current owner-library inspection. C++ core tests cover timezone/calendar parsing, station identity, invalid positions, exact speed scaling, late batches, simultaneous ordering, sample partitions, seek boundaries, silence bounds, overflow and allocation-free block lookup. Native plans are compared against frozen real-data sessions with the Python oracle without opening the owner database writable.
 
-Windows/MSVC, Linux, JUCE compilation, webview rendering, WebGL performance, DSP and actual DAW behaviour are untested. Portability describes the chosen language/interfaces and implementation discipline, not completed multi-platform qualification.
+Offline tone DSP has equation, numerical, transition, allocation, partition and sanitizer evidence; human listening remains pending. Windows/MSVC, Linux, JUCE compilation, embedded webview rendering, complete-product WebGL/audio resource load and actual DAW behaviour remain unqualified. Portability describes the chosen language/interfaces and implementation discipline, not completed multi-platform qualification.
 
-Revised next step: verify native session integrity and preservation, then prove one mapped native voice/offline render before completing the collector port. Add the protected UI boundary and local history workflow, backup/restore, then a controlled native writer handover. The detailed gates are M1–M5 in the canonical plan. Keep the working collection workflow until its replacements pass parity, durability and recovery checks.
+Current next gates: owner listening on the implemented offline corpus, device/JUCE ownership and capability-backed UI audio integration. Extend local history/piece save-reopen and backup/restore, then qualify a controlled native writer handover. Retain the acoustic stream while prioritising evidenced individual-animal tracking; [offline pilots](../data-pilots/REVIEW.md) are not active sources and GBIF occurrences remain optional/deferred. The detailed gates are M1–M5 in the canonical plan. Keep the working collection workflow until its replacements pass parity, durability and recovery checks.
 
 ## Official references checked
 

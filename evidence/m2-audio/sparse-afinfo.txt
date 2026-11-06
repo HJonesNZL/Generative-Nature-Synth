@@ -1,0 +1,16 @@
+File:           build/m2-listening-743cadf5898d/sparse-candidate-original.wav
+File type ID:   WAVE
+Num Tracks:     1
+----
+Data format:     2 ch,  48000 Hz, lpcm (0x0000000C) 24-bit little-endian signed integer
+Channel layout: Stereo (L R)
+estimated duration: 3.200000 sec
+audio bytes: 921600
+audio packets: 153600
+bit rate: 2304000 bits per second
+packet size upper bound: 6
+maximum packet size: 6
+audio data file offset: 80
+not optimized
+source bit depth: I24
+----

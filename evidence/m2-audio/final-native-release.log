@@ -1,0 +1,35 @@
+$ cmake --build build/native-release -j 4
+-- Configuring done (0.2s)
+-- Generating done (0.0s)
+-- Build files have been written to: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native-release
+[ 10%] Built target atlas_core
+[ 20%] Built target atlas-core-tests
+[ 35%] Built target atlas_audio
+[ 40%] Building CXX object CMakeFiles/atlas_storage.dir/native/src/ui_host.cpp.o
+[ 60%] Built target atlas-audio-tests
+[ 60%] Built target atlas-audio-bench
+[ 65%] Linking CXX static library libatlas_storage.a
+[ 80%] Built target atlas_storage
+[ 90%] Linking CXX executable atlas-sha256-tests
+[ 90%] Building CXX object CMakeFiles/atlas-native.dir/native/src/main.cpp.o
+[ 95%] Built target atlas-sha256-tests
+[100%] Linking CXX executable atlas-native
+[100%] Built target atlas-native
+$ ctest --test-dir build/native-release --output-on-failure
+Test project /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native-release
+    Start 1: atlas-core
+1/6 Test #1: atlas-core .......................   Passed    0.01 sec
+    Start 2: atlas-sha256
+2/6 Test #2: atlas-sha256 .....................   Passed    0.49 sec
+    Start 3: atlas-audio
+3/6 Test #3: atlas-audio ......................   Passed    0.09 sec
+    Start 4: atlas-storage
+4/6 Test #4: atlas-storage ....................   Passed    1.01 sec
+    Start 5: atlas-ui-host
+5/6 Test #5: atlas-ui-host ....................   Passed    0.14 sec
+    Start 6: atlas-wav
+6/6 Test #6: atlas-wav ........................   Passed    1.56 sec
+
+100% tests passed, 0 tests failed out of 6
+
+Total Test time (real) =   3.30 sec

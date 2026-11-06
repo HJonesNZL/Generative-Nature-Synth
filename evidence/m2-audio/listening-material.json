@@ -1,0 +1,38 @@
+{
+  "command": [
+    "python3",
+    "-B",
+    "scripts/m2_listening_corpus.py",
+    "--binary",
+    "build/m2-qualified-743cadf5898d/atlas-native",
+    "--output",
+    "build/m2-listening-743cadf5898d"
+  ],
+  "exitCode": 0,
+  "folder": "build/m2-listening-743cadf5898d",
+  "manifestSha256": "45327b1c2d902a4bf557c78ea37f399a3f08c54adcaca304e6c11a18aa9a8460",
+  "sourceSha256": "743cadf5898d60db03609489d5a1db920dcf3997ef7f852151d80e3fdec916cb",
+  "measurements": [
+    {
+      "file": "build/m2-listening-743cadf5898d/sparse-candidate-original.wav",
+      "frames": 153600,
+      "sampleRate": 48000,
+      "peak": 0.04056811816312291,
+      "rms": 0.005953852331213467,
+      "dcMean": -1.1334127235010536e-06,
+      "clippedSamples": 0
+    },
+    {
+      "file": "build/m2-listening-743cadf5898d/dense-candidate-original.wav",
+      "frames": 57600,
+      "sampleRate": 48000,
+      "peak": 0.16227223423388412,
+      "rms": 0.019290397645426498,
+      "dcMean": -8.06071995094723e-06,
+      "clippedSamples": 0
+    }
+  ],
+  "listening": "not_run",
+  "hardwarePlayback": "not_run",
+  "note": "Synthetic development excerpts; afinfo parses container only, no playback"
+}

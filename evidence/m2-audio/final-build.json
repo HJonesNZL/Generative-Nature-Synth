@@ -1,0 +1,8 @@
+{
+  "sourceSha256": "c02b5d1886fb9af6b24e06682dafe989e81a00e18fd3a29bf44db3c5daf01c37",
+  "artifact": "build/m2-qualified-c02b5d1886fb/atlas-native",
+  "artifactSha256": "e1c26930fd26233f0e3d186a98c8d8f53f0fa8517b4301c4a2da4125de7d3198",
+  "configuration": "Release",
+  "sourceUnchangedDuringQualification": true,
+  "scope": "Final native build after receiver catalogue repair; UI readiness changes are separate."
+}

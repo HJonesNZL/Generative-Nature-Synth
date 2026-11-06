@@ -1,0 +1,177 @@
+{
+  "checked_at_utc": "2026-11-06T17:59:24.826775+00:00",
+  "workspace": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth",
+  "branch": "beta-1",
+  "node": "v24.22.1",
+  "commands": [
+    {
+      "name": "strict TypeScript",
+      "cwd": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/ui/app",
+      "argv": [
+        "/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+        "node_modules/typescript/bin/tsc",
+        "-p",
+        "tsconfig.json",
+        "--noEmit"
+      ],
+      "command": "/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node node_modules/typescript/bin/tsc -p tsconfig.json --noEmit",
+      "exit_code": 0,
+      "output": "",
+      "result": "pass: no diagnostics"
+    },
+    {
+      "name": "unit tests",
+      "cwd": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/ui/app",
+      "argv": [
+        "/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+        "--experimental-transform-types",
+        "--test",
+        "tests/boundaries.test.mjs",
+        "tests/map-markers.test.mjs"
+      ],
+      "command": "/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node --experimental-transform-types --test tests/boundaries.test.mjs tests/map-markers.test.mjs",
+      "exit_code": 0,
+      "output": "(node:44494) ExperimentalWarning: Transform Types is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n✔ capability gate prevents sending unsupported mutations (0.87225ms)\n✔ invalid capabilities and mismatched replies fail closed (0.233708ms)\n✔ abort settles promptly even when the host ignores its signal (0.229875ms)\n✔ timeout remains distinct from user cancellation (5.8405ms)\n✔ duplicate and older revisions cannot re-pulse or replace newer records (0.626292ms)\n✔ bounded buffers explicitly count display omissions and reset across material (0.538083ms)\n✔ late musical outcomes cannot cross a material reset (137.535958ms)\n(node:44495) ExperimentalWarning: Transform Types is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n✔ loaded scope retains old measured fixes without the former forty-fix cutoff (0.665209ms)\n✔ station detections remain receiver aggregates, never animal fixes (0.104834ms)\n✔ display bound preserves selected and highlighted locations and leaves input intact (0.397167ms)\n✔ newest observation compares UTC instants, including offsets and sub-millisecond times (0.409875ms)\n✔ loaded receiver positions remain available when omitted by sampled catalogue (0.586ms)\n✔ individual fix station metadata never counts as a receiver detection (0.110916ms)\nℹ tests 13\nℹ suites 0\nℹ pass 13\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 236.348666\n",
+      "result": "pass:13 tests,0 failures,0 skipped"
+    },
+    {
+      "name": "native build",
+      "cwd": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/ui/app",
+      "argv": [
+        "/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+        "node_modules/vite/bin/vite.js",
+        "build"
+      ],
+      "command": "/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node node_modules/vite/bin/vite.js build",
+      "exit_code": 0,
+      "output": "vite v8.3.5 building client environment for production...\ntransforming...\n✓ 86 modules transformed.\nrendering chunks...\ncomputing gzip size...\ndist/index.html                                                 0.66 kB │ gzip:   0.38 kB\ndist/assets/red-hat-mono-latin-ext-400-normal-CTgQ0k1t.woff2    5.73 kB\ndist/assets/red-hat-mono-latin-ext-500-normal-DzmeEbMl.woff2    5.83 kB\ndist/assets/red-hat-text-latin-ext-400-normal-BBm29hAA.woff2    6.62 kB\ndist/assets/red-hat-text-latin-ext-500-normal-CuIcaAu8.woff2    6.80 kB\ndist/assets/red-hat-text-latin-ext-600-normal-BbxJTJwO.woff2    6.90 kB\ndist/assets/red-hat-text-latin-ext-400-italic-Brz__Nv4.woff2    6.92 kB\ndist/assets/red-hat-mono-latin-400-normal-C-lyubUB.woff2        9.72 kB\ndist/assets/red-hat-mono-latin-500-normal-CjZS5o_4.woff2        9.96 kB\ndist/assets/red-hat-text-latin-400-normal-CU14VBGs.woff2       14.48 kB\ndist/assets/red-hat-text-latin-400-italic-CE15k9Kx.woff2       15.01 kB\ndist/assets/red-hat-text-latin-600-normal-IiL3oQyp.woff2       15.12 kB\ndist/assets/red-hat-text-latin-500-normal-c4wcFpAd.woff2       15.14 kB\ndist/assets/unbounded-latin-500-normal-4slEIF53.woff2          20.74 kB\ndist/assets/unbounded-latin-700-normal-CaoNriVp.woff2          21.09 kB\ndist/assets/unbounded-latin-ext-500-normal-BTIpesyw.woff2      49.05 kB\ndist/assets/unbounded-latin-ext-700-normal-BLzWLLjG.woff2      49.92 kB\ndist/assets/grain-light-XQhZL96u.png                           57.75 kB\ndist/assets/index-BNANTRU0.css                                 32.95 kB │ gzip:   6.62 kB\ndist/assets/index-BxKqDCLv.js                                 418.08 kB │ gzip: 133.43 kB │ map: 1,340.78 kB\ndist/assets/GlobeView-BL1F3Qsf.js                             568.02 kB │ gzip: 141.46 kB │ map: 2,948.75 kB\n\n✓ built in 228ms\n",
+      "result": "pass:86 modules transformed"
+    },
+    {
+      "name": "demo build",
+      "cwd": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/ui/app",
+      "argv": [
+        "/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+        "node_modules/vite/bin/vite.js",
+        "build",
+        "--mode",
+        "demo"
+      ],
+      "command": "/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node node_modules/vite/bin/vite.js build --mode demo",
+      "exit_code": 0,
+      "output": "vite v8.3.5 building client environment for demo...\ntransforming...\n✓ 88 modules transformed.\nrendering chunks...\ncomputing gzip size...\ndist-demo/demo.html                                                  0.67 kB │ gzip:   0.40 kB\ndist-demo/assets/red-hat-mono-latin-ext-400-normal-CTgQ0k1t.woff2    5.73 kB\ndist-demo/assets/red-hat-mono-latin-ext-500-normal-DzmeEbMl.woff2    5.83 kB\ndist-demo/assets/red-hat-text-latin-ext-400-normal-BBm29hAA.woff2    6.62 kB\ndist-demo/assets/red-hat-text-latin-ext-500-normal-CuIcaAu8.woff2    6.80 kB\ndist-demo/assets/red-hat-text-latin-ext-600-normal-BbxJTJwO.woff2    6.90 kB\ndist-demo/assets/red-hat-text-latin-ext-400-italic-Brz__Nv4.woff2    6.92 kB\ndist-demo/assets/red-hat-mono-latin-400-normal-C-lyubUB.woff2        9.72 kB\ndist-demo/assets/red-hat-mono-latin-500-normal-CjZS5o_4.woff2        9.96 kB\ndist-demo/assets/red-hat-text-latin-400-normal-CU14VBGs.woff2       14.48 kB\ndist-demo/assets/red-hat-text-latin-400-italic-CE15k9Kx.woff2       15.01 kB\ndist-demo/assets/red-hat-text-latin-600-normal-IiL3oQyp.woff2       15.12 kB\ndist-demo/assets/red-hat-text-latin-500-normal-c4wcFpAd.woff2       15.14 kB\ndist-demo/assets/unbounded-latin-500-normal-4slEIF53.woff2          20.74 kB\ndist-demo/assets/unbounded-latin-700-normal-CaoNriVp.woff2          21.09 kB\ndist-demo/assets/unbounded-latin-ext-500-normal-BTIpesyw.woff2      49.05 kB\ndist-demo/assets/unbounded-latin-ext-700-normal-BLzWLLjG.woff2      49.92 kB\ndist-demo/assets/grain-light-XQhZL96u.png                           57.75 kB\ndist-demo/assets/demo-BNANTRU0.css                                  32.95 kB │ gzip:   6.62 kB\ndist-demo/assets/demo-CjZ-GbqQ.js                                  452.17 kB │ gzip: 143.57 kB │ map: 1,431.29 kB\ndist-demo/assets/GlobeView-BFMZ5RW6.js                             568.02 kB │ gzip: 141.46 kB │ map: 2,948.75 kB\n\n✓ built in 212ms\n",
+      "result": "pass:88 modules transformed"
+    },
+    {
+      "name": "build separation and CSP",
+      "cwd": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/ui/app",
+      "argv": [
+        "/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+        "tests/build-checks.mjs"
+      ],
+      "command": "/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node tests/build-checks.mjs",
+      "exit_code": 0,
+      "output": "Build checks passed: separate native/demo sources, no development HTTP, CSP, local licences and lazy globe.\n",
+      "result": "pass:native/demo separation,no development HTTP,CSP,local licences,lazy globe"
+    },
+    {
+      "name": "native fixture browser",
+      "cwd": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/ui/app",
+      "command": "PLAYWRIGHT_MODULE=/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs /Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node tests/browser-checks.mjs",
+      "exit_code": 0,
+      "result": "pass:9 grouped checks,no page errors,no external HTTP"
+    }
+  ],
+  "fixture": {
+    "path": "build/ui-browser-fixture.sqlite3",
+    "disposable": true,
+    "owner_data_accessed": false,
+    "server_command": "ATLAS_LIBRARY='/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/ui-browser-fixture.sqlite3' /Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 5173",
+    "server_stopped": true,
+    "sha256": "dc371e5ef79947c028fa5d2629cb1ba68c71496af65544f0771d79299c518f69",
+    "server_stop": "Owned Vite process received SIGINT; exit130. Port5173 checked closed after shutdown.",
+    "native_binary": "build/native/atlas-native",
+    "native_binary_sha256_after_run": "908affb07f786af7139d24707ba6ad9d0c9eb27b2d57e2b387b910e367447e1d",
+    "native_binary_version_after_run": {
+      "engine": "animal-atlas-native",
+      "source_sha256": "c02b5d1886fb9af6b24e06682dafe989e81a00e18fd3a29bf44db3c5daf01c37"
+    }
+  },
+  "source_sha256": {
+    "docs/milestones/GLOBE_PREVIEW.md": "7b4bd6fcfae1c5cad512bf736b16cadd8a1d1bd8f45a13fe6d8b6d0f286e7227",
+    "native/src/ui_host.cpp": "f7010c48ff2205df223c424e54ced1d1e7dd84bb3777632690955bf670c893c0",
+    "tests/native_ui_checks.py": "fe24e632f268d5db9085b1753ebb509b1ef5d215a835e602a11e27de800e59c5",
+    "ui/app/README.md": "9594b0b50e09e026a68d1f2e6b50cb56d2b04b64c6b2eaf610ace0c201995ec2",
+    "ui/app/dev/nativeBridge.mjs": "232034fb56e3012db95f4b5c3e682ba4f0836fdcd909c8ec03a8721c18453d4b",
+    "ui/app/package-lock.json": "c00e4258abb856dc18ad6f832d2c8767b4f03d3d7c826514a4b123ea844c04a5",
+    "ui/app/package.json": "3c0fc08e1631fcc465148610c4e5d12a99c120ed2b5da44ea16408419127e0bb",
+    "ui/app/src/app/App.tsx": "77a367fc7650990c136b395c12d74acb42fd16377faad31406f5437c16c462d9",
+    "ui/app/src/components/map/geo.ts": "8b23d4dafb5201f62b5907f8304a4b5c5365cc2241c98b95ce066c499a1e969c",
+    "ui/app/src/screens/atlas/LeftColumn.tsx": "7870a0c1589111d6748cdfd6ee1ec9999f18d1e5abb09d9e7204acf0315064c7",
+    "ui/app/src/screens/atlas/MapStage.tsx": "4f543d91e1314c25f355ca4dc1372acfeeee0684b46d4d37f82a142a5522a89d",
+    "ui/app/src/screens/shared/mapMarkers.ts": "868da92189d9558913509e086408ee4f1ef2c259c5658252a0d640d5a9e1be59",
+    "ui/app/src/screens/shared/useMaterialView.ts": "4c334c481665e9cecef1076d383b98eec4dafd0af2a8cf792e253b95097df48f",
+    "ui/app/src/styles/app.css": "23d64a83a60e2ef39b5abf2c95effea77d402fcad2a58c7dc8e4a1de4206eab3",
+    "ui/app/tests/boundaries.test.mjs": "0761ca8b9327579f889dba584d8d33cf5aa6afbc0a5925fc9302e428b1240085",
+    "ui/app/tests/browser-checks.mjs": "189034ae128df0be7faf0b4e3b2009e21e43f9a5441d12e2d4b9607c0769b179",
+    "ui/app/tests/build-checks.mjs": "c14969ed174626c9e1d7fa023cda4383854f2a90aae7fc88648e3289eb36b14d",
+    "ui/app/tests/map-markers.test.mjs": "f8ed7b722977ef327dc52c505281cc70efc152b51e2acdf3e33c86e08b8bb4c6",
+    "ui/app/tests/static-browser-checks.mjs": "944ead35f53b0d6743e699cc76a2f38468526fc867bb86814ca361bf53e7947e",
+    "ui/app/vite.config.mjs": "9e7973fb441e2d3162018fc5b6ac8163da8bad0202bee6191dcf856e7833598b"
+  },
+  "browser_report": {
+    "path": "ui/app/test-results/browser-checks.json",
+    "sha256": "db509c772f06f777c07c6ed516500d2b178b2c6d4d59d158a9e28d0af9d8ad0f",
+    "content": {
+      "checks": [
+        "All loaded scope, species search/reset, world fallback and keyboard location list",
+        "Native capabilities, verified historical bounds and explicit 2000-record display limit",
+        "Empty historical hour preserved; Studio capability gating; repeated globe mount/disposal",
+        "WebGL context loss switches to 2D without losing data",
+        "Demo keyboard parameter edit and mock voice save",
+        "Explicit demo, keyboard map control, both screens at 1280/1440/1920 widths, reduced motion",
+        "Startup without WebGL uses 2D",
+        "HTTP origin, verb, size, malformed JSON and unsupported-mutation rejection",
+        "No uncaught page errors or external HTTP requests in exercised native/demo flows"
+      ],
+      "browser": "156.0.8078.80",
+      "errors": [],
+      "external": []
+    }
+  },
+  "static_browser": {
+    "rerun_on_final_helpers": false,
+    "reason": "Static-browser suite was not rerun in this final qualification. Final dev-fixture browser9groups,production/demo builds,and build separation/CSP checks were rerun. Prior static report is retained as prior evidence only.",
+    "prior_report_path": "ui/app/test-results/static-browser-checks.json",
+    "prior_report_sha256": "74bcf9a4d11d916587c356d26dfdd06b3ac96420e330cedd0909a5536abc9b2f",
+    "prior_report": {
+      "browser": "156.0.8078.80",
+      "errors": [],
+      "failures": [],
+      "checks": [
+        "Production without native injection fails closed",
+        "Static demo globe and Studio load with CSP and local assets",
+        "All loaded scope, species search/reset, world fallback and keyboard location list",
+        "No external HTTP or development bridge requests"
+      ]
+    }
+  },
+  "screenshots": {
+    "ui/app/test-results/demo-atlas-1280.png": "5debe2c167003d7acc8d6346642de3fb32222ba9a6cb37c86b292e354ad5b9d6",
+    "ui/app/test-results/demo-atlas-1440.png": "dfc315b1db5af52474312fa447dad254f3e269e7f977f3f1e4fe588d49c2fd37",
+    "ui/app/test-results/demo-atlas-1920.png": "7fc0ecfe513fb087b36f9cead6a33b353f129f474686a9a9f5f505146d7a781b",
+    "ui/app/test-results/demo-sound-studio-1280.png": "a61f2bbcef1ce008d95a425c77cfadf91c9f00521c942bb560650e23faa967bf",
+    "ui/app/test-results/demo-sound-studio-1440.png": "30c1f15cbd187209bd33e393b8a6b047b585e2e208b50d823d6cee3beb954529",
+    "ui/app/test-results/demo-sound-studio-1920.png": "1eaf72262ec14f5f622691236ca033f56215b384eb2bcaa1d5152720351a2c20",
+    "ui/app/test-results/native-atlas.png": "77472b18c64e11622638b835751ad10387929feeac193ffb71a0312f29b1d439",
+    "ui/app/test-results/native-studio.png": "6999673b0e120e926a29b3a73ceaebff12b8227ec91be9cee2a688afbc16d9f2",
+    "ui/app/test-results/native-world-overview.png": "6a7f901626ccda134489b16190f1a765dde11632f7ab781897604c6e0b51a9ac"
+  },
+  "limitations": [
+    "Final fixture/browser verification only; no owner collector/library access.",
+    "Native browser suite uses the dev bridge and disposable SQLite fixture; production separation/CSP verified by build checks. Static-browser report is prior evidence, not a final rerun.",
+    "Not native webview,DAW,GPU performance,long duration,listening or actual live freshness qualification.",
+    "No full-library/global coverage claim; bounded UI/host limits remain.",
+    "The regression forbids individual_fix GPS station metadata from receiver aggregation; fixture/browser passes do not establish external-provider correctness."
+  ]
+}

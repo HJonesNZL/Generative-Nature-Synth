@@ -1,0 +1,23 @@
+[
+  {
+    "command": [
+      "cmake",
+      "--build",
+      "build/native",
+      "-j",
+      "4"
+    ],
+    "exitCode": 0,
+    "elapsedSeconds": 0.904821208
+  },
+  {
+    "command": [
+      "ctest",
+      "--test-dir",
+      "build/native",
+      "--output-on-failure"
+    ],
+    "exitCode": 0,
+    "elapsedSeconds": 3.347912375
+  }
+]

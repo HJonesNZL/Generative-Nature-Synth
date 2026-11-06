@@ -1,0 +1,162 @@
+{
+  "schema": 1,
+  "candidate_id": "animal-atlas-m2-first-voice-c02b5d1886fb",
+  "stage": "offline_verified",
+  "files": {
+    "Audition Atlas Session.command": "6b1f3b5322515e35bcb6e5f5e6dfc4f470c87b009ca288872114786d44886657",
+    "CMakeLists.txt": "3e58c41ee18120fccd8192767cf082deaa676ca6ad2f2ef65ea6e26fe5c08358",
+    "docs/milestones/M2_AUDIO_CONTRACT.md": "80c42eb2c1d73fe9b87e6cf75a48b20cb1681b4ded2c01d0f2582ddca8c3f00a",
+    "docs/milestones/M2_FIRST_SOUND.md": "cbca6c1f173f0a2f1c5edcb4890869e5af632fb6a2918f237ac1611ff212680c",
+    "docs/milestones/M2_LISTENING.md": "37c1b27f5d38180945716839233d43fcb872a09d250a9121c7d88746cdd8050d",
+    "evidence/m2-audio/benchmark-command.json": "fc2265b3fa0fa93d8ba6b619c533e391df6595a0192bdeb657ba01cbaf799a1a",
+    "evidence/m2-audio/build.json": "5e86a065b0b627d1da221ffe363666fdd267caeec23c9944f7970b5ec77fbd7a",
+    "evidence/m2-audio/dense-afinfo.txt": "5a74fa33c9e491ea7dce70f04c1f3ff9b0ac66d4d3b0644f097ed7167e6dca53",
+    "evidence/m2-audio/environment.json": "b2b3e216af328c8e5488cb2284401e94dd3e758e163932fa014d2dc4b5dbaf0a",
+    "evidence/m2-audio/evidence-review.md": "8a1d83e856f2e4e85bd5aca3bf51bccc8011834c406d1e73363ba0e0725f74ee",
+    "evidence/m2-audio/final-build.json": "77d52d2d519106d1d2f03f3169467370a78b79746e15e4dc3703818de1d2a376",
+    "evidence/m2-audio/final-evidence-review.md": "d07cd7bb6df2720c19d6abaccdcd6ceb3710598ac6733e488bf3e760bea908ad",
+    "evidence/m2-audio/final-listening-material.json": "7f08dfe066de7ce85bb45dc50f068ba1840788b09c5cb4e666a38a541a3069f7",
+    "evidence/m2-audio/final-native-debug.log": "57c63ee79efa5a62fd3e372a362662abbc36b23ed85311b897238cde143c00d5",
+    "evidence/m2-audio/final-native-release-commands.json": "cb221e42c9a8a08c1afe205a04bc5af317b15b0129f3dc4df69d0541d23c618d",
+    "evidence/m2-audio/final-native-release.log": "0c49cd6642c4d668ed463657673740f991a11eb15c13afd50e274c72bc199d72",
+    "evidence/m2-audio/final-native-sanitized-commands.json": "794987c97d1d7b74358069eb490f8f1b47595d51363bdeb99a3636f5eecfdbb0",
+    "evidence/m2-audio/final-native-sanitized.log": "f2cab4498a5ee351e07b265f2bf493c44058609a922fdeb74d52d75267b6bad2",
+    "evidence/m2-audio/final-source.json": "fb90802305645a6c8c045855bbd9aea553b5ac77bbfad934602a35da9f51df87",
+    "evidence/m2-audio/listening-material.json": "410be75f717efb64598fbf32826877da16f175cd2fcce678eefa1b9afe4b841f",
+    "evidence/m2-audio/native-commands.json": "e2c6a2153bd593a2abdb1095340fd610e315d44134a81a848669460298554a59",
+    "evidence/m2-audio/native-release-commands.json": "55e98bd60c83635a2889f40bdc4c1d63377ca6361d47fc85a84e7e88965b738d",
+    "evidence/m2-audio/native-release.log": "6bd1e023c7df95d7974412825a5c574d8cef4606bc8015c623d12561ec1fd131",
+    "evidence/m2-audio/native-review.md": "ec092438a476d790b2cf9cb7dcac93ea0398c34c1722e6db7d2627102594e7f5",
+    "evidence/m2-audio/native-sanitized-commands.json": "a8ef8c9a246b8879c10bc47d1a4d8c3c2e888758de818476bf8f6006106c140e",
+    "evidence/m2-audio/native-sanitized.log": "493946b8706b7efd15982cd4078e7a01e4d242ef17f582df76bcf04774674ac2",
+    "evidence/m2-audio/native.log": "0e94f5d5fe09780f75ce37e693f927a0af78ae02aa6437588b15bb35d36589ed",
+    "evidence/m2-audio/receiver-regression-before.log": "dd34c253972b2924e82322c935662d56baa08a4bc5fbfb6bd7c9e349b1be2728",
+    "evidence/m2-audio/release-process-timings.csv": "5968b1b18e68664e90ef80e1026f09372a261717dc87e368f45d9094c8f13150",
+    "evidence/m2-audio/source-before.json": "5f173132b40d13caec6f1d8f2f4ab1256f7d763919ef96dcd5e7ad2a231ca1b8",
+    "evidence/m2-audio/sparse-afinfo.txt": "70a5ae448784245c0614d60de300d8007d684ddd68befdb4decb1a1a3141546e",
+    "native/cmake/build_identity.hpp.in": "5e74f4abbea2ea8dac7d55244693c1448a1e771e3e9447b2729995eeec626b12",
+    "native/include/atlas/audio.hpp": "6e5c6822ff3c8642fcd05218d3bf3d0d4413a25ab79bef8c7c41752ee36e9482",
+    "native/include/atlas/core.hpp": "86c5e72c5e0723a382032574e395f6fac9492d64349b81b08a1d0da3ac767e49",
+    "native/include/atlas/storage.hpp": "d0fcb14739ecafa966a62b7a70b73839f0eb65515c683697ec59f6f26943bf5a",
+    "native/include/atlas/ui_host.hpp": "2828775de3faab590cd3193c31b2205a7143bcbdacc004a93b81b6a28c4366ac",
+    "native/include/atlas/wav.hpp": "433b16bff0940dd7b134f7a87f7082b823cd73b2474572f6fe859145f638a4c7",
+    "native/src/audio.cpp": "b1aaa64f6b7f8b998da2aee9ad9f03d0f2f6819dbeb3fddec36d0ab3dd7c1b11",
+    "native/src/core.cpp": "9451fa0dd37ccf76d15e856b15d36a28f1d8a1340ec1e273a3f6e149738117eb",
+    "native/src/event_validation.cpp": "92496c5b4030fd98b74e06a15ff949f2b7f39e114e9a269247751c08fd694a56",
+    "native/src/event_validation.hpp": "bab21215216f5e0166ec16dfe34e49691992fd8706b4679509e9271c0bafa675",
+    "native/src/json_text.hpp": "5d02ade4aeb31aad1ccf78bfd7262d4a1251d9d338e9a71b9f8159f73430ba97",
+    "native/src/main.cpp": "9d67daa1d2d12100bec6aabe9c5e15dc1ce18f5017f4ef43566aec44b5a49462",
+    "native/src/sha256.cpp": "2b4ee63b0eb803a6b4b920f25a96162c12920b4b994e2f51d564528fa6038975",
+    "native/src/sha256.hpp": "0b28ae813895efb324f9c6d51293a8eade15f292f69ebe9f27fba4ffe2c635ef",
+    "native/src/sqlite_statement.hpp": "8c7371d136977107b373a83c996fcf1def4ee96a27daa14060e9aa37a6255ef6",
+    "native/src/storage.cpp": "2267bba105f30970580c910e2e5af7d10e4da06e8cd5f05fd4c666827cf85c1d",
+    "native/src/ui_host.cpp": "f7010c48ff2205df223c424e54ced1d1e7dd84bb3777632690955bf670c893c0",
+    "native/src/wav.cpp": "3871714b32d8395749aa1ddcbe989fed0808fce32a60aaf550117f8f7ca03f6e",
+    "native/tests/audio_bench.cpp": "b1162f49cc0f6a4f02a951d5cc96f6648981db00aa8629c1373fd8a0bd8f5e82",
+    "native/tests/audio_tests.cpp": "8f20543ae50eb60c5d6e3c47cc296010466735a1b7a313bf0cfed54937f33a09",
+    "native/tests/core_tests.cpp": "93a3ff83813d5f7003cafe03252f7e421067a0c50da35f2b0f586a1ebe61dad8",
+    "native/tests/sha256_tests.cpp": "d871e1bcc07b51ce2287cffd0800c87fc695ff11eea97edf0eb5825470681a56",
+    "scripts/m2_listening_corpus.py": "359238ff3232fc4e7eeabfb9057f9445621ec6d736e64cfc1942339a98752c02",
+    "tests/audio_oracle.py": "45641eb69c24e7113183b31268942cfa3c7ec22328ab54a075bafe222fb0ffad",
+    "tests/native_audio_checks.py": "3af6f1bdc630297f4149fed5a436e4335091faa96c2bc78b125889fed36b7289",
+    "tests/native_ui_checks.py": "fe24e632f268d5db9085b1753ebb509b1ef5d215a835e602a11e27de800e59c5"
+  },
+  "checks": {
+    "callback_measurement": {
+      "status": "not_run",
+      "note": "Offline process timings exist; no actual audio callback/device/host load measured.",
+      "evidence": []
+    },
+    "controls": {
+      "status": "pass",
+      "note": "Single-owner between-call transport transitions, seek/generation, repeated retarget and settings bounds verified; no host automation or concurrent command protocol.",
+      "evidence": [
+        "evidence/m2-audio/final-native-debug.log",
+        "evidence/m2-audio/native-review.md",
+        "evidence/m2-audio/final-evidence-review.md"
+      ]
+    },
+    "delivery": {
+      "status": "not_run",
+      "note": "Local offline CLI and launcher only; no qualified installed product or clean-machine distribution.",
+      "evidence": []
+    },
+    "hardware": {
+      "status": "not_run",
+      "note": "No audio device, JUCE or DAW integration tested.",
+      "evidence": []
+    },
+    "headroom": {
+      "status": "pass",
+      "note": "Analytical 0.8 bound, measured finite output and independent PCM range checks for specified settings. No feedback/limiter in this candidate.",
+      "evidence": [
+        "evidence/m2-audio/native-review.md",
+        "evidence/m2-audio/final-native-debug.log",
+        "evidence/m2-audio/listening-material.json",
+        "evidence/m2-audio/final-evidence-review.md"
+      ]
+    },
+    "listening": {
+      "status": "not_run",
+      "note": "Synthetic level-matched A/B material generated, but no human listening outcome recorded.",
+      "evidence": []
+    },
+    "numerical": {
+      "status": "pass",
+      "note": "Independent equations and WAV oracle, partition invariance, invalid inputs and sanitizer coverage; exact scope in first-sound report.",
+      "evidence": [
+        "evidence/m2-audio/final-native-debug.log",
+        "evidence/m2-audio/final-native-release.log",
+        "evidence/m2-audio/final-native-sanitized.log"
+      ]
+    },
+    "review": {
+      "status": "pass",
+      "note": "Separately scoped SOL native and final evidence reviews; review limits and earlier build attribution retained.",
+      "evidence": [
+        "evidence/m2-audio/native-review.md",
+        "evidence/m2-audio/final-evidence-review.md"
+      ]
+    },
+    "routing_state": {
+      "status": "pass",
+      "note": "Centered stereo first voice; bounded main/retiring voices and finite tails verified. Regional routing remains future work.",
+      "evidence": [
+        "evidence/m2-audio/final-native-debug.log",
+        "evidence/m2-audio/native-review.md",
+        "evidence/m2-audio/final-evidence-review.md"
+      ]
+    },
+    "runtime_static": {
+      "status": "pass",
+      "note": "Borrowed stable plan, fixed bounded voice arrays and allocation/deallocation probes. No cross-thread publication or live device integration claimed.",
+      "evidence": [
+        "evidence/m2-audio/native-review.md",
+        "evidence/m2-audio/final-native-debug.log",
+        "evidence/m2-audio/final-evidence-review.md"
+      ]
+    },
+    "specification": {
+      "status": "pass",
+      "note": "First experimental voice equations, settings, ownership, finite state and acceptance are specified; not a final instrument design.",
+      "evidence": [
+        "evidence/m2-audio/final-evidence-review.md"
+      ]
+    }
+  },
+  "build": {
+    "sourceSha256": "c02b5d1886fb9af6b24e06682dafe989e81a00e18fd3a29bf44db3c5daf01c37",
+    "artifact": "build/m2-qualified-c02b5d1886fb/atlas-native",
+    "artifactSha256": "e1c26930fd26233f0e3d186a98c8d8f53f0fa8517b4301c4a2da4125de7d3198",
+    "configuration": "Release",
+    "sourceUnchangedDuringQualification": true,
+    "scope": "Final native build after receiver catalogue repair; UI readiness changes are separate."
+  },
+  "context": {
+    "environment": "evidence/m2-audio/environment.json",
+    "fixtureRole": "Disposable synthetic development and regression data; owner library untouched.",
+    "scope": "Portable C++20 offline candidate, macOS arm64 Release artifact; no Windows/Linux qualification.",
+    "impactAnalysis": "Only native ui_host.cpp changed after initial audio review/timings. Audio/core/WAV sources unchanged; final tests rerun. Earlier results retain original identity."
+  },
+  "next_gate": "Owner listening evaluation, then native device adapter and bounded cross-thread publication/retirement with actual callback measurement before enabling frontend audio capabilities."
+}

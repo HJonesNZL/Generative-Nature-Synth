@@ -1,14 +1,14 @@
 # Animal Atlas backend
 
-M1 is complete on `beta-1`: [verified native data pieces, historical windows and test evidence](docs/milestones/M1_VERIFIED_PIECE.md). [Build checkpoint log](docs/milestones/M1_BUILD_LOG.md). [Claude design handoff prompt](<Claude Design/CLAUDE_DESIGN_HANDOFF_PROMPT.md>).
+M1 is complete on `beta-1`: [verified native data pieces, historical windows and test evidence](docs/milestones/M1_VERIFIED_PIECE.md). The [M2 first-sound engineering slice](docs/milestones/M2_FIRST_SOUND.md) now implements native offline synthesis and WAV export; the audition launcher and synthetic corpus await human listening. Whole-M2 acceptance remains open. [Build checkpoint log](docs/milestones/M1_BUILD_LOG.md). [Claude design handoff prompt](<Claude Design/CLAUDE_DESIGN_HANDOFF_PROMPT.md>).
 
-The [revised build plan](docs/BUILD_PLAN.md) is the current product/engineering sequence. See the [consolidated Astra audit](docs/audits/AUDIT_AND_REVISED_BUILD_PLAN.md) for demonstrated issues, repaired items and release gates, and [AGENTS.md](AGENTS.md) for the active C++/realtime/agent rules. Standalone first with a shared C++ engine and later VST3 remains the recommendation; the H2 graphical UI now runs as a read-only native data preview plus a separate illustrative demo. No audible engine or JUCE product shell is implemented yet.
+The [revised build plan](docs/BUILD_PLAN.md) is the current product/engineering sequence. See the [consolidated Astra audit](docs/audits/AUDIT_AND_REVISED_BUILD_PLAN.md) for demonstrated issues, repaired items and release gates, and [AGENTS.md](AGENTS.md) for the active C++/realtime/agent rules. Standalone first with a shared C++ engine and later VST3 remains the recommendation; the H2 graphical UI now runs as a read-only native data preview plus a separate illustrative demo. The portable native offline engine is implemented; audio-device output, JUCE packaging and UI audio integration remain unimplemented. See [frontend integration readiness](docs/milestones/FRONTEND_INTEGRATION_READINESS.md).
 
 Open **Start Atlas UI.command** for the new two-screen interface. See [UI launch and integration instructions](ui/app/README.md) and [verified integration scope](docs/milestones/UI_HANDOFF_INTEGRATION.md). Existing collection commands remain separate.
 
 ## Production direction and C++ migration
 
-The production codebase is moving to portable C++20, with thin JUCE standalone/VST3 adapters. The integrated UI is React/TypeScript with a Three.js globe in JUCE's embedded browser. React and the webview are complementary. The C++ event/replay core and read-only native session CLI now build; collector/session writes remain the operational Python prototype below until parity and recovery testing support replacing it. Existing terminal commands and ongoing recordings are unchanged.
+The production codebase is moving to portable C++20, with thin JUCE standalone/VST3 adapters. The current UI is React/TypeScript with a Three.js globe; JUCE's embedded browser remains the planned product container. React and the webview are complementary. The C++ event/replay core, numeric action compiler, bounded voice renderer, WAV writer and read-only native session CLI now build; collector/session writes remain the operational Python prototype below until parity and recovery testing support replacing it. Existing terminal commands and ongoing recordings are unchanged.
 
 ```sh
 cmake -S . -B build/native -DCMAKE_BUILD_TYPE=Debug
@@ -18,13 +18,13 @@ build/native/atlas-native sessions --db .state/atlas.sqlite3
 build/native/atlas-native replay --db .state/atlas.sqlite3 --session latest --mode observed --speed 60 --limit 5
 ```
 
-The C++ core needs no JUCE, React or Python runtime. CTest storage fixtures require Python 3.9+ at development time. The storage adapter uses SQLite; on this Mac select the already-installed Homebrew headers/library as documented in the Beta 1 notes, because the system runtime failed the closed-WAL fixture. See [native and React integration notes](docs/native-react-architecture.md) and the proposed [UI host contract](ui/contracts.ts). Windows/Linux, JUCE integration and webview rendering still need qualification.
+The C++ core needs no JUCE, React or Python runtime. CTest storage fixtures require Python 3.9+ at development time. The storage adapter uses SQLite; on this Mac select the already-installed Homebrew headers/library as documented in the Beta 1 notes, because the system runtime failed the closed-WAL fixture. See [native and React integration notes](docs/native-react-architecture.md) and the proposed [UI host contract](ui/contracts.ts). Final macOS Debug, Release and ASan+UBSan runs pass all six CTest suites after the GPS/receiver catalogue fix; see `evidence/m2-audio/final-*`. Synthetic process timing is not product/device CPU qualification. Windows/Linux, JUCE integration and embedded webview rendering still need qualification.
 
 ## Operational Python prototype
 
 Local wildlife collection and a real-time application import bridge. Runtime uses **Python 3.9+ standard library and SQLite only**: no paid services, accounts, API keys, hosted infrastructure, or package downloads are needed to run it. Run from source; the optional packaging metadata is not needed.
 
-Version 0.3 adds sealed metadata, provenance-preserving bundles and full historical playback windows to recording, immutable saved sessions, observation/arrival replay plans, speed control and portable local bundles. This is a backend, not a synthesizer, atlas GUI, DAW plug-in or production service. Collection is periodic polling, not a provider push stream. Commercial source reuse is unresolved; local research access is not represented as permission to distribute a product or dataset.
+Version 0.3 adds sealed metadata, provenance-preserving bundles and full historical playback windows to recording, immutable saved sessions, observation/arrival replay plans, speed control and portable local bundles. This Python component remains a backend prototype; the native offline synthesizer and React preview are separate implementations, with no DAW plug-in or production-service qualification. Collection is periodic polling, not a provider push stream. Commercial source reuse is unresolved; local research access is not represented as permission to distribute a product or dataset.
 
 ## Open without entering commands
 
@@ -89,6 +89,8 @@ BirdWeather is a rolling observation-time window, not a proven publication feed.
 NZ shark collection currently records the latest fix for each provider subject. It can miss intervening fixes. Observation age may be days or months even when requests work. Provider subject ID is preserved separately: individual/deployment IDs remain null pending evidence-backed identity reconciliation. Same-name sharks are not automatically merged. There are no derived paths or speed estimates.
 
 The shipped config is NZ-focused. Set BirdWeather `bbox` to null for global requests, but the 1,000-record poll cap may be reached repeatedly; this is **not a complete global ingestion solution**. Scoped collection/sharding and fuller history reconciliation are future work. Neither source has a verified commercial redistribution permission or availability guarantee. There is no fallback to a paid API or cloud service.
+
+The live listening/detection stream is retained. Source expansion prioritises genuine individual-animal locations with evidenced animal/deployment identities; generic GBIF occurrences are optional/deferred. The [offline data pilots and review](data-pilots/REVIEW.md) prepare contracts only: no Movebank/GBIF source or proposed reliability patch is active. The full synthesis palette, modulation, species/individual mappings, regional effects and historical composition remain product targets; the first tone and eight-voice experiment are not product ceilings.
 
 ## Tests
 

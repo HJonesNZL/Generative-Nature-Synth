@@ -1,0 +1,24 @@
+{
+  "role": "Synthetic development comparison; no human listening performed",
+  "command": [
+    "python3",
+    "-B",
+    "scripts/m2_listening_corpus.py",
+    "--binary",
+    "build/m2-qualified-c02b5d1886fb/atlas-native",
+    "--output",
+    "build/m2-listening-c02b5d1886fb"
+  ],
+  "exitCode": 0,
+  "files": {
+    "build/m2-listening-c02b5d1886fb/dense-A.wav": "d3f71be610963cf97e48a669eb6dd10dcd09b220128330dac69e817c110bcec6",
+    "build/m2-listening-c02b5d1886fb/dense-B.wav": "6a98262de5c9cb857f39baef57f2aec869ba93875fda6ed92fea9cb3c4bcbb3e",
+    "build/m2-listening-c02b5d1886fb/dense-candidate-original.wav": "97ed043525d27bbf33e360d1bc5072c8906416280e82ab515805f04acae07a18",
+    "build/m2-listening-c02b5d1886fb/dense-sine-original.wav": "e71c27bdc5b7cef77b7fcff61c95e7d8f7b9c64aef52ab07d7e27558e456854e",
+    "build/m2-listening-c02b5d1886fb/manifest-reveal.json": "f52639783add0414de908b829ffd86893f89e018caec92b05376cb5c7eb25f0f",
+    "build/m2-listening-c02b5d1886fb/sparse-A.wav": "5680dc988b54eefa256425a1e94995becb579ffe2c075a1b5ceaee2ca09a38ae",
+    "build/m2-listening-c02b5d1886fb/sparse-B.wav": "2053aa207ae33893fef376b0917754622042f253dc03d779b173c3ec1d9c8449",
+    "build/m2-listening-c02b5d1886fb/sparse-candidate-original.wav": "e2d9e7f8299e1e3cb598b32b23a44456c6b1e1302fd9f62afcefc933f0abf637",
+    "build/m2-listening-c02b5d1886fb/sparse-sine-original.wav": "44206dd54bacd90d9c7f4e4594419e725b6db417dc1c6d8fe6970b5f6dbe92d6"
+  }
+}

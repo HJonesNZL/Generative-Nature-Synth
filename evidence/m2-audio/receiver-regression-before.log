@@ -1,0 +1,13 @@
+F
+======================================================================
+FAIL: test_individual_fix_station_metadata_does_not_create_receiver (__main__.NativeUiTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/tests/native_ui_checks.py", line 97, in test_individual_fix_station_metadata_does_not_create_receiver
+    self.assertNotIn('fixture:site',[station['id'] for station in catalog['stations']])
+AssertionError: 'fixture:site' unexpectedly found in ['fixture:site', 'fixture:station:one']
+
+----------------------------------------------------------------------
+Ran 1 test in 0.025s
+
+FAILED (failures=1)
