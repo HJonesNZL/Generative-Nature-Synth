@@ -1,0 +1,4 @@
+#pragma once
+namespace atlas {
+inline constexpr char nativeSourceSha256[] = "@ATLAS_NATIVE_SOURCE_SHA256@";
+}
