@@ -120,6 +120,52 @@ class Object {
         return i->second;
     }
 };
+std::string decimal(double value);
+std::string compositionView(const CompositionSettings &settings) {
+    constexpr std::string_view scales[]{"majorPentatonic", "minorPentatonic",
+                                        "major", "naturalMinor"};
+    return "{\"enabled\":" + std::string(settings.enabled ? "true" : "false") +
+           ",\"tempoBpm\":" + std::to_string(settings.tempoBpm) +
+           ",\"tonicPitchClass\":" + std::to_string(settings.tonicPitchClass) +
+           ",\"scale\":" +
+           quoteJson(scales[static_cast<unsigned>(settings.scale)]) +
+           ",\"density\":" +
+           std::to_string(static_cast<unsigned>(settings.density)) +
+           ",\"variation\":" + decimal(settings.variation) +
+           ",\"seed\":" + std::to_string(settings.seed) +
+           ",\"quantize\":" + (settings.quantize ? "true" : "false") + "}";
+}
+CompositionSettings readComposition(sqlite3 *db, std::string_view json) {
+    const Object args(db, json,
+                      {"enabled", "tempoBpm", "tonicPitchClass", "scale",
+                       "density", "variation", "seed", "quantize"});
+    CompositionSettings settings;
+    settings.enabled = args.boolean("enabled");
+    settings.tempoBpm = static_cast<unsigned>(args.number("tempoBpm", 180));
+    if (settings.tempoBpm < 40)
+        throw std::invalid_argument("Tempo must be 40 to 180 BPM");
+    settings.tonicPitchClass =
+        static_cast<unsigned>(args.number("tonicPitchClass", 11));
+    const auto scale = args.text("scale", 32);
+    if (scale == "majorPentatonic")
+        settings.scale = CompositionScale::majorPentatonic;
+    else if (scale == "minorPentatonic")
+        settings.scale = CompositionScale::minorPentatonic;
+    else if (scale == "major")
+        settings.scale = CompositionScale::major;
+    else if (scale == "naturalMinor")
+        settings.scale = CompositionScale::naturalMinor;
+    else
+        throw std::invalid_argument("Unknown composition scale");
+    settings.density =
+        static_cast<CompositionDensity>(args.number("density", 2));
+    settings.variation = args.real("variation");
+    if (settings.variation < 0 || settings.variation > 1)
+        throw std::invalid_argument("Variation must be 0 to 1");
+    settings.seed = static_cast<std::uint32_t>(args.number("seed", UINT32_MAX));
+    settings.quantize = args.boolean("quantize");
+    return settings;
+}
 struct CloseDb {
     void operator()(sqlite3 *db) const {
         if (db)
@@ -429,6 +475,21 @@ struct UiHost::Impl {
                std::to_string(prepared->peakEventsPerSecond()) +
                ",\"session\":" + sessionView(saved) + "}";
     }
+    std::string compositionState() const {
+        std::string result =
+            "{\"settings\":" + compositionView(context.audio.composition) +
+            ",\"preparation\":" + (prepared ? preparation() : "null");
+        if (prepared && playback) {
+            const auto snapshot = playback->snapshot();
+            result += ",\"generatedNotes\":" +
+                      std::to_string(snapshot.generatedNotes) +
+                      ",\"suppressed\":" +
+                      std::to_string(snapshot.omittedCompositionNotes) +
+                      ",\"suppressedSourceEvents\":" +
+                      std::to_string(snapshot.suppressedSourceEvents);
+        }
+        return result + "}";
+    }
     static SavedSession sceneSession(const Soundscape &scene,
                                      std::string_view id) {
         auto session = scene.capture().session;
@@ -593,6 +654,8 @@ struct UiHost::Impl {
                                      : metadata.arrivalBounds;
             nextContext.audio.masterDb = -18;
         }
+        if (prepared && saved.id == id)
+            nextContext.audio = context.audio;
         nextContext.profiles = currentProfiles(*next);
         prepare(std::move(*next), std::move(metadata), std::move(nextContext));
     }
@@ -796,7 +859,7 @@ std::string UiHost::request(std::string_view envelope) {
                     R"(,"getTransport","setTransport","getAudioState","setAudioEnabled")";
             if (impl_->voices)
                 result +=
-                    R"(,"getVoiceLibrary","getVoice","setVoiceParameter","saveVoice","revertVoice")";
+                    R"(,"getVoiceLibrary","getVoice","setVoiceParameter","saveVoice","revertVoice","getComposition","setComposition")";
             if (!impl_->storage.soundscapes.empty() && impl_->voices)
                 result +=
                     R"(,"listSoundscapes","saveSoundscape","recallSoundscape")";
@@ -879,6 +942,46 @@ std::string UiHost::request(std::string_view envelope) {
                                playbackMessage(reply.error));
             }
             result = transportView(reply.snapshot);
+        } else if (impl_->voices && method == "getComposition") {
+            Object args(impl_->db.get(), arguments);
+            if (args.size())
+                throw std::invalid_argument("unexpected arguments");
+            result = impl_->compositionState();
+        } else if (impl_->voices && method == "setComposition") {
+            Object args(impl_->db.get(), arguments,
+                        {"settings", "preparationId", "generation"});
+            const auto settings =
+                readComposition(impl_->db.get(), args.object("settings"));
+            if (!impl_->prepared)
+                throw std::invalid_argument(
+                    "Prepare material before composing");
+            const auto snapshot = impl_->playback ? impl_->playback->snapshot()
+                                                  : PlaybackSnapshot{};
+            const auto currentId =
+                impl_->playback ? preparationId(snapshot)
+                                : "native-" + std::to_string(impl_->generation);
+            const auto currentGeneration =
+                impl_->playback ? snapshot.generation : impl_->generation;
+            if (args.text("preparationId", 32) != currentId ||
+                static_cast<std::uint64_t>(
+                    integer(args.text("generation", 20), INT64_MAX)) !=
+                    currentGeneration)
+                return failure("stale_generation",
+                               "Composition preparation is no longer current");
+            for (const auto &voice : impl_->voices->voices())
+                if (voice.gestureActive)
+                    throw std::invalid_argument(
+                        "Finish voice gestures before changing composition");
+            auto context = impl_->context;
+            context.audio.composition = settings;
+            context.profiles = impl_->currentProfiles(*impl_->prepared);
+            if (impl_->playback) {
+                const auto quiet = impl_->playback->enable(false);
+                if (!quiet.ok)
+                    return failure("unavailable", playbackMessage(quiet.error));
+            }
+            impl_->prepare(*impl_->prepared, impl_->saved, std::move(context));
+            result = impl_->compositionState();
         } else if (impl_->voices && method == "getVoiceLibrary") {
             Object args(impl_->db.get(), arguments);
             if (args.size())
@@ -1024,6 +1127,9 @@ std::string UiHost::request(std::string_view envelope) {
                     throw std::invalid_argument(
                         "Finish voice gestures before saving");
             auto capture = impl_->context;
+            capture.schemaRevision = soundscapeSchemaRevision;
+            capture.synthesisRevision = soundscapeSynthesisRevision;
+            capture.mappingRevision = soundscapeMappingRevision;
             capture.name = args.text("name", 256);
             capture.profiles = impl_->currentProfiles(*impl_->prepared);
             const auto scene =

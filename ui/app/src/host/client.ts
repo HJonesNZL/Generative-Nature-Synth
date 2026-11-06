@@ -92,6 +92,22 @@ function validPlaybackReply(method: string, value: unknown): boolean {
     (v.error === undefined || v.error === null || typeof v.error === "string");
 }
 
+function validCompositionReply(method: string, value: unknown): boolean {
+  if (!["getComposition", "setComposition"].includes(method)) return true;
+  if (!value || typeof value !== "object") return false;
+  const result = value as Record<string, unknown>, settings = result.settings as Record<string, unknown>;
+  const boundedInteger = (v: unknown, min: number, max: number) => Number.isInteger(v) && (v as number) >= min && (v as number) <= max;
+  return !!settings && typeof settings === "object" && Object.keys(settings).length === 8 &&
+    typeof settings.enabled === "boolean" && typeof settings.quantize === "boolean" &&
+    boundedInteger(settings.tempoBpm, 40, 180) && boundedInteger(settings.tonicPitchClass, 0, 11) &&
+    ["majorPentatonic", "minorPentatonic", "major", "naturalMinor"].includes(settings.scale as string) &&
+    boundedInteger(settings.density, 0, 2) && boundedInteger(settings.seed, 0, 4294967295) &&
+    typeof settings.variation === "number" && Number.isFinite(settings.variation) && settings.variation >= 0 && settings.variation <= 1 &&
+    (result.preparation === null && method === "getComposition" || result.preparation !== null && validPlaybackReply("prepareReplay", result.preparation)) &&
+    [result.generatedNotes, result.suppressed].every(v => v === undefined || boundedInteger(v, 0, 1000000)) &&
+    (result.suppressedSourceEvents === undefined || boundedInteger(result.suppressedSourceEvents, 0, 50000));
+}
+
 const opaqueId = (value: unknown): value is string => typeof value === "string" && /^[0-9a-f]{32}$/.test(value);
 function validSceneSession(value: unknown): boolean {
   if (!value || typeof value !== "object") return false;
@@ -189,9 +205,9 @@ export class HostClient {
   }
 
   call<M extends MethodName>(method: M, args: AllMethods[M]["request"], options: { signal?: AbortSignal; timeoutMs?: number } = {}) {
-    if (["prepareReplay", "setTransport", "setAudioEnabled", "recallSoundscape"].includes(method)) this.playbackMutation += 1;
+    if (["prepareReplay", "setTransport", "setAudioEnabled", "recallSoundscape", "setComposition"].includes(method)) this.playbackMutation += 1;
     const request = this.send(method, args, options);
-    return ["setVoiceParameter", "setVoiceType", "setMasterGain", "saveVoice", "revertVoice", "applyVoicePreset"].includes(method)
+    return ["setVoiceParameter", "setVoiceType", "setMasterGain", "saveVoice", "revertVoice", "applyVoicePreset", "setComposition"].includes(method)
       ? this.edits.track(request) : request;
   }
 
@@ -224,7 +240,7 @@ export class HostClient {
       const request = { protocolVersion: 1 as const, requestId, method, args };
       const reply = (this.host as ExtendedHost).request(request, controller.signal).then((r): HostResult<AllMethods[M]["response"]> => {
         if (!r || typeof r !== "object" || typeof r.ok !== "boolean" || r.requestId !== requestId) return { ok: false, error: { code: "internal", message: "Reply did not match request id" } };
-        if (r.ok) return "result" in r && validPlaybackReply(method, r.result) && validVoiceReply(method, r.result, args) && validSoundscapeReply(method, r.result, args) ? { ok: true, value: r.result } : { ok: false, error: { code: "internal", message: "Malformed host result" } };
+        if (r.ok) return "result" in r && validPlaybackReply(method, r.result) && validVoiceReply(method, r.result, args) && validSoundscapeReply(method, r.result, args) && validCompositionReply(method, r.result) ? { ok: true, value: r.result } : { ok: false, error: { code: "internal", message: "Malformed host result" } };
         if (!r.error || typeof r.error.message !== "string" || !["unsupported", "invalid_request", "unavailable", "stale_generation", "internal"].includes(r.error.code))
           return { ok: false, error: { code: "internal", message: "Malformed host error" } };
         return { ok: false, error: r.error };

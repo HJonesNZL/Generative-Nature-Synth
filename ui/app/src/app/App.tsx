@@ -8,6 +8,7 @@ import type { ExtendedHost } from "../host/client";
 import type { AtlasHost } from "../host/contracts";
 import { AtlasScreen } from "../screens/atlas/AtlasScreen";
 import { SoundStudioScreen } from "../screens/studio/SoundStudioScreen";
+import { CompositionPanel } from "./CompositionPanel";
 import { SoundscapePanel } from "./SoundscapePanel";
 import { Header } from "./Header";
 import { usePlayback } from "./usePlayback";
@@ -40,6 +41,7 @@ function Shell({ demoMenu }: { demoMenu?: (props: Record<string, never>) => Reac
       <a className="skip-link" href="#main">Skip to content</a>
       <div inert={state.soundscape.operation !== null}><Header demoMenu={demoMenu ? demoMenu({}) : null} /><StatusBanners /></div>
       <SoundscapePanel />
+      <CompositionPanel />
       <div className="app-workspace" inert={state.soundscape.operation !== null}>{state.screen === "atlas" ? <AtlasScreen /> : <SoundStudioScreen />}</div>
     </div>
   );

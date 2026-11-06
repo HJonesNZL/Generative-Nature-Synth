@@ -239,3 +239,10 @@
 
 .app-workspace { display: flex; flex: 1; min-height: 0; }
 .soundscape-panel { flex: 0 0 auto; }
+
+.composition-panel { flex: 0 0 auto; padding: 12px var(--layout-gutter); border-bottom: var(--rule-hair); }
+.composition-panel__controls { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 16px; border: 0; padding: 8px 0; margin: 0; }
+.composition-panel__controls label { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.composition-panel__controls input[type="number"] { width: 82px; }
+.composition-panel__controls input[aria-label="Composition seed"] { width: 112px; }
+.composition-panel__controls input[type="range"] { width: 85px; }

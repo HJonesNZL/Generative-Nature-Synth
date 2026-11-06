@@ -5,9 +5,9 @@
 #include <stdexcept>
 
 namespace atlas {
-inline constexpr unsigned soundscapeSchemaRevision = 1;
-inline constexpr unsigned soundscapeSynthesisRevision = 2;
-inline constexpr unsigned soundscapeMappingRevision = 1;
+inline constexpr unsigned soundscapeSchemaRevision = 2;
+inline constexpr unsigned soundscapeSynthesisRevision = 3;
+inline constexpr unsigned soundscapeMappingRevision = 2;
 struct SoundscapeCapture {
     std::string name, sourceLibraryLabel;
     SavedSession session;
@@ -17,6 +17,7 @@ struct SoundscapeCapture {
     AudioSettings audio;
     // Explicit fallback first (empty species ID), then independent species.
     std::vector<VoiceProfile> profiles;
+    unsigned schemaRevision{soundscapeSchemaRevision};
     unsigned synthesisRevision{soundscapeSynthesisRevision};
     unsigned mappingRevision{soundscapeMappingRevision};
 };

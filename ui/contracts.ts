@@ -183,7 +183,27 @@ export interface VoicePresetView {
   researchPath: string;
 }
 
+export interface CompositionSettings {
+  enabled: boolean;
+  tempoBpm: number;
+  tonicPitchClass: number;
+  scale: "majorPentatonic" | "minorPentatonic" | "major" | "naturalMinor";
+  density: 0 | 1 | 2;
+  variation: number;
+  seed: number;
+  quantize: boolean;
+}
+export interface CompositionState {
+  settings: CompositionSettings;
+  preparation: HostMethods["prepareReplay"]["response"] | null;
+  generatedNotes?: number;
+  suppressed?: number;
+  suppressedSourceEvents?: number;
+}
+
 export interface HostMethods {
+  getComposition: { request: Record<string, never>; response: CompositionState };
+  setComposition: { request: { settings: CompositionSettings; preparationId: string; generation: Int64String }; response: CompositionState };
   listVoicePresets: { request: { voiceId: string }; response: { items: VoicePresetView[]; listeningApproved: false } };
   applyVoicePreset: { request: { voiceId: string; presetId: string }; response: VoiceDefinition };
   listSoundscapes: { request: { limit: number }; response: { items: SoundscapeView[]; limited: boolean; unmanagedFiles?: number } };

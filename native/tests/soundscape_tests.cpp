@@ -2,6 +2,8 @@
 #include <array>
 #include <atlas/soundscapes.hpp>
 #include <chrono>
+#include <cmath>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <limits>
@@ -77,7 +79,7 @@ class RawDatabase {
                                  "key!='header_hash' ORDER BY key",
                                  -1, &query, nullptr) == SQLITE_OK,
               "Fixture seal query failed");
-        std::string material = "14:atlas-scene-v1";
+        std::string material = "14:atlas-scene-v" + scalar("PRAGMA user_version");
         while (sqlite3_step(query) == SQLITE_ROW) {
             for (int column = 0; column < 2; ++column) {
                 const auto size = sqlite3_column_bytes(query, column);
@@ -183,15 +185,74 @@ int main() {
         SavedSession saved;
         const auto timeline = ReadOnlyLibrary(source).load(
             "source", TimeBasis::observed, {2, 1}, &saved);
-        const auto expectedCapture = capture(saved);
+        auto legacyCapture = capture(saved);
+        legacyCapture.schemaRevision = 1;
+        legacyCapture.synthesisRevision = 2;
+        legacyCapture.mappingRevision = 1;
+        const auto legacy = captureSoundscape(timeline, legacyCapture);
+        // Recorded before the schema-2/composition implementation. This oracle
+        // seals the original metadata/profile/event framing, not a new hash.
+        check(legacy.contentHash() ==
+                  "a417408c4c8926f1a793e4a8d78cea7313094fbeb6aaa5bf7d3cf64ef16749bc",
+              "Schema-1 content hash changed");
+        const auto legacySamples = render(legacy);
+        const auto *baseline = std::getenv("ATLAS_VERIFY_LEGACY_PCM_BASELINE");
+        if (baseline && std::string_view(baseline) == "1") {
+            // Exact artifact comparison with the pre-change arm64 Apple-clang
+            // baseline. Float byte order/libm are not portable file contracts.
+            detail::Sha256 legacyPcm;
+            legacyPcm.update(std::string_view(
+                reinterpret_cast<const char *>(legacySamples.data()),
+                legacySamples.size() * sizeof(float)));
+            check(legacyPcm.hexDigest() ==
+                      "0f68e996870aa97401273e03f1bf7f7ef1f746a2d5fee340cefc59520197762e",
+                  "Schema-1 legacy PCM baseline changed");
+            std::cout << "Exact arm64 legacy PCM baseline passed\n";
+        } else {
+            std::cout << "Exact platform PCM artifact comparison not requested; "
+                         "set ATLAS_VERIFY_LEGACY_PCM_BASELINE=1 on its "
+                         "recorded platform\n";
+        }
+        const auto legacyPath = temp.file("legacy.atlas-scene");
+        saveSoundscape(legacyPath, legacy);
+        const auto legacyLoaded = loadSoundscape(legacyPath);
+        check(legacyLoaded.capture().schemaRevision == 1 &&
+                  legacyLoaded.capture().synthesisRevision == 2 &&
+                  legacyLoaded.capture().mappingRevision == 1 &&
+                  !legacyLoaded.capture().audio.composition.enabled &&
+                  legacyLoaded.contentHash() == legacy.contentHash() &&
+                  render(legacyLoaded) == legacySamples,
+              "Legacy scene migrated or changed audible recipe");
+        const auto legacyCopy = temp.file("legacy-copy.atlas-scene");
+        saveSoundscape(legacyCopy, legacyLoaded);
+        check(loadSoundscape(legacyCopy).contentHash() == legacy.contentHash(),
+              "Saving recalled legacy scene silently upgraded its hash");
+        {
+            RawDatabase db(legacyCopy);
+            check(db.scalar("PRAGMA user_version") == "1",
+                  "Saving legacy scene silently upgraded its schema");
+            db.run("UPDATE scene_profiles SET brightness=.2 WHERE slot=1");
+        }
+        rejected([&] { loadSoundscape(legacyCopy); });
+        auto expectedCapture = capture(saved);
+        expectedCapture.audio.composition = {
+            true, CompositionScale::naturalMinor, 9, 127,
+            CompositionDensity::active, std::nextafter(.37, 1.0),
+            std::numeric_limits<std::uint32_t>::max(), false};
         const auto scene = captureSoundscape(timeline, expectedCapture);
+        auto adjacentVariation = expectedCapture;
+        adjacentVariation.audio.composition.variation =
+            std::nextafter(expectedCapture.audio.composition.variation, 1.0);
+        check(captureSoundscape(timeline, adjacentVariation).contentHash() !=
+                  scene.contentHash(),
+              "Adjacent representable composition doubles share a hash");
         const auto originalSamples = render(scene);
         const auto target = temp.file("original.atlas-scene");
         saveSoundscape(target, scene);
         {
             RawDatabase db(target);
             check(db.scalar("PRAGMA application_id") == "1096045379" &&
-                      db.scalar("PRAGMA user_version") == "1",
+                      db.scalar("PRAGMA user_version") == "2",
                   "Scene identity wrong");
             check(db.scalar("SELECT count(*) FROM sqlite_schema") == "3",
                   "Unexpected scene schema");
@@ -223,6 +284,21 @@ int main() {
                   recalled.timeline().durationUs() == 2000000 &&
                   recalled.timeline().events()[0].id == "fixture:a",
               "Original timeline or event identity lost");
+        const auto &composition = recalled.capture().audio.composition;
+        check(recalled.capture().schemaRevision == 2 &&
+                  recalled.capture().synthesisRevision == 3 &&
+                  recalled.capture().mappingRevision == 2 &&
+                  composition.enabled &&
+                  composition.scale == CompositionScale::naturalMinor &&
+                  composition.tonicPitchClass == 9 &&
+                  composition.tempoBpm == 127 &&
+                  composition.density == CompositionDensity::active &&
+                  composition.variation ==
+                      expectedCapture.audio.composition.variation &&
+                  composition.seed ==
+                      std::numeric_limits<std::uint32_t>::max() &&
+                  !composition.quantize,
+              "Complete exact composition settings lost");
         check(recalled.capture().audio.sampleRate == 44100 &&
                   recalled.capture().audio.rootMidi == 59 &&
                   recalled.capture().audio.masterDb == -19,
@@ -259,6 +335,18 @@ int main() {
         invalid.audio.masterDb = std::numeric_limits<double>::quiet_NaN();
         rejected([&] { captureSoundscape(timeline, invalid); });
         invalid = expectedCapture;
+        invalid.audio.composition.variation =
+            std::numeric_limits<double>::quiet_NaN();
+        rejected([&] { captureSoundscape(timeline, invalid); });
+        invalid = expectedCapture;
+        invalid.schemaRevision = 1;
+        invalid.synthesisRevision = 2;
+        invalid.mappingRevision = 1;
+        rejected([&] { captureSoundscape(timeline, invalid); });
+        invalid = expectedCapture;
+        invalid.synthesisRevision = 2;
+        rejected([&] { captureSoundscape(timeline, invalid); });
+        invalid = expectedCapture;
         invalid.profiles[1].settings.brightness = 2;
         rejected([&] { captureSoundscape(timeline, invalid); });
         invalid = expectedCapture;
@@ -290,6 +378,29 @@ int main() {
             }
             rejected([&] { loadSoundscape(path); });
         };
+        for (const auto &[key, value] :
+             std::array<std::pair<const char *, const char *>, 9>{{
+                 {"composition_enabled", "2"}, {"composition_scale", "4"},
+                 {"composition_tonic_pitch_class", "12"},
+                 {"composition_tempo_bpm", "39"}, {"composition_density", "3"},
+                 {"composition_variation", "1.1"},
+                 {"composition_variation", "0.3700"},
+                 {"composition_seed", "4294967296"},
+                 {"composition_quantize", "-1"}}}) {
+            mutate(std::string(key) + value,
+                   "UPDATE scene_meta SET value='" + std::string(value) +
+                       "' WHERE key='" + key + "'", true);
+        }
+        mutate("composition-valid-change",
+               "UPDATE scene_meta SET value='91' WHERE "
+               "key='composition_tempo_bpm'",
+               true);
+        mutate("composition-unknown",
+               "INSERT INTO scene_meta VALUES('composition_future','1')",
+               true);
+        mutate("composition-missing",
+               "DELETE FROM scene_meta WHERE key='composition_variation'",
+               true);
         mutate("globals",
                "UPDATE scene_meta SET value='-20' WHERE key='master_db'");
         mutate("valid-globals-resealed",

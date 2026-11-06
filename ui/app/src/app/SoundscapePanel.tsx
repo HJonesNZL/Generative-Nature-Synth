@@ -30,7 +30,7 @@ export function SoundscapePanel() {
     if (operation.current || !name.trim() || !state.transport.preparationId || !client.edits.begin()) return;
     operation.current = true; dispatch({ type: "soundscapeOperation", operation: "save" }); setMessage(null);
     try {
-      if (!await client.edits.drain()) { setMessage("A sound edit did not finish successfully. Reload or revert that voice before saving a soundscape."); return; }
+      if (!await client.edits.drain()) { setMessage("A sound edit did not finish successfully. Resolve the edit error before saving a soundscape."); return; }
       const result = await client.call("saveSoundscape", { name: name.trim() }, { timeoutMs: 30000 });
       if (!result.ok) { setMessage(result.error.message); return; }
       setSelected(result.value); setName(""); refresh();

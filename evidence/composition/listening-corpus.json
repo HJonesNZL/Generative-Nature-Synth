@@ -1,0 +1,45 @@
+{
+  "context": "Synthetic demonstration events; original musical hypotheses, not recordings or listening-approved presets.",
+  "examples": [
+    {
+      "name": "sparse",
+      "file": "sparse.wav",
+      "sha256": "9e6b317bf56274a47a762bf7c514af28dc85d9feeb8f91ebfa79da7b74e7420b",
+      "sceneHash": "0235b7f0ae0baab5467a782add2b7294c1e73eac5645bce0e40096420e75dfc5",
+      "settings": {
+        "enabled": true,
+        "tempoBpm": 96,
+        "tonicPitchClass": 2,
+        "scale": "minorPentatonic",
+        "density": 0,
+        "variation": 0.35,
+        "seed": 812,
+        "quantize": true
+      },
+      "sourceEvents": 13,
+      "generatedNotes": 13,
+      "suppressedSourceEvents": 0,
+      "suppressedPhraseNotes": 0
+    },
+    {
+      "name": "dense",
+      "file": "dense.wav",
+      "sha256": "9797cba08d3428addf9164f6af027ca83c41494ed1dbd300733eb5191c9919eb",
+      "sceneHash": "aa5289ecd3c01b5730926a7d3e4e9f32997c7c4a66a8051bf4afcf22aa18bc00",
+      "settings": {
+        "enabled": true,
+        "tempoBpm": 96,
+        "tonicPitchClass": 2,
+        "scale": "minorPentatonic",
+        "density": 2,
+        "variation": 0.35,
+        "seed": 812,
+        "quantize": true
+      },
+      "sourceEvents": 126,
+      "generatedNotes": 441,
+      "suppressedSourceEvents": 0,
+      "suppressedPhraseNotes": 0
+    }
+  ]
+}

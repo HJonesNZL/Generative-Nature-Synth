@@ -18,8 +18,10 @@ int main(int argc, char **argv) {
 #else
     const bool characterMode =
         argc == 2 && std::string_view(argv[1]) == "--characters";
-    if (argc > 1 && !characterMode) {
-        std::cerr << "Usage: atlas-audio-bench [--characters]\n";
+    const bool compositionMode =
+        argc == 2 && std::string_view(argv[1]) == "--composition";
+    if (argc > 1 && !characterMode && !compositionMode) {
+        std::cerr << "Usage: atlas-audio-bench [--characters|--composition]\n";
         return 2;
     }
     std::vector<atlas::Event> events;
@@ -39,6 +41,8 @@ int main(int argc, char **argv) {
                 event.speciesId = "tone:1";
             } else
                 event.observedAt = group * 10000;
+            if (compositionMode)
+                event.speciesId = "birdweather:species:2561";
             event.firstSeenAt = event.observedAt;
             events.push_back(std::move(event));
         }
@@ -50,11 +54,19 @@ int main(int argc, char **argv) {
                          std::uint32_t rate, unsigned block) {
         atlas::AudioSettings settings;
         settings.sampleRate = rate;
+        if (compositionMode) {
+            settings.composition.enabled = true;
+            settings.composition.density = atlas::CompositionDensity::active;
+            settings.composition.variation = .7;
+            settings.composition.seed = 812;
+        }
         const std::array<atlas::VoiceProfile, 2> profiles{
-            {{"", {}}, {"tone:1", voice}}};
+            {{"", {}},
+             {compositionMode ? "birdweather:species:2561" : "tone:1", voice}}};
         const auto selected =
-            characterMode ? std::span<const atlas::VoiceProfile>(profiles)
-                          : std::span<const atlas::VoiceProfile>{};
+            (characterMode || compositionMode)
+                ? std::span<const atlas::VoiceProfile>(profiles)
+                : std::span<const atlas::VoiceProfile>{};
         const atlas::AudioPlan plan(timeline, settings, selected);
         atlas::AudioRenderer renderer(plan);
         if (!renderer.play(renderer.generation()))
@@ -89,20 +101,40 @@ int main(int argc, char **argv) {
                              std::ceil(q * static_cast<double>(times.size()))) -
                          1];
         };
-        if (characterMode)
+        if (characterMode || compositionMode)
             std::cout << name << ',';
         std::cout << rate << ',' << block << ',' << times.size() << ','
                   << percentile(.50) << ',' << percentile(.95) << ','
                   << percentile(.99) << ',' << times.back() << ',' << deadline
                   << ',' << misses;
-        if (characterMode)
+        if (characterMode || compositionMode)
             std::cout << ',' << renderer.statistics().triggered << ','
                       << renderer.statistics().stolen << ','
                       << renderer.statistics().peak;
         std::cout << '\n';
         return true;
     };
-    if (!characterMode) {
+    if (compositionMode) {
+        std::cout
+            << "Composition active-density Tui motif, seed812, variation.7, "
+               "12000 source events over30s; all six modulation characters.\n";
+        std::cout << "character,rate,block,calls,p50_us,p95_us,p99_us,max_us,"
+                     "deadline_us,"
+                     "misses,triggered,stolen,peak\n";
+        constexpr std::array names{"struck", "whistle", "reed",
+                                   "bell",   "air",     "pulse"};
+        for (unsigned character = 0; character < 6; ++character) {
+            atlas::VoiceSettings voice;
+            voice.character = static_cast<atlas::VoiceCharacter>(character);
+            voice.decaySeconds = 3;
+            voice.roughness = .8;
+            voice.pulseHz = 13;
+            voice.sweepSemitones = -7;
+            for (const auto block : {64u, 256u, 512u})
+                if (!run(names[character], voice, 48000, block))
+                    return 3;
+        }
+    } else if (!characterMode) {
         std::cout << "rate,block,calls,p50_us,p95_us,p99_us,max_us,deadline_us,"
                      "misses\n";
         for (const auto rate : {22050u, 48000u, 96000u, 192000u})

@@ -43,7 +43,7 @@ export interface TransportView {
 }
 
 export interface AppState {
-  soundscape: { active: SoundscapeView | null; operation: "save" | "recall" | null; epoch: number };
+  soundscape: { active: SoundscapeView | null; operation: "save" | "recall" | "composition" | null; epoch: number };
   screen: Screen;
   mode: ViewMode;
   timeBasis: TimeBasis;
@@ -63,7 +63,7 @@ export interface AppState {
 }
 
 export type Action =
-  | { type: "soundscapeOperation"; operation: "save" | "recall" | null }
+  | { type: "soundscapeOperation"; operation: "save" | "recall" | "composition" | null }
   | { type: "soundscapeRecalled"; scene: SoundscapeView; preparation: HostMethods["prepareReplay"]["response"] }
   | { type: "screen"; screen: Screen }
   | { type: "mode"; mode: ViewMode }

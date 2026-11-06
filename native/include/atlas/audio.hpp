@@ -1,5 +1,6 @@
 #pragma once
 #include <array>
+#include <atlas/composition.hpp>
 #include <atlas/core.hpp>
 
 namespace atlas {
@@ -32,11 +33,14 @@ struct VoiceCoefficients {
         roughnessDepth{}, phaseSpread{};
     std::uint8_t partialCount{};
     bool legacyStruck{true};
+    std::array<double, 12> scalePitchMultipliers{};
+    bool scaleQuantized{};
 };
 struct AudioSettings {
     std::uint32_t sampleRate{48000};
     unsigned rootMidi{60};
     double attackSeconds{0.008}, decaySeconds{0.650}, masterDb{};
+    CompositionSettings composition{};
 };
 enum class Admission { accepted, density };
 struct AudioDecision {
@@ -50,6 +54,8 @@ struct MusicalAction {
     unsigned midiNote{};
     VoiceSlot voiceSlot{};
     std::uint32_t phaseSeed{};
+    double velocity{1};
+    std::uint32_t gateFrames{};
 };
 
 // Worker-owned immutable numeric plan. Do not move/destroy while a renderer
@@ -66,6 +72,9 @@ class AudioPlan {
     }
     std::uint64_t totalFrames() const noexcept { return totalFrames_; }
     std::size_t missingSpecies() const noexcept { return missingSpecies_; }
+    std::size_t omittedCompositionNotes() const noexcept {
+        return omittedCompositionNotes_;
+    }
     std::uint32_t voiceFrames() const noexcept {
         return attackFrames_ + decayFrames_ + releaseFrames_;
     }
@@ -84,12 +93,13 @@ class AudioPlan {
     std::vector<MusicalAction> actions_;
     std::vector<AudioDecision> decisions_;
     std::uint64_t totalFrames_{};
-    std::size_t missingSpecies_{};
+    std::size_t missingSpecies_{}, omittedCompositionNotes_{};
     std::uint32_t attackFrames_{}, decayFrames_{}, releaseFrames_{},
         fadeFrames_{};
     double decayFactor_{}, masterGain_{}, maximumPhaseStep_{},
         minimumPitchMultiplier_{}, maximumPitchMultiplier_{};
     std::vector<VoiceProfile> voiceProfiles_;
+    std::array<double, 12> maximumScalePitchMultipliers_{};
     std::array<VoiceCoefficients, voiceSlotCapacity> voiceBank_{};
     bool editableVoices_{};
 };
@@ -125,7 +135,8 @@ class AudioRenderer {
     struct Voice {
         bool active{};
         std::uint64_t started{};
-        std::uint32_t age{}, fadeAge{};
+        std::uint32_t age{}, fadeAge{}, releaseStart{}, endAge{};
+        double velocity{1};
         double phase{}, phaseStep{}, decay{1};
         VoiceCoefficients coefficients;
         std::array<double, voicePartialCapacity> partialPhases{},

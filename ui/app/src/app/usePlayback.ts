@@ -10,6 +10,8 @@ export function usePlayback() {
   const dispatch = useDispatch();
   const latest = useRef(state.transport);
   latest.current = state.transport;
+  const operation = useRef(state.soundscape.operation);
+  operation.current = state.soundscape.operation;
   const sessionId = state.replay.session?.id;
   const context = playbackContext(state.mode, sessionId, state.timeBasis, state.replay.speedNumerator, state.replay.speedDenominator, state.replay.preparationRevision);
   const adoptedContext = useRef<string | null>(null);
@@ -55,10 +57,12 @@ export function usePlayback() {
     let timer = 0;
     const controller = new AbortController();
     const poll = async () => {
+      if (operation.current) { timer = window.setTimeout(() => void poll(), 500); return; }
       const expected = latest.current;
       const revision = client.playbackRevision;
       const result = await client.call("getTransport", {}, { signal: controller.signal, timeoutMs: 2500 });
       if (cancelled) return;
+      if (operation.current) { timer = window.setTimeout(() => void poll(), 500); return; }
       if (revision !== client.playbackRevision) { timer = window.setTimeout(() => void poll(), 500); return; }
       if (!result.ok) dispatch({ type: "transportAck", preparationId: expected.preparationId, generation: expected.generation, transport: { error: result.error.message } });
       else if (expected.preparationId) {

@@ -128,6 +128,27 @@ class SoundscapeTests(NativeVoiceTests):
         with sqlite3.connect(self.voices) as db:
             self.assertEqual(db.execute('SELECT count(*) FROM voice_presets').fetchone()[0],0)
 
+    def test_composition_exact_controls_stale_and_scene_recall(self):
+        prepared=self.prepare()
+        initial=self.client.request('getComposition')
+        self.assertFalse(initial['settings']['enabled'])
+        settings=dict(enabled=True,scale='naturalMinor',tonicPitchClass=7,tempoBpm=112,density=2,variation=.37,seed=4294967295,quantize=True)
+        applied=self.client.request('setComposition',dict(settings=settings,preparationId=prepared['preparationId'],generation=prepared['generation']))
+        self.assertEqual(applied['settings'],settings)
+        self.assertEqual(self.client.request('getAudioState')['status'],'disabled')
+        self.client.request('setComposition',dict(settings=settings,preparationId=prepared['preparationId'],generation=prepared['generation']),error='stale_generation')
+        scene=self.client.request('saveSoundscape',dict(name='Composed history'))
+        wav=self.render(scene)
+        changed=dict(settings,tempoBpm=60,seed=3)
+        prep=applied['preparation']
+        self.client.request('setComposition',dict(settings=changed,preparationId=prep['preparationId'],generation=prep['generation']))
+        self.assertEqual(self.render(scene),wav)
+        self.client.request('recallSoundscape',dict(soundscapeId=scene['id']))
+        self.assertEqual(self.client.request('getComposition')['settings'],settings)
+        self.assertEqual(self.render(scene),wav)
+        self.client.request('prepareReplay',dict(sessionId='scene:'+scene['id'],basis='observed',speedNumerator='2',speedDenominator='1'))
+        self.assertEqual(self.client.request('getComposition')['settings'],settings)
+
     def test_capture_rejects_active_gesture_and_unprepared(self):
         self.client.request('saveSoundscape',dict(name='Unavailable'),error='invalid_request')
         self.prepare()

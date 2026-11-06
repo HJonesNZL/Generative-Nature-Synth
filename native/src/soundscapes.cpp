@@ -208,6 +208,20 @@ Metadata metadata(const SoundscapeCapture &capture, Microseconds duration) {
         {"synthesis_revision", std::to_string(capture.synthesisRevision)},
         {"mapping_revision", std::to_string(capture.mappingRevision)},
         {"profile_count", std::to_string(capture.profiles.size())}};
+    if (capture.schemaRevision == 2) {
+        const auto &composition = capture.audio.composition;
+        result["composition_enabled"] = composition.enabled ? "1" : "0";
+        result["composition_scale"] =
+            std::to_string(static_cast<unsigned>(composition.scale));
+        result["composition_tonic_pitch_class"] =
+            std::to_string(composition.tonicPitchClass);
+        result["composition_tempo_bpm"] = std::to_string(composition.tempoBpm);
+        result["composition_density"] =
+            std::to_string(static_cast<unsigned>(composition.density));
+        result["composition_variation"] = numberText(composition.variation);
+        result["composition_seed"] = std::to_string(composition.seed);
+        result["composition_quantize"] = composition.quantize ? "1" : "0";
+    }
     addBounds(result, "observed", session.observedBounds);
     addBounds(result, "arrival", session.arrivalBounds);
     addBounds(result, "selected", capture.bounds);
@@ -218,22 +232,22 @@ void hashValue(detail::Sha256 &hash, std::string_view value) {
     hash.update(":");
     hash.update(value);
 }
-void hashMetadata(detail::Sha256 &hash, const Metadata &meta) {
-    hashValue(hash, "atlas-scene-v1");
+void hashMetadata(detail::Sha256 &hash, const Metadata &meta, unsigned revision) {
+    hashValue(hash, revision == 1 ? "atlas-scene-v1" : "atlas-scene-v2");
     for (const auto &[key, value] : meta) {
         hashValue(hash, key);
         hashValue(hash, value);
     }
 }
-std::string headerHash(const Metadata &meta) {
+std::string headerHash(const Metadata &meta, unsigned revision) {
     detail::Sha256 hash;
-    hashMetadata(hash, meta);
+    hashMetadata(hash, meta, revision);
     return hash.hexDigest();
 }
 std::string contentHash(const Metadata &meta, const SoundscapeCapture &capture,
                         const Timeline &timeline) {
     detail::Sha256 hash;
-    hashMetadata(hash, meta);
+    hashMetadata(hash, meta, capture.schemaRevision);
     hashValue(hash, "profiles");
     for (const auto &profile : capture.profiles) {
         hashValue(hash, profile.speciesId);
@@ -325,8 +339,21 @@ void validateCapture(const SoundscapeCapture &capture, std::size_t eventCount) {
                                : session.arrivalBounds))
         fail(Code::invalidArgument,
              "Selected bounds must preserve original source timeline bounds");
-    if (capture.synthesisRevision != soundscapeSynthesisRevision ||
-        capture.mappingRevision != soundscapeMappingRevision)
+    if (!validCompositionSettings(capture.audio.composition))
+        fail(Code::invalidArgument, "Invalid soundscape composition settings");
+    const auto &composition = capture.audio.composition;
+    const bool legacyComposition =
+        !composition.enabled &&
+        composition.scale == CompositionScale::majorPentatonic &&
+        composition.tonicPitchClass == 0 && composition.tempoBpm == 90 &&
+        composition.density == CompositionDensity::balanced &&
+        composition.variation == .25 && composition.seed == 1 &&
+        composition.quantize;
+    if (!((capture.schemaRevision == 1 && capture.synthesisRevision == 2 &&
+           capture.mappingRevision == 1 && legacyComposition) ||
+          (capture.schemaRevision == 2 &&
+           capture.synthesisRevision == soundscapeSynthesisRevision &&
+           capture.mappingRevision == soundscapeMappingRevision)))
         fail(Code::unsupportedSchema,
              "Unsupported soundscape synthesis or mapping revision");
     if (session.eventCount != eventCount || eventCount > 50000)
@@ -361,12 +388,12 @@ void checkCompleteProfiles(const Timeline &timeline,
     // The engine remains the one authority for settings, voice, render bounds.
     (void)AudioPlan(timeline, capture.audio, capture.profiles);
 }
-void checkSchema(sqlite3 *db) {
+unsigned checkSchema(sqlite3 *db) {
     detail::Statement identity(
         db, "SELECT (SELECT application_id FROM pragma_application_id),(SELECT "
             "user_version FROM pragma_user_version)");
     if (!identity.next() || identity.integer(0) != applicationId ||
-        identity.integer(1) != soundscapeSchemaRevision)
+        (identity.integer(1) != 1 && identity.integer(1) != 2))
         fail(Code::unsupportedSchema,
              "Unsupported soundscape application or schema identity");
     const std::map<std::string, std::string> expected{
@@ -385,6 +412,7 @@ void checkSchema(sqlite3 *db) {
     }
     if (count != 3)
         fail(Code::corrupt, "Incomplete soundscape schema");
+    return static_cast<unsigned>(identity.integer(1));
 }
 struct Header {
     SoundscapeCapture capture;
@@ -394,9 +422,9 @@ struct Header {
     std::size_t profileCount{};
 };
 Header readHeader(sqlite3 *db) {
-    checkSchema(db);
+    const auto revision = checkSchema(db);
     detail::Statement query(
-        db, "SELECT key,value FROM scene_meta ORDER BY key LIMIT 40");
+        db, "SELECT key,value FROM scene_meta ORDER BY key LIMIT 64");
     Metadata values;
     while (query.next()) {
         auto key = query.text(0), value = query.text(1);
@@ -405,10 +433,11 @@ Header readHeader(sqlite3 *db) {
             fail(Code::corrupt, "Invalid soundscape metadata row");
     }
     Header header;
+    header.capture.schemaRevision = revision;
     header.hash = values.at("content_hash");
     const auto seal = values.at("header_hash");
     values.erase("header_hash");
-    if (!hashText(header.hash) || seal != headerHash(values))
+    if (!hashText(header.hash) || seal != headerHash(values, revision))
         fail(Code::corrupt, "Soundscape metadata integrity mismatch");
     values.erase("content_hash");
     auto &capture = header.capture;
@@ -451,11 +480,36 @@ Header readHeader(sqlite3 *db) {
         static_cast<std::uint32_t>(rate), static_cast<unsigned>(root),
         number(values, "attack_seconds"), number(values, "decay_seconds"),
         number(values, "master_db")};
-    if (integer(values, "synthesis_revision") != soundscapeSynthesisRevision ||
-        integer(values, "mapping_revision") != soundscapeMappingRevision ||
+    const auto synthesis = integer(values, "synthesis_revision"),
+               mapping = integer(values, "mapping_revision");
+    if (synthesis < 0 || synthesis > std::numeric_limits<unsigned>::max() ||
+        mapping < 0 || mapping > std::numeric_limits<unsigned>::max() ||
         values.at("synthesis_engine") != "atlas-additive")
         fail(Code::unsupportedSchema,
              "Unsupported soundscape synthesis or mapping revision");
+    capture.synthesisRevision = static_cast<unsigned>(synthesis);
+    capture.mappingRevision = static_cast<unsigned>(mapping);
+    if (revision == 2) {
+        const auto enabled = integer(values, "composition_enabled"),
+                   scale = integer(values, "composition_scale"),
+                   tonic = integer(values, "composition_tonic_pitch_class"),
+                   tempo = integer(values, "composition_tempo_bpm"),
+                   density = integer(values, "composition_density"),
+                   seed = integer(values, "composition_seed"),
+                   quantize = integer(values, "composition_quantize");
+        if (enabled < 0 || enabled > 1 || scale < 0 || scale > 3 ||
+            tonic < 0 || tonic > 11 || tempo < 40 || tempo > 180 ||
+            density < 0 || density > 2 || seed < 0 ||
+            seed > std::numeric_limits<std::uint32_t>::max() ||
+            quantize < 0 || quantize > 1)
+            fail(Code::corrupt, "Invalid soundscape composition integers");
+        capture.audio.composition = {
+            enabled != 0, static_cast<CompositionScale>(scale),
+            static_cast<unsigned>(tonic), static_cast<unsigned>(tempo),
+            static_cast<CompositionDensity>(density),
+            number(values, "composition_variation"),
+            static_cast<std::uint32_t>(seed), quantize != 0};
+    }
     header.duration = integer(values, "duration_us");
     if (header.duration < 0 || header.duration > 1800000000LL)
         fail(Code::capacity, "Soundscape exceeds 30 minute render limit");
@@ -572,14 +626,19 @@ void saveSoundscape(const std::filesystem::path &output,
             Database db(temporary, true);
             run(db.get(), "PRAGMA journal_mode=DELETE; PRAGMA "
                           "synchronous=FULL; PRAGMA application_id=1096045379; "
-                          "PRAGMA user_version=1; BEGIN IMMEDIATE");
+                          "BEGIN IMMEDIATE");
+            const auto revisionSql =
+                "PRAGMA user_version=" +
+                std::to_string(scene.capture().schemaRevision);
+            run(db.get(), revisionSql.c_str());
             run(db.get(), metaSql);
             run(db.get(), eventsSql);
             run(db.get(), profilesSql);
             auto meta =
                 metadata(scene.capture(), scene.timeline().durationUs());
             meta["content_hash"] = scene.contentHash();
-            meta["header_hash"] = headerHash(meta);
+            meta["header_hash"] =
+                headerHash(meta, scene.capture().schemaRevision);
             {
                 Insert query(db.get(), "INSERT INTO scene_meta VALUES(?1,?2)");
                 for (const auto &[key, value] : meta) {

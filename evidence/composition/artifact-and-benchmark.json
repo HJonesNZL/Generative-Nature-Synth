@@ -1,0 +1,15 @@
+{
+  "sourceSha256": "e837029026158b472145d6af31cb47374861ab6e606538c86f45c3b0ca5fc60c",
+  "recordedAtUtc": "2026-11-06T22:15:44.551919+00:00",
+  "platform": "macOS-15.6.1-arm64-arm-64bit",
+  "nativeArtifact": "build/composition-qualified-e83702902615/atlas-audio-host",
+  "nativeArtifactSha256": "d0339a67cc3e013979698b7f7193339cf3cb7fe6fea6875152c6d0b14c44068c",
+  "benchmarkArtifactSha256": "3c33e1a6d2b5248fd1ffadf06e14edba66993437937abcab60387d36d04d7f96",
+  "benchmark": {
+    "cases": 18,
+    "calls": 195030,
+    "deadlineMisses": 0,
+    "worstP99DeadlineFraction": 0.029656574141435358,
+    "hardwareQualified": false
+  }
+}

@@ -55,6 +55,7 @@ struct PlaybackRuntime::Impl {
     std::unique_ptr<AudioPlan> plan;
     std::unique_ptr<AudioRenderer> renderer;
     std::uint64_t preparationId{};
+    std::size_t suppressedSourceEvents{};
     std::atomic<bool> enabled{}, started{};
     std::atomic<unsigned> failure{static_cast<unsigned>(PlaybackError::none)};
     std::atomic<std::uint64_t> snapshotSerial{}, position{}, generation{};
@@ -135,6 +136,9 @@ PlaybackSnapshot PlaybackRuntime::snapshot() const noexcept {
     if (p.plan) {
         value.sampleRate = p.plan->settings().sampleRate;
         value.totalFrames = p.plan->totalFrames();
+        value.generatedNotes = p.plan->actions().size();
+        value.suppressedSourceEvents = p.suppressedSourceEvents;
+        value.omittedCompositionNotes = p.plan->omittedCompositionNotes();
         value.gainDb = p.plan->settings().masterDb;
     }
     // Only the worker retries. All payload fields are atomic; the callback
@@ -166,6 +170,11 @@ PlaybackResult PlaybackRuntime::prepare(const Timeline &timeline,
     impl_->renderer = std::move(
         nextRenderer); // Destroy borrower before retiring the old plan.
     impl_->plan = std::move(nextPlan);
+    impl_->suppressedSourceEvents = static_cast<std::size_t>(std::count_if(
+        impl_->plan->decisions().begin(), impl_->plan->decisions().end(),
+        [](const AudioDecision &decision) {
+            return decision.reason == Admission::density;
+        }));
     ++impl_->preparationId;
     impl_->publish();
     return {true, PlaybackError::none, snapshot()};

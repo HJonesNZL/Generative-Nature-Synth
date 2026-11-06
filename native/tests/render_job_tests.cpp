@@ -59,6 +59,9 @@ Soundscape scene(Microseconds duration = 200000,
     capture.session.arrivalBounds = capture.session.observedBounds;
     capture.bounds = capture.session.observedBounds;
     capture.audio = {sampleRate, 60, .009, .71, -17};
+    capture.audio.composition = {
+        true, CompositionScale::minorPentatonic, 7, 113,
+        CompositionDensity::active, .61999999999999988, 812345, true};
     capture.profiles.push_back({"", {}});
     for (int i = 0; i < 6; ++i) {
         const auto suffix = std::to_string(i), fraction = "0" + suffix + "0000";
@@ -261,6 +264,12 @@ int main() {
         check(actual.bytes.find(shortScene.contentHash()) !=
                       std::string::npos &&
                   actual.bytes.find(sourceHash) != std::string::npos &&
+                  actual.bytes.find("\"scene_schema_revision\":2") !=
+                      std::string::npos &&
+                  actual.bytes.find("\"synthesis_revision\":3") !=
+                      std::string::npos &&
+                  actual.bytes.find("\"mapping_revision\":2") !=
+                      std::string::npos &&
                   actual.bytes.find("editable_voice_maximum") !=
                       std::string::npos,
               "WAV recipe lost scene/source/tail traceability");
@@ -268,6 +277,28 @@ int main() {
                   read(output / done.outputFilename).size() ==
                       actual.bytes.size(),
               "Late cancellation invalidated published artifact");
+        auto legacyCapture = shortScene.capture();
+        legacyCapture.schemaRevision = 1;
+        legacyCapture.synthesisRevision = 2;
+        legacyCapture.mappingRevision = 1;
+        legacyCapture.audio.composition = {};
+        const auto legacy =
+            captureSoundscape(shortScene.timeline(), legacyCapture);
+        const auto legacyPath = temp.file("legacy.atlas-scene");
+        saveSoundscape(legacyPath, legacy);
+        jobs.start(legacyPath, legacy.contentHash(), "legacy");
+        const auto legacyDone = terminal(jobs, "legacy");
+        check(legacyDone.state == RenderJobState::completed,
+              "Legacy export failed");
+        const auto legacyWave = wave(output / legacyDone.outputFilename, 44100);
+        check(legacyWave.data == reference(legacy) &&
+                  legacyWave.bytes.find("\"scene_schema_revision\":1") !=
+                      std::string::npos &&
+                  legacyWave.bytes.find("\"synthesis_revision\":2") !=
+                      std::string::npos &&
+                  legacyWave.bytes.find("\"mapping_revision\":1") !=
+                      std::string::npos,
+              "Legacy export changed PCM or substituted current revisions");
         AudioPlan plan(shortScene.timeline(), shortScene.capture().audio,
                        shortScene.capture().profiles, true);
         renderWave(plan, output / "partition.wav", "{}", 17);

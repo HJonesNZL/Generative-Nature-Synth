@@ -73,9 +73,10 @@ bool validVoiceSettings(const VoiceSettings &settings) noexcept {
 }
 
 namespace {
-VoiceCoefficients coefficientsFor(const VoiceSettings &settings,
-                                  std::uint32_t rate,
-                                  unsigned rootMidi) noexcept {
+VoiceCoefficients
+coefficientsFor(const VoiceSettings &settings, std::uint32_t rate,
+                unsigned rootMidi,
+                const CompositionSettings &composition) noexcept {
     VoiceCoefficients result;
     result.attackFrames =
         static_cast<std::uint32_t>(std::ceil(settings.attackSeconds * rate));
@@ -83,6 +84,27 @@ VoiceCoefficients coefficientsFor(const VoiceSettings &settings,
         static_cast<std::uint32_t>(std::ceil(settings.decaySeconds * rate));
     result.releaseFrames = static_cast<std::uint32_t>(std::ceil(.020 * rate));
     result.pitchMultiplier = std::exp2(settings.tuningSemitones / 12.0);
+    result.scaleQuantized = composition.enabled;
+    if (composition.enabled) {
+        const auto maximumBase = static_cast<int>(std::min(76u, rootMidi + 16));
+        for (int pitchClass = 0; pitchClass < 12; ++pitchClass) {
+            const auto maximumForClass =
+                maximumBase - ((maximumBase - pitchClass + 12) % 12);
+            const auto preferred = maximumForClass + settings.tuningSemitones;
+            auto chosen = preferred;
+            auto distance = 1000;
+            for (int note = preferred - 12;
+                 note <= std::min(88, preferred + 12); ++note) {
+                if (compositionScaleContains(composition, note) &&
+                    std::abs(note - preferred) < distance) {
+                    chosen = note;
+                    distance = std::abs(note - preferred);
+                }
+            }
+            result.scalePitchMultipliers[static_cast<std::size_t>(pitchClass)] =
+                std::exp2((chosen - maximumForClass) / 12.0);
+        }
+    }
     result.decayFactor = std::exp(-std::log(1000.0) / result.decayFrames);
     result.gain = std::pow(10.0, settings.gainDb / 20.0);
     result.legacyStruck = settings.character == VoiceCharacter::struck &&
@@ -137,8 +159,10 @@ VoiceCoefficients coefficientsFor(const VoiceSettings &settings,
     }
     const auto maximumFrequency =
         440 *
-        std::exp2((static_cast<double>(rootMidi) + settings.tuningSemitones +
-                   16 - 69) /
+        std::exp2(((composition.enabled ? 88.0
+                                        : static_cast<double>(rootMidi) +
+                                              settings.tuningSemitones + 16) -
+                   69) /
                   12.0) *
         std::max(1.0, result.sweepEnd);
     const auto modulationHz =
@@ -168,10 +192,11 @@ std::uint32_t lifetime(const VoiceCoefficients &coefficients) noexcept {
     return coefficients.attackFrames + coefficients.decayFrames +
            coefficients.releaseFrames;
 }
-bool validCoefficients(const VoiceCoefficients &c, std::uint32_t rate,
-                       std::uint32_t releaseFrames, double maximumPhaseStep,
-                       double minimumPitchMultiplier,
-                       double maximumPitchMultiplier) noexcept {
+bool validCoefficients(
+    const VoiceCoefficients &c, std::uint32_t rate, std::uint32_t releaseFrames,
+    double maximumPhaseStep, double minimumPitchMultiplier,
+    double maximumPitchMultiplier, bool compositionEnabled,
+    const std::array<double, 12> &maximumScalePitchMultipliers) noexcept {
     if (c.attackFrames < (rate * 2 + 999) / 1000 ||
         c.attackFrames > (rate + 9) / 10 || c.decayFrames < (rate + 9) / 10 ||
         c.decayFrames > rate * 3 || c.releaseFrames != releaseFrames ||
@@ -193,6 +218,21 @@ bool validCoefficients(const VoiceCoefficients &c, std::uint32_t rate,
          c.sweepFrames != c.attackFrames + c.decayFrames) ||
         (c.sweepFrames == 0 && (c.sweepFactor != 1 || c.sweepEnd != 1)))
         return false;
+    if (c.scaleQuantized != compositionEnabled)
+        return false;
+    if (compositionEnabled) {
+        for (unsigned pitchClass = 0; pitchClass < 12; ++pitchClass) {
+            const auto multiplier = c.scalePitchMultipliers[pitchClass];
+            if (!std::isfinite(multiplier) || multiplier < .4 ||
+                multiplier > 2.52 ||
+                multiplier > maximumScalePitchMultipliers[pitchClass] + 1e-12)
+                return false;
+        }
+    } else if (std::any_of(c.scalePitchMultipliers.begin(),
+                           c.scalePitchMultipliers.end(),
+                           [](double value) { return value != 0; })) {
+        return false;
+    }
     if (c.legacyStruck)
         return c.partialCount == 0 && c.sweepFrames == 0 &&
                c.pulsePhaseStep == 0 && c.roughnessDepth == 0 &&
@@ -205,8 +245,8 @@ bool validCoefficients(const VoiceCoefficients &c, std::uint32_t rate,
         if (!std::isfinite(p.ratio) || p.ratio <= 0 ||
             !std::isfinite(p.amplitude) || !std::isfinite(p.decayFactor) ||
             p.decayFactor <= 0 || p.decayFactor > 1 ||
-            maximumPhaseStep * c.pitchMultiplier * std::max(1.0, c.sweepEnd) *
-                        p.ratio +
+            maximumPhaseStep * (compositionEnabled ? 1 : c.pitchMultiplier) *
+                        std::max(1.0, c.sweepEnd) * p.ratio +
                     c.roughnessPhaseStep + 2 * c.pulsePhaseStep >
                 .9 * pi + 1e-12)
             return false;
@@ -234,8 +274,8 @@ bool AudioPlan::prepareVoiceUpdate(
     if (!editableVoices_ || slot >= voiceProfiles_.size() ||
         !validVoiceSettings(settings) || root < 48 || root > 72)
         return false;
-    coefficients =
-        coefficientsFor(settings, settings_.sampleRate, settings_.rootMidi);
+    coefficients = coefficientsFor(settings, settings_.sampleRate,
+                                   settings_.rootMidi, settings_.composition);
     return true;
 }
 
@@ -249,7 +289,8 @@ AudioPlan::AudioPlan(const Timeline &timeline, AudioSettings settings,
         settings.attackSeconds < .002 || settings.attackSeconds > .100 ||
         !std::isfinite(settings.decaySeconds) || settings.decaySeconds < .100 ||
         settings.decaySeconds > 3.0 || !std::isfinite(settings.masterDb) ||
-        settings.masterDb < -60 || settings.masterDb > 0)
+        settings.masterDb < -60 || settings.masterDb > 0 ||
+        !validCompositionSettings(settings.composition))
         throw std::invalid_argument("audio settings outside revision-1 limits");
     if (timeline.durationUs() < 0 || timeline.durationUs() > maximumDurationUs)
         throw std::invalid_argument(
@@ -267,7 +308,11 @@ AudioPlan::AudioPlan(const Timeline &timeline, AudioSettings settings,
     masterGain_ = std::pow(10.0, settings.masterDb / 20.0);
     maximumPhaseStep_ =
         2 * pi * 440 *
-        std::exp2((static_cast<double>(settings.rootMidi) + 16 - 69) / 12.0) /
+        std::exp2(((settings.composition.enabled
+                        ? 88.0
+                        : static_cast<double>(settings.rootMidi) + 16) -
+                   69) /
+                  12.0) /
         settings.sampleRate;
     minimumPitchMultiplier_ =
         std::max(.5, std::exp2((48.0 - settings.rootMidi) / 12));
@@ -275,6 +320,21 @@ AudioPlan::AudioPlan(const Timeline &timeline, AudioSettings settings,
         std::min(2.0, std::exp2((72.0 - settings.rootMidi) / 12));
     voiceBank_[0] = {
         attackFrames_, decayFrames_, releaseFrames_, 1, decayFactor_, 1};
+    if (settings.composition.enabled) {
+        const auto maximumBase = std::min(76u, settings.rootMidi + 16);
+        for (unsigned pitchClass = 0; pitchClass < 12; ++pitchClass) {
+            const auto maximumForClass =
+                maximumBase - ((maximumBase - pitchClass + 12) % 12);
+            maximumScalePitchMultipliers_[pitchClass] =
+                std::exp2((88.0 - maximumForClass) / 12);
+        }
+        VoiceSettings fallback;
+        fallback.attackSeconds = settings.attackSeconds;
+        fallback.decaySeconds = settings.decaySeconds;
+        voiceBank_[0] =
+            coefficientsFor(fallback, settings.sampleRate, settings.rootMidi,
+                            settings.composition);
+    }
     if (profiles.size() > voiceSlotCapacity)
         throw std::invalid_argument(
             "voice bank is limited to 512 species profiles");
@@ -290,12 +350,56 @@ AudioPlan::AudioPlan(const Timeline &timeline, AudioSettings settings,
                         }))
             throw std::invalid_argument(
                 "invalid or duplicate species voice profile");
-        voiceBank_[voiceProfiles_.size()] = coefficientsFor(
-            profile.settings, settings.sampleRate, settings.rootMidi);
+        voiceBank_[voiceProfiles_.size()] =
+            coefficientsFor(profile.settings, settings.sampleRate,
+                            settings.rootMidi, settings.composition);
         voiceProfiles_.push_back(profile);
     }
     const auto maximumVoiceFrames = frames(.100) + frames(3.0) + releaseFrames_;
     totalFrames_ = frameAt(timeline.durationUs(), settings.sampleRate);
+    if (settings.composition.enabled) {
+        const auto compiled = compileComposition(timeline, settings.composition,
+                                                 settings.rootMidi);
+        omittedCompositionNotes_ = compiled.omittedNotes;
+        actions_.reserve(compiled.notes.size());
+        decisions_.reserve(compiled.decisions.size());
+        for (const auto &decision : compiled.decisions) {
+            decisions_.push_back(
+                {decision.eventIndex,
+                 decision.admitted ? Admission::accepted : Admission::density});
+            const auto &event = timeline.events()[decision.eventIndex];
+            if (decision.admitted &&
+                (!event.speciesId || event.speciesId->empty()))
+                ++missingSpecies_;
+        }
+        const auto limit = frameAt(maximumDurationUs, settings.sampleRate);
+        for (const auto &note : compiled.notes) {
+            const auto &event = timeline.events()[note.eventIndex];
+            const auto slot =
+                event.speciesId ? voiceSlot(*event.speciesId) : VoiceSlot{};
+            const auto frame = frameAt(note.dueUs, settings.sampleRate);
+            const auto gate = static_cast<std::uint32_t>(
+                frameAt(note.gateUs, settings.sampleRate));
+            const auto &coefficients = voiceBank_[slot];
+            const auto tail =
+                editableVoices_
+                    ? maximumVoiceFrames
+                    : std::min(coefficients.attackFrames +
+                                   coefficients.decayFrames,
+                               std::max(coefficients.attackFrames, gate)) +
+                          coefficients.releaseFrames;
+            if (frame > limit || tail > limit - frame)
+                throw std::invalid_argument("composition including voice tails "
+                                            "exceeds 30 minute limit");
+            const auto frequency =
+                440 * std::exp2((static_cast<double>(note.midiNote) - 69) / 12);
+            actions_.push_back({frame, 2 * pi * frequency / settings.sampleRate,
+                                note.eventIndex, note.midiNote, slot,
+                                note.phaseSeed, note.velocity, gate});
+            totalFrames_ = std::max(totalFrames_, frame + tail);
+        }
+        return;
+    }
     actions_.reserve(timeline.schedule().size());
     decisions_.reserve(timeline.schedule().size());
     constexpr std::array<unsigned, 8> offsets{0, 2, 4, 7, 9, 12, 14, 16};
@@ -341,10 +445,11 @@ bool AudioRenderer::updateVoice(
     VoiceSlot slot, const VoiceCoefficients &coefficients) noexcept {
     if (!plan_.editableVoices_ || slot >= plan_.voiceProfiles_.size())
         return false;
-    if (!validCoefficients(coefficients, plan_.settings_.sampleRate,
-                           plan_.releaseFrames_, plan_.maximumPhaseStep_,
-                           plan_.minimumPitchMultiplier_,
-                           plan_.maximumPitchMultiplier_))
+    if (!validCoefficients(
+            coefficients, plan_.settings_.sampleRate, plan_.releaseFrames_,
+            plan_.maximumPhaseStep_, plan_.minimumPitchMultiplier_,
+            plan_.maximumPitchMultiplier_, plan_.settings_.composition.enabled,
+            plan_.maximumScalePitchMultipliers_))
         return false;
     voiceBank_[slot] = coefficients;
     return true;
@@ -446,7 +551,18 @@ void AudioRenderer::trigger(const MusicalAction &action) noexcept {
     *slot = {};
     slot->active = true;
     slot->started = action.frame;
-    slot->phaseStep = action.phaseStep * coefficients.pitchMultiplier;
+    slot->phaseStep =
+        action.phaseStep *
+        (coefficients.scaleQuantized
+             ? coefficients.scalePitchMultipliers[action.midiNote % 12]
+             : coefficients.pitchMultiplier);
+    slot->velocity = action.velocity;
+    slot->releaseStart = coefficients.attackFrames + coefficients.decayFrames;
+    if (action.gateFrames)
+        slot->releaseStart =
+            std::min(slot->releaseStart,
+                     std::max(coefficients.attackFrames, action.gateFrames));
+    slot->endAge = slot->releaseStart + coefficients.releaseFrames;
     slot->coefficients = coefficients;
     slot->partialGains.fill(1);
     if (!coefficients.legacyStruck && coefficients.phaseSpread != 0) {
@@ -463,7 +579,7 @@ double AudioRenderer::tick(Voice &voice, bool retiring) noexcept {
         return 0;
     const auto age = voice.age;
     const auto &coefficients = voice.coefficients;
-    if (age >= lifetime(coefficients) ||
+    if (age >= voice.endAge ||
         (retiring && voice.fadeAge >= plan_.fadeFrames_)) {
         voice.active = false;
         return 0;
@@ -471,8 +587,7 @@ double AudioRenderer::tick(Voice &voice, bool retiring) noexcept {
     double envelope = voice.decay;
     if (age < coefficients.attackFrames)
         envelope *= (1 - std::cos(pi * age / coefficients.attackFrames)) * .5;
-    const auto releaseStart =
-        coefficients.attackFrames + coefficients.decayFrames;
+    const auto releaseStart = voice.releaseStart;
     if (age >= releaseStart)
         envelope *= (1 + std::cos(pi * (age - releaseStart) /
                                   coefficients.releaseFrames)) *
@@ -526,6 +641,8 @@ double AudioRenderer::tick(Voice &voice, bool retiring) noexcept {
                                  std::max(1.0, coefficients.sweepEnd));
         }
     }
+    if (voice.velocity != 1)
+        sample *= voice.velocity;
     if (!std::isfinite(sample)) {
         voice = {};
         ++statistics_.faults;
@@ -541,7 +658,7 @@ double AudioRenderer::tick(Voice &voice, bool retiring) noexcept {
         ++voice.fadeAge;
     // Release completed states before the next sample's admissions need their
     // slots.
-    if (voice.age >= lifetime(coefficients) ||
+    if (voice.age >= voice.endAge ||
         (retiring && voice.fadeAge >= plan_.fadeFrames_))
         voice.active = false;
     return sample;

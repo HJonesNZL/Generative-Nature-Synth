@@ -50,6 +50,8 @@ struct PlaybackSnapshot {
     std::uint64_t preparationId{}, generation{}, positionFrames{},
         totalFrames{};
     std::uint32_t sampleRate{};
+    std::size_t generatedNotes{}, omittedCompositionNotes{},
+        suppressedSourceEvents{};
     AudioState state{AudioState::ready};
     PlaybackError error{PlaybackError::none};
     double gainDb{-18};

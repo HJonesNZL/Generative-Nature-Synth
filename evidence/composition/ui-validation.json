@@ -1,0 +1,88 @@
+{
+  "milestone": "native-composition-ui",
+  "recordedAtUtc": "2026-11-06T22:12:35.042873+00:00",
+  "workingDirectory": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/ui/app",
+  "scope": "Silent native fixture and browser integration in disposable state; no physical audio output or owner listening approval.",
+  "steps": [
+    {
+      "command": "/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node node_modules/typescript/bin/tsc --noEmit",
+      "exitCode": 0,
+      "result": "Final TypeScript passed, including temporary numeric text editing and source-density DTO."
+    },
+    {
+      "command": "/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node node_modules/vite/bin/vite.js build",
+      "exitCode": 0,
+      "result": "Final production bundle passed after sequential numeric-entry correction; 92 modules transformed."
+    },
+    {
+      "command": "/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node --experimental-transform-types --test tests/*.test.mjs",
+      "exitCode": 1,
+      "result": {
+        "passed": 26,
+        "failed": 2,
+        "failure": "Sandbox denied localhost listen (EPERM) in existing export-route and native-bridge tests."
+      }
+    },
+    {
+      "command": "/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node --experimental-transform-types --test tests/export-route.test.mjs tests/native-bridge.test.mjs",
+      "execution": "unsandboxed loopback permission",
+      "exitCode": 0,
+      "result": {
+        "passed": 2,
+        "failed": 0
+      }
+    },
+    {
+      "command": "/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node --experimental-transform-types --test tests/composition.test.mjs tests/soundscapes.test.mjs",
+      "exitCode": 0,
+      "result": {
+        "passed": 6,
+        "failed": 0,
+        "includes": "Final source-density accounting validation and composition/soundscape capture barrier."
+      }
+    },
+    {
+      "command": "ATLAS_TEST_COMPOSITION=1 PLAYWRIGHT_MODULE=/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs ATLAS_SOUNDSCAPE_TEST_PORT=5194 ATLAS_SOUNDSCAPE_SCREENSHOT=/private/tmp/atlas-composition-ui.png /Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node tests/native-soundscapes-browser.mjs > /private/tmp/atlas-composition-browser-result.json",
+      "execution": "unsandboxed isolated localhost server; fresh native fixture includes source-density counts and POD coefficient repair",
+      "exitCode": 0,
+      "result": {
+        "checks": [
+          "sequential tempo and uint32 seed keyboard entry",
+          "invalid numeric text draft blocks native mutation and capture",
+          "atomic full composition draft across pages",
+          "save waits for delayed composition acknowledgement",
+          "invalid/stale composition rejection without mutation",
+          "composition exact recall and immutable WAV export",
+          "composition preserved during speed changes",
+          "unmanaged filename notice coexists with valid scene",
+          "full native capture after voice edits",
+          "scene-only WAV export despite later draft edits",
+          "app-owned WAV download",
+          "atomic recall restoring voice and copied scene context",
+          "recall remains silent",
+          "same-scene speed preparation preserves current draft"
+        ],
+        "knownSpeciesPresetApplied": false,
+        "savedId": "594942d5194d870593b7f8560931eab5",
+        "wavBytes": 4320598,
+        "pageErrors": [],
+        "rejected": []
+      },
+      "additionalAssertions": [
+        "generatedNotes is a positive integer",
+        "suppressedSourceEvents is a positive integer for the dense fixture",
+        "additional phrase-note omissions is a nonnegative integer",
+        "held voice gesture rejects composition before mutation",
+        "all full DTO fields survive exact save/recall",
+        "Sequential keystrokes preserve tempo117 and uint32-max seed4294967295",
+        "Invalid tempo39 remains editable and blocks both native setComposition and saveSoundscape"
+      ]
+    }
+  ],
+  "screenshot": "evidence/composition/composition-ui.png",
+  "unrun": [
+    "Physical audio output",
+    "Owner listening approval",
+    "Actual DAW integration"
+  ]
+}

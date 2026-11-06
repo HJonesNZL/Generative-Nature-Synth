@@ -1,0 +1,17 @@
+# Native composition controls
+
+The serial UI host validates one complete composition DTO and current preparation/generation before any mutation. It rejects active voice gestures. Accepted edits reprepare the current verified timeline with current voice drafts and exact rational time settings, disable Listening, and never play automatically. Only successful preparations replace the captured audio recipe. DTOs contain no animal events.
+
+The persistent composition panel owns a bounded single draft and one in-flight apply. Explicit Apply and soundscape Save both drain acknowledged voice gestures before submitting composition. A finalizer in the shared edit barrier makes saving wait for composition acceptance. Recall replaces the draft with the exact native recipe. Native capabilities gate every control. Invalid/stale requests fail observably. No audio-thread or generic parameter-engine changes belong here.
+
+Verification: TypeScript build, boundary/barrier unit checks, disposable native browser capture/recall/export plus malformed/stale requests and delayed acknowledgements. Record actual outcomes after execution. Sounds and reference recordings remain unheard research candidates pending owner listening.
+
+## Implemented and checked — 7 November 2026
+
+- Native `getComposition` and atomic `setComposition` are capability advertised with the native voice store. Full settings, preparation identity and generation are required; unknown/missing/duplicate fields, malformed types, ranges and active voice gestures fail before re-preparation. Successful changes preserve current voice drafts and rational speed, stop Listening and return a new preparation. New captures stamp current soundscape revisions, including after legacy recall.
+- One persistent panel retains its draft across Atlas/Studio switches. Explicit Apply and Save share the voice-queue/recipe acknowledgement barrier; controls and transport polling pause during the operation. Recall reloads exact captured settings. Generated-note counts come from the prepared native plan and remain distinct from retained source-record counts.
+- TypeScript `--noEmit`, production Vite build, and all 28 UI unit checks passed. Two localhost tests required unsandboxed execution because sandbox loopback listening returns EPERM.
+- `ATLAS_TEST_COMPOSITION=1` disposable native browser regression passed against the silent fixture driver: full draft across pages, deterministic held composition acknowledgement blocking capture and controls, malformed/stale/active-gesture rejection with no recipe mutation, exact scene recall, unchanged immutable exported WAV after later composition/voice changes, silent recall and same-scene speed preservation. WAV: 4,320,598 bytes; no page errors or rejected UI requests. Screenshot: `/private/tmp/atlas-composition-ui.png`.
+- Native build/test qualification is coordinated by the parent workstream. This is browser/native integration evidence, with no physical output or owner listening approval. The panel reports compiled musical notes, retained source records, density-rejected source records and additional phrase-note omissions separately; none of these changes the saved animal records.
+
+The final browser pass also covers ordinary sequential tempo/uint32-seed typing and an invalid numeric text draft: invalid text stays editable and blocks native submission/capture, while complete valid numbers apply normally. Final TypeScript and production bundle passed after this correction.

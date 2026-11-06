@@ -38,7 +38,7 @@ std::string recipe(const Soundscape &scene, std::string_view sourceHash) {
            "hash\":" +
            detail::quoteJson(scene.contentHash()) +
            ",\"scene_schema_revision\":" +
-           std::to_string(soundscapeSchemaRevision) +
+           std::to_string(capture.schemaRevision) +
            ",\"synthesis_revision\":" +
            std::to_string(capture.synthesisRevision) +
            ",\"mapping_revision\":" + std::to_string(capture.mappingRevision) +
