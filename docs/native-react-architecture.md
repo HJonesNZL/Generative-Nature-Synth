@@ -4,6 +4,8 @@ Decision recorded 6 November 2026 after the owner specified portable C++ and ide
 
 The [revised build plan](BUILD_PLAN.md) is authoritative for delivery order and qualification. This document records the architecture milestone. Current repairs and open verification gates are in [the audit index](audits/AUDIT_AND_REVISED_BUILD_PLAN.md).
 
+Beta 1 update: native event-content checksums are now implemented for canonical schema-v2 storage. Metadata-envelope verification and other M1 work remain open. See [current evidence and SQLite requirements](milestones/BETA_1_NATIVE_INTEGRITY.md). The remaining sections preserve the original architecture milestone.
+
 ## Recommended arrangement
 
 React and a webview solve different parts of the problem and can be used together. Use React/TypeScript for the two pages and control state, Three.js/WebGL for Direction H's globe, and JUCE's embedded browser as the desktop/plug-in UI container. The production collector, session/replay logic, mappings, region routing and DSP are portable C++. Keep JUCE-specific adapters thin.

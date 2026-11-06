@@ -59,7 +59,8 @@ int main(int argc, char** argv) {
             std::cout << "{\"engine\":\"portable-cpp\",\"session_id\":" << quote(saved.id)
                       << ",\"mode\":" << quote(mode) << ",\"event_count\":" << timeline.events().size()
                       << ",\"duration_us\":" << timeline.durationUs() << ",\"peak_events_in_one_second\":" << timeline.peakEventsPerSecond()
-                      << ",\"integrity\":\"structure-and-count; cryptographic verification not ported\",\"events\":[";
+                      << ",\"capture_truncated\":" << (saved.truncated ? "true" : "false")
+                      << ",\"integrity\":\"sha256-event-content-verified; metadata-envelope-unverified\",\"events\":[";
             const auto count = std::min<std::size_t>(limit, timeline.schedule().size());
             for (std::size_t i = 0; i < count; ++i) {
                 if (i) std::cout << ',';

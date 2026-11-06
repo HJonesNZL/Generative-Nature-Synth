@@ -1,10 +1,25 @@
 #include <atlas/storage.hpp>
 #include <sqlite3.h>
+#include "sha256.hpp"
+#include <algorithm>
 #include <limits>
 #include <stdexcept>
 
 namespace atlas {
 namespace {
+class ReadSnapshot {
+public:
+    explicit ReadSnapshot(sqlite3* db) : db_(db) {
+        if (sqlite3_exec(db_, "BEGIN", nullptr, nullptr, nullptr) != SQLITE_OK)
+            throw std::runtime_error("unable to begin read snapshot");
+    }
+    ~ReadSnapshot() { sqlite3_exec(db_, "ROLLBACK", nullptr, nullptr, nullptr); }
+    ReadSnapshot(const ReadSnapshot&) = delete;
+    ReadSnapshot& operator=(const ReadSnapshot&) = delete;
+private:
+    sqlite3* db_;
+};
+
 class Statement {
 public:
     Statement(sqlite3* db, const char* sql) {
@@ -25,10 +40,12 @@ public:
         const int result = sqlite3_step(value_);
         if (result == SQLITE_ROW) return true;
         if (result == SQLITE_DONE) return false;
-        throw std::runtime_error("database read failed");
+        throw std::runtime_error("database read failed: " + std::string(sqlite3_errstr(result)));
     }
     bool null(int column) const { return sqlite3_column_type(value_, column) == SQLITE_NULL; }
     std::string text(int column) const {
+        if (sqlite3_column_type(value_, column) != SQLITE_TEXT)
+            throw std::runtime_error("text field missing or invalid");
         const auto* value = sqlite3_column_text(value_, column);
         if (!value) throw std::runtime_error("required text field missing");
         const auto size = sqlite3_column_bytes(value_, column);
@@ -53,7 +70,7 @@ constexpr auto sessionColumns = R"SQL(
  json_extract(options_json,'$.timeline_bounds.observed[1]'),
  json_extract(options_json,'$.timeline_bounds.arrival[0]'),
  json_extract(options_json,'$.timeline_bounds.arrival[1]'),
- COALESCE(json_extract(options_json,'$.capture_truncated'),0)
+ COALESCE(json_extract(options_json,'$.capture_truncated'),0),content_hash
  FROM sessions
 )SQL";
 
@@ -67,6 +84,7 @@ SavedSession readSession(const Statement& query) {
     if (!query.null(5) && !query.null(6)) session.observedBounds = {parseUtc(query.text(5)), parseUtc(query.text(6))};
     if (!query.null(7) && !query.null(8)) session.arrivalBounds = {parseUtc(query.text(7)), parseUtc(query.text(8))};
     session.truncated = query.integer(9) != 0;
+    session.contentHash = query.optionalText(10).value_or("");
     return session;
 }
 } // namespace
@@ -110,8 +128,14 @@ SavedSession ReadOnlyLibrary::session(std::string_view id) const {
 }
 
 Timeline ReadOnlyLibrary::load(std::string_view id, TimeBasis basis, Speed speed) const {
+    // One consistent SQLite read transaction for metadata and frozen payloads.
+    ReadSnapshot snapshot(impl_->db);
     const auto saved = session(id);
     if (saved.state != "frozen" && saved.state != "interrupted") throw std::invalid_argument("stop recording before native replay");
+    if (saved.contentHash.size() != 64 || !std::all_of(saved.contentHash.begin(), saved.contentHash.end(),
+        [](char c) { return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'); }))
+        throw std::runtime_error("session integrity checksum missing or invalid");
+    detail::Sha256 checksum;
     Statement query(impl_->db, R"SQL(
         SELECT original_seq,event_json,
         json_extract(event_json,'$.event_id'),json_extract(event_json,'$.source_id'),
@@ -135,6 +159,12 @@ Timeline ReadOnlyLibrary::load(std::string_view id, TimeBasis basis, Speed speed
         event.revisionSequence = query.integer(0); event.normalizedJson = query.text(1);
         bytes += event.normalizedJson.size();
         if (bytes > 64 * 1024 * 1024) throw std::runtime_error("native session memory capacity exceeded");
+        // Schema-v2 writers persist Python canonical event JSON verbatim.
+        checksum.update("{\"event\":");
+        checksum.update(event.normalizedJson);
+        checksum.update(",\"original_seq\":");
+        checksum.update(std::to_string(event.revisionSequence));
+        checksum.update("}\n");
         event.id = query.text(2); event.sourceId = query.text(3);
         event.kind = query.text(4); event.locationKind = query.text(5);
         event.speciesId = query.optionalText(6); event.individualId = query.optionalText(7);
@@ -153,6 +183,8 @@ Timeline ReadOnlyLibrary::load(std::string_view id, TimeBasis basis, Speed speed
         events.push_back(std::move(event));
     }
     if (events.size() != saved.eventCount) throw std::runtime_error("saved session count mismatch");
+    if (checksum.hexDigest() != saved.contentHash)
+        throw std::runtime_error("session integrity failure: frozen event content changed");
     return Timeline(std::move(events), basis, speed,
                     basis == TimeBasis::observed ? saved.observedBounds : saved.arrivalBounds);
 }

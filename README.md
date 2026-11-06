@@ -1,5 +1,7 @@
 # Animal Atlas backend
 
+Beta 1 has begun: [native event-content verification and build requirements](docs/milestones/BETA_1_NATIVE_INTEGRITY.md). The native reader now checks saved event SHA-256; metadata-envelope verification remains open. [Claude design handoff prompt](<Claude Design/CLAUDE_DESIGN_HANDOFF_PROMPT.md>).
+
 The [revised build plan](docs/BUILD_PLAN.md) is the current product/engineering sequence. See the [consolidated Astra audit](docs/audits/AUDIT_AND_REVISED_BUILD_PLAN.md) for demonstrated issues, repaired items and release gates, and [AGENTS.md](AGENTS.md) for the active C++/realtime/agent rules. Standalone first with a shared C++ engine and later VST3 remains the recommendation; no audible engine or graphical product is implemented yet.
 
 ## Production direction and C++ migration
@@ -14,7 +16,7 @@ build/native/atlas-native sessions --db .state/atlas.sqlite3
 build/native/atlas-native replay --db .state/atlas.sqlite3 --session latest --mode observed --speed 60 --limit 5
 ```
 
-The C++ core needs no JUCE, React or Python runtime. The storage adapter uses SQLite; Xcode's SDK supplies it on this Mac. See [native and React integration notes](docs/native-react-architecture.md) and the proposed [UI host contract](ui/contracts.ts). Windows/Linux, JUCE integration and webview rendering still need qualification.
+The C++ core needs no JUCE, React or Python runtime. CTest storage fixtures require Python 3.9+ at development time. The storage adapter uses SQLite; on this Mac select the already-installed Homebrew headers/library as documented in the Beta 1 notes, because the system runtime failed the closed-WAL fixture. See [native and React integration notes](docs/native-react-architecture.md) and the proposed [UI host contract](ui/contracts.ts). Windows/Linux, JUCE integration and webview rendering still need qualification.
 
 ## Operational Python prototype
 

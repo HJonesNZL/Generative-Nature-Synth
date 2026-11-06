@@ -1,0 +1,35 @@
+{
+  "date_local": "2026-11-07",
+  "branch": "beta-1",
+  "milestone": "M1 initial native content-integrity slice",
+  "native_configurations_passed": [
+    "Debug",
+    "Release",
+    "Debug ASan+UBSan"
+  ],
+  "ctest_suites_per_configuration": 3,
+  "core_cases": 17,
+  "storage_cases": 12,
+  "sha256_checks": "4 known-answer messages with one-shot and chunked updates; digest-state preservation",
+  "sqlite_qualified_version": "3.53.3",
+  "python_fixture_version": "3.12.13",
+  "system_sqlite_limit": "Apple SQLite 3.43.2 failed closed Homebrew-created WAL without sidecars; test retained, matching Homebrew 3.53.3 headers/library selected",
+  "owner_library_access": false,
+  "provider_requests": 0,
+  "new_runtime_dependencies": [],
+  "open_m1_work": [
+    "metadata envelope",
+    "import provenance",
+    "complete shared schema",
+    "historical playback-window policy"
+  ],
+  "sha256": {
+    "native/src/sha256.cpp": "2b4ee63b0eb803a6b4b920f25a96162c12920b4b994e2f51d564528fa6038975",
+    "native/src/sha256.hpp": "0b28ae813895efb324f9c6d51293a8eade15f292f69ebe9f27fba4ffe2c635ef",
+    "native/src/storage.cpp": "7458e1c63a8177c9b5387fafca67233bb34872f6164cdf3f5f2c0d4183422187",
+    "native/src/main.cpp": "61cbe7aebe6df2931951d99e05d4e7b4afcc6d6840673934095840804e0872f7",
+    "native/tests/sha256_tests.cpp": "d871e1bcc07b51ce2287cffd0800c87fc695ff11eea97edf0eb5825470681a56",
+    "tests/native_storage_checks.py": "d9dbceb3f68a9accf62ba926452bff16e5a3297e1d0c2e06ba901ef7adb388aa",
+    "CMakeLists.txt": "9fcbd310878593cd53ac5a955dd68d0c2ff76a8c371082b45cb3f0ce06a728a3"
+  }
+}

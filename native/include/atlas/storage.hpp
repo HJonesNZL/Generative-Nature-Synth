@@ -5,7 +5,7 @@
 
 namespace atlas {
 struct SavedSession {
-    std::string id, name, state, origin;
+    std::string id, name, state, origin, contentHash;
     std::size_t eventCount{};
     bool truncated{};
     std::optional<std::pair<Microseconds, Microseconds>> observedBounds, arrivalBounds;
@@ -13,6 +13,7 @@ struct SavedSession {
 
 // Read-only compatibility adapter for the existing schema-v2 database.
 // Collector/session writes are not migrated yet. No call belongs on an audio thread.
+// Confine each instance to one worker; use separate connections for concurrent loads.
 class ReadOnlyLibrary {
 public:
     explicit ReadOnlyLibrary(const std::filesystem::path& path);

@@ -2,6 +2,8 @@
 
 Audit baseline: 6 November 2026 UTC; final consistency review: 7 November NZDT. Status: **development plan, not a release qualification**. This replaces earlier suggested delivery sequences and unqualified estimates. It incorporates three GPT-6 Astra audits, isolated counterexamples, the owner's portable-C++ and zero-cost requirements, and Direction H. Findings and remediation evidence are indexed in [the audit](audits/AUDIT_AND_REVISED_BUILD_PLAN.md).
 
+Implementation update, 7 November: [Beta 1 native content-integrity slice](milestones/BETA_1_NATIVE_INTEGRITY.md) starts M1; the complete milestone remains open.
+
 ## 1. Product objective and authority
 
 Build a musical instrument that makes real wildlife activity understandable and musically useful. A person must be able to inspect an event on the Atlas, hear its musical interpretation, edit that interpretation in Sound Studio, shape geographic effects, and preserve a composition that can be reopened without its original feeds. Historical composition must use actual available material for a selected species, region and interval.

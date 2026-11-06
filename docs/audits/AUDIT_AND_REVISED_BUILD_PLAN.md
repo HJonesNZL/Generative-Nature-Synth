@@ -2,6 +2,10 @@
 
 Audit baseline 6 November 2026 UTC; final review 7 November NZDT. Three independent GPT-6 Astra reviews, requested by the owner, inform the replacement [build plan](../BUILD_PLAN.md). The work covers implementation/data, audio/DSP/CPU and the wider release lifecycle. The canonical plan is approximately 7,000 words across 21 areas, with nine gated milestones. This index records current status; the dated reports retain their original baseline findings.
 
+## Beta 1 follow-up, 7 November
+
+[The first M1 implementation slice](../milestones/BETA_1_NATIVE_INTEGRITY.md) now verifies native stored event-content hashes, exposes native replay truncation and adds self-contained storage tests. Metadata-envelope, provenance, full semantic parity and historical-window work remain open. The findings below retain the audit baseline; this follow-up records the later change and its strict canonical-storage-byte boundary.
+
 ## Decision
 
 Continue with a **standalone-first instrument and shared portable C++ engine**, followed by a VST3 companion. React/TypeScript/Three.js in a native webview remains a reasonable UI recommendation. The owner has not yet chosen a JUCE licence/version or public distribution route. The current backend is a useful foundation; it is not an audible or release-qualified product.
