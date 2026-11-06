@@ -1,0 +1,29 @@
+{
+  "review_role": "independent agent source review and hardware-free tests",
+  "source_files": {
+    "native/include/atlas/playback.hpp": "5a5af586a2fd5e181f54597226cdc5378b14687490309a0a0ca6b5118bad8b0e",
+    "native/src/playback.cpp": "f1a4238c044d04327019754ac8cad5615beeb8b9080f6f24bb0ac07bbd60b028",
+    "native/src/juce_output.cpp": "cce717784a547750a15f926ec4876f6bf0fa72e5a91d68087d6d893523c6e0a3",
+    "native/src/audio_host_main.cpp": "a4e27d0670354327aab7951c5c52287f3ea0393dcf6425ac75bf49b53b9d14cf",
+    "native/include/atlas/ui_host.hpp": "3d159e592b6f02dab9dbc28fc954de7777f2e4d9d9d56cbf607d0f9872c3e38c",
+    "native/src/ui_host.cpp": "c36213f1144fd354206495648d9f84b2e1f20f2981aa2fe950c61a781eeb71c6",
+    "ui/app/src/app/usePlayback.ts": "956882cd11f1a90cac5fa7d330fecfb35c9d7d73be7d87f055a33e94ad2f8f43",
+    "ui/app/src/app/Header.tsx": "e90a02b01189ce1c7d9b7633cd053c53c1428ea0bde6c6590a5d3eb6d562c507",
+    "ui/app/src/app/store.tsx": "f0c9b23d6911fffe96bc4e6e5086dd746707a3cd46340343327dbaaf027e6a42",
+    "ui/app/src/host/client.ts": "88bae30fbc1b7f1724b5e985b6b7f407656f94ff433d2df44b27720de6c58be4",
+    "ui/app/dev/nativeBridge.mjs": "badb2e80cdf5501c8acecf8b82a4c23be9d6f79c38314eae771a77a001c9da77",
+    "native/tests/playback_tests.cpp": "e6b044e6e651fb213c4b91711877512e1513b1e2c555668a23deadbb4daad714",
+    "native/tests/playback_host.cpp": "e8e8bdef937e5b862bf793a039e6192e176e6e3a1f327583375509ab14d7082a",
+    "tests/native_playback_checks.py": "10bda81878ea94f1b3d82eb91e3a077eecc1c82859816fa76ea28fe0e9d53ac8",
+    "CMakeLists.txt": "139f1a259d4867358bc9ab981ad49ea250796d3bafb0ca855bb6534c6af73f29",
+    "tests/native_device_smoke.py": "03b08ef5cd0756aaca7a457f2e404cc7783020d25560a078c9597d3c3e38e5d6"
+  },
+  "scope_note": "Final source review plus native-agent actual-device receipt review; this independent workstream ran hardware-free runtime/protocol/TSAN tests only.",
+  "reviewed_receipts": {
+    "device-smoke-before-fix.json": "c1bee28d70a5001a7d04c81fce19058e9f50b8627740dcaee0796e857658a8bc",
+    "device-smoke-device-change-before-fix.json": "ba61d1886f0842df8ace422b864c5738931843f1c62e037e396b50937e603397",
+    "device-smoke.json": "e5bbcb10eaca5ae30e89d5de533737e5d2a292796b07708adbd7b822070a3188",
+    "host-lifecycle.json": "8210be2a07598fe8c27495ec1012bc30e64b52b8ac3e8c62a63295267b4db21c",
+    "ui-checks.json": "0bfd98a27ab4b25ccaa27848a32420c34e1641d85133e04046755bad163bf1ca"
+  }
+}

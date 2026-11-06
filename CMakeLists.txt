@@ -84,6 +84,12 @@ if(ATLAS_BUILD_TESTS)
     find_package(Python3 3.9 REQUIRED COMPONENTS Interpreter)
     add_test(NAME atlas-playback-ui COMMAND ${Python3_EXECUTABLE} -B
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/native_playback_checks.py $<TARGET_FILE:atlas-playback-fixture-host>)
+    if(ATLAS_BUILD_AUDIO_HOST)
+        add_test(NAME atlas-audio-host-lifecycle COMMAND ${Python3_EXECUTABLE} -B
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests/native_device_smoke.py --prepare-only
+            --binary $<TARGET_FILE:atlas-audio-host>
+            --evidence ${CMAKE_CURRENT_BINARY_DIR}/audio-host-lifecycle.json)
+    endif()
     add_test(NAME atlas-storage COMMAND ${Python3_EXECUTABLE} -B
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/native_storage_checks.py $<TARGET_FILE:atlas-native>)
     add_test(NAME atlas-ui-host COMMAND ${Python3_EXECUTABLE} -B

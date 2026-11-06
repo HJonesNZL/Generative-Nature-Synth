@@ -1,0 +1,17 @@
+{
+  "id": "native-playback-8e28e07b0e0a149df57c41b56be185c8c4eeeead6064c08a4871757c47636826",
+  "artifact": "build/native-playback-qualified-8e28e07b0e0a/atlas-audio-host",
+  "artifactSha256": "25ee4e92c82c428f9ccebb45e662701d2e39ad6a2e439d0f4ca5502921cd401e",
+  "version": {
+    "engine": "animal-atlas-native-audio",
+    "source_sha256": "8e28e07b0e0a149df57c41b56be185c8c4eeeead6064c08a4871757c47636826"
+  },
+  "configuration": "Release",
+  "platform": "macOS 15.6.1 arm64",
+  "juceVersion": "9.0.0",
+  "juceRevision": "f8f8864172464b9adf9eba6101e1f784838d1597",
+  "juceWorkingTreeClean": true,
+  "sourceUnchangedDuringFinalSuites": true,
+  "deviceAndBrowserSmokeArtifactMatchesFinal": true,
+  "qualification": "experimental_integration; brief real output smoke, not full hardware/listening/release qualification"
+}

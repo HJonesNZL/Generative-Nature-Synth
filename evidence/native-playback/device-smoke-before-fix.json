@@ -1,0 +1,177 @@
+{
+  "schema": "animal-atlas-native-device-smoke-v1",
+  "startedAtUtc": "2026-11-06T18:40:16.084049+00:00",
+  "platform": "macOS-15.6.1-arm64-arm-64bit",
+  "status": "failed",
+  "protocol": [
+    {
+      "elapsedSeconds": 0.001228,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-1",
+        "method": "getCapabilities",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-1",
+        "ok": true,
+        "result": {
+          "protocolVersion": 1,
+          "implementation": "native",
+          "supportedMethods": [
+            "getCapabilities",
+            "getChanges",
+            "getCatalog",
+            "listSessions",
+            "prepareReplay",
+            "getMaterialEvents",
+            "getTransport",
+            "setTransport",
+            "getAudioState",
+            "setAudioEnabled"
+          ],
+          "audioAvailable": true,
+          "maxEventBatch": 500,
+          "maxVisibleMarkers": 500
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 0.00865,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-2",
+        "method": "getAudioState",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-2",
+        "ok": true,
+        "result": {
+          "status": "disabled",
+          "deviceName": null,
+          "masterGainDb": -18.0,
+          "peakDbfs": null,
+          "meterIsSimulated": false,
+          "clipping": false,
+          "activeSynthVoices": null,
+          "maxSynthVoices": 8,
+          "sampleRate": null,
+          "error": null
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 0.00872,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-3",
+        "method": "prepareReplay",
+        "args": {
+          "sessionId": "241ed6cf-742f-44cf-989e-f6124949c3c3",
+          "basis": "observed",
+          "speedNumerator": "1",
+          "speedDenominator": "1"
+        }
+      },
+      "failure": "native device reply timed out: prepareReplay"
+    },
+    {
+      "elapsedSeconds": 3.010813,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-4",
+        "method": "setTransport",
+        "args": {
+          "action": "panic"
+        }
+      },
+      "failure": "native device reply timed out: setTransport"
+    },
+    {
+      "elapsedSeconds": 4.012884,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-5",
+        "method": "setAudioEnabled",
+        "args": {
+          "enabled": false
+        }
+      },
+      "failure": "native device reply timed out: setAudioEnabled"
+    }
+  ],
+  "checks": {
+    "temporaryDatabaseUnchanged": true
+  },
+  "cleanup": {
+    "forcedKill": true,
+    "setTransport": "native device reply timed out: setTransport",
+    "setAudioEnabled": "native device reply timed out: setAudioEnabled",
+    "stdinEofSent": true,
+    "exitCode": -9,
+    "stderr": ""
+  },
+  "limits": {
+    "syntheticOnly": true,
+    "ownerLibraryAccess": false,
+    "providerRequests": false,
+    "notesSeconds": [
+      0,
+      0.3,
+      0.6
+    ],
+    "requestedDurationSeconds": 3,
+    "masterGainDb": -18,
+    "deviceSelection": "current default output only; no fallback/retry",
+    "physicalSpeakerOrHeardAudioVerified": false,
+    "microphoneUsed": false,
+    "latencyQualified": false,
+    "cpuQualified": false,
+    "dawQualified": false,
+    "sustainedDeviceQualified": false
+  },
+  "artifact": {
+    "source": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native-playback/atlas-audio-host",
+    "immutableCopy": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native-playback-smoke-c6686221f5606907/atlas-audio-host",
+    "sha256": "c6686221f56069076c0cdd44bcad65ea933a32e1b1e529a027c0e0b331ab3797",
+    "version": {
+      "engine": "animal-atlas-native-audio",
+      "source_sha256": "8fce20ecd31d657f135d6a65fb414ed0b62c6ca44053067e0b015a7385415f80"
+    },
+    "versionStderr": ""
+  },
+  "fixture": {
+    "eventCount": 3,
+    "sessionId": "241ed6cf-742f-44cf-989e-f6124949c3c3",
+    "provenance": "demo",
+    "databaseSha256Before": "6b5e56dad9604e5a66ddc973e629d091f4a9f39d952a9630101b34cbf130c975",
+    "temporaryDatabaseDeletedOnExit": true,
+    "databaseSha256After": "6b5e56dad9604e5a66ddc973e629d091f4a9f39d952a9630101b34cbf130c975"
+  },
+  "failure": {
+    "type": "ProtocolFailure",
+    "message": "native device reply timed out: prepareReplay"
+  },
+  "elapsedSeconds": 10.202803,
+  "diagnosis": {
+    "method": "one-second read-only sample of a never-enabled disposable synthetic host",
+    "confirmedCause": "ScopedJuceInitialiser_GUI created MessageManager but not NSApplication; raw runDispatchLoop returned, main joined worker, and worker waited forever for message-thread stop dispatch.",
+    "mainStack": [
+      "main",
+      "std::thread::join",
+      "_pthread_join",
+      "__ulock_wait"
+    ],
+    "workerStack": [
+      "UiHost::request",
+      "UiHost::Impl::load",
+      "PlaybackRuntime::enable(false)",
+      "JuceOutput::stop",
+      "onMessageThread",
+      "MessageManager::callFunctionOnMessageThread",
+      "condition_variable::wait"
+    ],
+    "correction": "Use public JUCEApplicationBase::main application lifecycle; keep message dispatch alive until worker destroys runtime/driver."
+  }
+}

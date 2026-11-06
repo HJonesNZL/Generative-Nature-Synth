@@ -1,0 +1,571 @@
+{
+  "runs": [
+    {
+      "startedAtUtc": "2026-11-06T18:50:30.467Z",
+      "binary": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native-playback/atlas-audio-host",
+      "binarySha256": "25ee4e92c82c428f9ccebb45e662701d2e39ad6a2e439d0f4ca5502921cd401e",
+      "library": "/private/var/folders/m2/hl8x2mb154g59qtbrxb3w0b80000gp/T/atlas-real-ui-smoke-qsa_9wt8/synthetic.sqlite3",
+      "origin": "http://127.0.0.1:5184",
+      "commands": [
+        {
+          "protocolVersion": 1,
+          "requestId": "ui-mw5bxv45-8",
+          "method": "setTransport",
+          "args": {
+            "action": "panic"
+          },
+          "reply": {
+            "requestId": "ui-mw5bxv45-8",
+            "ok": true,
+            "result": {
+              "preparationId": null,
+              "generation": "0",
+              "state": "stopped",
+              "positionUs": "0",
+              "durationUs": "0"
+            }
+          },
+          "atMs": null
+        },
+        {
+          "protocolVersion": 1,
+          "requestId": "ui-mw5bxv5b-11",
+          "method": "setAudioEnabled",
+          "args": {
+            "enabled": false
+          },
+          "reply": {
+            "requestId": "ui-mw5bxv5b-11",
+            "ok": true,
+            "result": {
+              "status": "disabled",
+              "deviceName": null,
+              "masterGainDb": -18,
+              "peakDbfs": null,
+              "meterIsSimulated": false,
+              "clipping": false,
+              "activeSynthVoices": null,
+              "maxSynthVoices": 8,
+              "sampleRate": null,
+              "error": null
+            }
+          },
+          "atMs": null
+        },
+        {
+          "protocolVersion": 1,
+          "requestId": "ui-mw5bxv86-14",
+          "method": "setTransport",
+          "args": {
+            "action": "panic"
+          },
+          "reply": {
+            "requestId": "ui-mw5bxv86-14",
+            "ok": true,
+            "result": {
+              "preparationId": null,
+              "generation": "0",
+              "state": "stopped",
+              "positionUs": "0",
+              "durationUs": "0"
+            }
+          },
+          "atMs": null
+        },
+        {
+          "protocolVersion": 1,
+          "requestId": "ui-mw5bxv8l-16",
+          "method": "setAudioEnabled",
+          "args": {
+            "enabled": false
+          },
+          "reply": {
+            "requestId": "ui-mw5bxv8l-16",
+            "ok": true,
+            "result": {
+              "status": "disabled",
+              "deviceName": null,
+              "masterGainDb": -18,
+              "peakDbfs": null,
+              "meterIsSimulated": false,
+              "clipping": false,
+              "activeSynthVoices": null,
+              "maxSynthVoices": 8,
+              "sampleRate": null,
+              "error": null
+            }
+          },
+          "atMs": null
+        },
+        {
+          "protocolVersion": 1,
+          "requestId": "ui-mw5bxv8p-17",
+          "method": "prepareReplay",
+          "args": {
+            "sessionId": "a2d3987a-683f-42b9-ac46-6c423064cafd",
+            "basis": "observed",
+            "speedNumerator": "60",
+            "speedDenominator": "1"
+          },
+          "reply": {
+            "requestId": "ui-mw5bxv8p-17",
+            "ok": true,
+            "result": {
+              "preparationId": "audio-1",
+              "generation": "1",
+              "durationUs": "711333",
+              "eventCount": 3,
+              "peakEventsPerSecond": 3,
+              "session": {
+                "id": "a2d3987a-683f-42b9-ac46-6c423064cafd",
+                "name": "Synthetic three second device smoke",
+                "state": "frozen",
+                "origin": "archive_snapshot",
+                "eventCount": 3,
+                "captureTruncated": false,
+                "metadataIntegrity": "sha256-envelope-v1-verified",
+                "observedWindowPolicy": "preserve_requested",
+                "observedBoundsUs": [
+                  "1767225600000000",
+                  "1767225603000000"
+                ],
+                "arrivalBoundsUs": [
+                  "1793990944785894",
+                  "1793990944785894"
+                ]
+              }
+            }
+          },
+          "atMs": null
+        },
+        {
+          "protocolVersion": 1,
+          "requestId": "ui-mw5bxva0-18",
+          "method": "setTransport",
+          "args": {
+            "action": "panic"
+          },
+          "reply": {
+            "requestId": "ui-mw5bxva0-18",
+            "ok": true,
+            "result": {
+              "preparationId": "audio-1",
+              "generation": "2",
+              "state": "stopped",
+              "positionUs": "0",
+              "durationUs": "711333"
+            }
+          },
+          "atMs": null
+        },
+        {
+          "protocolVersion": 1,
+          "requestId": "ui-mw5bxvaf-19",
+          "method": "setAudioEnabled",
+          "args": {
+            "enabled": false
+          },
+          "reply": {
+            "requestId": "ui-mw5bxvaf-19",
+            "ok": true,
+            "result": {
+              "status": "disabled",
+              "deviceName": null,
+              "masterGainDb": -18,
+              "peakDbfs": null,
+              "meterIsSimulated": false,
+              "clipping": false,
+              "activeSynthVoices": null,
+              "maxSynthVoices": 8,
+              "sampleRate": 48000,
+              "error": null
+            }
+          },
+          "atMs": null
+        },
+        {
+          "protocolVersion": 1,
+          "requestId": "ui-mw5bxvag-20",
+          "method": "prepareReplay",
+          "args": {
+            "sessionId": "a2d3987a-683f-42b9-ac46-6c423064cafd",
+            "basis": "observed",
+            "speedNumerator": "1",
+            "speedDenominator": "1"
+          },
+          "reply": {
+            "requestId": "ui-mw5bxvag-20",
+            "ok": true,
+            "result": {
+              "preparationId": "audio-2",
+              "generation": "1",
+              "durationUs": "3000000",
+              "eventCount": 3,
+              "peakEventsPerSecond": 1,
+              "session": {
+                "id": "a2d3987a-683f-42b9-ac46-6c423064cafd",
+                "name": "Synthetic three second device smoke",
+                "state": "frozen",
+                "origin": "archive_snapshot",
+                "eventCount": 3,
+                "captureTruncated": false,
+                "metadataIntegrity": "sha256-envelope-v1-verified",
+                "observedWindowPolicy": "preserve_requested",
+                "observedBoundsUs": [
+                  "1767225600000000",
+                  "1767225603000000"
+                ],
+                "arrivalBoundsUs": [
+                  "1793990944785894",
+                  "1793990944785894"
+                ]
+              }
+            }
+          },
+          "atMs": null
+        },
+        {
+          "method": "getAudioState",
+          "args": {},
+          "reply": {
+            "requestId": "device-smoke-1",
+            "ok": true,
+            "result": {
+              "status": "running",
+              "deviceName": null,
+              "masterGainDb": -18,
+              "peakDbfs": null,
+              "meterIsSimulated": false,
+              "clipping": false,
+              "activeSynthVoices": null,
+              "maxSynthVoices": 8,
+              "sampleRate": 48000,
+              "error": null
+            }
+          },
+          "atMs": null
+        },
+        {
+          "protocolVersion": 1,
+          "requestId": "ui-mw5bxvbo-21",
+          "method": "setAudioEnabled",
+          "args": {
+            "enabled": true
+          },
+          "reply": {
+            "requestId": "ui-mw5bxvbo-21",
+            "ok": true,
+            "result": {
+              "status": "running",
+              "deviceName": null,
+              "masterGainDb": -18,
+              "peakDbfs": null,
+              "meterIsSimulated": false,
+              "clipping": false,
+              "activeSynthVoices": null,
+              "maxSynthVoices": 8,
+              "sampleRate": 48000,
+              "error": null
+            }
+          },
+          "atMs": 2.6552090000000135
+        },
+        {
+          "protocolVersion": 1,
+          "requestId": "ui-mw5bxvye-27",
+          "method": "setTransport",
+          "args": {
+            "action": "play",
+            "preparationId": "audio-2",
+            "generation": "2"
+          },
+          "reply": {
+            "requestId": "ui-mw5bxvye-27",
+            "ok": true,
+            "result": {
+              "preparationId": "audio-2",
+              "generation": "2",
+              "state": "playing",
+              "positionUs": "10666",
+              "durationUs": "3000000"
+            }
+          },
+          "atMs": 55.69354199999998
+        },
+        {
+          "method": "getTransport",
+          "args": {},
+          "reply": {
+            "requestId": "device-smoke-2",
+            "ok": true,
+            "result": {
+              "preparationId": "audio-2",
+              "generation": "2",
+              "state": "paused",
+              "positionUs": "506333",
+              "durationUs": "3000000"
+            }
+          },
+          "atMs": 541.2834590000002
+        },
+        {
+          "protocolVersion": 1,
+          "requestId": "ui-mw5bxwc8-30",
+          "method": "setTransport",
+          "args": {
+            "action": "pause",
+            "preparationId": "audio-2",
+            "generation": "2"
+          },
+          "reply": {
+            "requestId": "ui-mw5bxwc8-30",
+            "ok": true,
+            "result": {
+              "preparationId": "audio-2",
+              "generation": "2",
+              "state": "paused",
+              "positionUs": "506333",
+              "durationUs": "3000000"
+            }
+          },
+          "atMs": 555.2898750000004
+        },
+        {
+          "method": "getTransport",
+          "args": {},
+          "reply": {
+            "requestId": "device-smoke-3",
+            "ok": true,
+            "result": {
+              "preparationId": "audio-2",
+              "generation": "2",
+              "state": "paused",
+              "positionUs": "506333",
+              "durationUs": "3000000"
+            }
+          },
+          "atMs": 623.293709
+        },
+        {
+          "protocolVersion": 1,
+          "requestId": "ui-mw5bxwf1-32",
+          "method": "setTransport",
+          "args": {
+            "action": "stop"
+          },
+          "reply": {
+            "requestId": "ui-mw5bxwf1-32",
+            "ok": true,
+            "result": {
+              "preparationId": "audio-2",
+              "generation": "3",
+              "state": "stopped",
+              "positionUs": "0",
+              "durationUs": "3000000"
+            }
+          },
+          "atMs": 656.3472920000004
+        },
+        {
+          "method": "getTransport",
+          "args": {},
+          "reply": {
+            "requestId": "device-smoke-4",
+            "ok": true,
+            "result": {
+              "preparationId": "audio-2",
+              "generation": "4",
+              "state": "stopped",
+              "positionUs": "0",
+              "durationUs": "3000000"
+            }
+          },
+          "atMs": 671.4382920000003
+        },
+        {
+          "method": "getAudioState",
+          "args": {},
+          "reply": {
+            "requestId": "device-smoke-5",
+            "ok": true,
+            "result": {
+              "status": "disabled",
+              "deviceName": null,
+              "masterGainDb": -18,
+              "peakDbfs": null,
+              "meterIsSimulated": false,
+              "clipping": false,
+              "activeSynthVoices": null,
+              "maxSynthVoices": 8,
+              "sampleRate": 48000,
+              "error": null
+            }
+          },
+          "atMs": 672.9530840000002
+        }
+      ],
+      "snapshots": [
+        {
+          "preparationId": null,
+          "generation": "0",
+          "state": "stopped",
+          "positionUs": "0",
+          "durationUs": "0"
+        },
+        {
+          "preparationId": "audio-2",
+          "generation": "2",
+          "state": "stopped",
+          "positionUs": "0",
+          "durationUs": "3000000"
+        },
+        {
+          "preparationId": "audio-2",
+          "generation": "2",
+          "state": "stopped",
+          "positionUs": "0",
+          "durationUs": "3000000"
+        },
+        {
+          "preparationId": "audio-2",
+          "generation": "2",
+          "state": "playing",
+          "positionUs": "469333",
+          "durationUs": "3000000"
+        }
+      ],
+      "audioStates": [
+        {
+          "status": "disabled",
+          "deviceName": null,
+          "masterGainDb": -18,
+          "peakDbfs": null,
+          "meterIsSimulated": false,
+          "clipping": false,
+          "activeSynthVoices": null,
+          "maxSynthVoices": 8,
+          "sampleRate": null,
+          "error": null
+        },
+        {
+          "status": "disabled",
+          "deviceName": null,
+          "masterGainDb": -18,
+          "peakDbfs": null,
+          "meterIsSimulated": false,
+          "clipping": false,
+          "activeSynthVoices": null,
+          "maxSynthVoices": 8,
+          "sampleRate": null,
+          "error": null
+        },
+        {
+          "status": "running",
+          "deviceName": null,
+          "masterGainDb": -18,
+          "peakDbfs": null,
+          "meterIsSimulated": false,
+          "clipping": false,
+          "activeSynthVoices": null,
+          "maxSynthVoices": 8,
+          "sampleRate": 48000,
+          "error": null
+        },
+        {
+          "status": "running",
+          "deviceName": null,
+          "masterGainDb": -18,
+          "peakDbfs": null,
+          "meterIsSimulated": false,
+          "clipping": false,
+          "activeSynthVoices": null,
+          "maxSynthVoices": 8,
+          "sampleRate": 48000,
+          "error": null
+        },
+        {
+          "status": "running",
+          "deviceName": null,
+          "masterGainDb": -18,
+          "peakDbfs": null,
+          "meterIsSimulated": false,
+          "clipping": false,
+          "activeSynthVoices": null,
+          "maxSynthVoices": 8,
+          "sampleRate": 48000,
+          "error": null
+        },
+        {
+          "status": "running",
+          "deviceName": null,
+          "masterGainDb": -18,
+          "peakDbfs": null,
+          "meterIsSimulated": false,
+          "clipping": false,
+          "activeSynthVoices": null,
+          "maxSynthVoices": 8,
+          "sampleRate": 48000,
+          "error": null
+        },
+        {
+          "status": "running",
+          "deviceName": null,
+          "masterGainDb": -18,
+          "peakDbfs": null,
+          "meterIsSimulated": false,
+          "clipping": false,
+          "activeSynthVoices": null,
+          "maxSynthVoices": 8,
+          "sampleRate": 48000,
+          "error": null
+        },
+        {
+          "status": "running",
+          "deviceName": null,
+          "masterGainDb": -18,
+          "peakDbfs": null,
+          "meterIsSimulated": false,
+          "clipping": false,
+          "activeSynthVoices": null,
+          "maxSynthVoices": 8,
+          "sampleRate": 48000,
+          "error": null
+        }
+      ],
+      "pageErrors": [],
+      "externalRequests": [],
+      "scope": "Actual browser -> devbridge -> atlas-audio-host -> default physical output, synthetic saved piece, fixed native -18dB attenuation. No device/volume change, loops or subjective listening assertion.",
+      "browser": "156.0.8078.80",
+      "pausedPositionUs": "506333",
+      "elapsedToAudioDisabledMs": 672.9561250000002,
+      "status": "passed",
+      "serverExit": {
+        "code": 0,
+        "signal": null
+      },
+      "ownedChildPids": [
+        61193
+      ],
+      "ownedChildrenGone": true,
+      "binarySha256After": "25ee4e92c82c428f9ccebb45e662701d2e39ad6a2e439d0f4ca5502921cd401e",
+      "executedScript": "ui/app/tests/ui-device-smoke.mjs",
+      "executedScriptSha256": "ccc57625ba3a69f590ac1568c9618adf223c5d6a6bb7799b70ea178498a0d0c8",
+      "execution": {
+        "cwd": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/ui/app",
+        "argv": [
+          "/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "tests/ui-device-smoke.mjs"
+        ],
+        "environment": {
+          "ATLAS_REAL_AUDIO": "1",
+          "ATLAS_LIBRARY": "/private/var/folders/m2/hl8x2mb154g59qtbrxb3w0b80000gp/T/atlas-real-ui-smoke-qsa_9wt8/synthetic.sqlite3",
+          "ATLAS_NATIVE_BINARY": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native-playback/atlas-audio-host",
+          "PLAYWRIGHT_MODULE": "/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs"
+        },
+        "port": 5184
+      },
+      "teardownListenerCheck": "lsof -nP -iTCP:5184 -sTCP:LISTEN returned no listeners after server/child teardown.",
+      "listeningClaim": "No subjective physical listening, sound-quality, loopback-capture or output-waveform measurement claim. This run proves browser control reached the actual default-device host, with native running/48k status, advancing/paused timeline and explicit disabled status."
+    }
+  ]
+}

@@ -1,0 +1,848 @@
+{
+  "schema": "animal-atlas-native-device-smoke-v1",
+  "startedAtUtc": "2026-11-06T18:47:54.164264+00:00",
+  "platform": "macOS-15.6.1-arm64-arm-64bit",
+  "status": "passed_device_callback_smoke",
+  "protocol": [
+    {
+      "elapsedSeconds": 0.00116,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-1",
+        "method": "getCapabilities",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-1",
+        "ok": true,
+        "result": {
+          "protocolVersion": 1,
+          "implementation": "native",
+          "supportedMethods": [
+            "getCapabilities",
+            "getChanges",
+            "getCatalog",
+            "listSessions",
+            "prepareReplay",
+            "getMaterialEvents",
+            "getTransport",
+            "setTransport",
+            "getAudioState",
+            "setAudioEnabled"
+          ],
+          "audioAvailable": true,
+          "maxEventBatch": 500,
+          "maxVisibleMarkers": 500
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 0.059124,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-2",
+        "method": "getAudioState",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-2",
+        "ok": true,
+        "result": {
+          "status": "disabled",
+          "deviceName": null,
+          "masterGainDb": -18.0,
+          "peakDbfs": null,
+          "meterIsSimulated": false,
+          "clipping": false,
+          "activeSynthVoices": null,
+          "maxSynthVoices": 8,
+          "sampleRate": null,
+          "error": null
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 0.059208,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-3",
+        "method": "prepareReplay",
+        "args": {
+          "sessionId": "bbdc7220-6af8-4cd4-972b-49d55d718d08",
+          "basis": "observed",
+          "speedNumerator": "1",
+          "speedDenominator": "1"
+        }
+      },
+      "reply": {
+        "requestId": "device-smoke-3",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "1",
+          "durationUs": "3000000",
+          "eventCount": 3,
+          "peakEventsPerSecond": 3,
+          "session": {
+            "id": "bbdc7220-6af8-4cd4-972b-49d55d718d08",
+            "name": "Disposable synthetic device smoke",
+            "state": "frozen",
+            "origin": "archive_snapshot",
+            "eventCount": 3,
+            "captureTruncated": false,
+            "metadataIntegrity": "sha256-envelope-v1-verified",
+            "observedWindowPolicy": "preserve_requested",
+            "observedBoundsUs": [
+              "1767225600000000",
+              "1767225603000000"
+            ],
+            "arrivalBoundsUs": [
+              "1793990874452876",
+              "1793990874452876"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 0.065877,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-4",
+        "method": "setAudioEnabled",
+        "args": {
+          "enabled": true
+        }
+      },
+      "reply": {
+        "requestId": "device-smoke-4",
+        "ok": true,
+        "result": {
+          "status": "running",
+          "deviceName": null,
+          "masterGainDb": -18.0,
+          "peakDbfs": null,
+          "meterIsSimulated": false,
+          "clipping": false,
+          "activeSynthVoices": null,
+          "maxSynthVoices": 8,
+          "sampleRate": 48000,
+          "error": null
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 0.845016,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-5",
+        "method": "getTransport",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-5",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "2",
+          "state": "stopped",
+          "positionUs": "0",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 0.845157,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-6",
+        "method": "setTransport",
+        "args": {
+          "action": "play",
+          "preparationId": "audio-1",
+          "generation": "2"
+        }
+      },
+      "reply": {
+        "requestId": "device-smoke-6",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "2",
+          "state": "playing",
+          "positionUs": "10666",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 0.854323,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-7",
+        "method": "getTransport",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-7",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "2",
+          "state": "playing",
+          "positionUs": "10666",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 0.912326,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-8",
+        "method": "getTransport",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-8",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "2",
+          "state": "playing",
+          "positionUs": "64000",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 0.970995,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-9",
+        "method": "getTransport",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-9",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "2",
+          "state": "playing",
+          "positionUs": "128000",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 1.03118,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-10",
+        "method": "getTransport",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-10",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "2",
+          "state": "playing",
+          "positionUs": "181333",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 1.086303,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-11",
+        "method": "getTransport",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-11",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "2",
+          "state": "playing",
+          "positionUs": "234666",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 1.14651,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-12",
+        "method": "getTransport",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-12",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "2",
+          "state": "playing",
+          "positionUs": "298666",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 1.206837,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-13",
+        "method": "getTransport",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-13",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "2",
+          "state": "playing",
+          "positionUs": "362666",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 1.258809,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-14",
+        "method": "getTransport",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-14",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "2",
+          "state": "playing",
+          "positionUs": "416000",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 1.314234,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-15",
+        "method": "getTransport",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-15",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "2",
+          "state": "playing",
+          "positionUs": "469333",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 1.368933,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-16",
+        "method": "getTransport",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-16",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "2",
+          "state": "playing",
+          "positionUs": "522666",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 1.419731,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-17",
+        "method": "getTransport",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-17",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "2",
+          "state": "playing",
+          "positionUs": "576000",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 1.47712,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-18",
+        "method": "getTransport",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-18",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "2",
+          "state": "playing",
+          "positionUs": "629333",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 1.535957,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-19",
+        "method": "getTransport",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-19",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "2",
+          "state": "playing",
+          "positionUs": "693333",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 1.591117,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-20",
+        "method": "getTransport",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-20",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "2",
+          "state": "playing",
+          "positionUs": "746666",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 1.648201,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-21",
+        "method": "getTransport",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-21",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "2",
+          "state": "playing",
+          "positionUs": "800000",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 1.648374,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-22",
+        "method": "setTransport",
+        "args": {
+          "action": "pause",
+          "preparationId": "audio-1",
+          "generation": "2"
+        }
+      },
+      "reply": {
+        "requestId": "device-smoke-22",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "2",
+          "state": "paused",
+          "positionUs": "805000",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 1.652966,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-23",
+        "method": "getTransport",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-23",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "2",
+          "state": "paused",
+          "positionUs": "805000",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 1.743053,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-24",
+        "method": "getTransport",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-24",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "2",
+          "state": "paused",
+          "positionUs": "805000",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 1.743181,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-25",
+        "method": "setTransport",
+        "args": {
+          "action": "seek",
+          "preparationId": "audio-1",
+          "generation": "2",
+          "positionUs": "300000"
+        }
+      },
+      "reply": {
+        "requestId": "device-smoke-25",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "3",
+          "state": "paused",
+          "positionUs": "300000",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 1.74935,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-26",
+        "method": "setTransport",
+        "args": {
+          "action": "play",
+          "preparationId": "audio-1",
+          "generation": "3"
+        }
+      },
+      "reply": {
+        "requestId": "device-smoke-26",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "3",
+          "state": "playing",
+          "positionUs": "310666",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 1.760125,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-27",
+        "method": "getTransport",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-27",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "3",
+          "state": "playing",
+          "positionUs": "310666",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 1.82024,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-28",
+        "method": "getTransport",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-28",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "3",
+          "state": "playing",
+          "positionUs": "364000",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 1.877862,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-29",
+        "method": "getTransport",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-29",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "3",
+          "state": "playing",
+          "positionUs": "428000",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 1.935504,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-30",
+        "method": "getTransport",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-30",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "3",
+          "state": "playing",
+          "positionUs": "481333",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 1.935703,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-31",
+        "method": "setTransport",
+        "args": {
+          "action": "stop"
+        }
+      },
+      "reply": {
+        "requestId": "device-smoke-31",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "4",
+          "state": "stopped",
+          "positionUs": "0",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 1.941883,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-32",
+        "method": "getTransport",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-32",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "4",
+          "state": "stopped",
+          "positionUs": "0",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 1.941991,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-33",
+        "method": "setAudioEnabled",
+        "args": {
+          "enabled": false
+        }
+      },
+      "reply": {
+        "requestId": "device-smoke-33",
+        "ok": true,
+        "result": {
+          "status": "disabled",
+          "deviceName": null,
+          "masterGainDb": -18.0,
+          "peakDbfs": null,
+          "meterIsSimulated": false,
+          "clipping": false,
+          "activeSynthVoices": null,
+          "maxSynthVoices": 8,
+          "sampleRate": 48000,
+          "error": null
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 1.944449,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-34",
+        "method": "setTransport",
+        "args": {
+          "action": "panic"
+        }
+      },
+      "reply": {
+        "requestId": "device-smoke-34",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "6",
+          "state": "stopped",
+          "positionUs": "0",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 1.944531,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-35",
+        "method": "setAudioEnabled",
+        "args": {
+          "enabled": false
+        }
+      },
+      "reply": {
+        "requestId": "device-smoke-35",
+        "ok": true,
+        "result": {
+          "status": "disabled",
+          "deviceName": null,
+          "masterGainDb": -18.0,
+          "peakDbfs": null,
+          "meterIsSimulated": false,
+          "clipping": false,
+          "activeSynthVoices": null,
+          "maxSynthVoices": 8,
+          "sampleRate": 48000,
+          "error": null
+        }
+      }
+    }
+  ],
+  "checks": {
+    "defaultDisabledAndEnableSilent": true,
+    "callbackPositionAdvanced": true,
+    "pauseSettledAndFroze": true,
+    "seekWhilePaused": true,
+    "resumeAdvanced": true,
+    "stopResetAndOutputDisabled": true,
+    "temporaryDatabaseUnchanged": true
+  },
+  "cleanup": {
+    "forcedKill": false,
+    "setTransport": true,
+    "setAudioEnabled": true,
+    "stdinEofSent": true,
+    "exitCode": 0,
+    "stderr": ""
+  },
+  "limits": {
+    "syntheticOnly": true,
+    "ownerLibraryAccess": false,
+    "providerRequests": false,
+    "notesSeconds": [
+      0,
+      0.3,
+      0.6
+    ],
+    "requestedDurationSeconds": 3,
+    "masterGainDb": -18,
+    "prepareOnly": false,
+    "deviceSelection": "current default output only; no fallback/retry",
+    "physicalSpeakerOrHeardAudioVerified": false,
+    "microphoneUsed": false,
+    "latencyQualified": false,
+    "cpuQualified": false,
+    "dawQualified": false,
+    "sustainedDeviceQualified": false
+  },
+  "artifact": {
+    "source": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native-playback/atlas-audio-host",
+    "immutableCopy": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native-playback-smoke-25ee4e92c82c428f/atlas-audio-host",
+    "sha256": "25ee4e92c82c428f9ccebb45e662701d2e39ad6a2e439d0f4ca5502921cd401e",
+    "version": {
+      "engine": "animal-atlas-native-audio",
+      "source_sha256": "8e28e07b0e0a149df57c41b56be185c8c4eeeead6064c08a4871757c47636826"
+    },
+    "versionStderr": ""
+  },
+  "fixture": {
+    "eventCount": 3,
+    "sessionId": "bbdc7220-6af8-4cd4-972b-49d55d718d08",
+    "provenance": "demo",
+    "databaseFileName": "synthetic device smoke.sqlite3",
+    "databasePathContainsSpaces": true,
+    "databaseSha256Before": "d440ee3e7bc704d805d1d87dd10bf89ada43c358e513f7283f8caa11485ded36",
+    "temporaryDatabaseDeletedOnExit": true,
+    "databaseSha256After": "d440ee3e7bc704d805d1d87dd10bf89ada43c358e513f7283f8caa11485ded36"
+  },
+  "elapsedSeconds": 2.236734
+}

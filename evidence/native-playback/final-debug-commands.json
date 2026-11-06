@@ -1,0 +1,56 @@
+{
+  "commands": [
+    {
+      "command": [
+        "cmake",
+        "--build",
+        "build/native",
+        "-j",
+        "4"
+      ],
+      "exitCode": 0,
+      "elapsedSeconds": 1.7028104999999998
+    },
+    {
+      "command": [
+        "ctest",
+        "--test-dir",
+        "build/native",
+        "--output-on-failure"
+      ],
+      "exitCode": 0,
+      "elapsedSeconds": 5.449233667
+    }
+  ],
+  "sourceUnchanged": true,
+  "sourceSha256": {
+    "CMakeLists.txt": "139f1a259d4867358bc9ab981ad49ea250796d3bafb0ca855bb6534c6af73f29",
+    "native/include/atlas/audio.hpp": "6e5c6822ff3c8642fcd05218d3bf3d0d4413a25ab79bef8c7c41752ee36e9482",
+    "native/include/atlas/core.hpp": "86c5e72c5e0723a382032574e395f6fac9492d64349b81b08a1d0da3ac767e49",
+    "native/include/atlas/playback.hpp": "5a5af586a2fd5e181f54597226cdc5378b14687490309a0a0ca6b5118bad8b0e",
+    "native/include/atlas/storage.hpp": "d0fcb14739ecafa966a62b7a70b73839f0eb65515c683697ec59f6f26943bf5a",
+    "native/include/atlas/ui_host.hpp": "3d159e592b6f02dab9dbc28fc954de7777f2e4d9d9d56cbf607d0f9872c3e38c",
+    "native/include/atlas/wav.hpp": "433b16bff0940dd7b134f7a87f7082b823cd73b2474572f6fe859145f638a4c7",
+    "native/src/event_validation.hpp": "bab21215216f5e0166ec16dfe34e49691992fd8706b4679509e9271c0bafa675",
+    "native/src/json_text.hpp": "5d02ade4aeb31aad1ccf78bfd7262d4a1251d9d338e9a71b9f8159f73430ba97",
+    "native/src/sha256.hpp": "0b28ae813895efb324f9c6d51293a8eade15f292f69ebe9f27fba4ffe2c635ef",
+    "native/src/sqlite_statement.hpp": "8c7371d136977107b373a83c996fcf1def4ee96a27daa14060e9aa37a6255ef6",
+    "native/src/audio.cpp": "b1aaa64f6b7f8b998da2aee9ad9f03d0f2f6819dbeb3fddec36d0ab3dd7c1b11",
+    "native/src/audio_host_main.cpp": "a4e27d0670354327aab7951c5c52287f3ea0393dcf6425ac75bf49b53b9d14cf",
+    "native/src/core.cpp": "9451fa0dd37ccf76d15e856b15d36a28f1d8a1340ec1e273a3f6e149738117eb",
+    "native/src/event_validation.cpp": "92496c5b4030fd98b74e06a15ff949f2b7f39e114e9a269247751c08fd694a56",
+    "native/src/juce_output.cpp": "cce717784a547750a15f926ec4876f6bf0fa72e5a91d68087d6d893523c6e0a3",
+    "native/src/main.cpp": "9d67daa1d2d12100bec6aabe9c5e15dc1ce18f5017f4ef43566aec44b5a49462",
+    "native/src/playback.cpp": "f1a4238c044d04327019754ac8cad5615beeb8b9080f6f24bb0ac07bbd60b028",
+    "native/src/sha256.cpp": "2b4ee63b0eb803a6b4b920f25a96162c12920b4b994e2f51d564528fa6038975",
+    "native/src/storage.cpp": "2267bba105f30970580c910e2e5af7d10e4da06e8cd5f05fd4c666827cf85c1d",
+    "native/src/ui_host.cpp": "c36213f1144fd354206495648d9f84b2e1f20f2981aa2fe950c61a781eeb71c6",
+    "native/src/wav.cpp": "3871714b32d8395749aa1ddcbe989fed0808fce32a60aaf550117f8f7ca03f6e",
+    "native/tests/audio_bench.cpp": "b1162f49cc0f6a4f02a951d5cc96f6648981db00aa8629c1373fd8a0bd8f5e82",
+    "native/tests/audio_tests.cpp": "8f20543ae50eb60c5d6e3c47cc296010466735a1b7a313bf0cfed54937f33a09",
+    "native/tests/core_tests.cpp": "93a3ff83813d5f7003cafe03252f7e421067a0c50da35f2b0f586a1ebe61dad8",
+    "native/tests/playback_host.cpp": "e8e8bdef937e5b862bf793a039e6192e176e6e3a1f327583375509ab14d7082a",
+    "native/tests/playback_tests.cpp": "e6b044e6e651fb213c4b91711877512e1513b1e2c555668a23deadbb4daad714",
+    "native/tests/sha256_tests.cpp": "d871e1bcc07b51ce2287cffd0800c87fc695ff11eea97edf0eb5825470681a56"
+  }
+}

@@ -1,0 +1,285 @@
+{
+  "schema": "animal-atlas-native-device-smoke-v1",
+  "startedAtUtc": "2026-11-06T18:44:43.385128+00:00",
+  "platform": "macOS-15.6.1-arm64-arm-64bit",
+  "status": "failed",
+  "protocol": [
+    {
+      "elapsedSeconds": 0.001108,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-1",
+        "method": "getCapabilities",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-1",
+        "ok": true,
+        "result": {
+          "protocolVersion": 1,
+          "implementation": "native",
+          "supportedMethods": [
+            "getCapabilities",
+            "getChanges",
+            "getCatalog",
+            "listSessions",
+            "prepareReplay",
+            "getMaterialEvents",
+            "getTransport",
+            "setTransport",
+            "getAudioState",
+            "setAudioEnabled"
+          ],
+          "audioAvailable": true,
+          "maxEventBatch": 500,
+          "maxVisibleMarkers": 500
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 0.058568,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-2",
+        "method": "getAudioState",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-2",
+        "ok": true,
+        "result": {
+          "status": "disabled",
+          "deviceName": null,
+          "masterGainDb": -18.0,
+          "peakDbfs": null,
+          "meterIsSimulated": false,
+          "clipping": false,
+          "activeSynthVoices": null,
+          "maxSynthVoices": 8,
+          "sampleRate": null,
+          "error": null
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 0.058698,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-3",
+        "method": "prepareReplay",
+        "args": {
+          "sessionId": "16047c3f-e402-4530-9bd5-aaf2b2e36f0a",
+          "basis": "observed",
+          "speedNumerator": "1",
+          "speedDenominator": "1"
+        }
+      },
+      "reply": {
+        "requestId": "device-smoke-3",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "1",
+          "durationUs": "3000000",
+          "eventCount": 3,
+          "peakEventsPerSecond": 3,
+          "session": {
+            "id": "16047c3f-e402-4530-9bd5-aaf2b2e36f0a",
+            "name": "Disposable synthetic device smoke",
+            "state": "frozen",
+            "origin": "archive_snapshot",
+            "eventCount": 3,
+            "captureTruncated": false,
+            "metadataIntegrity": "sha256-envelope-v1-verified",
+            "observedWindowPolicy": "preserve_requested",
+            "observedBoundsUs": [
+              "1767225600000000",
+              "1767225603000000"
+            ],
+            "arrivalBoundsUs": [
+              "1793990683422464",
+              "1793990683422464"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 0.069984,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-4",
+        "method": "setAudioEnabled",
+        "args": {
+          "enabled": true
+        }
+      },
+      "reply": {
+        "requestId": "device-smoke-4",
+        "ok": true,
+        "result": {
+          "status": "running",
+          "deviceName": null,
+          "masterGainDb": -18.0,
+          "peakDbfs": null,
+          "meterIsSimulated": false,
+          "clipping": false,
+          "activeSynthVoices": null,
+          "maxSynthVoices": 8,
+          "sampleRate": 48000,
+          "error": null
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 0.898376,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-5",
+        "method": "getTransport",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-5",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "2",
+          "state": "stopped",
+          "positionUs": "0",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 0.898521,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-6",
+        "method": "setTransport",
+        "args": {
+          "action": "play",
+          "preparationId": "audio-1",
+          "generation": "2"
+        }
+      },
+      "reply": {
+        "requestId": "device-smoke-6",
+        "ok": false,
+        "error": {
+          "code": "unavailable",
+          "message": "Audio output changed. Playback stopped; enable Listening to reconnect."
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 0.903168,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-7",
+        "method": "setTransport",
+        "args": {
+          "action": "panic"
+        }
+      },
+      "reply": {
+        "requestId": "device-smoke-7",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "4",
+          "state": "stopped",
+          "positionUs": "0",
+          "durationUs": "3000000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 0.903261,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-8",
+        "method": "setAudioEnabled",
+        "args": {
+          "enabled": false
+        }
+      },
+      "reply": {
+        "requestId": "device-smoke-8",
+        "ok": true,
+        "result": {
+          "status": "disabled",
+          "deviceName": null,
+          "masterGainDb": -18.0,
+          "peakDbfs": null,
+          "meterIsSimulated": false,
+          "clipping": false,
+          "activeSynthVoices": null,
+          "maxSynthVoices": 8,
+          "sampleRate": 48000,
+          "error": null
+        }
+      }
+    }
+  ],
+  "checks": {
+    "defaultDisabledAndEnableSilent": true,
+    "temporaryDatabaseUnchanged": true
+  },
+  "cleanup": {
+    "forcedKill": false,
+    "setTransport": true,
+    "setAudioEnabled": true,
+    "stdinEofSent": true,
+    "exitCode": 0,
+    "stderr": ""
+  },
+  "limits": {
+    "syntheticOnly": true,
+    "ownerLibraryAccess": false,
+    "providerRequests": false,
+    "notesSeconds": [
+      0,
+      0.3,
+      0.6
+    ],
+    "requestedDurationSeconds": 3,
+    "masterGainDb": -18,
+    "prepareOnly": false,
+    "deviceSelection": "current default output only; no fallback/retry",
+    "physicalSpeakerOrHeardAudioVerified": false,
+    "microphoneUsed": false,
+    "latencyQualified": false,
+    "cpuQualified": false,
+    "dawQualified": false,
+    "sustainedDeviceQualified": false
+  },
+  "artifact": {
+    "source": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native-playback/atlas-audio-host",
+    "immutableCopy": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native-playback-smoke-102c40ed61862d21/atlas-audio-host",
+    "sha256": "102c40ed61862d21e395fe10e1cb5c5ef1475a4e96d333f3bd85cbdfa43052e7",
+    "version": {
+      "engine": "animal-atlas-native-audio",
+      "source_sha256": "c3987026f084fd4d73eec466f441349d2208f6fa97981f6c00482b3d0162b937"
+    },
+    "versionStderr": ""
+  },
+  "fixture": {
+    "eventCount": 3,
+    "sessionId": "16047c3f-e402-4530-9bd5-aaf2b2e36f0a",
+    "provenance": "demo",
+    "databaseSha256Before": "d2293c8e194dae13a0e2a1e97092113c53009047ad0b767f1b392412f4204a08",
+    "temporaryDatabaseDeletedOnExit": true,
+    "databaseSha256After": "d2293c8e194dae13a0e2a1e97092113c53009047ad0b767f1b392412f4204a08"
+  },
+  "failure": {
+    "type": "ProtocolFailure",
+    "message": "setTransport: {\"code\": \"unavailable\", \"message\": \"Audio output changed. Playback stopped; enable Listening to reconnect.\"}"
+  },
+  "elapsedSeconds": 0.945177,
+  "diagnosis": {
+    "confirmedImplementationIssue": "JuceOutput invalidated on every device-list notification, including the pinned CoreAudio backend creating its own private aggregate device during open.",
+    "correction": "Only invalidate selected-output disappearance or a changed current default; format/stop/error callbacks remain authoritative.",
+    "scope": "Initial enable succeeded at 48 kHz and -18 dB; first play was rejected, no advancing playback was observed, cleanup disabled and exited cleanly."
+  }
+}

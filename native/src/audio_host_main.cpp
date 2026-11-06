@@ -1,6 +1,7 @@
 #include "atlas_build_identity.hpp"
 #include <atlas/playback.hpp>
 #include <atlas/ui_host.hpp>
+#include <atomic>
 #include <filesystem>
 #include <iostream>
 #include <juce_events/juce_events.h>
@@ -15,12 +16,13 @@
 #endif
 
 namespace {
-void serve(atlas::UiHost &host, atlas::PlaybackRuntime &playback) {
+void serve(atlas::UiHost &host, atlas::PlaybackRuntime &playback,
+           const std::atomic<bool> &closing) {
     // Raw reads avoid iostream prefetch obscuring pending complete requests
     // from poll.
     std::string line;
     bool overlong{};
-    for (;;) {
+    while (!closing.load(std::memory_order_acquire)) {
         playback.service();
         pollfd input{STDIN_FILENO, POLLIN, 0};
         const auto ready = ::poll(&input, 1, 100);
@@ -57,6 +59,54 @@ void serve(atlas::UiHost &host, atlas::PlaybackRuntime &playback) {
         }
     }
 }
+class AudioHostApplication final : public juce::JUCEApplicationBase {
+  public:
+    const juce::String getApplicationName() override {
+        return "Animal Atlas Audio Host";
+    }
+    const juce::String getApplicationVersion() override { return "0.3.0"; }
+    bool moreThanOneInstanceAllowed() override { return true; }
+    void initialise(const juce::String &) override {
+        const auto parameters = getCommandLineParameterArray();
+        const auto library = std::filesystem::path(parameters[2].toRawUTF8());
+        worker_ = std::thread([this, library] {
+            try {
+                atlas::PlaybackRuntime playback(atlas::makeJuceOutputDriver());
+                atlas::UiHost host(library, &playback);
+                serve(host, playback, closing_);
+            } catch (const std::exception &exception) {
+                std::cerr << "audio host unavailable: " << exception.what()
+                          << '\n';
+                exitCode_.store(1, std::memory_order_release);
+            }
+            // Runtime and driver are already destroyed while the message loop
+            // is alive.
+            juce::MessageManager::callAsync(
+                [] { juce::JUCEApplicationBase::quit(); });
+        });
+    }
+    void shutdown() override {
+        if (worker_.joinable())
+            worker_.join();
+        setApplicationReturnValue(exitCode_.load(std::memory_order_acquire));
+    }
+    void anotherInstanceStarted(const juce::String &) override {}
+    void systemRequestedQuit() override {
+        closing_.store(true, std::memory_order_release);
+    }
+    void suspended() override {}
+    void resumed() override {}
+    void unhandledException(const std::exception *, const juce::String &,
+                            int) override {
+        exitCode_.store(1, std::memory_order_release);
+        closing_.store(true, std::memory_order_release);
+    }
+
+  private:
+    std::thread worker_;
+    std::atomic<bool> closing_{};
+    std::atomic<int> exitCode_{};
+};
 } // namespace
 int main(int argc, char **argv) {
     if (argc == 2 && std::string_view(argv[1]) == "version") {
@@ -70,21 +120,12 @@ int main(int argc, char **argv) {
         std::cerr << "usage: atlas-audio-host version | ui-host --db PATH\n";
         return 2;
     }
-    juce::ScopedJuceInitialiser_GUI initialise;
-    int result{};
-    std::thread worker([&] {
-        try {
-            atlas::PlaybackRuntime playback(atlas::makeJuceOutputDriver());
-            atlas::UiHost host(std::filesystem::path(argv[3]), &playback);
-            serve(host, playback);
-        } catch (const std::exception &exception) {
-            std::cerr << "audio host unavailable: " << exception.what() << '\n';
-            result = 1;
-        }
-        juce::MessageManager::callAsync(
-            [] { juce::MessageManager::getInstance()->stopDispatchLoop(); });
-    });
-    juce::MessageManager::getInstance()->runDispatchLoop();
-    worker.join();
-    return result;
+    juce::JUCEApplicationBase::createInstance =
+        []() -> juce::JUCEApplicationBase * {
+        return new AudioHostApplication();
+    };
+    const char *arguments[]{argv[0], argv[1], argv[2], argv[3]};
+    // Public JUCE startup creates NSApplication on macOS before running its
+    // message loop.
+    return juce::JUCEApplicationBase::main(argc, arguments);
 }

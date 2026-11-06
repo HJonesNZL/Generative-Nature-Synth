@@ -193,6 +193,39 @@ std::string transportView(const PlaybackSnapshot &snapshot) {
                frameMicroseconds(snapshot.totalFrames, snapshot.sampleRate))) +
            "}";
 }
+const char *playbackMessage(PlaybackError error) noexcept {
+    switch (error) {
+    case PlaybackError::none:
+        return "";
+    case PlaybackError::notPrepared:
+        return "Select a saved piece before enabling audio.";
+    case PlaybackError::disabled:
+        return "Enable Listening before playing this piece.";
+    case PlaybackError::stalePreparation:
+    case PlaybackError::staleGeneration:
+        return "Playback preparation changed. Select the saved piece again.";
+    case PlaybackError::invalidTransition:
+        return "Playback is changing state. Wait briefly and try again.";
+    case PlaybackError::deviceUnavailable:
+        return "The default audio output could not be opened. Check the device "
+               "and enable Listening again.";
+    case PlaybackError::unsupportedDevice:
+        return "The default output does not support the prepared stereo sample "
+               "rate or buffer size.";
+    case PlaybackError::deviceChanged:
+        return "Audio output changed. Playback stopped; enable Listening to "
+               "reconnect.";
+    case PlaybackError::callbackFailure:
+        return "Audio output stopped because its callback format was invalid.";
+    case PlaybackError::commandTimeout:
+        return "Audio output did not acknowledge the command; playback has "
+               "stopped.";
+    case PlaybackError::leaseExpired:
+        return "The UI connection expired. Playback stopped; enable Listening "
+               "to reconnect.";
+    }
+    return "Audio output is unavailable.";
+}
 std::string audioView(const PlaybackSnapshot &snapshot) {
     const auto status = snapshot.error != PlaybackError::none ? "device_lost"
                         : snapshot.enabled                    ? "running"
@@ -208,7 +241,7 @@ std::string audioView(const PlaybackSnapshot &snapshot) {
            ",\"error\":" +
            (snapshot.error == PlaybackError::none
                 ? "null"
-                : quoteJson(playbackErrorText(snapshot.error))) +
+                : quoteJson(playbackMessage(snapshot.error))) +
            "}";
 }
 std::string
@@ -443,7 +476,7 @@ std::string UiHost::request(std::string_view envelope) {
             Object args(impl_->db.get(), arguments, {"enabled"});
             const auto reply = impl_->playback->enable(args.boolean("enabled"));
             if (!reply.ok)
-                return failure("unavailable", playbackErrorText(reply.error));
+                return failure("unavailable", playbackMessage(reply.error));
             result = audioView(reply.snapshot);
         } else if (impl_->playback && method == "setTransport") {
             Object args(
@@ -496,7 +529,7 @@ std::string UiHost::request(std::string_view envelope) {
                     reply.error == PlaybackError::stalePreparation ||
                     reply.error == PlaybackError::staleGeneration;
                 return failure(stale ? "stale_generation" : "unavailable",
-                               playbackErrorText(reply.error));
+                               playbackMessage(reply.error));
             }
             result = transportView(reply.snapshot);
         } else if (method == "getChanges") {

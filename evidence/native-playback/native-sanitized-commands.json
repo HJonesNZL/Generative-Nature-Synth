@@ -1,0 +1,36 @@
+[
+  {
+    "command": [
+      "cmake",
+      "-S",
+      ".",
+      "-B",
+      "build/native-sanitized",
+      "-DCMAKE_BUILD_TYPE=Debug",
+      "-DATLAS_SANITIZERS=ON"
+    ],
+    "exitCode": 0,
+    "elapsedSeconds": 0.356093791
+  },
+  {
+    "command": [
+      "cmake",
+      "--build",
+      "build/native-sanitized",
+      "-j",
+      "4"
+    ],
+    "exitCode": 0,
+    "elapsedSeconds": 2.232289667
+  },
+  {
+    "command": [
+      "ctest",
+      "--test-dir",
+      "build/native-sanitized",
+      "--output-on-failure"
+    ],
+    "exitCode": 0,
+    "elapsedSeconds": 12.304071540999999
+  }
+]

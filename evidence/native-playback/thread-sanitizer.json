@@ -1,0 +1,32 @@
+{
+  "evidence_kind": "independent hardware-free ThreadSanitizer execution",
+  "date": "2026-11-07",
+  "compiler": "Apple clang version 17.0.0 (clang-1700.6.4.2)",
+  "target": "arm64-apple-darwin24.6.0",
+  "host": "macOS-15.6.1-arm64-arm-64bit",
+  "compile_command": "clang++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Werror -pthread -g -O1 -fsanitize=thread -fno-omit-frame-pointer -I native/include native/tests/playback_tests.cpp native/src/playback.cpp native/src/audio.cpp native/src/core.cpp -o /tmp/atlas-playback-tests-tsan",
+  "compile_exit_code": 0,
+  "run_command": "TSAN_OPTIONS=halt_on_error=1 /tmp/atlas-playback-tests-tsan",
+  "result": {
+    "chunk_id": "edd828",
+    "wall_time_seconds": 0.926303709,
+    "exit_code": 0,
+    "original_token_count": 203,
+    "output": "PASS preparation requires deliberate enable and never autoplays\nPASS callback output equals existing renderer across device partitions\nPASS pause freezes callback position; stop and panic advance generations\nPASS plan replacement retires off callback and invalidates old preparation\nPASS failed preparation retains identity and disables audio\nPASS partial start failure and disable are recoverable and quiescent\nPASS device fault and invalid callback produce silence\nPASS missing callbacks time out safely and can restart\nPASS callback lease expires without worker heartbeat\nPASS unsupported device and complete start failure remain observable\nPASS concurrent callback replacement establishes quiescence\nPASS coherent snapshot reader while callback progresses\nPASS callback has no C++ allocation or deallocation\n"
+  },
+  "binary_sha256": "b078fa66cf7d24b79ce373432895c4bda34f831ca1abe50bde0c207de0bcaf5b",
+  "source_sha256": {
+    "native/tests/playback_tests.cpp": "e6b044e6e651fb213c4b91711877512e1513b1e2c555668a23deadbb4daad714",
+    "native/src/playback.cpp": "f1a4238c044d04327019754ac8cad5615beeb8b9080f6f24bb0ac07bbd60b028",
+    "native/src/audio.cpp": "b1aaa64f6b7f8b998da2aee9ad9f03d0f2f6819dbeb3fddec36d0ab3dd7c1b11",
+    "native/src/core.cpp": "9451fa0dd37ccf76d15e856b15d36a28f1d8a1340ec1e273a3f6e149738117eb",
+    "native/include/atlas/playback.hpp": "5a5af586a2fd5e181f54597226cdc5378b14687490309a0a0ca6b5118bad8b0e",
+    "native/include/atlas/audio.hpp": "6e5c6822ff3c8642fcd05218d3bf3d0d4413a25ab79bef8c7c41752ee36e9482",
+    "native/include/atlas/core.hpp": "86c5e72c5e0723a382032574e395f6fac9492d64349b81b08a1d0da3ac767e49"
+  },
+  "limits": [
+    "Single instrumented synthetic run; no hardware/JUCE/CoreAudio path.",
+    "Thirteen groups include callback/control concurrency, mailbox, retirement, snapshot coherence and timeout recovery.",
+    "A clean ThreadSanitizer run supports the ownership audit; it does not prove all possible schedules or realtime deadlines."
+  ]
+}

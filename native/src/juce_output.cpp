@@ -60,6 +60,7 @@ class JuceOutput final : public OutputDriver,
                 device_.reset(type->createDevice(names[index], {}));
                 if (device_) {
                     selectedType_ = type;
+                    chosenOutput_ = names[index];
                     break;
                 }
             }
@@ -113,6 +114,7 @@ class JuceOutput final : public OutputDriver,
     juce::OwnedArray<juce::AudioIODeviceType> types_;
     std::unique_ptr<juce::AudioIODevice> device_;
     juce::AudioIODeviceType *selectedType_{};
+    juce::String chosenOutput_;
     std::atomic<PlaybackRuntime *> runtime_{};
     std::atomic<bool> intentionalStop_{true};
     bool listening_{};
@@ -128,6 +130,7 @@ class JuceOutput final : public OutputDriver,
         }
         runtime_.store(nullptr, std::memory_order_release);
         selectedType_ = nullptr;
+        chosenOutput_.clear();
         types_.clear();
     }
     void audioDeviceIOCallbackWithContext(
@@ -163,8 +166,20 @@ class JuceOutput final : public OutputDriver,
             runtime->deviceFailed(PlaybackError::deviceUnavailable);
     }
     void audioDeviceListChanged() override {
-        if (auto *runtime = runtime_.load(std::memory_order_acquire))
-            runtime->deviceFailed(); // No automatic migration.
+        // At the pinned CoreAudio implementation this is
+        // AsyncUpdater::handleAsyncUpdate, hence message-thread metadata work.
+        // Creating JUCE's private aggregate output also emits this
+        // notification; that must not invalidate our unchanged default.
+        if (!selectedType_ || !device_)
+            return;
+        const auto names = selectedType_->getDeviceNames(false);
+        const auto defaultIndex = selectedType_->getDefaultDeviceIndex(false);
+        const bool changed = defaultIndex < 0 || defaultIndex >= names.size() ||
+                             !names.contains(chosenOutput_) ||
+                             names[defaultIndex] != chosenOutput_;
+        if (changed)
+            if (auto *runtime = runtime_.load(std::memory_order_acquire))
+                runtime->deviceFailed();
     }
 };
 } // namespace
