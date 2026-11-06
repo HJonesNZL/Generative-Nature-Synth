@@ -2,11 +2,13 @@
 
 M1 is complete on `beta-1`: [verified native data pieces, historical windows and test evidence](docs/milestones/M1_VERIFIED_PIECE.md). [Build checkpoint log](docs/milestones/M1_BUILD_LOG.md). [Claude design handoff prompt](<Claude Design/CLAUDE_DESIGN_HANDOFF_PROMPT.md>).
 
-The [revised build plan](docs/BUILD_PLAN.md) is the current product/engineering sequence. See the [consolidated Astra audit](docs/audits/AUDIT_AND_REVISED_BUILD_PLAN.md) for demonstrated issues, repaired items and release gates, and [AGENTS.md](AGENTS.md) for the active C++/realtime/agent rules. Standalone first with a shared C++ engine and later VST3 remains the recommendation; no audible engine or graphical product is implemented yet.
+The [revised build plan](docs/BUILD_PLAN.md) is the current product/engineering sequence. See the [consolidated Astra audit](docs/audits/AUDIT_AND_REVISED_BUILD_PLAN.md) for demonstrated issues, repaired items and release gates, and [AGENTS.md](AGENTS.md) for the active C++/realtime/agent rules. Standalone first with a shared C++ engine and later VST3 remains the recommendation; the H2 graphical UI now runs as a read-only native data preview plus a separate illustrative demo. No audible engine or JUCE product shell is implemented yet.
+
+Open **Start Atlas UI.command** for the new two-screen interface. See [UI launch and integration instructions](ui/app/README.md) and [verified integration scope](docs/milestones/UI_HANDOFF_INTEGRATION.md). Existing collection commands remain separate.
 
 ## Production direction and C++ migration
 
-The production codebase is moving to portable C++20, with thin JUCE standalone/VST3 adapters. The proposed UI is React/TypeScript with a Three.js globe in JUCE's embedded browser. React and the webview are complementary. The C++ event/replay core and read-only native session CLI now build; collector/session writes remain the operational Python prototype below until parity and recovery testing support replacing it. Existing terminal commands and ongoing recordings are unchanged.
+The production codebase is moving to portable C++20, with thin JUCE standalone/VST3 adapters. The integrated UI is React/TypeScript with a Three.js globe in JUCE's embedded browser. React and the webview are complementary. The C++ event/replay core and read-only native session CLI now build; collector/session writes remain the operational Python prototype below until parity and recovery testing support replacing it. Existing terminal commands and ongoing recordings are unchanged.
 
 ```sh
 cmake -S . -B build/native -DCMAKE_BUILD_TYPE=Debug

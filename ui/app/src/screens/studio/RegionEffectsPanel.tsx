@@ -35,13 +35,19 @@ export function RegionEffectsPanel({ voiceName }: { voiceName: string | null }) 
     if (r.ok) { setPolicy(r.value); refreshRegions(); setError(null); } else setError(r.error.message);
   };
 
+  if (regionsQ.status === "unsupported") return (
+    <aside className="studio__right" aria-label="Region effects">
+      <span className="label">REGION EFFECTS</span>
+      <Notice tone="caution" title="Region effects unavailable">This host does not provide regions or audio effects yet.</Notice>
+    </aside>
+  );
+
   return (
     <aside className="studio__right" aria-label="Region effects">
       <div className="row-between">
         <span className="label">REGION EFFECTS</span>
         <button type="button" className="link-button" disabled title="Region drawing needs a host region editor (see INTEGRATION_GAPS.md)">+ Draw region</button>
       </div>
-      {regionsQ.status === "unsupported" ? <Notice tone="caution" title="Regions unavailable">This host does not list regions.</Notice> : null}
       <div className="region-effects__top">
         <div className="region-thumb">
           <Map2D bounds={BOUNDS_NZ} markers={[]} regions={mapRegions} selectedKey={null} onPick={() => undefined} title="Effect regions on New Zealand" interactiveMarkers={false} />
@@ -79,7 +85,7 @@ export function RegionEffectsPanel({ voiceName }: { voiceName: string | null }) 
           <span className="chip is-on">{selectedEffect?.name ?? "Region FX"}</span><span aria-hidden="true">→</span>
           <span className="chip">Master</span>
         </div>
-        <span className="small muted">Direct sound is kept; the region adds a send. Tail ownership on region change is unresolved (see docs).</span>
+        <span className="small muted">Direct sound is kept; this control adjusts the send into the selected region effect.</span>
       </div>
     </aside>
   );

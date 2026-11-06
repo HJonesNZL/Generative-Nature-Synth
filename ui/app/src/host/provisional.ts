@@ -127,17 +127,17 @@ export interface SpeciesView {
   id: string;
   commonName: string;
   scientificName: string;
-  group: "forest_bird" | "shark";
+  group: "forest_bird" | "shark" | "unclassified";
 }
 
 export interface StationView { id: string; name: string; sourceId: string; latitude: number; longitude: number; positionDescription: string }
 export interface SourceView { id: string; name: string; measurement: string; attribution: string }
-export interface CatalogView { species: SpeciesView[]; stations: StationView[]; sources: SourceView[] }
+export interface CatalogView { species: SpeciesView[]; stations: StationView[]; sources: SourceView[]; limited?: boolean }
 
 export type HistoryFreezeResult = SessionView & { requestedFromUtc: UtcTimestamp; requestedToUtc: UtcTimestamp; materialFromUtc: UtcTimestamp | null; materialToUtc: UtcTimestamp | null };
 
 export interface ProvisionalMethods {
-  getCatalog: { request: Record<string, never>; response: CatalogView };
+  getCatalog: { request: { material?: MaterialRef }; response: CatalogView };
   getMusicalOutcomes: { request: { eventIds: string[] }; response: Record<string, MusicalOutcome> };
   getRegionActivity: { request: { regionId: string; windowMinutes: number; basis: TimeBasis; material?: MaterialRef }; response: RegionActivity };
   setSpeciesMix: { request: { speciesId: string; muted?: boolean; soloed?: boolean }; response: { speciesId: string; muted: boolean; soloed: boolean; changeRevision: Int64String } };

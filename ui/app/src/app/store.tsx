@@ -81,19 +81,19 @@ function todayInZone(timeZone: string): string {
   return parts; // en-CA yields YYYY-MM-DD
 }
 
-export function initialState(): AppState {
+export function initialState(demo = false): AppState {
   return {
     screen: "atlas",
     mode: "live",
     timeBasis: "arrival",
-    highlightSpeciesId: "tui",
+    highlightSpeciesId: demo ? "tui" : null,
     selectedEventId: null,
-    selectedRegionId: "region-central-forest",
-    selectedVoiceId: "voice-tui",
+    selectedRegionId: demo ? "region-central-forest" : "",
+    selectedVoiceId: demo ? "voice-tui" : null,
     mapView: "globe",
     reducedMotion: prefersReducedMotion(),
     history: {
-      draft: { speciesIds: ["tui", "korimako"], regionId: "region-central-forest", date: todayInZone(DISPLAY_TIMEZONE), from: "05:00", to: "08:00", timezone: DISPLAY_TIMEZONE },
+      draft: { speciesIds: demo ? ["tui", "korimako"] : [], regionId: demo ? "region-central-forest" : "", date: todayInZone(DISPLAY_TIMEZONE), from: "05:00", to: "08:00", timezone: DISPLAY_TIMEZONE },
       result: null,
       frozen: null,
     },
@@ -130,8 +130,8 @@ function reducer(state: AppState, action: Action): AppState {
 const StateContext = createContext<AppState | null>(null);
 const DispatchContext = createContext<Dispatch<Action> | null>(null);
 
-export function AppStateProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, undefined, initialState);
+export function AppStateProvider({ children, demo = false }: { children: ReactNode; demo?: boolean }) {
+  const [state, dispatch] = useReducer(reducer, undefined, () => initialState(demo));
   const stableDispatch = useMemo(() => dispatch, []);
   return (
     <DispatchContext.Provider value={stableDispatch}>

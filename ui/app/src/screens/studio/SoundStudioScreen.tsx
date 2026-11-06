@@ -56,9 +56,10 @@ export function SoundStudioScreen() {
 }
 
 function ContextStrip({ actions }: { actions: ReactNode }) {
+  const { caps } = useHost();
   const state = useAppState();
   const catalog = useCatalog();
-  const text = state.mode === "live"
+  const text = caps?.implementation === "native" && !caps.audioAvailable ? "Data preview — sound design is not available from this host." : state.mode === "live"
     ? "Editing while listening live — changes apply to new arrivals."
     : state.mode === "replay"
       ? state.replay.session ? `Editing for saved piece “${state.replay.session.name}”${state.replay.session.origin === "imported_bundle" ? " (imported)" : ""}.` : "Replay — no piece open."

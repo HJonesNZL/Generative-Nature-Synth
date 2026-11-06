@@ -20,7 +20,9 @@ import { buildMarkers, markerKeyForEvent, type MaterialView } from "../shared/us
 function webglAvailable(): boolean {
   try {
     const c = document.createElement("canvas");
-    return !!(c.getContext("webgl2") ?? c.getContext("webgl"));
+    const gl = c.getContext("webgl2") ?? c.getContext("webgl");
+    gl?.getExtension("WEBGL_lose_context")?.loseContext();
+    return !!gl;
   } catch {
     return false;
   }
@@ -29,7 +31,7 @@ function webglAvailable(): boolean {
 export function MapStage({ view, catalog }: { view: MaterialView; catalog: Catalog }) {
   const state = useAppState();
   const dispatch = useDispatch();
-  const { liveStore } = useHost();
+  const { liveStore, caps } = useHost();
   const pulseVersion = useEventStore(liveStore);
   const [glOk] = useState(webglAvailable);
   const [contextLost, setContextLost] = useState(false);
@@ -39,7 +41,7 @@ export function MapStage({ view, catalog }: { view: MaterialView; catalog: Catal
     id: r.id, name: r.name, ring: (r.geometry.coordinates[0]?.[0] ?? []) as Ring, selected: r.id === state.selectedRegionId,
   })), [regionsQ, state.selectedRegionId]);
 
-  const markers = useMemo(() => buildMarkers(view, catalog, state.highlightSpeciesId), [view, catalog, state.highlightSpeciesId]);
+  const markers = useMemo(() => buildMarkers(view, catalog, state.highlightSpeciesId).slice(0, Math.min(400, caps?.maxVisibleMarkers ?? 400)), [view, catalog, state.highlightSpeciesId, caps]);
   const selected = view.store.get(state.selectedEventId);
   const selectedKey = markerKeyForEvent(selected);
 
@@ -59,7 +61,7 @@ export function MapStage({ view, catalog }: { view: MaterialView; catalog: Catal
     <section className="map-stage" aria-label="Map">
       <div className="map-stage__top">
         <span className="badge badge--context">{state.mode.toUpperCase()} · {state.timeBasis === "observed" ? "OBSERVED TIME" : "ARRIVAL TIME"}</span>
-        <span className="small muted">Illustrative demo data</span>
+        <span className="small muted">{caps?.implementation === "mock" ? "Illustrative demo data" : "Reported positions · up to 400 map markers"}</span>
         <div className="map-stage__controls">
           <SegmentedControl<"globe" | "map2d"> label="Map view" size="sm" value={use2D ? "map2d" : "globe"} onChange={(v) => { setContextLost(false); dispatch({ type: "mapView", view: v }); }} options={[{ value: "globe", label: "Globe" }, { value: "map2d", label: "2D map" }]} disabledValues={glOk ? [] : ["globe"]} />
           {!use2D ? (
@@ -73,7 +75,7 @@ export function MapStage({ view, catalog }: { view: MaterialView; catalog: Catal
         </div>
       </div>
 
-      {contextLost ? <Notice tone="caution" title="3D graphics stopped" action={<button type="button" className="btn btn--quiet btn--sm" onClick={() => setContextLost(false)}>Try globe again</button>}>Showing the 2D map. Collection and sound are unaffected.</Notice> : null}
+      {contextLost ? <Notice tone="caution" title="3D graphics stopped" action={<button type="button" className="btn btn--quiet btn--sm" onClick={() => setContextLost(false)}>Try globe again</button>}>Showing the 2D map. Event data remains available.</Notice> : null}
       {!glOk ? <Notice tone="info" title="2D map">WebGL is not available here, so the globe is replaced by a flat map.</Notice> : null}
       {view.feed.status === "retrying" ? <Notice tone="caution" title="Arrivals paused" live>{view.feed.error ?? "Waiting for the host"} — retrying. Nothing is lost; the feed resumes from its cursor.</Notice> : null}
 

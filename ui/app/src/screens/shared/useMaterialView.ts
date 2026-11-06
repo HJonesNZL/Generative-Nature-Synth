@@ -56,14 +56,15 @@ export function useMaterialView(): MaterialView {
       label = "Requested window";
     } else {
       const times = allEvents.map(timeOf);
-      from = times.length ? Math.min(...times) : now - LIVE_WINDOW_MS;
-      to = times.length ? Math.max(...times) : now;
+      const bounds = basis === "observed" ? state.replay.session?.observedBoundsUs : state.replay.session?.arrivalBoundsUs;
+      from = bounds ? Number(BigInt(bounds[0]) / 1000n) : times.length ? Math.min(...times) : now - LIVE_WINDOW_MS;
+      to = bounds ? Number(BigInt(bounds[1]) / 1000n) : times.length ? Math.max(...times) : now;
       label = state.mode === "replay" ? "Saved piece" : "No selection";
     }
     const events = allEvents.filter((e) => { const t = timeOf(e); return t >= from && t <= to; }).sort((a, b) => timeOf(a) - timeOf(b));
     return { store, version, events, allEvents, windowFromMs: from, windowToMs: to, recentFromMs: state.mode === "live" ? to - RECENT_MS : from, timeOf, feed: store.feed, label };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [store, version, now, state.mode, state.timeBasis, state.history.result]);
+  }, [store, version, now, state.mode, state.timeBasis, state.history.result, state.replay.session]);
 }
 
 export function markerKeyForEvent(e: EventView | null): string | null {

@@ -3,7 +3,7 @@
  * Live → species (highlight) + source health; Replay → saved pieces;
  * History → query → coverage preview → freeze.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { SourceHealth } from "../../host/contracts";
 import { useHost, useHostQuery, valueOf } from "../../app/HostContext";
 import { useAppState, useDispatch } from "../../app/store";
@@ -36,6 +36,7 @@ function SpeciesPanel({ view, catalog }: { view: MaterialView; catalog: Catalog 
     <section className="stack-sm">
       <span className="label">SPECIES · {mode === "live" ? "LAST 10 MIN" : "IN PIECE"}</span>
       {catalog.status === "unsupported" ? <Notice tone="caution" title="Species list unavailable">This host does not provide a catalogue.</Notice> : null}
+      {catalog.data?.limited ? <Notice tone="caution" title="Catalogue display limited">Names and stations are sampled from at most 2,000 records.</Notice> : null}
       <ul className="species-list" role="list">
         {species.map((s, i) => {
           const on = s.id === highlightSpeciesId;
@@ -43,7 +44,7 @@ function SpeciesPanel({ view, catalog }: { view: MaterialView; catalog: Catalog 
           return (
             <li key={s.id}>
               <button type="button" className={`species-row${on ? " is-on" : ""}`} aria-pressed={on} onClick={() => dispatch({ type: "highlightSpecies", speciesId: on ? null : s.id })}>
-                <span className={`swatch swatch--${s.group === "shark" ? "marine" : i + 1}`} aria-hidden="true" />
+                <span className={`swatch swatch--${s.group === "shark" ? "marine" : i % 6 + 1}`} aria-hidden="true" />
                 <span className="species-row__name">{s.commonName}</span>
                 <span className="species-row__count mono">{s.group === "shark" && n === 0 ? "quiet" : n}</span>
                 <span className="sr-only">{on ? ", highlighted on map" : ", press to highlight on map"}</span>
@@ -105,17 +106,26 @@ function SessionsPanel() {
   const { client } = useHost();
   const state = useAppState();
   const dispatch = useDispatch();
-  const [q] = useHostQuery("listSessions", { limit: 20 }, []);
+  const [q, refreshSessions] = useHostQuery("listSessions", { limit: 100 }, []);
   const sessions = valueOf(q) ?? [];
   const [error, setError] = useState<string | null>(null);
   const [preparing, setPreparing] = useState(false);
 
+  const pending = useRef<AbortController | null>(null);
+  useEffect(() => () => pending.current?.abort(), []);
+
   const prepare = async (sessionId: string, speed: string, basis: "observed" | "arrival") => {
+    pending.current?.abort();
+    const controller = new AbortController();
+    pending.current = controller;
+    dispatch({ type: "transport", transport: { preparationId: null, durationUs: null } });
     setPreparing(true);
     setError(null);
-    const r = await client.call("prepareReplay", { sessionId, basis, speedNumerator: speed, speedDenominator: "1" });
+    const r = await client.call("prepareReplay", { sessionId, basis, speedNumerator: speed, speedDenominator: "1" }, { signal: controller.signal });
+    if (controller.signal.aborted) return;
     setPreparing(false);
     if (!r.ok) { setError(r.error.message); dispatch({ type: "transport", transport: { preparationId: null, durationUs: null } }); return; }
+    if (r.value.session) dispatch({ type: "replaySession", session: r.value.session });
     dispatch({ type: "transport", transport: { preparationId: r.value.preparationId, generation: r.value.generation, durationUs: r.value.durationUs, positionUs: "0", state: "stopped" } });
   };
 
@@ -123,6 +133,9 @@ function SessionsPanel() {
     <section className="stack-sm">
       <span className="label">SAVED PIECES</span>
       {q.status === "unsupported" ? <Notice tone="caution" title="Saved pieces unavailable">This host cannot list sessions.</Notice> : null}
+      {q.status === "error" ? <Notice tone="problem" title="Could not read saved pieces" action={<button type="button" className="btn btn--quiet btn--sm" onClick={refreshSessions}>Retry</button>}>{q.error.message}</Notice> : null}
+      {sessions.length === 100 ? <Notice tone="caution" title="Library display limit">Showing the newest 100 pieces. Full library pagination is not implemented yet.</Notice> : null}
+      {state.replay.session?.metadataIntegrity === "legacy-metadata-unverified" ? <Notice tone="caution" title="Legacy metadata unverified">Event content is checked when opened; the old saved interpretation has no metadata seal.</Notice> : null}
       {q.status === "ready" && sessions.length === 0 ? <EmptyState title="No saved pieces yet">Collect for a while, or freeze a history selection.</EmptyState> : null}
       <ul className="session-list" role="list">
         {sessions.map((s) => {
@@ -149,7 +162,7 @@ function SessionsPanel() {
         <div className="stack-sm">
           <SegmentedControl<string> label="Replay speed" size="sm" value={state.replay.speedNumerator} onChange={(v) => { dispatch({ type: "replaySpeed", speedNumerator: v }); void prepare(state.replay.session!.id, v, state.timeBasis); }} options={[{ value: "1", label: "1×" }, { value: "10", label: "10×" }, { value: "60", label: "60×" }, { value: "240", label: "240×" }]} />
           <SegmentedControl<"observed" | "arrival"> label="Timeline basis" size="sm" value={state.timeBasis} onChange={(b) => { dispatch({ type: "timeBasis", basis: b }); void prepare(state.replay.session!.id, state.replay.speedNumerator, b); }} options={[{ value: "observed", label: "Observed" }, { value: "arrival", label: "Arrival" }]} />
-          <span className="small muted">{preparing ? "Preparing playback…" : state.transport.preparationId ? "Ready — use Play in the header. Pitch is preserved at every speed." : ""}</span>
+          <span className="small muted">{preparing ? "Preparing playback…" : state.transport.preparationId ? (client.supports("setTransport") ? "Ready — use Play in the header." : "Timeline verified. Audio playback is not implemented yet.") : ""}</span>
         </div>
       ) : null}
     </section>

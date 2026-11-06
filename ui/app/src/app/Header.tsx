@@ -135,13 +135,13 @@ export function Header({ demoMenu }: { demoMenu?: ReactNode }) {
           step={0.5}
           value={gainShown}
           disabled={!client.supports("setMasterGain")}
-          aria-valuetext={`${gainShown.toFixed(1)} dB`}
+          aria-valuetext={audio ? `${gainShown.toFixed(1)} dB` : "Unavailable"}
           onPointerDown={() => { dragging.current = true; gain.push("begin", gainShown); }}
           onChange={(e) => { const v = Number(e.target.value); setGainLocal(v); if (!dragging.current) gain.push("begin", gainShown); gain.push("change", v); if (!dragging.current) { gain.push("end", v); } }}
           onPointerUp={(e) => { dragging.current = false; gain.push("end", Number((e.target as HTMLInputElement).value)); window.setTimeout(() => setGainLocal(null), 300); }}
           className="range range--master"
         />
-        <span className="mono master__db">{gainShown.toFixed(1)} dB</span>
+        <span className="mono master__db">{audio ? `${gainShown.toFixed(1)} dB` : "— dB"}</span>
         <span className="meter" role="img" aria-label={audio?.peakDbfs == null ? "Output level unavailable" : `Output peak ${audio.peakDbfs} dBFS${audio.meterIsSimulated ? " (simulated)" : ""}`}>
           {Array.from({ length: 8 }, (_, i) => {
             const threshold = -48 + i * 6;

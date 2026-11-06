@@ -10,6 +10,7 @@
  *
  * Material: loads replay-session or frozen/queried history events in pages.
  */
+import { EVENT_DISPLAY_CAPACITY } from "./eventStore";
 import { useEffect } from "react";
 import { useHost } from "./HostContext";
 import { useAppState } from "./store";
@@ -24,14 +25,21 @@ export function useLiveFeed() {
     let cancelled = false;
     let timer = 0;
     let backoff = 1000;
+    let inFlight = false;
+    let wakePending = false;
     const controller = new AbortController();
 
     const pull = async () => {
       window.clearTimeout(timer);
       if (cancelled) return;
+      if (inFlight) { wakePending = true; return; }
+      if (document.hidden) { timer = window.setTimeout(pull, 2000); return; }
+      inFlight = true;
+      wakePending = false;
       if (liveStore.feed.status === "idle") liveStore.setFeed({ status: "loading" });
       const { storeId, nextSequence } = liveStore.cursor;
       const result = await client.call("getChanges", { storeId, afterSequence: nextSequence, limit: PAGE }, { signal: controller.signal });
+      inFlight = false;
       if (cancelled) return;
       if (!result.ok) {
         if (result.error.code === "aborted") return;
@@ -50,7 +58,7 @@ export function useLiveFeed() {
       liveStore.upsert(value.events.map(({ event, liveEligible, change }) => ({ event, pulse: liveEligible && change === "new" })));
       liveStore.requestOutcomes(client, value.events.map((e) => e.event.id));
       liveStore.setFeed({ status: "running", error: null, lastBatchWallMs: value.events.length ? Date.now() : liveStore.feed.lastBatchWallMs });
-      timer = window.setTimeout(pull, value.events.length >= PAGE ? 0 : 2000);
+      timer = window.setTimeout(pull, wakePending || value.events.length >= PAGE ? 0 : 2000);
     };
 
     const off = onNotification((n) => { if (n.type === "changesAvailable") void pull(); });
@@ -77,14 +85,16 @@ export function useMaterialFeed() {
     (async () => {
       materialStore.setFeed({ status: "loading", error: null });
       let offset = 0;
-      for (let page = 0; page < 20; page += 1) {
+      for (let page = 0; page < EVENT_DISPLAY_CAPACITY / 500; page += 1) {
         const result = await client.call("getMaterialEvents", { material, offset, limit: 500 }, { signal: controller.signal });
         if (controller.signal.aborted) return;
         if (!result.ok) { materialStore.setFeed({ status: "retrying", error: result.error.message }); return; }
         materialStore.upsert(result.value.events.map((event) => ({ event, pulse: false })));
         materialStore.requestOutcomes(client, result.value.events.map((e) => e.id));
         offset += result.value.events.length;
-        if (offset >= result.value.total || !result.value.events.length) break;
+        materialStore.setFeed({ totalRecords: result.value.total, displayOmitted: Math.max(0, result.value.total - materialStore.size) });
+        if (offset >= result.value.total) break;
+        if (!result.value.events.length) { materialStore.setFeed({ status: "retrying", error: "Incomplete material page; reopen the piece." }); return; }
       }
       materialStore.setFeed({ status: "running", error: null });
     })();

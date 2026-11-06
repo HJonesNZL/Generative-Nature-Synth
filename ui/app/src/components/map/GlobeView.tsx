@@ -75,19 +75,22 @@ interface GlobeRuntime {
 
 export function GlobeView(props: GlobeProps) {
   const host = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const runtime = useRef<GlobeRuntime | null>(null);
   const propsRef = useRef(props);
   propsRef.current = props;
 
   // Mount: create renderer/scene once.
   useEffect(() => {
-    const canvas = canvasRef.current!;
     const container = host.current!;
+    // Each effect owns a fresh canvas: StrictMode may dispose/recreate without remounting the DOM.
+    const canvas = document.createElement("canvas");
+    canvas.className = "globe__canvas";
+    container.appendChild(canvas);
     let renderer: THREE.WebGLRenderer;
     try {
       renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: "low-power" });
     } catch {
+      canvas.remove();
       propsRef.current.onContextLost();
       return;
     }
@@ -263,6 +266,7 @@ export function GlobeView(props: GlobeProps) {
         discs.dispose(); rings.dispose(); fixes.dispose();
         label.remove();
         renderer.dispose();
+        canvas.remove();
         renderer.forceContextLoss(); // release the GL context now rather than waiting for GC (webviews cap live contexts)
       },
     };
@@ -386,7 +390,6 @@ export function GlobeView(props: GlobeProps) {
 
   return (
     <div ref={host} className="globe" tabIndex={0} role="application" aria-roledescription="globe" aria-label="Globe. Drag or use arrow keys to rotate; use the station list or 2D map to select by keyboard." onKeyDown={onKeyDown}>
-      <canvas ref={canvasRef} className="globe__canvas" />
     </div>
   );
 }

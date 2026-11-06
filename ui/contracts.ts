@@ -12,7 +12,7 @@ export type MaterialMode = "live" | "replay" | "history" | "imported" | "demo";
 export interface HostCapabilities {
   protocolVersion: 1;
   implementation: "mock" | "native";
-  supportedMethods: Array<keyof HostMethods>;
+  supportedMethods: string[];
   audioAvailable: boolean;
   maxEventBatch: number;
   maxVisibleMarkers: number;
@@ -57,6 +57,10 @@ export interface SessionView {
   origin: "collection" | "archive_snapshot" | "imported_bundle";
   eventCount: number;
   captureTruncated: boolean;
+  metadataIntegrity?: string;
+  observedWindowPolicy?: string;
+  observedBoundsUs?: [Int64String, Int64String] | null;
+  arrivalBoundsUs?: [Int64String, Int64String] | null;
 }
 
 export interface CoverageInterval {
@@ -87,7 +91,7 @@ export interface HostMethods {
   listSessions: { request: { limit: number }; response: SessionView[] };
   prepareReplay: {
     request: { sessionId: string; basis: TimeBasis; speedNumerator: Int64String; speedDenominator: Int64String };
-    response: { preparationId: string; generation: Int64String; durationUs: Int64String; eventCount: number; peakEventsPerSecond: number };
+    response: { preparationId: string; generation: Int64String; durationUs: Int64String; eventCount: number; peakEventsPerSecond: number; session?: SessionView };
   };
   queryHistory: {
     request: { speciesIds: string[]; regionId: string; fromUtc: UtcTimestamp; toUtc: UtcTimestamp; displayTimezone: string };

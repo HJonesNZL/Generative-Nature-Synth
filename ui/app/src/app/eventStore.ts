@@ -13,7 +13,8 @@ import type { EventView } from "../host/contracts";
 import type { MusicalOutcome } from "../host/provisional";
 import type { HostClient } from "../host/client";
 
-const CAPACITY = 2000;
+export const EVENT_DISPLAY_CAPACITY = 2000;
+const CAPACITY = EVENT_DISPLAY_CAPACITY;
 const PULSE_CAPACITY = 24;
 const OUTCOME_BATCH = 200;
 
@@ -27,10 +28,13 @@ export class EventStore {
   private listeners = new Set<() => void>();
   private version = 0;
   private scheduled = false;
+  private epoch = 0;
+  private notificationHandle: number | null = null;
+  private notificationIsTimer = false;
   private pendingOutcomeIds = new Set<string>();
   private outcomeTimer: number | null = null;
   cursor: { storeId: string; nextSequence: string } = { storeId: "", nextSequence: "0" };
-  feed: { status: "idle" | "loading" | "running" | "retrying" | "unsupported"; error: string | null; lastBatchWallMs: number | null } = { status: "idle", error: null, lastBatchWallMs: null };
+  feed: { status: "idle" | "loading" | "running" | "retrying" | "unsupported"; error: string | null; lastBatchWallMs: number | null; totalRecords: number | null; displayOmitted: number } = { status: "idle", error: null, lastBatchWallMs: null, totalRecords: null, displayOmitted: 0 };
 
   constructor(private readonly label: string) {}
 
@@ -45,11 +49,12 @@ export class EventStore {
     this.scheduled = true;
     const flush = () => {
       this.scheduled = false;
+      this.notificationHandle = null;
       this.version += 1;
       for (const l of this.listeners) l();
     };
-    if (typeof document !== "undefined" && document.hidden) window.setTimeout(flush, 250);
-    else window.requestAnimationFrame(flush);
+    this.notificationIsTimer = typeof document !== "undefined" && document.hidden;
+    this.notificationHandle = this.notificationIsTimer ? window.setTimeout(flush, 250) : window.requestAnimationFrame(flush);
   }
 
   setFeed(feed: Partial<EventStore["feed"]>) {
@@ -57,7 +62,23 @@ export class EventStore {
     this.notify();
   }
 
+  dispose() {
+    this.epoch += 1;
+    if (this.notificationHandle !== null) {
+      if (this.notificationIsTimer) window.clearTimeout(this.notificationHandle);
+      else window.cancelAnimationFrame(this.notificationHandle);
+    }
+    if (this.outcomeTimer !== null) window.clearTimeout(this.outcomeTimer);
+    this.notificationHandle = null;
+    this.outcomeTimer = null;
+    this.scheduled = false;
+    this.pendingOutcomeIds.clear();
+  }
+
   clear() {
+    this.dispose();
+    this.outcomes.clear();
+    this.feed = { status: "idle", error: null, lastBatchWallMs: null, totalRecords: null, displayOmitted: 0 };
     this.byId.clear();
     this.order = [];
     this.pulses = [];
@@ -70,7 +91,9 @@ export class EventStore {
     if (!batch.length) return;
     const now = performance.now();
     for (const { event, pulse } of batch) {
-      if (!this.byId.has(event.id)) this.order.push(event.id);
+      const previous = this.byId.get(event.id);
+      if (previous && BigInt(previous.revisionSequence) >= BigInt(event.revisionSequence)) continue;
+      if (!previous) this.order.push(event.id);
       this.byId.set(event.id, event);
       if (pulse && event.position) {
         this.pulses.push({ eventId: event.id, latitude: event.position.latitude, longitude: event.position.longitude, createdWallMs: now });
@@ -79,6 +102,7 @@ export class EventStore {
     }
     if (this.order.length > CAPACITY) {
       const evicted = this.order.splice(0, this.order.length - CAPACITY);
+      this.feed.displayOmitted += evicted.length;
       for (const id of evicted) { this.byId.delete(id); this.outcomes.delete(id); }
     }
     this.notify();
@@ -99,11 +123,13 @@ export class EventStore {
     if (!client.supports("getMusicalOutcomes")) return;
     for (const id of ids) if (!this.outcomes.has(id)) this.pendingOutcomeIds.add(id);
     if (this.outcomeTimer !== null || !this.pendingOutcomeIds.size) return;
+    const epoch = this.epoch;
     this.outcomeTimer = window.setTimeout(async () => {
       this.outcomeTimer = null;
       const batch = [...this.pendingOutcomeIds].slice(0, OUTCOME_BATCH);
       for (const id of batch) this.pendingOutcomeIds.delete(id);
       const result = await client.call("getMusicalOutcomes", { eventIds: batch });
+      if (epoch !== this.epoch) return;
       if (result.ok) {
         for (const [id, outcome] of Object.entries(result.value)) if (this.byId.has(id)) this.outcomes.set(id, outcome);
         this.notify();

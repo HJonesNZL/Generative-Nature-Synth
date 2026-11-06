@@ -61,6 +61,9 @@ export function GrainPanel({ view, catalog, aside }: { view: MaterialView; catal
         <span className="label">GRAIN · {view.label.toUpperCase()}</span>
         <span className="grain__title">Every detection in view, one line each</span>
         <span className="small muted">Short lines were filtered or held back. {state.timeBasis === "observed" ? "Placed by observation time." : "Placed by arrival time."}</span>
+        {view.feed.displayOmitted > 0 ? <span className="small is-caution">Display limited: {view.store.size} records shown; {view.feed.displayOmitted} more are outside this view. Saved material is unchanged.</span> : null}
+        {view.feed.status === "retrying" ? <span className="small is-problem" role="alert">{view.feed.error}</span> : null}
+        {state.mode === "live" ? <span className="small muted">Recent received records only; coverage may be incomplete.</span> : null}
         {aside}
       </div>
       <div className="grain__lanes">

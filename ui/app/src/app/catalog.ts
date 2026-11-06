@@ -1,6 +1,7 @@
 /** Reference data from the host (species, stations, sources) with id lookups. */
 import { useMemo } from "react";
 import type { CatalogView } from "../host/provisional";
+import { useAppState } from "./store";
 import { useHostQuery, valueOf } from "./HostContext";
 
 export interface Catalog {
@@ -13,7 +14,9 @@ export interface Catalog {
 }
 
 export function useCatalog(): Catalog {
-  const [q] = useHostQuery("getCatalog", {}, []);
+  const state = useAppState();
+  const sessionId = state.mode === "replay" ? state.replay.session?.id : state.mode === "history" ? state.history.frozen?.id : undefined;
+  const [q] = useHostQuery("getCatalog", sessionId ? { material: { kind: "session", sessionId } } : {}, [sessionId], { refreshMs: 30000 });
   const data = valueOf(q);
   return useMemo(() => {
     const species = new Map(data?.species.map((s) => [s.id, s]) ?? []);

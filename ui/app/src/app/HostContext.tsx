@@ -35,35 +35,49 @@ export function HostProvider({ host, children }: { host: ExtendedHost | AtlasHos
   const liveStore = useMemo(() => new EventStore("live"), []);
   const materialStore = useMemo(() => new EventStore("material"), []);
   const listeners = useRef(new Set<(n: HostNotification) => void>());
-  const attempt = useRef(0);
-
-  const connect = useCallback(async () => {
-    setConnection((c) => (c === "connected" ? "reconnecting" : c));
-    const result = await client.connect();
-    if (result.ok) {
-      attempt.current = 0;
-      setCaps(result.value);
-      setConnection("connected");
-      setConnectionError(null);
-    } else {
-      attempt.current += 1;
-      setConnectionError(result.error.message);
-      setConnection(attempt.current > 3 ? "failed" : "reconnecting");
-      window.setTimeout(() => void connect(), Math.min(8000, 1000 * 2 ** attempt.current));
-    }
-  }, [client]);
+  const [retry, setRetry] = useState(0);
+  const reconnect = useCallback(() => setRetry((value) => value + 1), []);
 
   useEffect(() => {
+    let cancelled = false;
+    let inFlight = false;
+    let attempts = 0;
+    let timer = 0;
+    let controller: AbortController | null = null;
+    const connect = async () => {
+      if (cancelled || inFlight) return;
+      inFlight = true;
+      controller = new AbortController();
+      setCaps(null);
+      setConnection(attempts ? "reconnecting" : "connecting");
+      const result = await client.connect(controller.signal);
+      inFlight = false;
+      if (cancelled) return;
+      if (result.ok) {
+        attempts = 0;
+        setCaps(result.value);
+        setConnection("connected");
+        setConnectionError(null);
+      } else {
+        attempts += 1;
+        setConnectionError(result.error.message);
+        setConnection(attempts >= 4 ? "failed" : "reconnecting");
+        if (attempts < 4) timer = window.setTimeout(() => void connect(), Math.min(8000, 1000 * 2 ** attempts));
+      }
+    };
     void connect();
     const unsubscribe = client.subscribe((n) => {
       if (n.type === "connection") {
+        window.clearTimeout(timer);
         if (n.state === "connected") void connect();
-        else setConnection("reconnecting");
+        else { setCaps(null); setConnection("reconnecting"); timer = window.setTimeout(() => void connect(), 1000); }
       }
-      for (const l of listeners.current) l(n);
+      for (const listener of listeners.current) listener(n);
     });
-    return unsubscribe;
-  }, [client, connect]);
+    return () => { cancelled = true; controller?.abort(); window.clearTimeout(timer); unsubscribe(); };
+  }, [client, retry]);
+
+  useEffect(() => () => { liveStore.dispose(); materialStore.dispose(); }, [liveStore, materialStore]);
 
   const onNotification = useCallback((listener: (n: HostNotification) => void) => {
     listeners.current.add(listener);
@@ -71,8 +85,8 @@ export function HostProvider({ host, children }: { host: ExtendedHost | AtlasHos
   }, []);
 
   const value = useMemo<HostContextValue>(
-    () => ({ client, caps, connection, connectionError, mock, liveStore, materialStore, onNotification, reconnect: () => void connect() }),
-    [client, caps, connection, connectionError, mock, liveStore, materialStore, onNotification, connect],
+    () => ({ client, caps, connection, connectionError, mock, liveStore, materialStore, onNotification, reconnect }),
+    [client, caps, connection, connectionError, mock, liveStore, materialStore, onNotification, reconnect],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
@@ -104,10 +118,17 @@ export function useHostQuery<M extends MethodName>(
   const [state, setState] = useState<QueryState<AllMethods[M]["response"]>>({ status: "loading", previous: null });
   const [tick, setTick] = useState(0);
   const lastValue = useRef<AllMethods[M]["response"] | null>(null);
+  const lastKey = useRef("");
+  const queryKey = JSON.stringify([method, args]);
   const supported = caps ? client.supports(method) : true;
 
   useEffect(() => {
-    if (!caps || connection === "failed" || args === null) return;
+    if (lastKey.current !== queryKey) {
+      lastKey.current = queryKey;
+      lastValue.current = null;
+      setState({ status: "loading", previous: null });
+    }
+    if (!caps || connection !== "connected" || args === null) return;
     if (!supported) { setState({ status: "unsupported" }); return; }
     const controller = new AbortController();
     setState((s) => (s.status === "ready" ? s : { status: "loading", previous: lastValue.current }));
@@ -119,7 +140,7 @@ export function useHostQuery<M extends MethodName>(
     });
     return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [caps, connection === "connected", supported, tick, ...deps]);
+  }, [caps, connection, supported, tick, queryKey, ...deps]);
 
   useEffect(() => {
     if (!options.refreshMs) return;
