@@ -20,6 +20,23 @@ try {
   await page.goto(demoUrl);
   await page.getByText('DEMO', { exact: true }).waitFor();
   await page.locator('.map-stage canvas').waitFor();
+  await page.getByRole('radio', { name: 'All loaded records', exact: true }).waitFor();
+  const allSpecies = page.getByRole('button', { name: 'All available species', exact: true });
+  await allSpecies.click();
+  assert.equal(await allSpecies.getAttribute('aria-pressed'), 'true');
+  await page.locator('.species-list li').first().waitFor();
+  await page.getByRole('searchbox', { name: 'Find species', exact: true }).fill('no-such-species-91753');
+  assert.equal(await page.locator('.species-list li').count(), 0);
+  await page.getByRole('searchbox', { name: 'Find species', exact: true }).fill('');
+  assert.ok(await page.locator('.species-list li').count() > 0);
+  await page.getByRole('radio', { name: '2D map', exact: true }).click();
+  await page.getByRole('group', { name: 'World map', exact: true }).waitFor();
+  await page.locator('.map-locations summary').focus();
+  await page.keyboard.press('Enter');
+  assert.ok(await page.locator('.map-locations button').count() > 0);
+  await page.locator('.map-locations button').first().focus();
+  await page.keyboard.press('Enter');
+  await page.screenshot({ path: 'test-results/static-demo-globe-overview.png' });
   await page.getByRole('button', { name: 'Sound Studio', exact: true }).click();
   await page.locator('#voice-title').waitFor();
   await page.getByRole('slider', { name: 'Tuning', exact: true }).waitFor();
@@ -28,7 +45,7 @@ try {
   assert.deepEqual(errors, []); assert.deepEqual(failures, []);
   assert.ok(requests.every(url => url.startsWith(new URL(nativeUrl).origin) || url.startsWith(new URL(demoUrl).origin) || url.startsWith('data:')));
   assert.ok(requests.every(url => !url.includes('/__atlas/')));
-  const result = { browser: browser.version(), errors, failures, checks: ['Production without native injection fails closed', 'Static demo globe and Studio load with CSP and local assets', 'No external HTTP or development bridge requests'] };
+  const result = { browser: browser.version(), errors, failures, checks: ['Production without native injection fails closed', 'Static demo globe and Studio load with CSP and local assets', 'All loaded scope, species search/reset, world fallback and keyboard location list', 'No external HTTP or development bridge requests'] };
   await writeFile('test-results/static-browser-checks.json', JSON.stringify(result, null, 2) + '\n');
   console.log(JSON.stringify(result));
 } finally { await browser.close(); }

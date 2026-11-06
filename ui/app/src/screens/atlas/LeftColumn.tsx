@@ -24,21 +24,31 @@ export function LeftColumn({ view, catalog }: { view: MaterialView; catalog: Cat
 }
 
 function SpeciesPanel({ view, catalog }: { view: MaterialView; catalog: Catalog }) {
-  const { highlightSpeciesId, mode } = useAppState();
+  const { highlightSpeciesId } = useAppState();
   const dispatch = useDispatch();
+  const [search, setSearch] = useState("");
   const counts = useMemo(() => {
     const c = new Map<string, number>();
-    for (const e of view.events) if (e.speciesId && view.timeOf(e) >= view.recentFromMs) c.set(e.speciesId, (c.get(e.speciesId) ?? 0) + 1);
+    for (const e of view.allEvents) if (e.speciesId) c.set(e.speciesId, (c.get(e.speciesId) ?? 0) + 1);
     return c;
   }, [view]);
-  const species = catalog.data?.species ?? [];
+  const species = useMemo(() => {
+    const known = catalog.data?.species ?? [];
+    const ids = new Set(known.map((species) => species.id));
+    const extra = [...counts.keys()].filter((id) => !ids.has(id)).map((id) => ({ id, commonName: id, scientificName: "", group: "unknown" }));
+    return [...known, ...extra].sort((a, b) => a.commonName.localeCompare(b.commonName));
+  }, [catalog.data, counts]);
   return (
     <section className="stack-sm">
-      <span className="label">SPECIES · {mode === "live" ? "LAST 10 MIN" : "IN PIECE"}</span>
+      <span className="label">SPECIES · {species.length} AVAILABLE</span>
       {catalog.status === "unsupported" ? <Notice tone="caution" title="Species list unavailable">This host does not provide a catalogue.</Notice> : null}
       {catalog.data?.limited ? <Notice tone="caution" title="Catalogue display limited">Names and stations are sampled from at most 2,000 records.</Notice> : null}
+      <label className="field-label" htmlFor="species-search">Find species</label>
+      <input id="species-search" type="search" className="input" value={search} onChange={(event) => setSearch(event.target.value)} />
+      <button type="button" className="btn btn--quiet btn--sm" aria-pressed={highlightSpeciesId === null} onClick={() => dispatch({ type: "highlightSpecies", speciesId: null })}>All available species</button>
+      <span className="small muted">Counts use all loaded records. Select a species to highlight its reported locations.</span>
       <ul className="species-list" role="list">
-        {species.map((s, i) => {
+        {species.filter((species) => `${species.commonName} ${species.scientificName} ${species.id}`.toLocaleLowerCase().includes(search.toLocaleLowerCase())).map((s, i) => {
           const on = s.id === highlightSpeciesId;
           const n = counts.get(s.id) ?? 0;
           return (
@@ -46,14 +56,14 @@ function SpeciesPanel({ view, catalog }: { view: MaterialView; catalog: Catalog 
               <button type="button" className={`species-row${on ? " is-on" : ""}`} aria-pressed={on} onClick={() => dispatch({ type: "highlightSpecies", speciesId: on ? null : s.id })}>
                 <span className={`swatch swatch--${s.group === "shark" ? "marine" : i % 6 + 1}`} aria-hidden="true" />
                 <span className="species-row__name">{s.commonName}</span>
-                <span className="species-row__count mono">{s.group === "shark" && n === 0 ? "quiet" : n}</span>
+                <span className="species-row__count mono">{n}</span>
                 <span className="sr-only">{on ? ", highlighted on map" : ", press to highlight on map"}</span>
               </button>
             </li>
           );
         })}
       </ul>
-      {species.length && view.feed.status === "running" && view.events.length === 0 ? <EmptyState title="No arrivals in the last hour">A quiet source stays quiet; nothing is invented.</EmptyState> : null}
+      {species.length && view.feed.status === "running" && view.events.length === 0 ? <EmptyState title="No records in the current hour">A quiet source stays quiet; nothing is invented.</EmptyState> : null}
     </section>
   );
 }

@@ -218,3 +218,12 @@
   :root { --col-left: 220px; --col-right: 288px; --layout-gutter: 24px; }
   .screen { column-gap: var(--s-6); }
 }
+
+.map-overview p { margin: var(--s-1) 0; }
+.map-locations { flex: 0 0 auto; }
+.map-locations summary { cursor: pointer; }
+.map-locations ul { max-height: 150px; overflow: auto; }
+.map-locations button { text-align: left; white-space: normal; }
+
+.map-stage { overflow-y: auto; padding-bottom: var(--s-2); scrollbar-width: thin; }
+.map-stage__canvas { flex-shrink: 0; }

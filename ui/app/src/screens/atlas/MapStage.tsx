@@ -14,8 +14,9 @@ import { SegmentedControl } from "../../components/SegmentedControl";
 // Three.js is loaded on demand so the 2D fallback and Sound Studio never pay for it.
 const GlobeView = lazy(() => import("../../components/map/GlobeView").then((m) => ({ default: m.GlobeView })));
 import { Map2D } from "../../components/map/Map2D";
-import { BOUNDS_NZ, BOUNDS_SW_PACIFIC, type MapRegion, type Ring } from "../../components/map/geo";
-import { buildMarkers, markerKeyForEvent, type MaterialView } from "../shared/useMaterialView";
+import { BOUNDS_NZ, BOUNDS_WORLD, type MapRegion, type Ring } from "../../components/map/geo";
+import { markerKeyForEvent, type MaterialView } from "../shared/useMaterialView";
+import { buildMarkers, boundMarkers, newestObservation, isReceiverDetection } from "../shared/mapMarkers";
 
 function webglAvailable(): boolean {
   try {
@@ -41,16 +42,20 @@ export function MapStage({ view, catalog }: { view: MaterialView; catalog: Catal
     id: r.id, name: r.name, ring: (r.geometry.coordinates[0]?.[0] ?? []) as Ring, selected: r.id === state.selectedRegionId,
   })), [regionsQ, state.selectedRegionId]);
 
-  const markers = useMemo(() => buildMarkers(view, catalog, state.highlightSpeciesId).slice(0, Math.min(400, caps?.maxVisibleMarkers ?? 400)), [view, catalog, state.highlightSpeciesId, caps]);
+  const [scope, setScope] = useState<"loaded" | "window">("loaded");
+  const mapEvents = scope === "loaded" ? view.allEvents : view.events;
+  const allMarkers = useMemo(() => buildMarkers(view, catalog, state.highlightSpeciesId, scope === "loaded"), [view, catalog, state.highlightSpeciesId, scope]);
   const selected = view.store.get(state.selectedEventId);
   const selectedKey = markerKeyForEvent(selected);
+  const markers = useMemo(() => boundMarkers(allMarkers, Math.min(400, caps?.maxVisibleMarkers ?? 400), selectedKey), [allMarkers, caps, selectedKey]);
+  const newest = newestObservation(mapEvents)?.observedAtUtc;
 
   const pick = (key: string) => {
     if (key.startsWith("fix:")) { dispatch({ type: "selectEvent", eventId: key.slice(4) }); return; }
     const stationId = key.slice("station:".length);
-    const here = view.events.filter((e) => e.stationId === stationId);
+    const here = mapEvents.filter((e) => e.stationId === stationId && isReceiverDetection(e));
     const preferred = here.filter((e) => e.speciesId === state.highlightSpeciesId);
-    const chosen = (preferred.length ? preferred : here).at(-1);
+    const chosen = newestObservation(preferred.length ? preferred : here);
     dispatch({ type: "selectEvent", eventId: chosen?.id ?? null });
   };
 
@@ -61,7 +66,7 @@ export function MapStage({ view, catalog }: { view: MaterialView; catalog: Catal
     <section className="map-stage" aria-label="Map">
       <div className="map-stage__top">
         <span className="badge badge--context">{state.mode.toUpperCase()} · {state.timeBasis === "observed" ? "OBSERVED TIME" : "ARRIVAL TIME"}</span>
-        <span className="small muted">{caps?.implementation === "mock" ? "Illustrative demo data" : "Reported positions · up to 400 map markers"}</span>
+        <span className="small muted">{caps?.implementation === "mock" ? "Illustrative demo data" : "Reported receivers and measured fixes"}</span>
         <div className="map-stage__controls">
           <SegmentedControl<"globe" | "map2d"> label="Map view" size="sm" value={use2D ? "map2d" : "globe"} onChange={(v) => { setContextLost(false); dispatch({ type: "mapView", view: v }); }} options={[{ value: "globe", label: "Globe" }, { value: "map2d", label: "2D map" }]} disabledValues={glOk ? [] : ["globe"]} />
           {!use2D ? (
@@ -75,13 +80,20 @@ export function MapStage({ view, catalog }: { view: MaterialView; catalog: Catal
         </div>
       </div>
 
+      <div className="map-overview small">
+        <SegmentedControl<"loaded" | "window"> label="Map records" size="sm" value={scope} onChange={setScope} options={[{ value: "loaded", label: "All loaded records" }, { value: "window", label: view.label }]} />
+        <p>{mapEvents.length} records · {markers.length} of {allMarkers.length} locations shown.</p>
+        <p>Newest loaded observation: {newest ?? "unknown"}</p>
+        <details><summary>Coverage and display limits</summary><p className="muted">{caps?.implementation === "mock" ? "Illustrative demo. " : state.mode === "live" ? "Initially newest 200 revisions, up to 2,000 retained records. " : "Up to 2,000 loaded material records. "}Catalogue sampled from 2,000 records. Coverage is limited to available sources. Receivers locate detections, not individual animals; fixes are observations at their stated times.</p></details>
+        {view.feed.displayOmitted ? <p>{view.feed.displayOmitted} records omitted from this display; stored material is unchanged.</p> : null}
+      </div>
       {contextLost ? <Notice tone="caution" title="3D graphics stopped" action={<button type="button" className="btn btn--quiet btn--sm" onClick={() => setContextLost(false)}>Try globe again</button>}>Showing the 2D map. Event data remains available.</Notice> : null}
       {!glOk ? <Notice tone="info" title="2D map">WebGL is not available here, so the globe is replaced by a flat map.</Notice> : null}
       {view.feed.status === "retrying" ? <Notice tone="caution" title="Arrivals paused" live>{view.feed.error ?? "Waiting for the host"} — retrying. Nothing is lost; the feed resumes from its cursor.</Notice> : null}
 
       <div className="map-stage__canvas">
         {use2D ? (
-          <Map2D bounds={BOUNDS_SW_PACIFIC} markers={markers} regions={regions} selectedKey={selectedKey} onPick={pick} title="South-west Pacific map" showLabels />
+          <Map2D bounds={BOUNDS_WORLD} markers={markers} regions={regions} selectedKey={selectedKey} onPick={pick} title="World map" showLabels />
         ) : (
           <>
             <Suspense fallback={<p className="small muted">Loading globe…</p>}>
@@ -100,16 +112,20 @@ export function MapStage({ view, catalog }: { view: MaterialView; catalog: Catal
             />
             </Suspense>
             <div className="loupe" aria-label="New Zealand detail">
-              <Map2D bounds={BOUNDS_NZ} markers={markers.filter((m) => m.kind === "station" || (m.longitude > 165 && m.latitude < -33))} regions={regions} selectedKey={selectedKey} onPick={pick} title="New Zealand detail map. Stations are buttons." />
+              <Map2D bounds={BOUNDS_NZ} markers={markers.filter((m) => m.longitude >= BOUNDS_NZ.west && m.longitude <= BOUNDS_NZ.east && m.latitude >= BOUNDS_NZ.south && m.latitude <= BOUNDS_NZ.north)} regions={regions} selectedKey={selectedKey} onPick={pick} title="New Zealand detail map. Stations are buttons." />
             </div>
           </>
         )}
       </div>
 
+      <details className="map-locations small">
+        <summary>Browse {markers.length} displayed locations</summary>
+        <ul role="list">{markers.map((marker) => <li key={marker.key}><button type="button" className="btn btn--quiet btn--sm" aria-pressed={marker.key === selectedKey} onClick={() => pick(marker.key)}>{marker.label} · {marker.latitude.toFixed(3)}, {marker.longitude.toFixed(3)}</button></li>)}</ul>
+      </details>
       <div className="map-legend small" aria-label="Legend">
-        <span><Icon name="station" size={12} /> Fixed acoustic station</span>
-        <span className="legend-filled"><span className="dot" aria-hidden="true" /> Highlighted species heard (10 min)</span>
-        <span><Icon name="satellite-fix" size={10} /> Satellite fix (individual)</span>
+        <span><Icon name="station" size={12} /> Reported receiver</span>
+        <span className="legend-filled"><span className="dot" aria-hidden="true" /> Highlighted species in selected map records</span>
+        <span><Icon name="satellite-fix" size={10} /> Measured GPS / satellite fix</span>
         <span><span className="dash" aria-hidden="true" /> Effect region</span>
         <span className="muted">Coastlines: Natural Earth</span>
       </div>

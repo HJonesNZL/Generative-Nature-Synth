@@ -18,7 +18,7 @@ if [[ ! -x "$ATLAS_NATIVE_BINARY" || ! -f "$ATLAS_LIBRARY" ]]; then
   print 'See ui/app/README.md. No database will be created by this launcher.'
   exit 1
 fi
-print 'ANIMAL ATLAS — read-only UI preview, no audio engine yet'
+print 'ANIMAL ATLAS — read-only UI preview, in-app audio controls unavailable'
 print 'Open http://127.0.0.1:5173/ for your library.'
 print 'Open http://127.0.0.1:5173/demo.html for the illustrative design demo (no sound).'
 print 'Leave this window open. Control-C stops only this UI preview.'

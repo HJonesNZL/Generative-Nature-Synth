@@ -165,7 +165,9 @@ struct UiHost::Impl {
                 const auto common=e.optionalText("common_name");
                 species.try_emplace(speciesId,"{\"id\":"+quoteJson(speciesId)+",\"commonName\":"+quoteJson(common.empty() ? speciesId : common)+",\"scientificName\":"+quoteJson(e.optionalText("scientific_name"))+",\"group\":\"unclassified\"}");
             }
-            if (!station.empty() && !e.null("latitude") && stations.size()<500)
+            const auto locationKind=e.text("location_kind");
+            const bool receiver=locationKind=="station_detection" || locationKind=="receiver_detection";
+            if (receiver && !station.empty() && !e.null("latitude") && stations.size()<500)
                 stations.try_emplace(station,"{\"id\":"+quoteJson(station)+",\"name\":"+quoteJson(station)+",\"sourceId\":"+quoteJson(source)+",\"latitude\":"+e.json("latitude")+",\"longitude\":"+e.json("longitude")+",\"positionDescription\":\"Reported station position; individual position unknown\"}");
             if (sources.size()<128) sources.try_emplace(source,"{\"id\":"+quoteJson(source)+",\"name\":"+quoteJson(source)+",\"measurement\":\"Provider records; inspect event kind\",\"attribution\":"+quoteJson(e.optionalText("attribution"))+"}");
         }

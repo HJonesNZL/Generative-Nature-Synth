@@ -89,6 +89,17 @@ class NativeUiTests(unittest.TestCase):
         self.assertEqual(catalog['species'][0]['group'],'unclassified')
         self.assertEqual(catalog['stations'][0]['latitude'],-41)
 
+    def test_individual_fix_station_metadata_does_not_create_receiver(self):
+        value=event('fixture','gps-site','2026-01-01T00:20:00Z','gps_fix','individual_fix',40,-70,
+                    station_id='fixture:site',individual_id='fixture:tag',provenance_mode='demo')
+        self.store.ingest('fixture',[(value,{})],True)
+        catalog=self.request('getCatalog')
+        self.assertNotIn('fixture:site',[station['id'] for station in catalog['stations']])
+        changes=self.request('getChanges',dict(storeId='',afterSequence='0',limit=200))
+        fix=next(item['event'] for item in changes['events'] if item['event']['eventKind']=='gps_fix')
+        self.assertEqual(fix['individualId'],'fixture:tag')
+        self.assertEqual(fix['position']['latitude'],40)
+
     def test_corrupt_piece_never_returns_material(self):
         with self.store.connect() as db: db.execute("UPDATE sessions SET name='Changed'")
         error=self.request('prepareReplay',dict(sessionId=self.saved['id'],basis='observed',speedNumerator='1',speedDenominator='1'),ok=False)

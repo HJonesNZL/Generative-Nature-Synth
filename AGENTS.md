@@ -10,6 +10,12 @@ These rules apply now to this project. Read only the design/API documents releva
 - Do not stop or modify the owner's active recording/collector/watch processes or write test fixtures to the owner's database. Tests use disposable state. Read-only inspection and isolated tests are authorised without repeated confirmation.
 - Open `.als` and `.amxd` only via Finder right-click → Open With → **Ableton Live 12 Suite**, choosing the entry without `_updated`. Never use default Open or double-click for those formats.
 
+## Data streams — owner instruction, 7 November 2026
+
+- Preserve the live listening/acoustic-detection stream as its own capability. Do not impose its station-based semantics on other sources.
+- Prioritise separate streams for reported locations/history of identified individual animals. Preserve genuine individual and deployment identifiers, actual observation times and uncertainty; show tracks only when the source supports identity and ordering. Do not invent individuals, locations or continuous movement.
+- Generic species-occurrence feeds remain optional/deferred research, not substitutes for the requested individual-tracking streams. Source-specific freshness, historical availability, privacy and licence constraints must remain visible.
+
 ## DSP skills — owner scope clarification, 7 November 2026
 
 - Apply only the relevant engineering/research/evaluation parts of Field Audio DSP and Field DSP V2. They are effect-oriented guidance, not the scope or architecture of this synthesizer. V2 supersedes V1 only for overlapping applicable methods.

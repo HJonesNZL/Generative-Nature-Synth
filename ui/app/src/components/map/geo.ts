@@ -27,6 +27,7 @@ export interface MapMarker {
 export interface MapRegion { id: string; name: string; ring: Ring; selected: boolean }
 
 export interface Bounds { west: number; east: number; south: number; north: number }
+export const BOUNDS_WORLD: Bounds = { west: -180, east: 180, south: -90, north: 90 };
 export const BOUNDS_NZ: Bounds = { west: 165.6, east: 179.2, south: -47.6, north: -34.0 };
 export const BOUNDS_SW_PACIFIC: Bounds = { west: 140, east: 200, south: -52, north: -8 };
 

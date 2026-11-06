@@ -52,7 +52,7 @@ function StatusBanners() {
       {connection === "connecting" ? <Notice tone="info" title="Connecting to the host…" /> : null}
       {connection === "reconnecting" ? <Notice tone="caution" title="Reconnecting to the host" live>{connectionError ?? "The bridge dropped."} Controls that change the piece are paused; nothing will be replayed when it returns.</Notice> : null}
       {connection === "failed" ? <Notice tone="problem" title="Host unavailable" action={<button type="button" className="btn btn--quiet btn--sm" onClick={reconnect}>Retry</button>}>{connectionError}</Notice> : null}
-      {caps?.implementation === "native" && !caps.audioAvailable ? <Notice tone="info" title="Native data preview — audio not implemented">Records and saved timelines are available read-only. Playback, sound editing and rendering are not available yet.</Notice> : null}
+      {caps?.implementation === "native" && !caps.audioAvailable ? <Notice tone="info" title="Native data preview — audio controls unavailable">Records and saved timelines are available read-only. In-app playback, voice editing and rendering are not exposed by this UI host.</Notice> : null}
       {audio?.status === "unavailable" ? <Notice tone="problem" title="Audio unavailable">No output device. Collection and the map keep working; nothing will sound.</Notice> : null}
       {audio?.status === "device_lost" ? <Notice tone="problem" title="Audio device lost">Output stopped and every note was released. Reconnect a device in the host’s audio settings.</Notice> : null}
       {caps && caps.implementation === "mock" ? <span className="sr-only">Demo host: all data is illustrative and no audio is produced.</span> : null}
