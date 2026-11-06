@@ -60,17 +60,19 @@ export function GrainPanel({ view, catalog, aside }: { view: MaterialView; catal
       <div className="grain__intro">
         <span className="label">GRAIN · {view.label.toUpperCase()}</span>
         <span className="grain__title">Every detection in view, one line each</span>
-        <span className="small muted">Short lines were filtered or held back. {state.timeBasis === "observed" ? "Placed by observation time." : "Placed by arrival time."}</span>
-        {view.feed.displayOmitted > 0 ? <span className="small is-caution">Display limited: {view.store.size} records shown; {view.feed.displayOmitted} more are outside this view. Saved material is unchanged.</span> : null}
+        <details className="panel-details small muted"><summary>{state.timeBasis === "observed" ? "Observation time" : "Arrival time"} · details</summary>
+          <p>Short lines were filtered or held back.{state.mode === "live" ? " Recent received records only; coverage may be incomplete." : ""} No records do not establish that animals were absent or silent.</p>
+          {!client.supports("getMusicalOutcomes") ? <p>Musical outcomes unavailable; all lines are full height.</p> : null}
+        </details>
+        {view.feed.displayOmitted > 0 ? <span className="small is-caution">Display limit: {view.store.size} shown · {view.feed.displayOmitted} omitted</span> : null}
         {(view.feed.status === "retrying" || view.feed.status === "error") ? <span className="small is-problem" role="alert">{view.feed.error}</span> : null}
-        {state.mode === "live" ? <span className="small muted">Recent received records only; coverage may be incomplete.</span> : null}
         {aside}
       </div>
       <div className="grain__lanes">
         {coverage.length ? <CoverageBand coverage={coverage} x={x} /> : null}
         {lanes.length === 0 ? (
           <p className="grain__empty">
-            {view.feed.status === "loading" ? "Loading detections…" : state.mode === "history" && !state.history.result ? "Choose species, place and time, then check available data." : state.mode === "replay" && !state.replay.session ? "Open a saved piece to see its detections." : "No detections in this window. That is not proof the animals were silent — only that nothing was recorded or received."}
+            {view.feed.status === "loading" ? "Loading detections…" : state.mode === "history" && !state.history.result ? "Choose species, place and time, then check available data." : state.mode === "replay" && !state.replay.session ? "Open a saved piece to see its detections." : "No records in this window · coverage may be incomplete."}
           </p>
         ) : lanes.map((lane, i) => {
           const full: string[] = [];
@@ -101,7 +103,6 @@ export function GrainPanel({ view, catalog, aside }: { view: MaterialView; catal
         </div>
         <span className="grain__zone label">{zoneAbbreviation(view.windowToMs)}</span>
         {playhead !== null ? <span className="grain__playhead" style={{ left: `calc(92px + (100% - 92px) * ${playhead})` }} aria-hidden="true" /> : null}
-        {!client.supports("getMusicalOutcomes") ? <span className="small muted">Outcome detail unavailable from this host; all lines drawn full height.</span> : null}
       </div>
     </section>
   );

@@ -27,12 +27,19 @@ await page.addInitScript(() => {
     return { requestId: request.requestId, ok: true, result };
   } };
 });
+
+async function project(page, open = true) {
+  const tools = page.locator('details.project-tools');
+  if (await tools.evaluate(element => element.open) !== open) await tools.locator(':scope > summary').click();
+}
 const button = name => page.getByRole('button', { name, exact: true });
 const url = process.env.ATLAS_TEST_URL || 'http://127.0.0.1:4191/';
 try {
   await page.goto(url);
-  await page.getByText('Scene-only mode', { exact: true }).waitFor();
-  await page.getByText('Import a soundscape or choose a wildlife library in the app toolbar.', { exact: true }).waitFor();
+  await project(page);
+  await page.getByText('Scene-only mode.', { exact: true }).waitFor();
+  await page.getByText('Import a soundscape or choose a wildlife library in the app toolbar.', { exact: false }).waitFor();
+  await project(page, false);
   await page.waitForTimeout(2200);
   await page.evaluate(() => document.fonts.ready);
   await mkdir('test-results', { recursive: true });
@@ -42,15 +49,18 @@ try {
   await page.getByRole('radio', { name: 'Replay', exact: true }).click();
   await page.getByText('Choose a wildlife library to list its pieces. Saved soundscapes remain available above.', { exact: true }).waitFor();
   assert.equal(await page.getByText('Could not read saved pieces', { exact: true }).count(), 0);
+  await project(page);
   await page.getByRole('combobox', { name: 'Saved soundscape', exact: true }).selectOption('0123456789abcdef0123456789abcdef');
   await button('Open soundscape').click();
   await page.waitForFunction(() => window.sceneOnlyTest.recalled);
   await page.getByRole('status').filter({ hasText: 'Opened “Imported scene fixture”' }).waitFor();
   await page.waitForFunction(() => window.sceneOnlyTest.calls.some(call => call.method === 'getCatalog' && call.args.material?.sessionId.startsWith('scene:')));
+  await project(page, false);
   await button('Sound Studio').click();
   await button('Fallback voice').click();
   await page.getByRole('heading', { name: 'Fallback voice', exact: true }).waitFor();
-  assert.equal(await page.getByRole('region', { name: 'Soundscapes', exact: true }).count(), 1);
+  assert.equal(await page.locator('details.project-tools section[aria-label="Soundscapes"]').count(), 1);
+  assert.equal(await page.getByRole('region', { name: 'Soundscapes', exact: true }).isVisible(), false);
   assert.deepEqual(await page.evaluate(() => window.sceneOnlyTest.calls.filter(call => ['getChanges', 'listSessions', 'getSourceHealth'].includes(call.method) || call.method === 'getCatalog' && !call.args.material)), []);
   assert.deepEqual(errors, []);
   assert.ok(requests.every(request => request.startsWith(new URL(url).origin) || request.startsWith('data:')));

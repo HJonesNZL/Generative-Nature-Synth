@@ -257,10 +257,10 @@ export function VoiceEditor({ parameters, types, editingBehavior, catalog, onDir
   const owner = useMemo(() => {
     if (!voice) return "";
     if (voice.scope === "group") return client.implementation === "native" || voice.targetId === "all_animals"
-      ? "Fallback for animals without a species voice. Species voices are independent definitions."
-      : `Group default for ${voice.targetId === "forest_bird" ? "forest birds" : voice.targetId === "shark" ? "sharks" : voice.targetId}. Species without their own voice use it.`;
-    if (!voice.inheritsFromId) return `${catalog.speciesName(voice.targetId)} · independent species voice. Editing the default does not change this definition.`;
-    return `${voice.scope === "species" ? catalog.speciesName(voice.targetId) : `Known individual ${voice.targetId}`} · overrides ${parent?.name ?? "parent voice"} for ${voice.overriddenParameterIds.length} parameter(s).`;
+      ? "Default for animals without a species voice."
+      : `Group default · ${voice.targetId === "forest_bird" ? "forest birds" : voice.targetId === "shark" ? "sharks" : voice.targetId}`;
+    if (!voice.inheritsFromId) return `${catalog.speciesName(voice.targetId)} · independent voice`;
+    return `${voice.scope === "species" ? catalog.speciesName(voice.targetId) : `Individual ${voice.targetId}`} · overrides ${parent?.name ?? "parent voice"} · ${voice.overriddenParameterIds.length} parameter overrides.`;
   }, [voice, parent, catalog, client]);
 
   if (!voiceId) return <section className="studio__center"><EmptyState title="No voice selected">Choose an animal voice or the default in the library.</EmptyState></section>;
@@ -287,26 +287,27 @@ export function VoiceEditor({ parameters, types, editingBehavior, catalog, onDir
         </div>
       </div>
       <p className="small muted">{owner}</p>
-      {editingBehavior === "new_notes" || client.implementation === "native" ? <p className="small muted">Changes apply to new notes. Notes already sounding keep their current settings and tails. Save voice stores this definition for the next launch.</p> : null}
       {needsRecovery ? <Notice tone="caution" title="Reload saved voice to continue">Choose Revert to reload the saved definition before editing again. Unsaved drafts may have been lost if the native worker restarted.</Notice> : null}
       {!supportsEditing ? <Notice tone="caution" title="Editing not offered">This host does not accept voice parameter changes yet.</Notice> : null}
       {error ? <Notice tone="problem" title="Voice change not applied">{error}</Notice> : null}
       {notice ? <p className="small" role="status">{notice}</p> : null}
       {client.supports("listVoicePresets") ? <div className="voice-presets stack-sm">
         <div className="toolbar">
-          <label className="small">Experimental voice preset <select aria-label="Experimental voice preset" value={presetId} disabled={busy !== null || needsRecovery} onChange={event => setPresetId(event.target.value)}>
-            <option value="">Choose a researched preset</option>
+          <label className="small">Preset · experimental <select aria-label="Experimental voice preset" value={presetId} disabled={busy !== null || needsRecovery} onChange={event => setPresetId(event.target.value)}>
+            <option value="">Choose preset…</option>
             {presets.map(preset => <option key={preset.id} value={preset.id}>{preset.name}</option>)}
           </select></label>
-          <button className="btn btn--outline btn--sm" disabled={!selectedPreset || busy !== null || needsRecovery || !client.supports("applyVoicePreset")} onClick={() => void applyPreset()}>{busy === "preset" ? "Applying…" : "Apply to voice draft"}</button>
+          <button className="btn btn--outline btn--sm" aria-label={busy === "preset" ? "Applying…" : "Apply to voice draft"} disabled={!selectedPreset || busy !== null || needsRecovery || !client.supports("applyVoicePreset")} onClick={() => void applyPreset()}>{busy === "preset" ? "Applying…" : "Apply"}</button>
         </div>
-        {selectedPreset ? <p className="small muted">{selectedPreset.evidenceStatus === "ecological_metaphor" ? "Nonvocal ecological metaphor" : selectedPreset.evidenceStatus === "unresolved_taxon" ? "Unresolved taxon — generic candidate" : "Research candidate"} · listening approval pending. {selectedPreset.description}</p> : <p className="small muted">These researched starting points have not received listening approval. Applying one changes the draft without starting playback.</p>}
+        <details className="panel-details small muted"><summary>Preset details · listening approval pending</summary>
+          {selectedPreset ? <p>{selectedPreset.evidenceStatus === "ecological_metaphor" ? "Nonvocal ecological metaphor" : selectedPreset.evidenceStatus === "unresolved_taxon" ? "Unresolved taxon — generic candidate" : "Research candidate"}. {selectedPreset.description}</p> : <p>Researched starting points awaiting listening approval. Apply changes the draft without starting playback.</p>}
+        </details>
         {presetsQ.status === "error" ? <span role="alert" className="small">{presetsQ.error.message}</span> : null}
       </div> : null}
       <div className="row-between">
         <SegmentedControl<VoiceType> label="Voice type" value={voice.type} onChange={(type) => void setType(type)} options={offeredTypes.map((type) => ({ value: type.id, label: `${type.label}${type.proposal ? " (proposed)" : ""}` }))} disabledValues={client.supports("setVoiceType") && busy === null && !needsRecovery ? [] : offeredTypes.map((type) => type.id)} />
         <span className="small muted" title="Currently sounding synth voices across all definitions">
-          {audio ? audio.activeSynthVoices == null ? `Voice activity unavailable · capacity ${audio.maxSynthVoices}` : `${audio.activeSynthVoices} of ${audio.maxSynthVoices} synth voices sounding${audio.meterIsSimulated ? " (simulated)" : ""}` : ""}
+          {audio ? audio.activeSynthVoices == null ? `Activity unavailable · ${audio.maxSynthVoices} voices` : `${audio.activeSynthVoices} / ${audio.maxSynthVoices} sounding${audio.meterIsSimulated ? " (simulated)" : ""}` : ""}
         </span>
       </div>
       <Envelope attack={env("attack")} decay={env("decay")} sustain={env("sustain")} release={env("release")} adOnly={!parameters.some((spec) => spec.id === "sustain" || spec.id === "release")} />
@@ -326,9 +327,13 @@ export function VoiceEditor({ parameters, types, editingBehavior, catalog, onDir
           }}
  />)}
       </div>
-      <p className="small muted">{hasProposal ? "Marked ranges and curves are proposals for DSP review. " : "Ranges and curves are supplied by the native host. "}{parent ? "• marks an inherited override; Delete resets to the inherited value." : "Delete resets a parameter to its default."}</p>
+      <details className="panel-details small muted"><summary>Voice help{hasProposal ? " · proposed ranges" : ""}</summary>
+        <p>{parent ? "• marks an inherited override; Delete resets to the inherited value." : "Delete resets a parameter to its default."}</p>
+        {editingBehavior === "new_notes" || client.implementation === "native" ? <p>Edits apply to new notes; sounding notes keep their settings and tails. Save voice keeps this definition for the next launch. Species voices remain independent of the default.</p> : null}
+        <p>{hasProposal ? "Marked ranges and curves are proposals for DSP review." : "Ranges and curves come from the native host."}</p>
+      </details>
       <div className="mapping">
-        <span className="label">CAUSAL MAPPING · EVENT → MUSIC (PROPOSED)</span>
+        <span className="label">EVENT → MUSIC · PROPOSED</span>
         {mappingsQ.status === "unsupported" ? <Notice tone="caution" title="Mappings unavailable">This host does not expose editable mappings yet.</Notice> : <table className="mapping__table">
           <thead><tr><th scope="col">Input</th><th scope="col">Transform</th><th scope="col">Output</th><th scope="col"><span className="sr-only">Enabled</span></th></tr></thead>
           <tbody>{mappings.map((row) => <tr key={row.id} className={row.enabled ? "" : "is-off"}><td>{row.input}</td><td className="muted">{row.transform}</td><td>{row.output}</td><td><Toggle label={`${row.input} to ${row.output}`} checked={row.enabled} disabled={!client.supports("setMappingEnabled") || busy !== null} onChange={(enabled) => void toggleMapping(row, enabled)} /></td></tr>)}</tbody>
@@ -373,5 +378,5 @@ function Envelope({ attack, decay, sustain, release, adOnly }: { attack: number;
     : `Envelope: attack ${attack.toFixed(2)} s, decay ${decay.toFixed(2)} s, sustain ${sustain.toFixed(2)}, release ${release.toFixed(2)} s`}>
     <path d="M10 110H590" className="envelope__axis" /><path d={`${path}L590 110L10 110Z`} className="envelope__fill" /><path d={path} className="envelope__line" />
     {(adOnly ? points.slice(1, 2) : points.slice(1, 4)).map(([px, py], index) => <circle key={index} cx={px} cy={py} r={4} className="envelope__point" />)}
-  </svg><figcaption className="label">{adOnly ? "ENVELOPE · ATTACK + EXPONENTIAL DECAY (T60 TO −60 dB)" : "ENVELOPE (A · D · S · R) — SUSTAIN SEGMENT DRAWN AT 1 S"}</figcaption></figure>;
+  </svg><figcaption className="label">{adOnly ? "ENVELOPE · ATTACK + DECAY (T60)" : "ENVELOPE (A · D · S · R) — SUSTAIN SEGMENT DRAWN AT 1 S"}</figcaption></figure>;
 }

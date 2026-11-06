@@ -26,7 +26,10 @@ const radio = name => page.getByRole('radio', { name, exact: true });
 const listening = () => page.getByRole('switch', { name: /Listening/ });
 try {
   await page.goto(process.env.ATLAS_TEST_URL || 'http://127.0.0.1:5182');
-  await page.getByText('Saved-piece native playback', { exact: true }).waitFor();
+  await page.getByLabel('Project', { exact: true }).click();
+  await page.locator('.project-tools__help summary').click();
+  await page.getByText('Open a saved piece or soundscape, enable Listening, then press Play. Save a soundscape to preserve its events, voices and composition; WAV export uses the saved version.', { exact: true }).waitFor();
+  await page.keyboard.press('Escape');
   await radio('Replay').click();
   await page.getByRole('button', { name: new RegExp(process.env.ATLAS_FIXTURE_PIECE || 'Synthetic two second piece') }).click();
   await page.getByText('Ready — use Play in the header.', { exact: true }).waitFor();

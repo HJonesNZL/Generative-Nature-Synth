@@ -5,7 +5,7 @@ import { useHost, useHostQuery, valueOf } from "./HostContext";
 import { useAppState, useDispatch } from "./store";
 
 /** One persistent draft above screen changes. Save finalizes it after voice queues. */
-export function CompositionPanel() {
+export function CompositionPanel({ onAttention }: { onAttention?: () => void }) {
   const { client, connection } = useHost();
   const state = useAppState(), dispatch = useDispatch();
   const [query, refresh] = useHostQuery("getComposition", {}, [state.transport.preparationId, state.soundscape.epoch]);
@@ -82,6 +82,7 @@ export function CompositionPanel() {
     try { if (await client.edits.drain(true, false)) await flush.current(); }
     finally { client.edits.end(); dispatch({ type: "soundscapeOperation", operation: null }); }
   };
+  useEffect(() => { if (message || (query.status === "error" && state.transport.preparationId)) onAttention?.(); }, [message, query.status, state.transport.preparationId, onAttention]);
   if (!client.supports("getComposition") || !client.supports("setComposition")) return null;
   const busy = state.soundscape.operation !== null || connection !== "connected" || applying;
   const ready = !!draft && query.status === "ready" && !!state.transport.preparationId && loadedId.current === state.transport.preparationId;
@@ -98,7 +99,7 @@ export function CompositionPanel() {
   const dirty = !!draft && !!accepted && (JSON.stringify(draft) !== JSON.stringify(accepted.settings) ||
     numericText.tempoBpm !== String(draft.tempoBpm) || numericText.seed !== String(draft.seed));
   return <section className="composition-panel" aria-label="Scene composition">
-    <div className="row-between"><span className="label">SCENE COMPOSITION</span><span className="small muted">Experimental musical phrases · awaiting owner listening</span></div>
+    <div className="row-between"><span className="label">SCENE COMPOSITION</span><span className="small muted">Phrases</span></div>
     <fieldset disabled={busy || !ready} className="composition-panel__controls">
       <label><input type="checkbox" aria-label="Enable composition" checked={draft?.enabled ?? false} onChange={e => change({ enabled: e.target.checked })} /> Compose phrases</label>
       <label>Tempo <input aria-label="Composition tempo BPM" type="number" min={40} max={180} step={1} value={numericText.tempoBpm} onChange={e => changeNumber("tempoBpm", e.target.value)} /></label>
@@ -110,8 +111,8 @@ export function CompositionPanel() {
       <label><input type="checkbox" aria-label="Quantize composition" checked={draft?.quantize ?? true} onChange={e => change({ quantize: e.target.checked })} /> Quantize phrase timing</label>
       <button type="button" className="btn btn--outline btn--sm" disabled={!dirty} onClick={() => void apply()}>Apply composition</button>
     </fieldset>
-    <div className="small muted">{ready ? "Apply stops playback. Save soundscape also applies pending composition edits. Voice tuning follows the scene scale while composition is enabled." : "Open a saved piece in Replay to compose its verified records."}</div>
-    {accepted?.generatedNotes !== undefined ? <div className="small" aria-label="Composition note accounting">{accepted.generatedNotes} generated musical notes · {accepted.preparation?.eventCount ?? "Verified"} source records retained{accepted.suppressedSourceEvents !== undefined ? ` · ${accepted.suppressedSourceEvents} source records omitted from music by density` : ""}{accepted.suppressed !== undefined ? ` · ${accepted.suppressed} additional phrase notes omitted` : ""}.</div> : null}
+    <div className="small muted">{ready ? "Apply stops playback. Saving also applies pending edits." : "Open a piece to compose."}</div>
+    {accepted?.generatedNotes !== undefined ? <details className="panel-details"><summary>Note accounting</summary><div className="small" aria-label="Composition note accounting">{accepted.generatedNotes} generated musical notes · {accepted.preparation?.eventCount ?? "Verified"} source records retained{accepted.suppressedSourceEvents !== undefined ? ` · ${accepted.suppressedSourceEvents} source records omitted from music by density` : ""}{accepted.suppressed !== undefined ? ` · ${accepted.suppressed} additional phrase notes omitted` : ""}.</div></details> : null}
     {dirty ? <span className="small" role="status">Composition edits pending</span> : null}
     {query.status === "error" ? <span className="small" role="alert">{query.error.message} <button onClick={refresh}>Reload composition</button></span> : null}
     {message ? <span className="small" role="status">{message}</span> : null}

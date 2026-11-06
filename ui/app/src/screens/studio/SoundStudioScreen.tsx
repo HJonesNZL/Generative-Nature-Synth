@@ -54,16 +54,16 @@ function ContextStrip({ actions }: { actions: ReactNode }) {
   const { caps } = useHost();
   const state = useAppState();
   const catalog = useCatalog();
-  const text = caps?.libraryAvailable === false && state.mode === "live" ? "Choose a soundscape to edit its voices and settings." : caps?.implementation === "native" && !caps.audioAvailable ? "Data preview — audio output is not available from this host." : state.mode === "live"
-    ? "Editing while listening live — changes apply to new arrivals."
+  const text = caps?.libraryAvailable === false && state.mode === "live" ? "Choose a soundscape to edit." : caps?.implementation === "native" && !caps.audioAvailable ? "Data preview · audio unavailable" : state.mode === "live"
+    ? caps?.implementation === "native" ? "Choose a saved piece to edit." : "Live edits apply to new arrivals."
     : state.mode === "replay"
       ? state.replay.session ? `Editing for ${state.replay.session.id.startsWith("scene:") ? "soundscape" : "saved piece"} “${state.replay.session.name}”${state.replay.session.origin === "imported_bundle" ? " (imported)" : ""}.` : "Replay — no piece open."
-      : state.history.frozen ? `Editing for frozen history “${state.history.frozen.name}”.` : state.history.result ? "History selection not yet frozen." : "History — no selection yet.";
+      : state.history.frozen ? `Editing for frozen history “${state.history.frozen.name}”.` : state.history.result ? "History selection · not frozen" : "History — no selection yet.";
   return (
     <div className="context-strip" role="status">
       <span className="badge badge--context">{state.mode.toUpperCase()}</span>
       <span className="small">{text}</span>
-      {state.highlightSpeciesId ? <span className="small muted">Highlighted: {catalog.speciesName(state.highlightSpeciesId)}</span> : null}
+      {state.highlightSpeciesId ? <span className="small muted">{catalog.speciesName(state.highlightSpeciesId)}</span> : null}
       <div className="context-strip__actions">{actions}</div>
     </div>
   );

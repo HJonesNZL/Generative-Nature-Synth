@@ -1,0 +1,81 @@
+/* Keep the map dominant; context and keyboard browsing open over the canvas. */
+.map-stage.map-stage--expanded {
+  overflow: visible;
+  padding-bottom: var(--s-2);
+  gap: var(--s-2);
+}
+.map-stage--expanded .map-stage__top {
+  flex: 0 0 auto;
+  gap: var(--s-2);
+}
+.map-stage--expanded .map-stage__controls { gap: var(--s-2); }
+.map-stage--expanded .map-stage__canvas {
+  flex: 1 1 0;
+  min-height: 0;
+}
+.map-stage--expanded .map-details .popover__trigger .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+}
+.map-stage--expanded .map-details .popover__panel {
+  width: 340px;
+  max-width: min(340px, calc(100vw - 64px));
+  max-height: min(540px, calc(100vh - 180px));
+  overflow: auto;
+  overflow-wrap: anywhere;
+}
+.map-stage--expanded .map-overview {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-3);
+}
+.map-stage--expanded .map-overview p { margin: 0; }
+.map-stage--expanded .map-overview summary { cursor: pointer; }
+.map-stage--expanded .map-overview details p { margin-top: var(--s-2); }
+.map-stage--expanded .map-stage__footer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 auto;
+  gap: var(--s-3);
+}
+.map-stage--expanded .map-legend {
+  gap: var(--s-2) var(--s-4);
+  padding-top: 0;
+  font-size: var(--fs-label);
+}
+.map-stage--expanded .map-locations { position: relative; white-space: nowrap; }
+.map-stage--expanded .map-locations summary { color: var(--c-accent); }
+.map-stage--expanded .map-locations__panel {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  right: 0;
+  z-index: 40;
+  width: 330px;
+  max-width: min(330px, calc(100vw - 64px));
+  padding: var(--s-5);
+  border: 1px solid var(--c-accent);
+  border-radius: 12px;
+  background: var(--c-ground-raised);
+  box-shadow: var(--shadow-pop);
+  white-space: normal;
+}
+.map-stage--expanded .map-locations ul {
+  max-height: min(300px, 40vh);
+  margin-bottom: 0;
+  padding-left: 0;
+  list-style: none;
+}
+.map-stage--expanded .map-locations button { width: 100%; justify-content: flex-start; }
+.map-stage--expanded .loupe {
+  bottom: var(--s-2);
+  width: clamp(180px, 32%, 250px);
+}
+@media (max-width: 1339px) {
+  .map-stage--expanded .map-stage__top { gap: var(--s-1); }
+  .map-stage--expanded .map-stage__controls { gap: var(--s-1); }
+  .map-stage--expanded .map-legend { gap: var(--s-1) var(--s-2); }
+}

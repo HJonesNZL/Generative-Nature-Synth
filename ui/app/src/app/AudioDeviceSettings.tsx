@@ -13,7 +13,7 @@ export function AudioDeviceSettings({ audio, busy, apply }: {
 }) {
   const { client } = useHost();
   if (!client.supports("getAudioDevices") || !client.supports("setAudioDevice")) return null;
-  return <Popover label="Audio settings" trigger={<span className="btn btn--outline btn--sm">Audio settings</span>}>
+  return <Popover label="Audio settings" trigger={<span className="btn btn--outline btn--sm">Audio</span>}>
     {() => <DevicePreferences audio={audio} busy={busy} apply={apply} />}
   </Popover>;
 }

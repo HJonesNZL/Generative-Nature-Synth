@@ -1,14 +1,14 @@
 # Standalone beta quick start
 
-The graphical instrument is **Releases/Standalone Beta/Animal Atlas.app**. It is distinct from the older root-level Animal Atlas.app that opens the Python collection menu. This local beta supports Apple Silicon on macOS 15 or later. It includes its interface, fonts, map assets, native engine and SQLite; running it needs no Terminal, Node, Vite, hosted service or subscription.
+The graphical instrument is **Releases/Design Refresh/Animal Atlas.app**. It is distinct from the older root-level Animal Atlas.app that opens the Python collection menu. This local beta supports Apple Silicon on macOS 15 or later. It includes its interface, fonts, map assets, native engine and SQLite; running it needs no Terminal, Node, Vite, hosted service or subscription.
 
 ## Open and play
 
 1. Open the graphical app. It starts silently in scene-only mode.
-2. Use **Import soundscape** for a verified `.atlas-scene`, then select it under **Soundscapes** and choose **Open soundscape**. The synthetic sparse/dense audition scenes under `Auditions/regional-soundscapes` are engineering examples, not wildlife observations. Alternatively, **Choose wildlife library** attaches an explicitly selected existing database read-only, including the project's `.state/atlas.sqlite3` if you want your collected material. The app does not start or alter collectors.
+2. Use **Import soundscape** for a verified `.atlas-scene`, then open **Project**, select it under **Soundscapes** and choose **Open soundscape**. The synthetic sparse/dense audition scenes under `Auditions/regional-soundscapes` are engineering examples, not wildlife observations. Alternatively, **Choose wildlife library** attaches an explicitly selected existing database read-only, including the project's `.state/atlas.sqlite3` if you want your collected material. The app does not start or alter collectors.
 3. Open **Audio settings**, choose system default or an explicit output and buffer, then **Apply output**. Applying stops playback. A device must support the saved piece's sample rate and stereo output.
 4. Enable **Listening**, then press **Play**. Neither app launch, scene recall nor device recovery starts sound automatically. The current master level is fixed at -18 dB.
-5. Edit voices/composition/regions in Sound Studio. **Save soundscape** creates an immutable complete recipe. **Export saved WAV** renders that saved recipe; its download link opens the native Save dialog. Choose a new destination: existing files are not overwritten.
+5. Edit voices/composition/regions in Sound Studio. In **Project**, **Save soundscape** creates an immutable complete recipe. **Export saved WAV** renders that saved recipe; its download link opens the native Save dialog. Choose a new destination: existing files are not overwritten.
 
 If an output disconnects, refresh the devices, apply an available choice, then explicitly enable Listening and Play again. A missing explicit device is retained in preferences and never silently replaced. Device identities use JUCE's type and name; renamed hardware needs reselection.
 

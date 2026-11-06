@@ -41,13 +41,13 @@ function SpeciesPanel({ view, catalog }: { view: MaterialView; catalog: Catalog 
   }, [catalog.data, counts]);
   return (
     <section className="stack-sm">
-      <span className="label">SPECIES · {species.length} AVAILABLE</span>
+      <span className="label" title="Counts include all loaded records. Select a species to highlight its reported locations.">SPECIES · {species.length} AVAILABLE</span>
       {catalog.status === "unsupported" ? <Notice tone="caution" title="Species list unavailable">This host does not provide a catalogue.</Notice> : null}
       {catalog.data?.limited ? <Notice tone="caution" title="Catalogue display limited">Names and stations are sampled from at most 2,000 records.</Notice> : null}
-      <label className="field-label" htmlFor="species-search">Find species</label>
-      <input id="species-search" type="search" className="input" value={search} onChange={(event) => setSearch(event.target.value)} />
+      <label className="sr-only" htmlFor="species-search">Find species</label>
+      <input id="species-search" type="search" className="input" placeholder="Find species…" value={search} onChange={(event) => setSearch(event.target.value)} />
       <button type="button" className="btn btn--quiet btn--sm" aria-pressed={highlightSpeciesId === null} onClick={() => dispatch({ type: "highlightSpecies", speciesId: null })}>All available species</button>
-      <span className="small muted">Counts use all loaded records. Select a species to highlight its reported locations.</span>
+
       <ul className="species-list" role="list">
         {species.filter((species) => `${species.commonName} ${species.scientificName} ${species.id}`.toLocaleLowerCase().includes(search.toLocaleLowerCase())).map((s, i) => {
           const on = s.id === highlightSpeciesId;
@@ -64,7 +64,7 @@ function SpeciesPanel({ view, catalog }: { view: MaterialView; catalog: Catalog 
           );
         })}
       </ul>
-      {species.length && view.feed.status === "running" && view.events.length === 0 ? <EmptyState title="No records in the current hour">A quiet source stays quiet; nothing is invented.</EmptyState> : null}
+      {species.length && view.feed.status === "running" && view.events.length === 0 ? <EmptyState title="No records in the current hour">Coverage may be incomplete.</EmptyState> : null}
     </section>
   );
 }
@@ -83,7 +83,7 @@ function SourcesPanel({ catalog }: { catalog: Catalog }) {
       {q.status === "error" ? <Notice tone="problem" title="Could not read source status">{q.error.message}</Notice> : null}
       {allDisabled ? <Notice tone="info" title="No sources selected">Nothing will arrive until a source is enabled in source setup.</Notice> : null}
       {health.map((h) => <SourceRow key={h.sourceId} health={h} name={catalog.sourceName(h.sourceId)} now={now} />)}
-      <button type="button" className="btn btn--quiet btn--sm" disabled title="Source setup drawer needs host support (see INTEGRATION_GAPS.md)">Source setup…</button>
+      <button type="button" className="btn btn--quiet btn--sm" disabled title="Source setup is unavailable from this host">Source setup…</button>
     </section>
   );
 }

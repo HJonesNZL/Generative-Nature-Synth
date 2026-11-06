@@ -1,0 +1,370 @@
+{
+  "recordedAtUtc": "2026-11-06T23:43:51.640476+00:00",
+  "scope": "Browser QA only. All event data synthetic and explicitly attributed; state disposable. Native tests execute real portable C++ host/runtime/DSP with a silent test output driver. No owner database, collectors, provider requests or physical audio devices used. No production code modified by this test workstream.",
+  "node": "/Users/henryjones/.local/opt/node-v22.14.0-darwin-arm64/bin/node",
+  "nodeVersion": "v22.14.0",
+  "playwrightModule": "/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs",
+  "browser": "Installed Chrome 156.0.8078.80",
+  "tests": [
+    {
+      "name": "Design restoration layout and Project accessibility",
+      "command": "PLAYWRIGHT_MODULE=/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs ATLAS_TEST_URL=http://127.0.0.1:5173 ATLAS_DESIGN_EVIDENCE=/private/tmp/atlas-design-restoration /Users/henryjones/.local/opt/node-v22.14.0-darwin-arm64/bin/node tests/design-restoration-browser.mjs",
+      "cwd": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/ui/app",
+      "exitCode": 0,
+      "receipt": {
+        "origin": "http://127.0.0.1:5173",
+        "browser": "156.0.8078.80",
+        "fixture": "Injected native-like host; synthetic event provenance; no real audio",
+        "checks": [
+          "Atlas and Studio fit both target viewports with collapsed global tools",
+          "Globe canvas height >=450 at 1440\u00d7900 and >=360 at 1280\u00d7800",
+          "Project is keyboard accessible, Escape closes and restores focus, composition draft persists without mutation",
+          "Composition failures are visible in Project; actual audio loss remains visible while Project is closed"
+        ],
+        "layouts": [
+          {
+            "screen": "Atlas",
+            "width": 1440,
+            "height": 900,
+            "main": {
+              "x": 0,
+              "y": 64,
+              "width": 1440,
+              "height": 836
+            },
+            "canvas": {
+              "x": 296,
+              "y": 120,
+              "width": 788,
+              "height": 554.609375
+            },
+            "screenshot": "/private/tmp/atlas-design-restoration/atlas-1440x900.png"
+          },
+          {
+            "screen": "Sound Studio",
+            "width": 1440,
+            "height": 900,
+            "main": {
+              "x": 0,
+              "y": 64,
+              "width": 1440,
+              "height": 836
+            },
+            "canvas": null,
+            "screenshot": "/private/tmp/atlas-design-restoration/studio-1440x900.png"
+          },
+          {
+            "screen": "Atlas",
+            "width": 1280,
+            "height": 800,
+            "main": {
+              "x": 0,
+              "y": 64,
+              "width": 1280,
+              "height": 736
+            },
+            "canvas": {
+              "x": 262,
+              "y": 120,
+              "width": 688,
+              "height": 454.609375
+            },
+            "screenshot": "/private/tmp/atlas-design-restoration/atlas-1280x800.png"
+          },
+          {
+            "screen": "Sound Studio",
+            "width": 1280,
+            "height": 800,
+            "main": {
+              "x": 0,
+              "y": 64,
+              "width": 1280,
+              "height": 736
+            },
+            "canvas": null,
+            "screenshot": "/private/tmp/atlas-design-restoration/studio-1280x800.png"
+          },
+          {
+            "screen": "Atlas",
+            "width": 1400,
+            "height": 852,
+            "main": {
+              "x": 0,
+              "y": 64,
+              "width": 1400,
+              "height": 788
+            },
+            "canvas": {
+              "x": 262,
+              "y": 120,
+              "width": 808,
+              "height": 506.609375
+            },
+            "screenshot": "/private/tmp/atlas-design-restoration/atlas-1400x852.png"
+          },
+          {
+            "screen": "Sound Studio",
+            "width": 1400,
+            "height": 852,
+            "main": {
+              "x": 0,
+              "y": 64,
+              "width": 1400,
+              "height": 788
+            },
+            "canvas": null,
+            "screenshot": "/private/tmp/atlas-design-restoration/studio-1400x852.png"
+          }
+        ],
+        "errors": [],
+        "external": [],
+        "unexpected": [],
+        "references": [
+          "design/claude-handoff/atlas-live-1440x900.png",
+          "design/claude-handoff/studio-1440x900.png",
+          "Animal_Atlas_Direction_H_Design_Handoff/images/01_H_Atlas_History.png",
+          "Animal_Atlas_Direction_H_Design_Handoff/images/02_H_Sound_Studio.png"
+        ]
+      }
+    },
+    {
+      "name": "Scene-only soundscape recall",
+      "command": "PLAYWRIGHT_MODULE=/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs ATLAS_TEST_URL=http://127.0.0.1:5173 /Users/henryjones/.local/opt/node-v22.14.0-darwin-arm64/bin/node tests/scene-only-browser.mjs",
+      "cwd": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/ui/app",
+      "exitCode": 0,
+      "receipt": {
+        "origin": "http://127.0.0.1:5173",
+        "browser": "156.0.8078.80",
+        "errors": [],
+        "checks": [
+          "intentional scene-only guidance",
+          "no live feed poll across its interval",
+          "no unavailable library-wide catalog/session/source requests",
+          "no misleading retry or data-loss promises",
+          "saved soundscape recall remains available",
+          "scene-specific catalog and material stay available",
+          "Sound Studio and fallback voice remain available",
+          "no external requests"
+        ],
+        "screenshots": [
+          "test-results/scene-only-atlas.png",
+          "test-results/scene-only-studio.png"
+        ]
+      }
+    },
+    {
+      "name": "All eight integration readiness scenarios",
+      "command": "PLAYWRIGHT_MODULE=/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs ATLAS_TEST_URL=http://127.0.0.1:5173 /Users/henryjones/.local/opt/node-v22.14.0-darwin-arm64/bin/node tests/integration-readiness-browser.mjs",
+      "cwd": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/ui/app",
+      "exitCode": 0,
+      "checks": [
+        "GPS fix and acoustic receiver provenance with relocated Record details",
+        "first and later material page failures retry without duplicates",
+        "deferred voice selection and mutation fencing",
+        "ordered deferred voice gestures",
+        "cross-job export cancellation fencing",
+        "render polling persists across screens",
+        "render cancellation failure stays visible"
+      ],
+      "pageErrors": [],
+      "nativeBridgeRequests": []
+    },
+    {
+      "name": "Playback with deferred injected host",
+      "command": "PLAYWRIGHT_MODULE=/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs ATLAS_TEST_URL=http://127.0.0.1:5173 /Users/henryjones/.local/opt/node-v22.14.0-darwin-arm64/bin/node tests/playback-browser.mjs",
+      "cwd": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/ui/app",
+      "exitCode": 0,
+      "checks": [
+        "explicit Listening and generation-fenced Play",
+        "position/pause/seek",
+        "visible seek and audio failures",
+        "speed and mode stop/disable",
+        "screen continuity",
+        "late reply fences",
+        "unsupported master remains disabled"
+      ],
+      "pageErrors": []
+    },
+    {
+      "name": "Audio device controls and gating",
+      "command": "PLAYWRIGHT_MODULE=/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs ATLAS_TEST_URL=http://127.0.0.1:5173 /Users/henryjones/.local/opt/node-v22.14.0-darwin-arm64/bin/node tests/audio-devices-browser.mjs",
+      "cwd": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/ui/app",
+      "exitCode": 0,
+      "receipt": {
+        "origin": "http://127.0.0.1:5173",
+        "hostTransport": "injected silent fixture",
+        "browser": "156.0.8078.80",
+        "errors": [],
+        "checks": [
+          "capability gate",
+          "draft selection stays local until Apply",
+          "explicit device and buffer fence",
+          "active output rate and buffer",
+          "applying during playback stops and disables without autoplay",
+          "catalog refresh blocks draft edits until complete",
+          "stale fence requires refresh",
+          "native opening failure is visible",
+          "disconnect with missing device and recovery",
+          "default output mode",
+          "manual Listening and Play use fresh generation",
+          "no external requests"
+        ],
+        "screenshot": "test-results/audio-device-preferences.png"
+      }
+    },
+    {
+      "name": "Real native soundscape and composition protocol",
+      "command": "PLAYWRIGHT_MODULE=/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs ATLAS_TEST_URL=http://127.0.0.1:5173 ATLAS_TEST_COMPOSITION=1 /Users/henryjones/.local/opt/node-v22.14.0-darwin-arm64/bin/node tests/native-soundscapes-browser.mjs",
+      "cwd": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/ui/app",
+      "exitCode": 0,
+      "fixtureHost": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native/atlas-studio-fixture-host",
+      "checks": [
+        "keyboard 117 BPM and uint32 maximum seed",
+        "invalid text blocks capture and native mutation",
+        "composition draft across Project closure and screen navigation",
+        "save waits for deferred composition acknowledgement",
+        "invalid and stale native requests leave settings unchanged",
+        "exact composition recall and immutable WAV export",
+        "same-piece retiming retains composition and voice draft"
+      ],
+      "wavBytes": 4320654,
+      "pageErrors": [],
+      "rejected": []
+    },
+    {
+      "name": "Real native combined spatial and composition protocol",
+      "command": "PLAYWRIGHT_MODULE=/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs /Users/henryjones/.local/opt/node-v22.14.0-darwin-arm64/bin/node tests/native-spatial-browser.mjs",
+      "cwd": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/ui/app",
+      "exitCode": 0,
+      "fixtureHost": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native/atlas-studio-fixture-host",
+      "checks": [
+        "temporary numeric drafts and invalid range rejection",
+        "two ordered authored bounds with dateline crossing",
+        "independent composition and spatial drafts",
+        "combined save awaits both native acknowledgements and fresh preparation",
+        "exact recipe recall",
+        "immutable stereo wet WAV export",
+        "quiet recall",
+        "stale and malformed settings leave preparation unchanged",
+        "recipe survives rational retiming",
+        "external recipe edits are not overwritten"
+      ],
+      "wavBytes": 5081268,
+      "differentStereoFrames": 62581,
+      "pageErrors": [],
+      "rejected": [],
+      "screenshots": [
+        "/private/tmp/atlas-spatial-ui.png",
+        "/private/tmp/atlas-spatial-ui-controls.png"
+      ],
+      "screenshotViewport": {
+        "width": 1400,
+        "height": 852
+      }
+    },
+    {
+      "name": "Real native playback protocol with silent driver",
+      "command": "PLAYWRIGHT_MODULE=/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs /Users/henryjones/.local/opt/node-v22.14.0-darwin-arm64/bin/node tests/native-playback-browser.mjs",
+      "cwd": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/ui/app",
+      "exitCode": 0,
+      "fixtureHost": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native/atlas-playback-fixture-host",
+      "fixtureDatabase": "/private/tmp/atlas-design-playback.sqlite3",
+      "checks": [
+        "native preparation, enable, play with fresh generation",
+        "poll/pause/resume/stop and screen continuity",
+        "seek while sounding",
+        "natural completion including tail then replay",
+        "rapid retiming and piece replacement stay disabled",
+        "Live selection stops and disables saved audio"
+      ],
+      "pageErrors": [],
+      "rejected": [],
+      "cancelledReads": []
+    },
+    {
+      "name": "Original native and demo browser smoke",
+      "command": "PLAYWRIGHT_MODULE=/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs ATLAS_TEST_URL=http://127.0.0.1:5199 /Users/henryjones/.local/opt/node-v22.14.0-darwin-arm64/bin/node tests/browser-checks.mjs",
+      "cwd": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/ui/app",
+      "exitCode": 0,
+      "receipt": {
+        "checks": [
+          "All loaded scope, species search/reset, world fallback and keyboard location list",
+          "Native capabilities, verified historical bounds and explicit 2000-record display limit",
+          "Empty historical hour preserved; Studio capability gating; repeated globe mount/disposal",
+          "WebGL context loss switches to 2D without losing data",
+          "Demo keyboard parameter edit and mock voice save",
+          "Explicit demo, keyboard map control, both screens at 1280/1440/1920 widths, reduced motion",
+          "Startup without WebGL uses 2D",
+          "HTTP origin, verb, size, malformed JSON and unsupported-mutation rejection",
+          "No uncaught page errors or external HTTP requests in exercised native/demo flows"
+        ],
+        "browser": "156.0.8078.80",
+        "errors": [],
+        "external": []
+      }
+    },
+    {
+      "name": "Existing production and demo builds static smoke",
+      "command": "PLAYWRIGHT_MODULE=/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs /Users/henryjones/.local/opt/node-v22.14.0-darwin-arm64/bin/node tests/static-browser-checks.mjs",
+      "cwd": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/ui/app",
+      "exitCode": 0,
+      "receipt": {
+        "browser": "156.0.8078.80",
+        "errors": [],
+        "failures": [],
+        "checks": [
+          "Production without native injection fails closed",
+          "Static demo globe and Studio load with CSP and local assets",
+          "All loaded scope, species search/reset, world fallback and keyboard location list",
+          "No external HTTP or development bridge requests"
+        ]
+      }
+    }
+  ],
+  "fixtureSetup": {
+    "layout": "Injected native-like atlasHost via Playwright addInitScript; four synthetic records; no bridge requests.",
+    "nativeSoundscapeSpatial": "Self-contained scripts create tempfile state via tests/ui_fixture.py, spawn isolated Vite and atlas-studio-fixture-host, remove state on exit.",
+    "nativeSmoke": {
+      "command": "python3 -B tests/ui_fixture.py /private/tmp/atlas-design-library.sqlite3",
+      "cwd": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth",
+      "binary": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native/atlas-native",
+      "port": 5199
+    },
+    "nativePlayback": "A new /private/tmp/atlas-design-playback.sqlite3 is populated through animal_atlas Store/Sessions with three demo acoustic records at 0,100000,200000 microseconds and snapshots Synthetic two second piece (2s) and Synthetic short piece (0.2s); host atlas-playback-fixture-host on port5182.",
+    "servers": [
+      "Vite dev 5173 for injected fixtures",
+      "Vite dev 5199 for native read-only fixture",
+      "Vite dev 5182 for native silent playback",
+      "Vite preview4173 existing production build",
+      "Vite preview4174 existing demo build"
+    ],
+    "nativeServerEnvironment": "ATLAS_LIBRARY=<disposable fixture>; ATLAS_NATIVE_BINARY=<specified host>; ATLAS_VOICE_LIBRARY=/private/tmp/atlas-design[-playback]-voices.sqlite3; ATLAS_SOUNDSCAPE_DIRECTORY=/private/tmp/atlas-design[-playback]-scenes; ATLAS_EXPORT_DIRECTORY=/private/tmp/atlas-design[-playback]-exports",
+    "serverCommands": [
+      "/Users/henryjones/.local/opt/node-v22.14.0-darwin-arm64/bin/node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 5173 --strictPort",
+      "ATLAS_LIBRARY=/private/tmp/atlas-design-library.sqlite3 ATLAS_NATIVE_BINARY='/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native/atlas-native' ATLAS_VOICE_LIBRARY=/private/tmp/atlas-design-voices.sqlite3 ATLAS_SOUNDSCAPE_DIRECTORY=/private/tmp/atlas-design-scenes ATLAS_EXPORT_DIRECTORY=/private/tmp/atlas-design-exports /Users/henryjones/.local/opt/node-v22.14.0-darwin-arm64/bin/node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 5199 --strictPort",
+      "ATLAS_LIBRARY=/private/tmp/atlas-design-playback.sqlite3 ATLAS_NATIVE_BINARY='/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native/atlas-playback-fixture-host' ATLAS_VOICE_LIBRARY=/private/tmp/atlas-design-playback-voices.sqlite3 ATLAS_SOUNDSCAPE_DIRECTORY=/private/tmp/atlas-design-playback-scenes ATLAS_EXPORT_DIRECTORY=/private/tmp/atlas-design-playback-exports /Users/henryjones/.local/opt/node-v22.14.0-darwin-arm64/bin/node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 5182 --strictPort",
+      "/Users/henryjones/.local/opt/node-v22.14.0-darwin-arm64/bin/node node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 4173 --strictPort",
+      "/Users/henryjones/.local/opt/node-v22.14.0-darwin-arm64/bin/node node_modules/vite/bin/vite.js preview --mode demo --host 127.0.0.1 --port 4174 --strictPort"
+    ]
+  },
+  "limitations": [
+    "No physical device or DAW listening test; all native playback uses a silent fixture driver.",
+    "Known-species preset branch of native-soundscapes-browser was not rerun; composition branch was run.",
+    "Screenshots compare layout/proportions against local design references; they do not claim visual pixel equivalence across synthetic fixture and original demo content."
+  ],
+  "diffCheck": {
+    "command": "git diff --check -- ui/app/tests",
+    "exitCode": 0
+  },
+  "cleanup": {
+    "ownedQaServersStopped": true,
+    "ports": [
+      5173,
+      5199,
+      5182,
+      4173,
+      4174
+    ],
+    "ownerProcessesTouched": false
+  }
+}

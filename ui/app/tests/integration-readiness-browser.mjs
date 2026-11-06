@@ -288,14 +288,22 @@ async function open(scenario) {
     await page.getByRole('button', { name: 'All available species', exact: true }).waitFor();
     return page;
 }
+
+async function project(page, open = true) {
+  const tools = page.locator('details.project-tools');
+  if (await tools.evaluate(element => element.open) !== open) await tools.locator(':scope > summary').click();
+}
 async function replay(page) {
+    await project(page, false);
     await page.getByRole('radio', { name: 'Replay', exact: true }).click();
     await page.getByRole('button', { name: /Readiness fixture/ }).click();
 }
 async function studio(page) {
     await page.getByRole('button', { name: 'Sound Studio', exact: true }).click();
-    if (await page.getByRole('combobox', { name: 'Saved soundscape', exact: true }).count())
+    if (await page.locator('details.project-tools select[aria-label="Saved soundscape"]').count()) {
+        await project(page);
         await page.getByRole('combobox', { name: 'Saved soundscape', exact: true }).selectOption('a'.repeat(32));
+    }
 }
 async function selectVoice(page, id) {
     await page.getByRole('button', { name: `Bird ${id} species voice`, exact: false }).click();
@@ -308,7 +316,9 @@ try {
         const page = await open('semantics');
         await page.locator('.map-locations summary').click();
         await page.locator('.map-locations button').filter({ hasText: 'GPS fix' }).click();
-        assert.match(await page.locator('.inspector').innerText(), /GPS position fix[\s\S]*Estimated position/);
+        await page.locator('.inspector details summary').filter({ hasText: 'Record details' }).click();
+        assert.match(await page.locator('.inspector').innerText(), /GPS position fix/);
+        assert.match(await page.locator('.inspector').innerText(), /Estimated position/);
         assert.doesNotMatch(await page.locator('.inspector').innerText(), /receiver position|station position/);
         await page.locator('.map-locations button').filter({ hasText: 'receiver,' }).click();
         assert.match(await page.locator('.inspector').innerText(), /receiver position \(not the animal/);
@@ -320,12 +330,15 @@ try {
         await replay(page);
         await page.getByText('Material could not be loaded', { exact: true }).waitFor();
         await page.getByRole('button', { name: 'Retry material', exact: true }).click();
+        await page.getByRole('button', { name: 'Map details and coverage', exact: true }).click();
         await page.waitForFunction(() => document.querySelector('.map-overview')?.textContent.includes(`${readiness.failOffset ? 501 : 2} records`));
         await page.getByRole('button', { name: 'Retry material', exact: true }).waitFor({ state: 'detached' });
         const offsets = await page.evaluate(() => readiness.calls.filter(call => call.method === 'getMaterialEvents').map(call => call.args.offset));
         assert.deepEqual(offsets, scenario === 'material-error' ? [0, 0] : [0, 500, 0, 500]);
+        await page.keyboard.press('Escape');
         await studio(page);
         await page.getByRole('button', { name: 'Atlas', exact: true }).click();
+        await page.getByRole('button', { name: 'Map details and coverage', exact: true }).click();
         assert.match(await page.locator('.map-overview').innerText(), scenario === 'material-error' ? /2 records/ : /501 records/);
         checks.push(`${scenario}: explicit retry restarts pages without duplicate records and survives screen navigation`);
         await page.close();
@@ -443,6 +456,7 @@ try {
         assert.equal(await page.getByRole('button', { name: 'Cancel export', exact: true }).isDisabled(), scenario === 'render-poll');
         assert.equal(await page.evaluate(() => readiness.calls.filter(call => call.method === 'startSoundscapeRender').length), 1);
         if (scenario === 'render-poll') {
+            await project(page, false);
             await page.getByRole('button', { name: 'Atlas', exact: true }).click();
             await studio(page);
             await page.getByText('WAV export queued', { exact: true }).waitFor();

@@ -16,11 +16,13 @@ try {
   await page.getByText('Host unavailable', { exact: true }).waitFor();
   await page.getByText('Native host is not connected. This build does not substitute demo data.', { exact: true }).waitFor();
   assert.equal(await page.getByText('DEMO', { exact: true }).count(), 0);
-  assert.equal(await page.getByRole('slider', { name: 'Master level' }).isDisabled(), true);
+  assert.equal(await page.getByLabel('Master level', { exact: true }).isDisabled(), true);
   await page.goto(demoUrl);
   await page.getByText('DEMO', { exact: true }).waitFor();
   await page.locator('.map-stage canvas').waitFor();
+  await page.getByRole('button', { name: 'Map details and coverage', exact: true }).click();
   await page.getByRole('radio', { name: 'All loaded records', exact: true }).waitFor();
+  await page.keyboard.press('Escape');
   const allSpecies = page.getByRole('button', { name: 'All available species', exact: true });
   await allSpecies.click();
   assert.equal(await allSpecies.getAttribute('aria-pressed'), 'true');

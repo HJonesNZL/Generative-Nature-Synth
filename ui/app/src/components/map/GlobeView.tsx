@@ -207,6 +207,9 @@ export function GlobeView(props: GlobeProps) {
       if (!w || !h) return;
       renderer.setSize(w, h, false);
       camera.aspect = w / h;
+      // Fit the sphere to the shorter canvas edge without changing the user's zoom.
+      // A tall native window must not crop the sides of the globe.
+      camera.fov = (2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(15)) / Math.min(1, camera.aspect)) * 180) / Math.PI;
       camera.updateProjectionMatrix();
       requestRender();
     };

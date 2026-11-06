@@ -1,0 +1,115 @@
+{
+  "origin": "http://127.0.0.1:5173",
+  "browser": "156.0.8078.80",
+  "fixture": "Injected native-like host; synthetic event provenance; no real audio",
+  "checks": [
+    "Atlas and Studio fit both target viewports with collapsed global tools",
+    "Globe canvas height >=450 at 1440×900 and >=360 at 1280×800",
+    "Project is keyboard accessible, Escape closes and restores focus, composition draft persists without mutation",
+    "Composition failures are visible in Project; actual audio loss remains visible while Project is closed"
+  ],
+  "layouts": [
+    {
+      "screen": "Atlas",
+      "width": 1440,
+      "height": 900,
+      "main": {
+        "x": 0,
+        "y": 64,
+        "width": 1440,
+        "height": 836
+      },
+      "canvas": {
+        "x": 296,
+        "y": 120,
+        "width": 788,
+        "height": 554.609375
+      },
+      "screenshot": "/private/tmp/atlas-design-restoration/atlas-1440x900.png"
+    },
+    {
+      "screen": "Sound Studio",
+      "width": 1440,
+      "height": 900,
+      "main": {
+        "x": 0,
+        "y": 64,
+        "width": 1440,
+        "height": 836
+      },
+      "canvas": null,
+      "screenshot": "/private/tmp/atlas-design-restoration/studio-1440x900.png"
+    },
+    {
+      "screen": "Atlas",
+      "width": 1280,
+      "height": 800,
+      "main": {
+        "x": 0,
+        "y": 64,
+        "width": 1280,
+        "height": 736
+      },
+      "canvas": {
+        "x": 262,
+        "y": 120,
+        "width": 688,
+        "height": 454.609375
+      },
+      "screenshot": "/private/tmp/atlas-design-restoration/atlas-1280x800.png"
+    },
+    {
+      "screen": "Sound Studio",
+      "width": 1280,
+      "height": 800,
+      "main": {
+        "x": 0,
+        "y": 64,
+        "width": 1280,
+        "height": 736
+      },
+      "canvas": null,
+      "screenshot": "/private/tmp/atlas-design-restoration/studio-1280x800.png"
+    },
+    {
+      "screen": "Atlas",
+      "width": 1400,
+      "height": 852,
+      "main": {
+        "x": 0,
+        "y": 64,
+        "width": 1400,
+        "height": 788
+      },
+      "canvas": {
+        "x": 262,
+        "y": 120,
+        "width": 808,
+        "height": 506.609375
+      },
+      "screenshot": "/private/tmp/atlas-design-restoration/atlas-1400x852.png"
+    },
+    {
+      "screen": "Sound Studio",
+      "width": 1400,
+      "height": 852,
+      "main": {
+        "x": 0,
+        "y": 64,
+        "width": 1400,
+        "height": 788
+      },
+      "canvas": null,
+      "screenshot": "/private/tmp/atlas-design-restoration/studio-1400x852.png"
+    }
+  ],
+  "errors": [],
+  "external": [],
+  "unexpected": [],
+  "references": [
+    "design/claude-handoff/atlas-live-1440x900.png",
+    "design/claude-handoff/studio-1440x900.png",
+    "Animal_Atlas_Direction_H_Design_Handoff/images/01_H_Atlas_History.png",
+    "Animal_Atlas_Direction_H_Design_Handoff/images/02_H_Sound_Studio.png"
+  ]
+}

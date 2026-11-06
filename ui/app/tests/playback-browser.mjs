@@ -94,7 +94,7 @@ try {
   await page.getByText('Ready — use Play in the header.', { exact: true }).waitFor();
   await listening().click(); await button('Play').click(); await button('Pause playback').waitFor();
   assert.equal(await page.evaluate(() => window.playbackTest.calls.filter(c => c.method === 'setTransport' && c.args.action === 'play').at(-1).args.generation), await page.evaluate(() => String(window.playbackTest.generation)));
-  assert.equal(await page.getByRole('slider', { name: 'Master level' }).isDisabled(), true);
+  assert.equal(await page.getByLabel('Master level', { exact: true }).isDisabled(), true);
   assert.deepEqual(errors, []);
   console.log(JSON.stringify({ checks: ['explicit enable and generation-fenced play', 'native polled position including tail duration', 'pause and acknowledged return-to-start', 'visible seek/audio errors', 'speed/mode changes stop and disable', 'screen continuity', 'late play/preparation fencing', 'unsupported master disabled'], pageErrors: errors }));
 } finally { await browser.close(); }

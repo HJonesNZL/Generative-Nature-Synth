@@ -113,7 +113,10 @@ try {
   assert.ok(requests.every(request => request.startsWith(new URL(url).origin) || request.startsWith('data:')));
   const gated = await browser.newPage();
   await gated.addInitScript(() => { window.atlasHost = { request: async request => ({ requestId: request.requestId, ok: true, result: { protocolVersion: 1, implementation: 'native', supportedMethods: ['getCapabilities'], audioAvailable: false, maxEventBatch: 500, maxVisibleMarkers: 500 } }) }; });
-  await gated.goto(url); await gated.getByText('Native data preview — audio controls unavailable', { exact: true }).waitFor();
+  await gated.goto(url); await gated.getByLabel('Project', { exact: true }).click();
+  await gated.locator('.project-tools__help summary').click();
+  await gated.getByText('Audio output is unavailable in this host. Available data and export controls still work.', { exact: true }).waitFor();
+  await gated.keyboard.press('Escape');
   assert.equal(await gated.getByRole('button', { name: 'Audio settings', exact: true }).count(), 0);
   await gated.close();
   const result = { origin: url, hostTransport: "injected silent fixture", browser: browser.version(), errors, checks: ['capability gate', 'draft selection stays local until Apply', 'explicit device and buffer fence', 'active output rate and buffer', 'applying during playback stops and disables without autoplay', 'catalog refresh blocks draft edits until complete', 'stale fence requires refresh', 'native opening failure is visible', 'disconnect with missing device and recovery', 'default output mode', 'manual Listening and Play use fresh generation', 'no external requests'], screenshot: 'test-results/audio-device-preferences.png' };

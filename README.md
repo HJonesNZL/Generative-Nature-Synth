@@ -34,7 +34,7 @@ Version 0.3 adds sealed metadata, provenance-preserving bundles and full histori
 
 ## Open without entering commands
 
-For the older data-collection menu, open the root-level **Animal Atlas.app** or double-click **Start Animal Atlas.command** in this folder. The new graphical app is under **Releases/Standalone Beta/**. It opens a numbered Terminal menu for recording, saved sessions, replay previews and export. This is a local launcher using the installed Python, not the finished graphical application. Shell syntax/app manifest are verified; Finder launching has not been manually exercised.
+For the older data-collection menu, open the root-level **Animal Atlas.app** or double-click **Start Animal Atlas.command** in this folder. The new graphical app is under **Releases/Design Refresh/**. It opens a numbered Terminal menu for recording, saved sessions, replay previews and export. This is a local launcher using the installed Python, not the finished graphical application. Shell syntax/app manifest are verified; Finder launching has not been manually exercised.
 
 A real recorded session and a saved NZ bird snapshot are available in the local library, with a private portable bundle in `Sessions/`. See `evidence/session-milestone.json` and [recording/replay instructions](docs/sessions-and-replay.md). Those are historical milestone results; they do not describe the current state of an owner-started collector.
 

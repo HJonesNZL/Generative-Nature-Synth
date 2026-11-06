@@ -263,3 +263,33 @@
 .audio-preferences { width: min(360px, calc(100vw - 64px)); max-height: min(580px, calc(100vh - 140px)); overflow-y: auto; }
 .audio-preferences label { display: flex; flex-direction: column; gap: var(--s-2); font-size: var(--fs-small); }
 .audio-preferences select { width: 100%; min-height: 34px; padding: 5px 8px; font: inherit; color: inherit; background: var(--c-ground-raised); border: 1px solid var(--c-rule); border-radius: 4px; }
+
+/* Keep the handoff's instrument workspace clear; project editing is on demand. */
+.app-header { position: relative; flex-shrink: 0; gap: 8px 10px; }
+.project-tools { position: static; }
+.project-tools > summary { list-style: none; cursor: pointer; white-space: nowrap; }
+.project-tools > summary::-webkit-details-marker { display: none; }
+.project-tools[open] > summary { background: var(--c-ground-sunk); }
+.project-tools__state { font-size: 10px; color: var(--c-accent); }
+.project-tools__panel {
+  position: absolute; z-index: 40; top: calc(100% + 6px); left: var(--layout-gutter);
+  width: min(700px, calc(100vw - 2 * var(--layout-gutter))); max-height: calc(100vh - 140px);
+  overflow-y: auto; background: var(--c-ground-raised); border: var(--rule-strong);
+  border-radius: var(--r-sm); box-shadow: var(--shadow-pop); text-align: left;
+}
+.project-tools__intro, .project-tools__help { padding: 14px 18px; }
+.project-tools__intro p { margin-top: 8px; }
+.project-tools .soundscape-panel, .project-tools .composition-panel { padding: 14px 18px; background: transparent; }
+.project-tools .soundscape-panel__details { flex-direction: column; align-items: flex-start; }
+.project-tools .composition-panel__controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.panel-details { font-size: var(--fs-small); color: var(--c-ink-muted); }
+.panel-details > summary { cursor: pointer; color: var(--c-accent); padding: 4px 0; }
+.panel-details p { margin: 6px 0; }
+.range--master.is-unavailable { display: none; }
+@media (max-width: 1439px) {
+  .app-header { gap: 6px 8px; }
+  .wordmark { font-size: 13px; }
+  .header-clock { min-width: 80px; }
+  .header-clock .mono { font-size: 13px; }
+  .master__db { min-width: 44px; }
+}

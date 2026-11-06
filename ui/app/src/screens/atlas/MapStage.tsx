@@ -10,6 +10,7 @@ import { useAppState, useDispatch } from "../../app/store";
 import type { Catalog } from "../../app/catalog";
 import { Icon } from "../../components/Icon";
 import { Notice } from "../../components/Notice";
+import { Popover } from "../../components/Popover";
 import { SegmentedControl } from "../../components/SegmentedControl";
 // Three.js is loaded on demand so the 2D fallback and Sound Studio never pay for it.
 const GlobeView = lazy(() => import("../../components/map/GlobeView").then((m) => ({ default: m.GlobeView })));
@@ -17,6 +18,7 @@ import { Map2D } from "../../components/map/Map2D";
 import { BOUNDS_NZ, BOUNDS_WORLD, type MapRegion, type Ring } from "../../components/map/geo";
 import { markerKeyForEvent, type MaterialView } from "../shared/useMaterialView";
 import { buildMarkers, boundMarkers, newestObservation, isReceiverDetection } from "../shared/mapMarkers";
+import "../../styles/map-stage.css";
 
 function webglAvailable(): boolean {
   try {
@@ -63,10 +65,21 @@ export function MapStage({ view, catalog }: { view: MaterialView; catalog: Catal
   const live = state.mode === "live";
 
   return (
-    <section className="map-stage" aria-label="Map">
+    <section className="map-stage map-stage--expanded" aria-label="Map">
       <div className="map-stage__top">
         <span className="badge badge--context">{state.mode.toUpperCase()} · {state.timeBasis === "observed" ? "OBSERVED TIME" : "ARRIVAL TIME"}</span>
-        <span className="small muted">{caps?.implementation === "mock" ? "Illustrative demo data" : "Reported receivers and measured fixes"}</span>
+        <Popover className="map-details" align="start" label="Map details and coverage" trigger={<span className="pill pill--quiet">{caps?.implementation === "mock" ? "Demo map" : "Map details"}<Icon name="chevron-down" size={11} /></span>}>
+          {() => <div className="map-overview small">
+            <strong>{caps?.implementation === "mock" ? "Illustrative demo data" : "Reported receivers and measured fixes"}</strong>
+            <SegmentedControl<"loaded" | "window"> label="Map records" size="sm" value={scope} onChange={setScope} options={[{ value: "loaded", label: "All loaded records" }, { value: "window", label: view.label }]} />
+            <p>{mapEvents.length} records · {markers.length} of {allMarkers.length} locations shown.</p>
+            <p>Newest loaded observation: {newest ?? "unknown"}</p>
+            <details><summary>Coverage and display limits</summary><p className="muted">{caps?.implementation === "mock" ? "Illustrative demo. " : state.mode === "live" ? "Initially newest 200 revisions, up to 2,000 retained records. " : "Up to 2,000 loaded material records. "}Catalogue sampled from 2,000 records. Coverage is limited to available sources. Receivers locate detections, not individual animals; fixes are observations at their stated times.</p></details>
+            {view.feed.displayOmitted ? <p>{view.feed.displayOmitted} records omitted from this display; stored material is unchanged.</p> : null}
+            <p>Filled receiver markers show the highlighted species in the selected map records. Coastlines: Natural Earth.</p>
+            <button type="button" className={`pill pill--quiet${state.reducedMotion ? " is-current" : ""}`} aria-pressed={state.reducedMotion} onClick={() => dispatch({ type: "reducedMotion", value: !state.reducedMotion })}>Reduce motion</button>
+          </div>}
+        </Popover>
         <div className="map-stage__controls">
           <SegmentedControl<"globe" | "map2d"> label="Map view" size="sm" value={use2D ? "map2d" : "globe"} onChange={(v) => { setContextLost(false); dispatch({ type: "mapView", view: v }); }} options={[{ value: "globe", label: "Globe" }, { value: "map2d", label: "2D map" }]} disabledValues={glOk ? [] : ["globe"]} />
           {!use2D ? (
@@ -76,17 +89,9 @@ export function MapStage({ view, catalog }: { view: MaterialView; catalog: Catal
               <button type="button" className="icon-btn icon-btn--sm" aria-label="Reset view" onClick={() => setZoom({ seq: Date.now(), action: "reset" })}><Icon name="recenter" size={13} /></button>
             </>
           ) : null}
-          <button type="button" className={`pill pill--quiet${state.reducedMotion ? " is-current" : ""}`} aria-pressed={state.reducedMotion} onClick={() => dispatch({ type: "reducedMotion", value: !state.reducedMotion })}>Reduce motion</button>
         </div>
       </div>
 
-      <div className="map-overview small">
-        <SegmentedControl<"loaded" | "window"> label="Map records" size="sm" value={scope} onChange={setScope} options={[{ value: "loaded", label: "All loaded records" }, { value: "window", label: view.label }]} />
-        <p>{mapEvents.length} records · {markers.length} of {allMarkers.length} locations shown.</p>
-        <p>Newest loaded observation: {newest ?? "unknown"}</p>
-        <details><summary>Coverage and display limits</summary><p className="muted">{caps?.implementation === "mock" ? "Illustrative demo. " : state.mode === "live" ? "Initially newest 200 revisions, up to 2,000 retained records. " : "Up to 2,000 loaded material records. "}Catalogue sampled from 2,000 records. Coverage is limited to available sources. Receivers locate detections, not individual animals; fixes are observations at their stated times.</p></details>
-        {view.feed.displayOmitted ? <p>{view.feed.displayOmitted} records omitted from this display; stored material is unchanged.</p> : null}
-      </div>
       {contextLost ? <Notice tone="caution" title="3D graphics stopped" action={<button type="button" className="btn btn--quiet btn--sm" onClick={() => setContextLost(false)}>Try globe again</button>}>Showing the 2D map. Event data remains available.</Notice> : null}
       {!glOk ? <Notice tone="info" title="2D map">WebGL is not available here, so the globe is replaced by a flat map.</Notice> : null}
       {view.feed.status === "error" ? <Notice tone="problem" title="Material could not be loaded" action={<button type="button" className="btn btn--quiet btn--sm" onClick={() => dispatch({ type: "retryMaterial" })}>Retry material</button>}>{view.feed.error} Loaded records may be incomplete; retry reloads this material.</Notice> : null}
@@ -119,16 +124,21 @@ export function MapStage({ view, catalog }: { view: MaterialView; catalog: Catal
         )}
       </div>
 
-      <details className="map-locations small">
-        <summary>Browse {markers.length} displayed locations</summary>
-        <ul role="list">{markers.map((marker) => <li key={marker.key}><button type="button" className="btn btn--quiet btn--sm" aria-pressed={marker.key === selectedKey} onClick={() => pick(marker.key)}>{marker.label} · {marker.latitude.toFixed(3)}, {marker.longitude.toFixed(3)}</button></li>)}</ul>
-      </details>
-      <div className="map-legend small" aria-label="Legend">
-        <span><Icon name="station" size={12} /> Reported receiver</span>
-        <span className="legend-filled"><span className="dot" aria-hidden="true" /> Highlighted species in selected map records</span>
-        <span><Icon name="satellite-fix" size={10} /> Measured GPS / satellite fix</span>
-        <span><span className="dash" aria-hidden="true" /> Effect region</span>
-        <span className="muted">Coastlines: Natural Earth</span>
+      <div className="map-stage__footer">
+        <div className="map-legend small" aria-label="Legend">
+          <span><Icon name="station" size={12} /> Receiver</span>
+          <span className="legend-filled"><span className="dot" aria-hidden="true" /> Highlighted species</span>
+          <span><Icon name="satellite-fix" size={10} /> Measured fix</span>
+          <span><span className="dash" aria-hidden="true" /> Effect region</span>
+        </div>
+        <details className="map-locations small">
+          <summary>{markers.length} locations</summary>
+          <div className="map-locations__panel">
+            <strong>Browse displayed locations</strong>
+            <ul role="list">{markers.map((marker) => <li key={marker.key}><button type="button" className="btn btn--quiet btn--sm" aria-pressed={marker.key === selectedKey} onClick={() => pick(marker.key)}>{marker.label} · {marker.latitude.toFixed(3)}, {marker.longitude.toFixed(3)}</button></li>)}</ul>
+            {!markers.length ? <p>No locations in these map records.</p> : null}
+          </div>
+        </details>
       </div>
     </section>
   );

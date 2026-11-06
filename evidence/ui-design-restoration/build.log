@@ -1,0 +1,57 @@
+vite v8.3.5 building client environment for production...
+transforming...
+✓ 100 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                                 0.66 kB │ gzip:   0.38 kB
+dist/assets/red-hat-mono-latin-ext-400-normal-CTgQ0k1t.woff2    5.73 kB
+dist/assets/red-hat-mono-latin-ext-500-normal-DzmeEbMl.woff2    5.83 kB
+dist/assets/red-hat-text-latin-ext-400-normal-BBm29hAA.woff2    6.62 kB
+dist/assets/red-hat-text-latin-ext-500-normal-CuIcaAu8.woff2    6.80 kB
+dist/assets/red-hat-text-latin-ext-600-normal-BbxJTJwO.woff2    6.90 kB
+dist/assets/red-hat-text-latin-ext-400-italic-Brz__Nv4.woff2    6.92 kB
+dist/assets/red-hat-mono-latin-400-normal-C-lyubUB.woff2        9.72 kB
+dist/assets/red-hat-mono-latin-500-normal-CjZS5o_4.woff2        9.96 kB
+dist/assets/red-hat-text-latin-400-normal-CU14VBGs.woff2       14.48 kB
+dist/assets/red-hat-text-latin-400-italic-CE15k9Kx.woff2       15.01 kB
+dist/assets/red-hat-text-latin-600-normal-IiL3oQyp.woff2       15.12 kB
+dist/assets/red-hat-text-latin-500-normal-c4wcFpAd.woff2       15.14 kB
+dist/assets/unbounded-latin-500-normal-4slEIF53.woff2          20.74 kB
+dist/assets/unbounded-latin-700-normal-CaoNriVp.woff2          21.09 kB
+dist/assets/unbounded-latin-ext-500-normal-BTIpesyw.woff2      49.05 kB
+dist/assets/unbounded-latin-ext-700-normal-BLzWLLjG.woff2      49.92 kB
+dist/assets/grain-light-XQhZL96u.png                           57.75 kB
+dist/assets/index-Dm9uif-Y.css                                 39.00 kB │ gzip:   7.86 kB
+dist/assets/index-4JqBF1By.js                                 479.18 kB │ gzip: 150.51 kB │ map: 1,511.49 kB
+dist/assets/GlobeView-DP-Zt1B7.js                             568.10 kB │ gzip: 141.50 kB │ map: 2,949.15 kB
+
+✓ built in 290ms
+vite v8.3.5 building client environment for demo...
+transforming...
+✓ 102 modules transformed.
+rendering chunks...
+computing gzip size...
+dist-demo/demo.html                                                  0.67 kB │ gzip:   0.40 kB
+dist-demo/assets/red-hat-mono-latin-ext-400-normal-CTgQ0k1t.woff2    5.73 kB
+dist-demo/assets/red-hat-mono-latin-ext-500-normal-DzmeEbMl.woff2    5.83 kB
+dist-demo/assets/red-hat-text-latin-ext-400-normal-BBm29hAA.woff2    6.62 kB
+dist-demo/assets/red-hat-text-latin-ext-500-normal-CuIcaAu8.woff2    6.80 kB
+dist-demo/assets/red-hat-text-latin-ext-600-normal-BbxJTJwO.woff2    6.90 kB
+dist-demo/assets/red-hat-text-latin-ext-400-italic-Brz__Nv4.woff2    6.92 kB
+dist-demo/assets/red-hat-mono-latin-400-normal-C-lyubUB.woff2        9.72 kB
+dist-demo/assets/red-hat-mono-latin-500-normal-CjZS5o_4.woff2        9.96 kB
+dist-demo/assets/red-hat-text-latin-400-normal-CU14VBGs.woff2       14.48 kB
+dist-demo/assets/red-hat-text-latin-400-italic-CE15k9Kx.woff2       15.01 kB
+dist-demo/assets/red-hat-text-latin-600-normal-IiL3oQyp.woff2       15.12 kB
+dist-demo/assets/red-hat-text-latin-500-normal-c4wcFpAd.woff2       15.14 kB
+dist-demo/assets/unbounded-latin-500-normal-4slEIF53.woff2          20.74 kB
+dist-demo/assets/unbounded-latin-700-normal-CaoNriVp.woff2          21.09 kB
+dist-demo/assets/unbounded-latin-ext-500-normal-BTIpesyw.woff2      49.05 kB
+dist-demo/assets/unbounded-latin-ext-700-normal-BLzWLLjG.woff2      49.92 kB
+dist-demo/assets/grain-light-XQhZL96u.png                           57.75 kB
+dist-demo/assets/demo-Dm9uif-Y.css                                  39.00 kB │ gzip:   7.86 kB
+dist-demo/assets/demo-DAxzfGkv.js                                  513.69 kB │ gzip: 160.89 kB │ map: 1,602.87 kB
+dist-demo/assets/GlobeView-BXsFBku4.js                             568.10 kB │ gzip: 141.50 kB │ map: 2,949.15 kB
+
+✓ built in 278ms
+Build checks passed: separate native/demo sources, no development HTTP, CSP, local licences and lazy globe.

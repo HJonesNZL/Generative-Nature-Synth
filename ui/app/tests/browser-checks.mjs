@@ -16,11 +16,16 @@ const disabled = async locator => assert.equal(await locator.isDisabled(), true)
 const screen = name => page.getByRole('button', { name, exact: true }).click();
 try {
   await page.goto(origin);
-  await visible('Native data preview — audio controls unavailable');
+  await page.getByLabel('Project', { exact: true }).click();
+  await page.locator('.project-tools__help summary').click();
+  await visible('Audio output is unavailable in this host. Available data and export controls still work.');
+  await page.keyboard.press('Escape');
   await visible('Source status unavailable');
   await page.locator('.map-stage canvas').waitFor();
   assert.equal(await page.getByText('DEMO', { exact: true }).count(), 0);
+  await page.getByRole('button', { name: 'Map details and coverage', exact: true }).click();
   await page.getByRole('radio', { name: 'All loaded records', exact: true }).waitFor();
+  await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'All available species', exact: true }).click();
   await page.locator('.species-list li').first().waitFor();
   await page.getByRole('searchbox', { name: 'Find species', exact: true }).fill('no-such-species-91753');
@@ -39,11 +44,13 @@ try {
   await page.getByRole('radio', { name: 'Globe', exact: true }).click();
   checks.push('All loaded scope, species search/reset, world fallback and keyboard location list');
   await disabled(page.getByRole('radio', { name: 'History', exact: true }));
-  await disabled(page.getByRole('slider', { name: 'Master level' }));
+  await disabled(page.getByLabel('Master level', { exact: true }));
   await page.getByRole('radio', { name: 'Replay', exact: true }).click();
   await page.getByRole('button', { name: /Fixture • 2,005 records/ }).click();
   await visible('Timeline verified. Audio playback is not implemented yet.');
-  await visible('Display limited: 2000 records shown; 5 more are outside this view. Saved material is unchanged.');
+  await page.getByRole('button', { name: 'Map details and coverage', exact: true }).click();
+  await visible('5 records omitted from this display; stored material is unchanged.');
+  await page.keyboard.press('Escape');
   assert.match(await page.locator('.grain__axis').innerText(), /13:00[\s\S]*14:00/);
   await disabled(page.getByRole('button', { name: 'Play', exact: true }));
   await page.screenshot({ path: 'test-results/native-atlas.png' });
@@ -62,7 +69,7 @@ try {
   await screen('Atlas');
   await page.getByRole('button', { name: /Fixture • empty historical hour/ }).click();
   await visible('Timeline verified. Audio playback is not implemented yet.');
-  await page.getByText('No detections in this window.', { exact: false }).waitFor();
+  await page.getByText('No records in this window · coverage may be incomplete.', { exact: true }).waitFor();
   assert.match(await page.locator('.grain__axis').innerText(), /13:00[\s\S]*14:00/);
   assert.match(await page.locator('.header-clock').innerText(), /0:01:00/);
   assert.equal(await page.getByText('Display limited:', { exact: false }).count(), 0);
@@ -100,7 +107,9 @@ try {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.reload(); await visible('DEMO');
   await screen('Atlas');
+  await page.getByRole('button', { name: 'Map details and coverage', exact: true }).click();
   assert.equal(await page.getByRole('button', { name: 'Reduce motion', exact: true }).getAttribute('aria-pressed'), 'true');
+  await page.keyboard.press('Escape');
   console.log('CHECK', checks.length + 1); checks.push('Explicit demo, keyboard map control, both screens at 1280/1440/1920 widths, reduced motion');
   const fallback = await browser.newPage();
   await fallback.addInitScript(() => {

@@ -16,7 +16,7 @@ import { AudioDeviceSettings } from "./AudioDeviceSettings";
 import type { HostMethods } from "../host/contracts";
 import { useCoalescedGesture } from "./useCoalescedGesture";
 
-export function Header({ demoMenu }: { demoMenu?: ReactNode }) {
+export function Header({ demoMenu, projectTools }: { demoMenu?: ReactNode; projectTools?: ReactNode }) {
   const state = useAppState();
   const dispatch = useDispatch();
   const { client, caps, onNotification } = useHost();
@@ -160,6 +160,7 @@ export function Header({ demoMenu }: { demoMenu?: ReactNode }) {
           <Icon name="studio" size={14} /> Sound Studio
         </button>
       </nav>
+      {projectTools}
       {caps?.implementation === "mock" ? <span className="badge badge--demo" title="Mock host: deterministic demo data, no audio">DEMO</span> : null}
       <div className="header-spacer" />
       <SegmentedControl<ViewMode>
@@ -234,7 +235,7 @@ export function Header({ demoMenu }: { demoMenu?: ReactNode }) {
           onPointerDown={() => { dragging.current = true; gain.push("begin", gainShown); }}
           onChange={(e) => { const v = Number(e.target.value); setGainLocal(v); if (!dragging.current) gain.push("begin", gainShown); gain.push("change", v); if (!dragging.current) { gain.push("end", v); } }}
           onPointerUp={(e) => { dragging.current = false; gain.push("end", Number((e.target as HTMLInputElement).value)); window.setTimeout(() => setGainLocal(null), 300); }}
-          className="range range--master"
+          className={`range range--master${client.supports("setMasterGain") ? "" : " is-unavailable"}`}
         />
         <span className="mono master__db">{audio ? `${gainShown.toFixed(1)} dB` : "— dB"}</span>
         <span className="meter" role="img" aria-label={audio?.peakDbfs == null ? "Output level unavailable" : `Output peak ${audio.peakDbfs} dBFS${audio.meterIsSimulated ? " (simulated)" : ""}`}>

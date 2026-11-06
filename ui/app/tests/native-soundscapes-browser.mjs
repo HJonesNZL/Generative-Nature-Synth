@@ -17,6 +17,11 @@ const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright')
 let browser, server, closed;
 const errors = [], rejected = [], replies = [], mutations = [];
 const button = (page, name) => page.getByRole('button', { name, exact: true });
+
+async function project(page, open = true) {
+  const tools = page.locator('details.project-tools');
+  if (await tools.evaluate(element => element.open) !== open) await tools.locator(':scope > summary').click();
+}
 async function start() {
   server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--port', String(port), '--strictPort'], { cwd: app,
     env: { ...process.env, ATLAS_AUDIO_HOST_BINARY: '', ATLAS_NATIVE_BINARY: binary, ATLAS_LIBRARY: library, ATLAS_VOICE_LIBRARY: voices,
@@ -30,6 +35,7 @@ async function start() {
   throw Error('Isolated UI server did not start');
 }
 async function exportSaved(page) {
+  await project(page);
   const previous = replies.filter(r => r.method === 'startSoundscapeRender').length;
   const previousArtifact = await page.locator('a[download]').count() ? await page.locator('a[download]').getAttribute('data-artifact-id') : null;
   await button(page, 'Export saved WAV').click();
@@ -72,8 +78,9 @@ try {
       return route.fulfill({ response });
     });
   }
-  await page.goto(origin); await page.getByRole('region', { name: 'Soundscapes', exact: true }).waitFor();
+  await page.goto(origin); await project(page); await page.getByRole('region', { name: 'Soundscapes', exact: true }).waitFor();
   await page.getByText('1 file uses an unsupported name and cannot be opened here.', { exact: true }).waitFor();
+  await project(page, false);
   await page.getByRole('radio', { name: 'Replay', exact: true }).click();
   await page.getByRole('button', { name: /^Fixture • 2,005 records/ }).click();
   await page.getByText('Ready — use Play in the header.', { exact: true }).waitFor();
@@ -100,6 +107,7 @@ try {
   await page.getByText('Unsaved changes', { exact: true }).waitFor();
   let compositionSettings, oldPreparation;
   if (composition) {
+    await project(page);
     oldPreparation = replies.filter(r => r.method === 'getComposition').at(-1).result.preparation;
     await page.getByRole('checkbox', { name: 'Enable composition', exact: true }).check();
     await page.getByRole('spinbutton', { name: 'Composition tempo BPM', exact: true }).fill('');
@@ -112,10 +120,11 @@ try {
     await page.getByRole('spinbutton', { name: 'Composition seed', exact: true }).pressSequentially('4294967295');
     assert.equal(await page.getByRole('spinbutton', { name: 'Composition seed', exact: true }).inputValue(), '4294967295');
     await page.getByRole('checkbox', { name: 'Quantize composition', exact: true }).uncheck();
-    await button(page, 'Atlas').click(); await button(page, 'Sound Studio').click();
+    await project(page, false); await button(page, 'Atlas').click(); await button(page, 'Sound Studio').click(); await project(page);
     assert.equal(await page.getByRole('spinbutton', { name: 'Composition tempo BPM', exact: true }).inputValue(), '117');
     assert.equal(replies.filter(r => r.method === 'setComposition').length, 0, 'draft waits for explicit apply or save');
   }
+  await project(page);
   await page.getByRole('textbox', { name: 'Soundscape name', exact: true }).fill('Scene captured at +12');
   if (composition) {
     await page.getByRole('spinbutton', { name: 'Composition tempo BPM', exact: true }).fill('39');
@@ -168,6 +177,7 @@ try {
     await button(page, 'Apply composition').click();
     await page.getByText('Composition applied. Listening is off; enable it and press Play to hear this candidate.', { exact: true }).waitFor();
   }
+  await project(page, false);
   await transpose.press('Home'); await page.waitForFunction(() => document.querySelector('[role="slider"][aria-label="Transpose"]')?.getAttribute('aria-valuetext') === '-12 st');
   const beforeRecall = await exportSaved(page);
   assert.equal(mutations.filter(r => r.method === 'startSoundscapeRender').at(-1).args.soundscapeId, saved.id);
@@ -186,9 +196,11 @@ try {
     assert.deepEqual(replies.filter(r => r.method === 'getComposition').at(-1).result.settings, compositionSettings);
   }
   assert.equal(recall.preparation.session.id, `scene:${saved.id}`);
+  await project(page, false);
   await page.getByRole('button', { name: new RegExp(`^${fixtureName} species voice`) }).click();
   await page.waitForFunction(() => document.querySelector('[role="slider"][aria-label="Transpose"]')?.getAttribute('aria-valuetext') === '+12 st');
   const afterRecall = await exportSaved(page); assert.deepEqual(afterRecall, beforeRecall, 'immutable saved WAV must ignore later drafts');
+  await project(page, false);
   // Re-preparing the same scene at another speed preserves current edits.
   await page.getByRole('slider', { name: 'Transpose', exact: true }).press('Home');
   await button(page, 'Atlas').click(); await page.getByRole('radio', { name: '60×', exact: true }).click();
@@ -197,6 +209,7 @@ try {
   await page.waitForFunction(() => document.querySelector('[role="slider"][aria-label="Transpose"]')?.getAttribute('aria-valuetext') === '-12 st');
   await page.screenshot({ path: process.env.ATLAS_SOUNDSCAPE_SCREENSHOT || '/private/tmp/atlas-soundscape-ui.png', fullPage: true });
   if (composition) {
+    await project(page);
     await page.waitForFunction(() => !document.querySelector('fieldset.composition-panel__controls')?.disabled);
     assert.equal(await page.getByRole('spinbutton', { name: 'Composition tempo BPM', exact: true }).inputValue(), '117', 'same-piece speed change preserves composition');
   }

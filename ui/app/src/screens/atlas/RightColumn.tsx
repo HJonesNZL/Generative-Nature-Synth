@@ -113,9 +113,9 @@ export function RegionMixPanel() {
       {error ? <Notice tone="problem" title="Mix change not applied">{error}</Notice> : null}
       {activity ? (
         <p className="small muted">
-          {mutedNames.length ? `${mutedNames.join(", ")} muted — still recorded, not sounded. ` : ""}
+          {mutedNames.length ? `${mutedNames.join(", ")} muted. ` : ""}
           {totals ? `${totals.records} records · ${totals.sounded} sounded · ${totals.grouped} grouped · ${totals.suppressed} held back. ` : ""}
-          {effect && assignment ? `Region send: ${effect.name} ${assignment.enabled ? assignment.send.toFixed(2) : "(bypassed)"}.` : ""}
+          {effect && assignment ? `${effect.name} ${assignment.enabled ? assignment.send.toFixed(2) : "(bypassed)"}.` : ""}
         </p>
       ) : null}
     </section>
@@ -204,22 +204,28 @@ function Inspector({ event, outcome, catalog }: { event: EventView; outcome: Mus
       <span className="small italic muted">{catalog.scientificName(event.speciesId)}</span>
       {event.provenance !== "live_source" ? <span className="badge badge--demo">{event.provenance === "demo" ? "Demo record" : "Imported record"}</span> : null}
       <dl className="kv kv--tight">
-        <dt>Kind</dt><dd>{KIND_TEXT[event.eventKind]}</dd>
         <dt>Observed</dt><dd className="mono">{formatDateTime(event.observedAtUtc)}</dd>
-        <dt>Arrived</dt><dd className="mono">{formatTime(event.firstSeenAtUtc)} {zoneAbbreviation(event.firstSeenAtUtc)}</dd>
         <dt>Identity</dt><dd>{identity}</dd>
         <dt>Location</dt><dd>{location}</dd>
-        <dt>Confidence</dt><dd>{event.confidence ? `${event.confidence.value.toFixed(2)} — ${event.confidence.meaning}` : "Not provided"}</dd>
         <dt>Source</dt><dd>{catalog.sourceName(event.sourceId)}{event.attribution ? ` · ${event.attribution}` : ""}</dd>
       </dl>
-      <p className="small"><span aria-hidden="true">→ </span>{o.long}</p>
+      <p className="small"><span aria-hidden="true">→ </span>{o.short}</p>
+      <details className="panel-details small"><summary>Record details</summary>
+        <dl className="kv kv--tight">
+          <dt>Kind</dt><dd>{KIND_TEXT[event.eventKind]}</dd>
+          <dt>Arrived</dt><dd className="mono">{formatTime(event.firstSeenAtUtc)} {zoneAbbreviation(event.firstSeenAtUtc)}</dd>
+          <dt>Confidence</dt><dd>{event.confidence ? `${event.confidence.value.toFixed(2)} — ${event.confidence.meaning}` : "Not provided"}</dd>
+        </dl>
+        <p>{o.long}</p>
+      </details>
       <button
         type="button"
         className="btn btn--primary"
+        aria-label={voiceId ? `Open ${catalog.speciesName(event.speciesId)} voice in Sound Studio →` : "Assign a voice in Sound Studio →"}
         disabled={!voiceId && !event.speciesId}
         onClick={() => { dispatch({ type: "selectVoice", voiceId }); if (event.speciesId) dispatch({ type: "highlightSpecies", speciesId: event.speciesId }); dispatch({ type: "screen", screen: "studio" }); }}
       >
-        {voiceId ? `Open ${catalog.speciesName(event.speciesId)} voice in Sound Studio →` : "Assign a voice in Sound Studio →"}
+        {voiceId ? "Edit voice →" : "Assign voice →"}
       </button>
       {!client.supports("getMusicalOutcomes") ? <span className="small muted">This host does not report musical outcomes.</span> : null}
     </div>

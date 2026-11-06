@@ -71,3 +71,7 @@ All future Animal Atlas / Generative Nature Synth work belongs in `/Users/henryj
 ## Sound design — owner instruction, 7 November 2026
 
 Use the broader research workflow in `docs/sound-design/RESEARCH_AND_DESIGN_PRACTICE.md`, not Field DSP alone. Consult primary synthesis/perception/bioacoustics sources and exact-taxon recordings; retain access, rights, evidence and uncertainty. Distinguish read descriptions, actual listening, original musical hypotheses, implemented candidates and listener-approved sounds. Evaluate phrases and ensembles as well as isolated timbres. Do not cap the instrument at the initial synthesis characters or claim waveform difference proves audible recognition.
+
+## UI hierarchy — owner correction, 7 November 2026
+
+Keep the shipped interface close to `design/claude-handoff/atlas-live-1440x900.png` and `studio-1440x900.png`. Atlas prioritises a large central globe, narrow supporting columns and the bottom activity strip. Do not accumulate permanently expanded feature panels or explanatory banners above the workspace. Keep project/file/composition tools on demand, preserve their drafts while closed, and put secondary guidance/diagnostics in accessible disclosures. Actual faults and progress requiring attention stay visible. Preserve the original typography, palette, envelope and control hierarchy; validate both screens at the supported desktop sizes when changing layout.

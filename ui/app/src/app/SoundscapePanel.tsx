@@ -4,7 +4,7 @@ import { useAppState, useDispatch } from "./store";
 import type { SoundscapeView } from "../host/contracts";
 
 const artifactHref = (id: string | null | undefined) => id && /^[0-9a-f]{32}$/.test(id) ? `/__atlas/exports/${id}` : null;
-export function SoundscapePanel() {
+export function SoundscapePanel({ onAttention }: { onAttention?: () => void }) {
   const { client, connection, onNotification } = useHost();
   const state = useAppState(), dispatch = useDispatch();
   const [list, refresh] = useHostQuery("listSoundscapes", { limit: 100 }, []);
@@ -21,6 +21,7 @@ export function SoundscapePanel() {
   useEffect(() => onNotification(notification => {
     if (notification.type === "renderProgress" && notification.job.jobId === job?.jobId) dispatch({ type: "renderJob", job: notification.job });
   }), [onNotification, job?.jobId, dispatch]);
+  useEffect(() => { if (message || list.status === "error" || job?.state === "failed") onAttention?.(); }, [message, list.status, job?.state, onAttention]);
   if (!client.supports("listSoundscapes")) return null;
   const busy = state.soundscape.operation !== null || connection !== "connected";
   const items = valueOf(list)?.items ?? [];
@@ -34,7 +35,7 @@ export function SoundscapePanel() {
       const result = await client.call("saveSoundscape", { name: name.trim() }, { timeoutMs: 30000 });
       if (!result.ok) { setMessage(result.error.message); return; }
       setSelected(result.value); setName(""); refresh();
-      setMessage(`Saved “${result.value.name}” with its events, voices, speed and sound settings.`);
+      setMessage(`Saved “${result.value.name}” with all sound settings.`);
     } finally { operation.current = false; client.edits.end(); dispatch({ type: "soundscapeOperation", operation: null }); }
   };
   const recall = async () => {
@@ -47,7 +48,7 @@ export function SoundscapePanel() {
       if (!result.ok) { setMessage(result.error.message); return; }
       dispatch({ type: "soundscapeRecalled", scene: result.value.soundscape, preparation: result.value.preparation });
       setSelected(result.value.soundscape);
-      setMessage(`Opened “${result.value.soundscape.name}”. Unsaved voice drafts were replaced. Listening is off; press Play after enabling it.`);
+      setMessage(`Opened “${result.value.soundscape.name}”. Drafts replaced. Enable Listening, then Play.`);
     } finally { operation.current = false; client.edits.end(); dispatch({ type: "soundscapeOperation", operation: null }); }
   };
   const render = async () => {
@@ -80,7 +81,7 @@ export function SoundscapePanel() {
       <button type="button" className="btn btn--outline btn--sm" disabled={busy || !selected?.valid || active || state.render.pending || !client.supports("startSoundscapeRender")} onClick={() => void render()}>{state.render.pending ? "Starting export…" : "Export saved WAV"}</button>
     </div>
     <div className="soundscape-panel__details small muted">
-      <span>{selected ? `Export uses the saved “${selected.name}” recipe (${selected.eventCount} records). Save a new soundscape to include later edits.` : "Open a saved piece in Replay, then save its events and complete sound settings as a soundscape."}</span>
+      <span>{selected ? `“${selected.name}” · ${selected.eventCount} records. Export uses this saved version.` : "Open a soundscape, or select a piece in Replay to save a new one."}</span>
       {selected && !selected.contentVerified ? <span>Contents will be verified when opened or exported.</span> : null}
       {valueOf(list)?.limited ? <span>Showing up to 100 soundscapes.</span> : null}
       {unmanagedFiles ? <span>{unmanagedFiles} {unmanagedFiles === 1 ? "file uses an unsupported name and cannot be opened here." : "files use unsupported names and cannot be opened here."}</span> : null}

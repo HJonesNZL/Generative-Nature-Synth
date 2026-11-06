@@ -46,7 +46,7 @@ function LegacyRegionEffectsPanel({ voiceName }: { voiceName: string | null }) {
     <aside className="studio__right" aria-label="Region effects">
       <div className="row-between">
         <span className="label">REGION EFFECTS</span>
-        <button type="button" className="link-button" disabled title="Region drawing needs a host region editor (see INTEGRATION_GAPS.md)">+ Draw region</button>
+        <button type="button" className="link-button" disabled title="Region drawing is unavailable from this host">+ Draw region</button>
       </div>
       <div className="region-effects__top">
         <div className="region-thumb">
@@ -64,7 +64,7 @@ function LegacyRegionEffectsPanel({ voiceName }: { voiceName: string | null }) {
           })}
         </ol>
       </div>
-      <p className="small muted">Outside every region → direct sound only. Station detections use the station’s position, not a guessed bird position.</p>
+      <p className="small muted">Outside regions → direct sound</p>
       <div className="form-grid">
         <label className="field-label" htmlFor="re-overlap">Overlap</label>
         <select id="re-overlap" className="select" value={overlap} disabled={!client.supports("setRegionPolicy")} onChange={(e) => void setRegionPolicy({ overlapPolicy: e.target.value as RegionView["overlapPolicy"] })}>
@@ -85,7 +85,7 @@ function LegacyRegionEffectsPanel({ voiceName }: { voiceName: string | null }) {
           <span className="chip is-on">{selectedEffect?.name ?? "Region FX"}</span><span aria-hidden="true">→</span>
           <span className="chip">Master</span>
         </div>
-        <span className="small muted">Direct sound is kept; this control adjusts the send into the selected region effect.</span>
+        <details className="panel-details small muted"><summary>Routing help</summary><p>Direct sound is kept; send adds the selected region effect. Station detections use the station’s position, not an estimated animal position.</p></details>
       </div>
     </aside>
   );
