@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import http from 'node:http';
 import { mkdtemp, writeFile, chmod, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { nativeBridge } from '../dev/nativeBridge.mjs';
 
 // Disposable protocol worker: no audio/device/library/owner processes.
@@ -16,15 +16,16 @@ process.on('SIGTERM', () => { setTimeout(() => { process.stdout.write('{"request
 readline.createInterface({ input: process.stdin }).on('line', line => {
  const req = JSON.parse(line);
  if (req.method === 'hold' || req.method === 'setTransport') return;
- setTimeout(() => process.stdout.write(JSON.stringify({ requestId: req.requestId, ok: true, result: { pid: process.pid } }) + '\\n'), ['wait', 'prepareReplay', 'getCatalog'].includes(req.method) ? 150 : 0);
+ setTimeout(() => process.stdout.write(JSON.stringify({ requestId: req.requestId, ok: true, result: { pid: process.pid, exportDirectory: process.env.ATLAS_EXPORT_DIRECTORY } }) + '\\n'), ['wait', 'prepareReplay', 'getCatalog'].includes(req.method) ? 150 : 0);
 });
 `);
   // The nested source needs actual JS backslash-n string literals.
   const { readFile } = await import('node:fs/promises');
   await writeFile(executable, (await readFile(executable, 'utf8')).replaceAll('\\\\n', '\\n'));
   await chmod(executable, 0o700);
-  const previous = { binary: process.env.ATLAS_NATIVE_BINARY, audio: process.env.ATLAS_AUDIO_HOST_BINARY, library: process.env.ATLAS_LIBRARY };
+  const previous = { binary: process.env.ATLAS_NATIVE_BINARY, audio: process.env.ATLAS_AUDIO_HOST_BINARY, library: process.env.ATLAS_LIBRARY, exports: process.env.ATLAS_EXPORT_DIRECTORY };
   process.env.ATLAS_NATIVE_BINARY = executable; delete process.env.ATLAS_AUDIO_HOST_BINARY; process.env.ATLAS_LIBRARY = join(folder, 'unused.sqlite3');
+  delete process.env.ATLAS_EXPORT_DIRECTORY; // Direct dev launch must configure native and route identically.
   let handler;
   const server = http.createServer((req, res) => handler(req, res));
   const plugin = nativeBridge();
@@ -49,7 +50,7 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
     assert.equal((await send(envelope('x'), { 'sec-fetch-site': 'cross-site' }).promise).status, 403);
     assert.equal((await send('x'.repeat(17000)).promise).status, 413);
     const first = await send(envelope('first')).promise;
-    assert.equal(first.status, 200); workerPid = JSON.parse(first.text).result.pid;
+    assert.equal(first.status, 200); assert.equal(JSON.parse(first.text).result.exportDirectory, resolve('../../Exports')); workerPid = JSON.parse(first.text).result.pid;
     const hold = send({ ...envelope('active', 'setTransport'), args: { action: 'play', preparationId: 'test', generation: '1' } }); hold.promise.catch(() => {});
     await new Promise(resolve => setTimeout(resolve, 50));
     assert.equal((await send(envelope('active')).promise).status, 400);
@@ -78,7 +79,7 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
     await new Promise(resolve => server.close(resolve));
     await new Promise(resolve => setTimeout(resolve, 100));
     if (workerPid) assert.throws(() => process.kill(workerPid, 0), /ESRCH/);
-    for (const [key, value] of [['ATLAS_NATIVE_BINARY', previous.binary], ['ATLAS_AUDIO_HOST_BINARY', previous.audio], ['ATLAS_LIBRARY', previous.library]]) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
+    for (const [key, value] of [['ATLAS_NATIVE_BINARY', previous.binary], ['ATLAS_AUDIO_HOST_BINARY', previous.audio], ['ATLAS_LIBRARY', previous.library], ['ATLAS_EXPORT_DIRECTORY', previous.exports]]) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
     await rm(folder, { recursive: true, force: true });
   }
 });

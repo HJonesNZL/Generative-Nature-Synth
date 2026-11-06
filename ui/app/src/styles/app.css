@@ -229,3 +229,13 @@
 .map-stage__canvas { flex-shrink: 0; }
 
 .header-error { position: absolute; top: 100%; left: 1rem; right: 1rem; z-index: 20; padding: .5rem; background: var(--bg-panel, #fff); color: #a52b22; border: 1px solid currentColor; font-size: .8rem; }
+
+/* Soundscapes share material context above Atlas and Studio. */
+.soundscape-panel { padding: 12px 24px; border-bottom: 1px solid var(--line, #d4d0c3); background: var(--paper, #f3f0e6); }
+.soundscape-panel__row, .soundscape-panel__details { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.soundscape-panel__details { margin-top: 8px; }
+.soundscape-panel input, .soundscape-panel select { min-height: 32px; max-width: 270px; padding: 5px 8px; font: inherit; color: inherit; background: transparent; border: 1px solid #aaa99d; border-radius: 4px; }
+.soundscape-panel progress { width: 140px; }
+
+.app-workspace { display: flex; flex: 1; min-height: 0; }
+.soundscape-panel { flex: 0 0 auto; }

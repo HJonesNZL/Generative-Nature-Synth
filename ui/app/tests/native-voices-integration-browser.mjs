@@ -15,7 +15,7 @@ let browser, server, closed;
 const errors = [], rejected = [], replies = [];
 async function start() {
   server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--port', String(port)], { cwd: app,
-    env: { ...process.env, ATLAS_AUDIO_HOST_BINARY: '', ATLAS_NATIVE_BINARY: binary, ATLAS_LIBRARY: library, ATLAS_VOICE_LIBRARY: voices }, stdio: ['pipe', 'pipe', 'pipe'] });
+    env: { ...process.env, ATLAS_AUDIO_HOST_BINARY: '', ATLAS_NATIVE_BINARY: binary, ATLAS_LIBRARY: library, ATLAS_VOICE_LIBRARY: voices, ATLAS_SOUNDSCAPE_DIRECTORY: join(folder, "scenes"), ATLAS_EXPORT_DIRECTORY: join(folder, "exports") }, stdio: ['pipe', 'pipe', 'pipe'] });
   closed = new Promise(done => server.once('exit', done));
   server.stdout.resume(); server.stderr.resume();
   for (let attempt = 0; attempt < 100; attempt++) {
@@ -52,8 +52,8 @@ try {
   await start();
   browser = await chromium.launch({ headless: true, channel: 'chrome', args: ['--enable-unsafe-swiftshader'] });
   let page = await open();
-  assert.equal(await page.locator('.studio__center [role="slider"]').count(), 4);
-  await page.getByRole('radio', { name: 'Struck tone', exact: true }).waitFor();
+  assert.equal(await page.locator('.studio__center [role="slider"]').count(), 8);
+  await page.getByRole('radio', { name: 'struck', exact: true }).waitFor();
   assert.equal(await page.getByRole('button', { name: 'Audition selected event', exact: true }).isDisabled(), true);
   await page.getByRole('slider', { name: 'Transpose', exact: true }).press('End');
   await page.getByText('Unsaved changes', { exact: true }).waitFor();
@@ -77,5 +77,5 @@ try {
   assert.doesNotMatch(await page.locator('.studio__center').innerText(), /Species without their own voice use it/);
   assert.equal(await page.getByRole('slider', { name: 'Transpose', exact: true }).getAttribute('aria-valuetext'), '+0 st');
   assert.deepEqual(errors, []); assert.deepEqual(rejected, []);
-  console.log(JSON.stringify({ checks: ['real native library metadata and four controls', 'native canonical acknowledgements and Save', 'owned host process restart preserves saved values and discards drafts', 'native Revert', 'independent fallback definition'], pageErrors: errors, rejected }));
+  console.log(JSON.stringify({ checks: ['real native library metadata and eight controls', 'native canonical acknowledgements and Save', 'owned host process restart preserves saved values and discards drafts', 'native Revert', 'independent fallback definition'], pageErrors: errors, rejected }));
 } finally { if (browser) await browser.close(); await stop(); await rm(folder, { recursive: true, force: true }); }

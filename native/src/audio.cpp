@@ -21,6 +21,41 @@ std::uint32_t hashSpecies(std::string_view id) {
 }
 } // namespace
 
+namespace {
+bool validCharacter(VoiceCharacter character) noexcept {
+    switch (character) {
+    case VoiceCharacter::struck:
+    case VoiceCharacter::whistle:
+    case VoiceCharacter::reed:
+    case VoiceCharacter::bell:
+    case VoiceCharacter::air:
+    case VoiceCharacter::pulse:
+        return true;
+    }
+    return false;
+}
+std::uint32_t seedFor(const Event &event) noexcept {
+    auto hash = hashSpecies(event.sourceId);
+    hash *= 16777619u; // Delimiter byte zero.
+    for (const auto byte : event.id) {
+        hash ^= static_cast<unsigned char>(byte);
+        hash *= 16777619u;
+    }
+    const auto revision = static_cast<std::uint64_t>(event.revisionSequence);
+    for (unsigned i = 0; i < 8; ++i) {
+        hash ^= static_cast<std::uint32_t>((revision >> (8 * i)) & 255u);
+        hash *= 16777619u;
+    }
+    return hash ? hash : 0x6d2b79f5u;
+}
+std::uint32_t nextPhaseSeed(std::uint32_t &seed) noexcept {
+    seed ^= seed << 13;
+    seed ^= seed >> 17;
+    seed ^= seed << 5;
+    return seed;
+}
+} // namespace
+
 bool validVoiceSettings(const VoiceSettings &settings) noexcept {
     return settings.tuningSemitones >= -12 && settings.tuningSemitones <= 12 &&
            std::isfinite(settings.attackSeconds) &&
@@ -28,12 +63,19 @@ bool validVoiceSettings(const VoiceSettings &settings) noexcept {
            std::isfinite(settings.decaySeconds) &&
            settings.decaySeconds >= .100 && settings.decaySeconds <= 3 &&
            std::isfinite(settings.gainDb) && settings.gainDb >= -60 &&
-           settings.gainDb <= 0;
+           settings.gainDb <= 0 && validCharacter(settings.character) &&
+           std::isfinite(settings.brightness) && settings.brightness >= 0 &&
+           settings.brightness <= 1 && std::isfinite(settings.roughness) &&
+           settings.roughness >= 0 && settings.roughness <= 1 &&
+           std::isfinite(settings.pulseHz) && settings.pulseHz >= 0 &&
+           settings.pulseHz <= 16 && std::isfinite(settings.sweepSemitones) &&
+           settings.sweepSemitones >= -12 && settings.sweepSemitones <= 12;
 }
 
 namespace {
 VoiceCoefficients coefficientsFor(const VoiceSettings &settings,
-                                  std::uint32_t rate) noexcept {
+                                  std::uint32_t rate,
+                                  unsigned rootMidi) noexcept {
     VoiceCoefficients result;
     result.attackFrames =
         static_cast<std::uint32_t>(std::ceil(settings.attackSeconds * rate));
@@ -43,11 +85,134 @@ VoiceCoefficients coefficientsFor(const VoiceSettings &settings,
     result.pitchMultiplier = std::exp2(settings.tuningSemitones / 12.0);
     result.decayFactor = std::exp(-std::log(1000.0) / result.decayFrames);
     result.gain = std::pow(10.0, settings.gainDb / 20.0);
+    result.legacyStruck = settings.character == VoiceCharacter::struck &&
+                          settings.brightness == .5 &&
+                          settings.roughness == 0 && settings.pulseHz == 0 &&
+                          settings.sweepSemitones == 0;
+    if (result.legacyStruck)
+        return result;
+
+    result.sweepEnd = std::exp2(settings.sweepSemitones / 12.0);
+    if (settings.sweepSemitones != 0) {
+        result.sweepFrames = result.attackFrames + result.decayFrames;
+        result.sweepFactor = std::exp2(settings.sweepSemitones /
+                                       (12.0 * (result.sweepFrames - 1)));
+    }
+    result.pulsePhaseStep = 2 * pi * settings.pulseHz / rate;
+    result.roughnessDepth = settings.roughness;
+    result.roughnessPhaseStep =
+        settings.roughness == 0
+            ? 0
+            : 2 * pi * (29 + 31 * settings.brightness) / rate;
+    result.phaseSpread = settings.character == VoiceCharacter::air ? 1 : 0;
+
+    std::array<double, voicePartialCapacity> ratios{1, 2, 3, 4, 5, 6, 7, 8};
+    std::array<double, voicePartialCapacity> weights{};
+    switch (settings.character) {
+    case VoiceCharacter::struck:
+        weights = {1, .25, .08};
+        break;
+    case VoiceCharacter::whistle:
+        weights = {1, .03 + .07 * settings.brightness,
+                   .005 * settings.brightness};
+        break;
+    case VoiceCharacter::reed:
+        ratios = {1, 3, 5, 7, 9, 11, 13, 15};
+        weights = {1, .60, .40, .26, .18, .13, .09, .07};
+        break;
+    case VoiceCharacter::bell:
+        ratios = {1, 1.503, 2.71, 4.11, 5.43, 6.79, 8.21, 9.67};
+        weights = {.60, 1, .70, .50, .30, .20, .14, .10};
+        break;
+    case VoiceCharacter::air:
+        ratios = {.73, 1.19, 1.71, 2.47, 3.13, 4.61, 6.17, 8.31};
+        weights = {.12, .25, .45, .70, 1, .85, .60, .40};
+        break;
+    case VoiceCharacter::pulse:
+        for (std::size_t i = 0; i < weights.size(); ++i) {
+            const auto harmonic = static_cast<double>(i + 1);
+            weights[i] = std::sin(pi * .32 * harmonic) / harmonic;
+        }
+        break;
+    }
+    const auto maximumFrequency =
+        440 *
+        std::exp2((static_cast<double>(rootMidi) + settings.tuningSemitones +
+                   16 - 69) /
+                  12.0) *
+        std::max(1.0, result.sweepEnd);
+    const auto modulationHz =
+        (result.roughnessPhaseStep + 2 * result.pulsePhaseStep) * rate /
+        (2 * pi);
+    const auto tilt = .25 + 1.5 * settings.brightness;
+    double weightSum{};
+    for (std::size_t i = 0; i < ratios.size(); ++i) {
+        if (weights[i] == 0 ||
+            maximumFrequency * ratios[i] + modulationHz > .45 * rate)
+            continue;
+        const auto weight = weights[i] * (i ? tilt : 1);
+        const auto modalDecay =
+            settings.character == VoiceCharacter::bell
+                ? std::exp(-std::log(1000.0) * .12 * static_cast<double>(i) /
+                           result.decayFrames)
+                : 1;
+        result.partials[result.partialCount++] = {ratios[i], weight,
+                                                  modalDecay};
+        weightSum += std::abs(weight);
+    }
+    for (std::size_t i = 0; i < result.partialCount; ++i)
+        result.partials[i].amplitude /= weightSum;
     return result;
 }
 std::uint32_t lifetime(const VoiceCoefficients &coefficients) noexcept {
     return coefficients.attackFrames + coefficients.decayFrames +
            coefficients.releaseFrames;
+}
+bool validCoefficients(const VoiceCoefficients &c, std::uint32_t rate,
+                       std::uint32_t releaseFrames, double maximumPhaseStep,
+                       double minimumPitchMultiplier,
+                       double maximumPitchMultiplier) noexcept {
+    if (c.attackFrames < (rate * 2 + 999) / 1000 ||
+        c.attackFrames > (rate + 9) / 10 || c.decayFrames < (rate + 9) / 10 ||
+        c.decayFrames > rate * 3 || c.releaseFrames != releaseFrames ||
+        !std::isfinite(c.pitchMultiplier) || c.pitchMultiplier < .5 ||
+        c.pitchMultiplier > 2 || c.pitchMultiplier < minimumPitchMultiplier ||
+        c.pitchMultiplier > maximumPitchMultiplier ||
+        !std::isfinite(c.decayFactor) || c.decayFactor <= 0 ||
+        c.decayFactor > 1 || !std::isfinite(c.gain) || c.gain < .001 ||
+        c.gain > 1 || !std::isfinite(c.sweepFactor) || c.sweepFactor < .999 ||
+        c.sweepFactor > 1.001 || !std::isfinite(c.sweepEnd) ||
+        c.sweepEnd < .5 || c.sweepEnd > 2 || !std::isfinite(c.pulsePhaseStep) ||
+        c.pulsePhaseStep < 0 || c.pulsePhaseStep > 2 * pi * 16 / rate ||
+        !std::isfinite(c.roughnessPhaseStep) || c.roughnessPhaseStep < 0 ||
+        c.roughnessPhaseStep > 2 * pi * 60 / rate ||
+        !std::isfinite(c.roughnessDepth) || c.roughnessDepth < 0 ||
+        c.roughnessDepth > 1 || !std::isfinite(c.phaseSpread) ||
+        c.phaseSpread < 0 || c.phaseSpread > 1 ||
+        (c.sweepFrames != 0 &&
+         c.sweepFrames != c.attackFrames + c.decayFrames) ||
+        (c.sweepFrames == 0 && (c.sweepFactor != 1 || c.sweepEnd != 1)))
+        return false;
+    if (c.legacyStruck)
+        return c.partialCount == 0 && c.sweepFrames == 0 &&
+               c.pulsePhaseStep == 0 && c.roughnessDepth == 0 &&
+               c.roughnessPhaseStep == 0 && c.phaseSpread == 0;
+    if (c.partialCount == 0 || c.partialCount > voicePartialCapacity)
+        return false;
+    double weightSum{};
+    for (std::size_t i = 0; i < c.partialCount; ++i) {
+        const auto &p = c.partials[i];
+        if (!std::isfinite(p.ratio) || p.ratio <= 0 ||
+            !std::isfinite(p.amplitude) || !std::isfinite(p.decayFactor) ||
+            p.decayFactor <= 0 || p.decayFactor > 1 ||
+            maximumPhaseStep * c.pitchMultiplier * std::max(1.0, c.sweepEnd) *
+                        p.ratio +
+                    c.roughnessPhaseStep + 2 * c.pulsePhaseStep >
+                .9 * pi + 1e-12)
+            return false;
+        weightSum += std::abs(p.amplitude);
+    }
+    return weightSum > 0 && weightSum <= 1.000000000001;
 }
 } // namespace
 
@@ -69,7 +234,8 @@ bool AudioPlan::prepareVoiceUpdate(
     if (!editableVoices_ || slot >= voiceProfiles_.size() ||
         !validVoiceSettings(settings) || root < 48 || root > 72)
         return false;
-    coefficients = coefficientsFor(settings, settings_.sampleRate);
+    coefficients =
+        coefficientsFor(settings, settings_.sampleRate, settings_.rootMidi);
     return true;
 }
 
@@ -99,6 +265,14 @@ AudioPlan::AudioPlan(const Timeline &timeline, AudioSettings settings,
     fadeFrames_ = frames(.005);
     decayFactor_ = std::exp(-std::log(1000.0) / decayFrames_);
     masterGain_ = std::pow(10.0, settings.masterDb / 20.0);
+    maximumPhaseStep_ =
+        2 * pi * 440 *
+        std::exp2((static_cast<double>(settings.rootMidi) + 16 - 69) / 12.0) /
+        settings.sampleRate;
+    minimumPitchMultiplier_ =
+        std::max(.5, std::exp2((48.0 - settings.rootMidi) / 12));
+    maximumPitchMultiplier_ =
+        std::min(2.0, std::exp2((72.0 - settings.rootMidi) / 12));
     voiceBank_[0] = {
         attackFrames_, decayFrames_, releaseFrames_, 1, decayFactor_, 1};
     if (profiles.size() > voiceSlotCapacity)
@@ -116,8 +290,8 @@ AudioPlan::AudioPlan(const Timeline &timeline, AudioSettings settings,
                         }))
             throw std::invalid_argument(
                 "invalid or duplicate species voice profile");
-        voiceBank_[voiceProfiles_.size()] =
-            coefficientsFor(profile.settings, settings.sampleRate);
+        voiceBank_[voiceProfiles_.size()] = coefficientsFor(
+            profile.settings, settings.sampleRate, settings.rootMidi);
         voiceProfiles_.push_back(profile);
     }
     const auto maximumVoiceFrames = frames(.100) + frames(3.0) + releaseFrames_;
@@ -152,7 +326,7 @@ AudioPlan::AudioPlan(const Timeline &timeline, AudioSettings settings,
             440.0 * std::exp2((static_cast<double>(midi) - 69.0) / 12.0);
         const auto frame = frameAt(item.dueUs, settings.sampleRate);
         actions_.push_back({frame, 2 * pi * frequency / settings.sampleRate,
-                            item.eventIndex, midi, voiceSlot});
+                            item.eventIndex, midi, voiceSlot, seedFor(event)});
         decisions_.push_back({item.eventIndex, Admission::accepted});
         totalFrames_ = std::max(
             totalFrames_,
@@ -167,18 +341,10 @@ bool AudioRenderer::updateVoice(
     VoiceSlot slot, const VoiceCoefficients &coefficients) noexcept {
     if (!plan_.editableVoices_ || slot >= plan_.voiceProfiles_.size())
         return false;
-    const auto rate = plan_.settings_.sampleRate;
-    if (coefficients.attackFrames < (rate * 2 + 999) / 1000 ||
-        coefficients.attackFrames > (rate + 9) / 10 ||
-        coefficients.decayFrames < (rate + 9) / 10 ||
-        coefficients.decayFrames > rate * 3 ||
-        coefficients.releaseFrames != plan_.releaseFrames_ ||
-        !std::isfinite(coefficients.pitchMultiplier) ||
-        coefficients.pitchMultiplier < .5 || coefficients.pitchMultiplier > 2 ||
-        !std::isfinite(coefficients.decayFactor) ||
-        coefficients.decayFactor <= 0 || coefficients.decayFactor > 1 ||
-        !std::isfinite(coefficients.gain) || coefficients.gain < .001 ||
-        coefficients.gain > 1)
+    if (!validCoefficients(coefficients, plan_.settings_.sampleRate,
+                           plan_.releaseFrames_, plan_.maximumPhaseStep_,
+                           plan_.minimumPitchMultiplier_,
+                           plan_.maximumPitchMultiplier_))
         return false;
     voiceBank_[slot] = coefficients;
     return true;
@@ -277,10 +443,19 @@ void AudioRenderer::trigger(const MusicalAction &action) noexcept {
         ++statistics_.stolen;
     }
     const auto &coefficients = voiceBank_[action.voiceSlot];
-    *slot = Voice{true, action.frame,
-                  0,    0,
-                  0,    action.phaseStep * coefficients.pitchMultiplier,
-                  1,    coefficients};
+    *slot = {};
+    slot->active = true;
+    slot->started = action.frame;
+    slot->phaseStep = action.phaseStep * coefficients.pitchMultiplier;
+    slot->coefficients = coefficients;
+    slot->partialGains.fill(1);
+    if (!coefficients.legacyStruck && coefficients.phaseSpread != 0) {
+        auto seed = action.phaseSeed;
+        for (std::size_t i = 0; i < coefficients.partialCount; ++i)
+            slot->partialPhases[i] =
+                (static_cast<double>(nextPhaseSeed(seed)) / 4294967296.0) *
+                (2 * pi * coefficients.phaseSpread);
+    }
     ++statistics_.triggered;
 }
 double AudioRenderer::tick(Voice &voice, bool retiring) noexcept {
@@ -304,11 +479,53 @@ double AudioRenderer::tick(Voice &voice, bool retiring) noexcept {
                     .5;
     if (retiring)
         envelope *= (1 + std::cos(pi * voice.fadeAge / plan_.fadeFrames_)) * .5;
-    const auto sample =
-        .05 * envelope *
-        (std::sin(voice.phase) + .25 * std::sin(2 * voice.phase) +
-         .08 * std::sin(3 * voice.phase)) /
-        1.33 * coefficients.gain;
+    double sample{};
+    if (coefficients.legacyStruck) {
+        // Preserve the historical expression and update order exactly.
+        sample = .05 * envelope *
+                 (std::sin(voice.phase) + .25 * std::sin(2 * voice.phase) +
+                  .08 * std::sin(3 * voice.phase)) /
+                 1.33 * coefficients.gain;
+    } else {
+        double tone{};
+        for (std::size_t i = 0; i < coefficients.partialCount; ++i) {
+            const auto &partial = coefficients.partials[i];
+            tone += partial.amplitude * voice.partialGains[i] *
+                    std::sin(voice.partialPhases[i]);
+            voice.partialPhases[i] +=
+                voice.phaseStep * voice.sweep * partial.ratio;
+            if (voice.partialPhases[i] >= 2 * pi)
+                voice.partialPhases[i] -= 2 * pi;
+            voice.partialGains[i] *= partial.decayFactor;
+        }
+        double pulse = 1;
+        if (coefficients.pulsePhaseStep != 0) {
+            const auto raisedCosine = .5 + .5 * std::cos(voice.pulsePhase);
+            pulse = raisedCosine * raisedCosine;
+            voice.pulsePhase += coefficients.pulsePhaseStep;
+            if (voice.pulsePhase >= 2 * pi)
+                voice.pulsePhase -= 2 * pi;
+        }
+        double roughness = 1;
+        if (coefficients.roughnessDepth != 0) {
+            roughness = 1 - .5 * coefficients.roughnessDepth +
+                        .5 * coefficients.roughnessDepth *
+                            std::cos(voice.roughnessPhase);
+            voice.roughnessPhase += coefficients.roughnessPhaseStep;
+            if (voice.roughnessPhase >= 2 * pi)
+                voice.roughnessPhase -= 2 * pi;
+        }
+        sample = .05 * envelope * tone * pulse * roughness * coefficients.gain;
+        if (coefficients.sweepFrames > 1 &&
+            age < coefficients.sweepFrames - 1) {
+            voice.sweep =
+                age + 1 == coefficients.sweepFrames - 1
+                    ? coefficients.sweepEnd
+                    : std::clamp(voice.sweep * coefficients.sweepFactor,
+                                 std::min(1.0, coefficients.sweepEnd),
+                                 std::max(1.0, coefficients.sweepEnd));
+        }
+    }
     if (!std::isfinite(sample)) {
         voice = {};
         ++statistics_.faults;

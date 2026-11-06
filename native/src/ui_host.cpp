@@ -3,6 +3,9 @@
 #include "sqlite_statement.hpp"
 #include <algorithm>
 #include <atlas/playback.hpp>
+#include <atlas/presets.hpp>
+#include <atlas/render_jobs.hpp>
+#include <atlas/soundscapes.hpp>
 #include <atlas/storage.hpp>
 #include <atlas/ui_host.hpp>
 #include <atlas/voices.hpp>
@@ -129,9 +132,12 @@ Database open(const std::filesystem::path &path) {
     const std::string filename(reinterpret_cast<const char *>(utf8.data()),
                                utf8.size());
     sqlite3 *raw{};
-    const auto status =
-        sqlite3_open_v2(filename.c_str(), &raw,
-                        SQLITE_OPEN_READONLY | SQLITE_OPEN_FULLMUTEX, nullptr);
+    const auto status = sqlite3_open_v2(
+        filename.c_str(), &raw,
+        (filename == ":memory:" ? SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE
+                                : SQLITE_OPEN_READONLY) |
+            SQLITE_OPEN_FULLMUTEX,
+        nullptr);
     Database db(raw);
     if (status != SQLITE_OK)
         throw std::runtime_error("library unavailable");
@@ -285,7 +291,10 @@ std::string voiceView(const VoiceSnapshot &voice) {
            ",\"name\":" + quoteJson(voice.name) +
            ",\"scope\":" + quoteJson(voice.speciesId ? "species" : "group") +
            ",\"targetId\":" + quoteJson(voice.speciesId.value_or("native")) +
-           ",\"inheritsFromId\":null,\"type\":\"struck\",\"values\":" + values +
+           ",\"inheritsFromId\":null,\"type\":" +
+           quoteJson(voiceCharacterIds[static_cast<std::size_t>(
+               voice.settings.character)]) +
+           ",\"values\":" + values +
            "},\"overriddenParameterIds\":[],\"savedRevision\":" +
            quoteJson(std::to_string(voice.savedRevision)) +
            ",\"changeRevision\":" +
@@ -306,7 +315,7 @@ std::string sessionView(const SavedSession &s) {
 } // namespace
 
 struct UiHost::Impl {
-    ReadOnlyLibrary library;
+    std::unique_ptr<ReadOnlyLibrary> library;
     Database db;
     std::optional<Timeline> prepared;
     SavedSession saved;
@@ -316,9 +325,182 @@ struct UiHost::Impl {
     PlaybackRuntime *playback{};
     VoiceStore *voices{};
     std::map<std::string, VoiceSlot> voiceSlots;
+    UiHostStorage storage;
+    std::unique_ptr<RenderJobs> renders;
+    std::map<std::string, std::string> renderScenes;
+    SoundscapeCapture context;
     Impl(const std::filesystem::path &path, PlaybackRuntime *output,
-         VoiceStore *presets)
-        : library(path), db(open(path)), playback(output), voices(presets) {}
+         VoiceStore *presets, UiHostStorage config)
+        : db(open(!std::filesystem::exists(path) && !config.soundscapes.empty()
+                      ? std::filesystem::path(":memory:")
+                      : path)),
+          playback(output), voices(presets), storage(std::move(config)) {
+        if (std::filesystem::exists(path))
+            library = std::make_unique<ReadOnlyLibrary>(path);
+        if (!storage.soundscapes.empty()) {
+            std::filesystem::create_directories(storage.soundscapes);
+            if (!std::filesystem::is_directory(
+                    std::filesystem::symlink_status(storage.soundscapes)))
+                throw std::invalid_argument(
+                    "Soundscape directory must not be a symlink");
+            if (!storage.exports.empty()) {
+                std::filesystem::create_directories(storage.exports);
+                renders = std::make_unique<RenderJobs>(
+                    storage.exports, storage.engineSourceSha256);
+            }
+        }
+    }
+    static bool opaqueId(std::string_view id) {
+        return id.size() == 32 && std::all_of(id.begin(), id.end(), [](char c) {
+                   return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
+               });
+    }
+    std::filesystem::path scenePath(std::string_view id) const {
+        if (storage.soundscapes.empty() || !opaqueId(id))
+            throw std::invalid_argument("Invalid soundscape ID");
+        return storage.soundscapes / (std::string(id) + ".atlas-scene");
+    }
+    std::string newId() {
+        Statement query(db.get(), "SELECT lower(hex(randomblob(16)))");
+        if (!query.next())
+            throw std::runtime_error("ID generation failed");
+        return query.text(0);
+    }
+    std::vector<VoiceProfile> currentProfiles(const Timeline &timeline) {
+        std::vector<std::string> payloads;
+        for (const auto &event : timeline.events())
+            payloads.push_back(event.normalizedJson);
+        registerPayloads(payloads);
+        std::vector<VoiceProfile> profiles{
+            {"",
+             voices ? voices->getVoice("default").settings : VoiceSettings{}}};
+        std::set<std::string> species;
+        for (const auto &event : timeline.events())
+            if (event.speciesId && !event.speciesId->empty())
+                species.insert(*event.speciesId);
+        for (const auto &id : species)
+            profiles.push_back(
+                {id, voices ? voices->getVoice("species:" + id).settings
+                            : VoiceSettings{}});
+        return profiles;
+    }
+    void prepare(Timeline next, SavedSession metadata,
+                 SoundscapeCapture nextContext,
+                 std::optional<VoiceStore::DraftUpdate> update = {}) {
+        std::map<std::string, VoiceSlot> slots;
+        for (std::size_t i = 0; i < nextContext.profiles.size(); ++i)
+            slots.emplace(i == 0
+                              ? "default"
+                              : "species:" + nextContext.profiles[i].speciesId,
+                          static_cast<VoiceSlot>(i));
+        if (playback) {
+            const auto result =
+                playback->prepare(next, nextContext.audio, nextContext.profiles,
+                                  voices != nullptr);
+            if (!result.ok)
+                throw std::runtime_error(playbackErrorText(result.error));
+        }
+        if (update && !voices->commitProfiles(std::move(*update))) {
+            if (playback)
+                playback->enable(false);
+            throw std::runtime_error("Voice draft changed during recall");
+        }
+        prepared = std::move(next);
+        saved = std::move(metadata);
+        context = std::move(nextContext);
+        voiceSlots = std::move(slots);
+        ++generation;
+    }
+    std::string preparation() const {
+        const auto snap = playback ? playback->snapshot() : PlaybackSnapshot{};
+        return "{\"preparationId\":" +
+               quoteJson(playback ? preparationId(snap)
+                                  : "native-" + std::to_string(generation)) +
+               ",\"generation\":" +
+               quoteJson(
+                   std::to_string(playback ? snap.generation : generation)) +
+               ",\"durationUs\":" +
+               quoteJson(std::to_string(
+                   playback
+                       ? frameMicroseconds(snap.totalFrames, snap.sampleRate)
+                       : static_cast<std::uint64_t>(prepared->durationUs()))) +
+               ",\"eventCount\":" + std::to_string(saved.eventCount) +
+               ",\"peakEventsPerSecond\":" +
+               std::to_string(prepared->peakEventsPerSecond()) +
+               ",\"session\":" + sessionView(saved) + "}";
+    }
+    static SavedSession sceneSession(const Soundscape &scene,
+                                     std::string_view id) {
+        auto session = scene.capture().session;
+        session.id = "scene:" + std::string(id);
+        session.name = scene.capture().name;
+        return session;
+    }
+    std::string sceneView(const SoundscapeSummary &s) const {
+        const auto id = s.path.stem().string();
+        return "{\"id\":" + quoteJson(id) + ",\"name\":" + quoteJson(s.name) +
+               ",\"valid\":" + (s.valid ? "true" : "false") +
+               ",\"contentVerified\":" +
+               (s.contentVerified ? "true" : "false") +
+               ",\"error\":" + (s.error.empty() ? "null" : quoteJson(s.error)) +
+               ",\"contentHash\":" +
+               (s.valid ? quoteJson(s.contentHash) : "null") +
+               ",\"sourceSessionId\":" +
+               (s.valid ? quoteJson(s.sourceSessionId) : "null") +
+               ",\"eventCount\":" + std::to_string(s.eventCount) +
+               ",\"durationUs\":" +
+               (s.valid ? quoteJson(std::to_string(s.durationUs)) : "null") +
+               ",\"basis\":" +
+               (s.valid ? quoteJson(s.basis == TimeBasis::observed ? "observed"
+                                                                   : "arrival")
+                        : "null") +
+               ",\"speedNumerator\":" +
+               (s.valid ? quoteJson(std::to_string(s.speed.numerator))
+                        : "null") +
+               ",\"speedDenominator\":" +
+               (s.valid ? quoteJson(std::to_string(s.speed.denominator))
+                        : "null") +
+               "}";
+    }
+    std::string sceneView(const Soundscape &scene, std::string_view id) const {
+        const auto &c = scene.capture();
+        SoundscapeSummary s;
+        s.path = scenePath(id);
+        s.name = c.name;
+        s.sourceSessionId = c.session.id;
+        s.contentHash = scene.contentHash();
+        s.eventCount = scene.timeline().events().size();
+        s.durationUs = scene.timeline().durationUs();
+        s.basis = c.basis;
+        s.speed = c.speed;
+        s.valid = true;
+        s.contentVerified = true;
+        return sceneView(s);
+    }
+    std::string renderView(const RenderJobSnapshot &job) const {
+        const char *state =
+            job.state == RenderJobState::running     ? "rendering"
+            : job.state == RenderJobState::completed ? "complete"
+            : job.state == RenderJobState::cancelled ? "cancelled"
+                                                     : "failed";
+        const auto found = renderScenes.find(job.id);
+        return "{\"jobId\":" + quoteJson(job.id) +
+               ",\"state\":" + quoteJson(state) + ",\"progress\":" +
+               decimal(job.totalFrames
+                           ? static_cast<double>(job.framesWritten) /
+                                 static_cast<double>(job.totalFrames)
+                           : 0) +
+               ",\"artifactId\":" +
+               (job.state == RenderJobState::completed ? quoteJson(job.id)
+                                                       : "null") +
+               ",\"filename\":" +
+               (job.outputFilename.empty() ? "null"
+                                           : quoteJson(job.outputFilename)) +
+               ",\"soundscapeId\":" +
+               quoteJson(found == renderScenes.end() ? "" : found->second) +
+               ",\"message\":" +
+               (job.error.empty() ? "null" : quoteJson(job.error)) + "}";
+    }
     void registerPayloads(const std::vector<std::string> &payloads) {
         if (!voices)
             return;
@@ -353,7 +535,13 @@ struct UiHost::Impl {
         }
     }
     std::string voiceLibrary() {
-        (void)catalog(Object(db.get(), "{}"), true);
+        if (prepared) {
+            std::vector<std::string> payloads;
+            for (const auto &e : prepared->events())
+                payloads.push_back(e.normalizedJson);
+            registerPayloads(payloads);
+        } else if (library)
+            (void)catalog(Object(db.get(), "{}"), true);
         std::string species = "[";
         for (const auto &voice : voices->voices()) {
             if (!voice.speciesId)
@@ -363,62 +551,66 @@ struct UiHost::Impl {
                                 ",\"scientificName\":\"\",\"voiceId\":" +
                                 quoteJson(voice.id) + ",\"individuals\":[]}");
         }
+        std::string types = "[";
+        for (const auto character : voiceCharacterIds)
+            append(types, "{\"id\":" + quoteJson(character) + ",\"label\":" +
+                              quoteJson(character) + ",\"proposal\":false}");
         return "{\"entries\":[{\"groupId\":\"native\",\"groupName\":\"Species "
                "voices\",\"groupVoiceId\":\"default\",\"species\":" +
                species + "]}],\"parameters\":" + parameterSpecs() +
-               ",\"types\":[{\"id\":\"struck\",\"label\":\"Struck "
-               "tone\",\"proposal\":false}],\"maxDefinitions\":513,"
+               ",\"types\":" + types +
+               "],\"maxDefinitions\":513,"
                "\"editingBehavior\":\"new_notes\"}";
     }
     std::string parameterSpecs();
     void load(std::string_view id, TimeBasis basis = TimeBasis::observed,
               Speed speed = {}) {
-        // Stop prior sound before verification, including when the new
-        // preparation fails.
         if (playback)
             playback->enable(false);
-        // Replace only after complete verification; a failed preparation never
-        // exposes new material.
         SavedSession metadata;
-        auto next = library.load(id, basis, speed, &metadata);
-        if (playback) {
-            std::vector<VoiceProfile> profiles;
-            std::map<std::string, VoiceSlot> nextVoiceSlots;
-            if (voices) {
-                std::vector<std::string> payloads;
-                for (const auto &event : next.events())
-                    payloads.push_back(event.normalizedJson);
-                registerPayloads(payloads);
-                profiles.push_back({"", voices->getVoice("default").settings});
-                nextVoiceSlots.emplace("default", 0);
-                std::set<std::string> species;
-                for (const auto &event : next.events())
-                    if (event.speciesId && !event.speciesId->empty())
-                        species.insert(*event.speciesId);
-                for (const auto &id : species) {
-                    const auto voice = voices->getVoice("species:" + id);
-                    nextVoiceSlots.emplace(
-                        voice.id, static_cast<VoiceSlot>(profiles.size()));
-                    profiles.push_back({id, voice.settings});
-                }
-            }
-            AudioSettings settings;
-            settings.masterDb = -18;
-            const auto result =
-                playback->prepare(next, settings, profiles, voices != nullptr);
-            if (!result.ok)
-                throw std::runtime_error(playbackErrorText(result.error));
-            voiceSlots = std::move(nextVoiceSlots);
+        SoundscapeCapture nextContext;
+        std::optional<Timeline> next;
+        if (id.starts_with("scene:")) {
+            const auto scene = loadSoundscape(scenePath(id.substr(6)));
+            metadata = sceneSession(scene, id.substr(6));
+            nextContext = scene.capture();
+            nextContext.basis = basis;
+            nextContext.speed = speed;
+            nextContext.bounds = basis == TimeBasis::observed
+                                     ? nextContext.session.observedBounds
+                                     : nextContext.session.arrivalBounds;
+            next.emplace(scene.timeline().events(), basis, speed,
+                         nextContext.bounds);
+        } else {
+            if (!library)
+                throw std::runtime_error("Wildlife library is unavailable");
+            next = library->load(id, basis, speed, &metadata);
+            nextContext.session = metadata;
+            nextContext.basis = basis;
+            nextContext.speed = speed;
+            nextContext.bounds = basis == TimeBasis::observed
+                                     ? metadata.observedBounds
+                                     : metadata.arrivalBounds;
+            nextContext.audio.masterDb = -18;
         }
-        prepared = std::move(next);
-        saved = std::move(metadata);
-        ++generation;
+        nextContext.profiles = currentProfiles(*next);
+        prepare(std::move(*next), std::move(metadata), std::move(nextContext));
     }
     void loadMaterial(std::string_view id) {
         if (material && materialSaved.id == id)
             return;
         SavedSession metadata;
-        auto next = library.load(id, TimeBasis::observed, {}, &metadata);
+        std::optional<Timeline> next;
+        if (id.starts_with("scene:")) {
+            const auto scene = loadSoundscape(scenePath(id.substr(6)));
+            metadata = sceneSession(scene, id.substr(6));
+            next.emplace(scene.timeline().events(), TimeBasis::observed,
+                         Speed{}, metadata.observedBounds);
+        } else {
+            if (!library)
+                throw std::runtime_error("Wildlife library is unavailable");
+            next = library->load(id, TimeBasis::observed, {}, &metadata);
+        }
         material = std::move(next);
         materialSaved = std::move(metadata);
     }
@@ -486,6 +678,8 @@ struct UiHost::Impl {
                 payloads.push_back(e.normalizedJson);
             }
         } else {
+            if (!library)
+                throw std::runtime_error("Wildlife library is unavailable");
             Statement rows(
                 db.get(),
                 "SELECT r.event_json FROM events e JOIN revisions r ON "
@@ -568,8 +762,9 @@ std::string UiHost::Impl::parameterSpecs() {
     return result + "]";
 }
 UiHost::UiHost(const std::filesystem::path &library, PlaybackRuntime *playback,
-               VoiceStore *voices)
-    : impl_(std::make_unique<Impl>(library, playback, voices)) {}
+               VoiceStore *voices, UiHostStorage storage)
+    : impl_(std::make_unique<Impl>(library, playback, voices,
+                                   std::move(storage))) {}
 UiHost::~UiHost() = default;
 
 std::string UiHost::request(std::string_view envelope) {
@@ -602,6 +797,14 @@ std::string UiHost::request(std::string_view envelope) {
             if (impl_->voices)
                 result +=
                     R"(,"getVoiceLibrary","getVoice","setVoiceParameter","saveVoice","revertVoice")";
+            if (!impl_->storage.soundscapes.empty() && impl_->voices)
+                result +=
+                    R"(,"listSoundscapes","saveSoundscape","recallSoundscape")";
+            if (impl_->renders)
+                result +=
+                    R"(,"startSoundscapeRender","getRenderJob","cancelRender")";
+            if (impl_->voices)
+                result += R"(,"listVoicePresets","applyVoicePreset")";
             result += std::string("],\"audioAvailable\":") +
                       (impl_->playback ? "true" : "false") +
                       ",\"maxEventBatch\":500,\"maxVisibleMarkers\":500}";
@@ -750,6 +953,137 @@ std::string UiHost::request(std::string_view envelope) {
                     "the voice again and enable Listening to resume.");
             }
             result = voiceView(voice);
+        } else if (impl_->voices && method == "listVoicePresets") {
+            Object args(impl_->db.get(), arguments, {"voiceId"});
+            const auto voice = impl_->voices->getVoice(args.text("voiceId"));
+            result = "{\"listeningApproved\":false,\"items\":[";
+            std::string items = "[";
+            for (const auto &preset : speciesPresets())
+                if (voice.speciesId && *voice.speciesId == preset.speciesId) {
+                    append(items,
+                           "{\"id\":" + quoteJson(preset.id) +
+                               ",\"name\":" + quoteJson(preset.name) +
+                               ",\"speciesId\":" + quoteJson(preset.speciesId) +
+                               ",\"scientificName\":" +
+                               quoteJson(preset.scientificName) +
+                               ",\"description\":" +
+                               quoteJson(preset.description) +
+                               ",\"evidenceStatus\":" +
+                               quoteJson(preset.evidenceStatus) +
+                               ",\"researchPath\":" +
+                               quoteJson(preset.researchPath) + "}");
+                }
+            result = "{\"listeningApproved\":false,\"items\":" + items + "]}";
+        } else if (impl_->voices && method == "applyVoicePreset") {
+            Object args(impl_->db.get(), arguments, {"voiceId", "presetId"});
+            const auto before = impl_->voices->getVoice(args.text("voiceId"));
+            const auto *preset = speciesPreset(args.text("presetId"));
+            if (!preset || !before.speciesId ||
+                *before.speciesId != preset->speciesId)
+                throw std::invalid_argument(
+                    "Preset does not match the selected species");
+            const std::array<VoiceProfile, 1> profiles{
+                {{*before.speciesId, preset->settings}}};
+            auto update = impl_->voices->stageProfiles(profiles);
+            auto next = before;
+            next.settings = preset->settings;
+            impl_->applyVoice(next, before);
+            if (!impl_->voices->commitProfiles(std::move(update)))
+                throw std::runtime_error(
+                    "Voice changed during preset application");
+            result = voiceView(impl_->voices->getVoice(before.id));
+        } else if (impl_->voices && !impl_->storage.soundscapes.empty() &&
+                   method == "listSoundscapes") {
+            Object args(impl_->db.get(), arguments, {"limit"});
+            const auto limit =
+                static_cast<std::size_t>(args.number("limit", 100));
+            if (!limit)
+                throw std::invalid_argument("Positive limit required");
+            const auto scenes =
+                listSoundscapes(impl_->storage.soundscapes, limit);
+            std::string items = "[";
+            std::size_t unmanaged{};
+            for (const auto &scene : scenes) {
+                if (!Impl::opaqueId(scene.path.stem().string())) {
+                    ++unmanaged;
+                    continue;
+                }
+                append(items, impl_->sceneView(scene));
+            }
+            result = "{\"items\":" + items + "],\"limited\":" +
+                     (scenes.size() == limit || unmanaged ? "true" : "false") +
+                     ",\"unmanagedFiles\":" + std::to_string(unmanaged) + "}";
+        } else if (impl_->voices && !impl_->storage.soundscapes.empty() &&
+                   method == "saveSoundscape") {
+            Object args(impl_->db.get(), arguments, {"name"});
+            if (!impl_->prepared)
+                throw std::invalid_argument(
+                    "Prepare material before saving a soundscape");
+            for (const auto &v : impl_->voices->voices())
+                if (v.gestureActive)
+                    throw std::invalid_argument(
+                        "Finish voice gestures before saving");
+            auto capture = impl_->context;
+            capture.name = args.text("name", 256);
+            capture.profiles = impl_->currentProfiles(*impl_->prepared);
+            const auto scene =
+                captureSoundscape(*impl_->prepared, std::move(capture));
+            const auto sid = impl_->newId();
+            saveSoundscape(impl_->scenePath(sid), scene);
+            result = impl_->sceneView(scene, sid);
+        } else if (impl_->voices && !impl_->storage.soundscapes.empty() &&
+                   method == "recallSoundscape") {
+            Object args(impl_->db.get(), arguments, {"soundscapeId"});
+            const auto sid = args.text("soundscapeId", 32);
+            if (impl_->playback)
+                impl_->playback->enable(false);
+            const auto scene = loadSoundscape(impl_->scenePath(sid));
+            std::map<std::string, std::string> names;
+            for (const auto &e : scene.timeline().events())
+                if (e.speciesId) {
+                    const Object event(impl_->db.get(), e.normalizedJson);
+                    names.try_emplace(*e.speciesId,
+                                      event.optionalText("common_name"));
+                }
+            std::vector<VoiceSpecies> species;
+            for (const auto &[speciesId, name] : names)
+                species.push_back({speciesId, name.empty() ? speciesId : name});
+            auto update =
+                impl_->voices->stageProfiles(scene.capture().profiles, species);
+            auto response = impl_->sceneView(scene, sid);
+            impl_->prepare(scene.timeline(), Impl::sceneSession(scene, sid),
+                           scene.capture(), std::move(update));
+            result = "{\"soundscape\":" + response +
+                     ",\"preparation\":" + impl_->preparation() + "}";
+        } else if (impl_->renders && method == "startSoundscapeRender") {
+            Object args(impl_->db.get(), arguments, {"soundscapeId"});
+            const auto sid = args.text("soundscapeId", 32);
+            const auto scene = inspectSoundscape(impl_->scenePath(sid));
+            const auto jid = impl_->newId();
+            const auto job = impl_->renders->start(impl_->scenePath(sid),
+                                                   scene.contentHash, jid);
+            for (auto it = impl_->renderScenes.begin();
+                 it != impl_->renderScenes.end();) {
+                try {
+                    (void)impl_->renders->get(it->first);
+                    ++it;
+                } catch (const RenderJobError &error) {
+                    if (error.code() != RenderJobErrorCode::notFound)
+                        throw;
+                    it = impl_->renderScenes.erase(it);
+                }
+            }
+            impl_->renderScenes.emplace(jid, sid);
+            result = impl_->renderView(job);
+        } else if (impl_->renders &&
+                   (method == "getRenderJob" || method == "cancelRender")) {
+            Object args(impl_->db.get(), arguments, {"jobId"});
+            const auto jid = args.text("jobId", 32);
+            if (!Impl::opaqueId(jid))
+                throw std::invalid_argument("Invalid render ID");
+            result = impl_->renderView(method == "getRenderJob"
+                                           ? impl_->renders->get(jid)
+                                           : impl_->renders->cancel(jid));
         } else if (method == "getChanges") {
             result =
                 impl_->changes(Object(impl_->db.get(), arguments,
@@ -759,8 +1093,10 @@ std::string UiHost::request(std::string_view envelope) {
                 Object(impl_->db.get(), arguments, {"material"}));
         } else if (method == "listSessions") {
             Object args(impl_->db.get(), arguments, {"limit"});
+            if (!impl_->library)
+                throw std::runtime_error("Wildlife library is unavailable");
             result = "[";
-            for (const auto &saved : impl_->library.sessions(
+            for (const auto &saved : impl_->library->sessions(
                      static_cast<std::size_t>(args.number("limit", 100))))
                 append(result, sessionView(saved));
             result += ']';
@@ -778,26 +1114,7 @@ std::string UiHost::request(std::string_view envelope) {
                         basis == "observed" ? TimeBasis::observed
                                             : TimeBasis::arrival,
                         speed);
-            const auto playback = impl_->playback ? impl_->playback->snapshot()
-                                                  : PlaybackSnapshot{};
-            const auto id = impl_->playback
-                                ? preparationId(playback)
-                                : "native-" + std::to_string(impl_->generation);
-            const auto generation =
-                impl_->playback ? playback.generation : impl_->generation;
-            const auto duration =
-                impl_->playback
-                    ? frameMicroseconds(playback.totalFrames,
-                                        playback.sampleRate)
-                    : static_cast<std::uint64_t>(impl_->prepared->durationUs());
-            result =
-                "{\"preparationId\":" + quoteJson(id) +
-                ",\"generation\":" + quoteJson(std::to_string(generation)) +
-                ",\"durationUs\":" + quoteJson(std::to_string(duration)) +
-                ",\"eventCount\":" + std::to_string(impl_->saved.eventCount) +
-                ",\"peakEventsPerSecond\":" +
-                std::to_string(impl_->prepared->peakEventsPerSecond()) +
-                ",\"session\":" + sessionView(impl_->saved) + "}";
+            result = impl_->preparation();
         } else if (method == "getMaterialEvents") {
             Object args(impl_->db.get(), arguments,
                         {"material", "offset", "limit"});
@@ -828,6 +1145,17 @@ std::string UiHost::request(std::string_view envelope) {
                 "This capability is not implemented by the native data host");
         return "{\"requestId\":" + quoteJson(id) +
                ",\"ok\":true,\"result\":" + result + "}";
+    } catch (const SoundscapeError &e) {
+        return failure(e.code() == SoundscapeErrorCode::invalidArgument
+                           ? "invalid_request"
+                           : "unavailable",
+                       e.what());
+    } catch (const RenderJobError &e) {
+        return failure(e.code() == RenderJobErrorCode::invalidArgument ||
+                               e.code() == RenderJobErrorCode::notFound
+                           ? "invalid_request"
+                           : "unavailable",
+                       e.what());
     } catch (const VoiceStoreError &e) {
         const auto code = e.code() == VoiceStoreErrorCode::conflict
                               ? "stale_generation"

@@ -7,7 +7,7 @@
  * them today. The UI checks `supportedMethods` before calling any of them, so
  * a native host that omits a method gets a disabled control, not a crash.
  */
-import type { EventView, HostMethods, Int64String, RegionView, SessionView, TimeBasis, UtcTimestamp, VoiceType, VoiceDefinition } from "./contracts";
+import type { EventView, HostMethods, Int64String, RegionView, SessionView, TimeBasis, UtcTimestamp, VoiceType, VoiceDefinition, RenderJob } from "./contracts";
 
 export type MusicalOutcome =
   | { kind: "sounded"; voiceId: string; noteName: string; velocity: number; pan: number; regionSends: Array<{ regionId: string; effectId: string; send: number }> }
@@ -48,6 +48,8 @@ export interface CollectionState {
   storageWarning: "none" | "near_limit" | "truncated";
 }
 
+export type { RenderJob, SoundscapeView } from "./contracts";
+
 export type { AudioState } from "./contracts";
 
 export type { VoiceType, VoiceScope, VoiceParameterSpec, VoiceDefinition, VoiceLibraryEntry, VoiceTypeSpec } from "./contracts";
@@ -68,12 +70,6 @@ export interface EffectView {
   summary: string;
 }
 
-export interface RenderJob {
-  jobId: string;
-  state: "queued" | "rendering" | "complete" | "failed" | "cancelled";
-  progress: number; // 0..1
-  message: string | null;
-}
 
 export interface SpeciesView {
   id: string;

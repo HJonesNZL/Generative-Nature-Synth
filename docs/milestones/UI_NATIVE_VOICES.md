@@ -1,5 +1,7 @@
 # Native Sound Studio voices
 
+**Historical first-voice checkpoint.** The expanded current implementation is specified in [Voice character contract](VOICE_CHARACTER_CONTRACT.md), [Voice store v2](NATIVE_VOICE_STORE_CONTRACT.md) and [Soundscapes milestone](SOUNDSCAPES_AND_SPECIES_CANDIDATES.md). Four-control and struck-only limits below describe the earlier revision.
+
 Implemented 7 November 2026. Sound Studio reads the native voice library, edits the selected definition, and saves/reverts through the C++ host. The illustrative demo retains its proposed synthesis families and parameters; they are not offered as implemented native controls.
 
 ## Behaviour and ownership

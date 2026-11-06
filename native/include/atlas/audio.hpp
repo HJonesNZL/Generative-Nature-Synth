@@ -5,19 +5,33 @@
 namespace atlas {
 using VoiceSlot = std::uint16_t;
 inline constexpr std::size_t voiceSlotCapacity = 513;
+enum class VoiceCharacter { struck, whistle, reed, bell, air, pulse };
 struct VoiceSettings {
     int tuningSemitones{};
     double attackSeconds{.008}, decaySeconds{.650}, gainDb{};
+    VoiceCharacter character{VoiceCharacter::struck};
+    double brightness{.5}, roughness{}, pulseHz{}, sweepSemitones{};
 };
 bool validVoiceSettings(const VoiceSettings &) noexcept;
 struct VoiceProfile {
     std::string speciesId;
     VoiceSettings settings;
 };
-// Numeric, prepared off-thread. Pitch multiplies each action's legacy pitch.
+inline constexpr std::size_t voicePartialCapacity = 8;
+struct VoicePartial {
+    double ratio{}, amplitude{}, decayFactor{1};
+};
+// Numeric, prepared off-thread. Pitch multiplies each action's mapped pitch.
+// New settings are captured at onset; no active-voice parameter mutation.
 struct VoiceCoefficients {
     std::uint32_t attackFrames{}, decayFrames{}, releaseFrames{};
     double pitchMultiplier{1}, decayFactor{}, gain{1};
+    std::array<VoicePartial, voicePartialCapacity> partials{};
+    std::uint32_t sweepFrames{};
+    double sweepFactor{1}, sweepEnd{1}, pulsePhaseStep{}, roughnessPhaseStep{},
+        roughnessDepth{}, phaseSpread{};
+    std::uint8_t partialCount{};
+    bool legacyStruck{true};
 };
 struct AudioSettings {
     std::uint32_t sampleRate{48000};
@@ -35,6 +49,7 @@ struct MusicalAction {
     std::size_t eventIndex{};
     unsigned midiNote{};
     VoiceSlot voiceSlot{};
+    std::uint32_t phaseSeed{};
 };
 
 // Worker-owned immutable numeric plan. Do not move/destroy while a renderer
@@ -72,7 +87,8 @@ class AudioPlan {
     std::size_t missingSpecies_{};
     std::uint32_t attackFrames_{}, decayFrames_{}, releaseFrames_{},
         fadeFrames_{};
-    double decayFactor_{}, masterGain_{};
+    double decayFactor_{}, masterGain_{}, maximumPhaseStep_{},
+        minimumPitchMultiplier_{}, maximumPitchMultiplier_{};
     std::vector<VoiceProfile> voiceProfiles_;
     std::array<VoiceCoefficients, voiceSlotCapacity> voiceBank_{};
     bool editableVoices_{};
@@ -112,6 +128,9 @@ class AudioRenderer {
         std::uint32_t age{}, fadeAge{};
         double phase{}, phaseStep{}, decay{1};
         VoiceCoefficients coefficients;
+        std::array<double, voicePartialCapacity> partialPhases{},
+            partialGains{};
+        double sweep{1}, pulsePhase{}, roughnessPhase{};
     };
     const AudioPlan &plan_;
     std::array<Voice, voiceCapacity> voices_{}, retiring_{};

@@ -189,7 +189,7 @@ def run(source, prepare_only=False):
                 require(current['state'] == 'stopped' and current['positionUs'] == '0', 'prepare auto-played')
                 require(host.success('setAudioEnabled', dict(enabled=False))['status'] == 'disabled', 'disable failed')
                 library = host.success('getVoiceLibrary')
-                require([p['id'] for p in library['parameters']] == ['tuning', 'attack', 'decay', 'gain'], 'native voice controls differ')
+                require([p['id'] for p in library['parameters']] == ['tuning', 'attack', 'decay', 'gain', 'brightness', 'roughness', 'pulseHz', 'sweepSemitones'], 'native voice controls differ')
                 voice_id = 'species:device-smoke:species'
                 initial_voice = host.success('getVoice', dict(voiceId=voice_id))
                 for phase, value in [('begin', initial_voice['values']['tuning']), ('change', .75), ('end', .75)]:

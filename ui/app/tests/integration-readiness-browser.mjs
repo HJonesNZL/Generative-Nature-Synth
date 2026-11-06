@@ -85,7 +85,7 @@ async function open(scenario) {
             methods.push('getVoiceLibrary', 'getVoice', 'getMappings', 'setVoiceParameter', 'setVoiceType', 'saveVoice', 'revertVoice');
         }
         if (scenario.startsWith('render')) {
-            methods.push('startRender', 'getRenderJob', ...(scenario !== 'render-poll' ? ['cancelRender'] : []));
+            methods.push('listSoundscapes', 'startSoundscapeRender', 'getRenderJob', ...(scenario !== 'render-poll' ? ['cancelRender'] : []));
         }
         const deferred = key => new Promise(resolve => {
             (state.pending[key] ??= []).push(resolve);
@@ -221,15 +221,18 @@ async function open(scenario) {
                     }
                     result = { normalizedValue: args.normalizedValue, changeRevision: '2', dirty: true };
                 }
-                else if (method === 'startRender') {
-                    await deferred('startRender');
-                    const jobId = `fixture-render-${state.calls.filter(call => call.method === 'startRender').length}`;
+                else if (method === 'listSoundscapes') {
+                    result = { items: [{ id: 'a'.repeat(32), name: 'Saved readiness scene', valid: true, contentVerified: true, error: null, contentHash: 'c'.repeat(64), sourceSessionId: session.id, eventCount: 2, durationUs: '1000000', basis: 'observed', speedNumerator: '60', speedDenominator: '1' }], limited: false };
+                }
+                else if (method === 'startSoundscapeRender') {
+                    await deferred('startSoundscapeRender');
+                    const jobId = String(state.calls.filter(call => call.method === 'startSoundscapeRender').length).padStart(32, '0');
                     state.renderStates[jobId] = 'queued';
                     result = {
                         jobId,
                         state: 'queued',
                         progress: 0,
-                        message: 'Synthetic queued job'
+                        message: 'Synthetic queued job', soundscapeId: 'a'.repeat(32), artifactId: null, filename: null
                     };
                 }
                 else if (method === 'getRenderJob') {
@@ -291,6 +294,8 @@ async function replay(page) {
 }
 async function studio(page) {
     await page.getByRole('button', { name: 'Sound Studio', exact: true }).click();
+    if (await page.getByRole('combobox', { name: 'Saved soundscape', exact: true }).count())
+        await page.getByRole('combobox', { name: 'Saved soundscape', exact: true }).selectOption('a'.repeat(32));
 }
 async function selectVoice(page, id) {
     await page.getByRole('button', { name: `Bird ${id} species voice`, exact: false }).click();
@@ -390,38 +395,38 @@ try {
         const page = await open('render-cross-job');
         await replay(page);
         await studio(page);
-        await page.getByRole('button', { name: 'Render WAV…', exact: true }).click();
-        await page.waitForFunction(() => readiness.pending.startRender?.length);
-        await page.evaluate(() => readiness.release('startRender'));
-        await page.getByText('Render queued.', { exact: true }).waitFor();
+        await page.getByRole('button', { name: 'Export saved WAV', exact: true }).click();
+        await page.waitForFunction(() => readiness.pending.startSoundscapeRender?.length);
+        await page.evaluate(() => readiness.release('startSoundscapeRender'));
+        await page.getByText('WAV export queued', { exact: true }).waitFor();
         await page.evaluate(() => {
             readiness.deferCancel = true;
         });
-        await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+        await page.getByRole('button', { name: 'Cancel export', exact: true }).click();
         await page.waitForFunction(() => readiness.pending.cancelRender?.length);
         await page.evaluate(() => {
-            readiness.renderStates['fixture-render-1'] = 'complete';
+            readiness.renderStates['00000000000000000000000000000001'] = 'complete';
             readiness.emit({ type: 'renderProgress', job: {
-                    jobId: 'fixture-render-1',
+                    jobId: '00000000000000000000000000000001',
                     state: 'complete',
                     progress: 1,
                     message: 'Synthetic first job completed'
                 } });
         });
-        await page.getByText('Render complete.', { exact: true }).waitFor();
-        await page.getByRole('button', { name: 'Render WAV…', exact: true }).click();
-        await page.waitForFunction(() => readiness.pending.startRender?.length);
+        await page.getByText('WAV export complete.', { exact: false }).waitFor();
+        await page.getByRole('button', { name: 'Export saved WAV', exact: true }).click();
+        await page.waitForFunction(() => readiness.pending.startSoundscapeRender?.length);
         await page.evaluate(() => {
             readiness.renderState = 'queued';
-            readiness.release('startRender');
+            readiness.release('startSoundscapeRender');
         });
-        await page.getByText('Render queued.', { exact: true }).waitFor();
+        await page.getByText('WAV export queued', { exact: true }).waitFor();
         await page.evaluate(() => readiness.release('cancelRender'));
-        await page.waitForFunction(() => readiness.calls.filter(call => call.method === 'getRenderJob' && call.args.jobId === 'fixture-render-2').length >= 2);
+        await page.waitForFunction(() => readiness.calls.filter(call => call.method === 'getRenderJob' && call.args.jobId === '00000000000000000000000000000002').length >= 2);
         await page.waitForTimeout(100);
-        await page.getByText('Render queued.', { exact: true }).waitFor();
-        assert.equal(await page.getByText('Render cancelled.', { exact: true }).count(), 0);
-        assert.equal(await page.getByRole('button', { name: 'Render WAV…', exact: true }).isDisabled(), true);
+        await page.getByText('WAV export queued', { exact: true }).waitFor();
+        assert.equal(await page.getByText('WAV export cancelled.', { exact: true }).count(), 0);
+        assert.equal(await page.getByRole('button', { name: 'Export saved WAV', exact: true }).isDisabled(), true);
         checks.push('Late first-job cancel acknowledgement cannot replace a newer queued job');
         await page.close();
     }
@@ -429,44 +434,44 @@ try {
         const page = await open(scenario);
         await replay(page);
         await studio(page);
-        await page.getByRole('button', { name: 'Render WAV…', exact: true }).click();
-        await page.waitForFunction(() => readiness.pending.startRender?.length);
-        assert.equal(await page.getByRole('button', { name: /^(Render WAV…|Starting render…)$/ }).isDisabled(), true);
-        await page.evaluate(() => readiness.release('startRender'));
-        await page.getByText('Render queued.', { exact: true }).waitFor();
-        assert.equal(await page.getByRole('button', { name: 'Render WAV…', exact: true }).isDisabled(), true);
-        assert.equal(await page.getByRole('button', { name: 'Cancel', exact: true }).isDisabled(), scenario === 'render-poll');
-        assert.equal(await page.evaluate(() => readiness.calls.filter(call => call.method === 'startRender').length), 1);
+        await page.getByRole('button', { name: 'Export saved WAV', exact: true }).click();
+        await page.waitForFunction(() => readiness.pending.startSoundscapeRender?.length);
+        assert.equal(await page.getByRole('button', { name: /^(Export saved WAV|Starting export…)$/ }).isDisabled(), true);
+        await page.evaluate(() => readiness.release('startSoundscapeRender'));
+        await page.getByText('WAV export queued', { exact: true }).waitFor();
+        assert.equal(await page.getByRole('button', { name: 'Export saved WAV', exact: true }).isDisabled(), true);
+        assert.equal(await page.getByRole('button', { name: 'Cancel export', exact: true }).isDisabled(), scenario === 'render-poll');
+        assert.equal(await page.evaluate(() => readiness.calls.filter(call => call.method === 'startSoundscapeRender').length), 1);
         if (scenario === 'render-poll') {
             await page.getByRole('button', { name: 'Atlas', exact: true }).click();
             await studio(page);
-            await page.getByText('Render queued.', { exact: true }).waitFor();
+            await page.getByText('WAV export queued', { exact: true }).waitFor();
             await page.evaluate(() => {
                 readiness.renderState = 'complete';
             });
-            await page.getByText('Render complete.', { exact: true }).waitFor();
-            assert.equal(await page.getByRole('button', { name: 'Render WAV…', exact: true }).isDisabled(), false);
+            await page.getByText('WAV export complete.', { exact: false }).waitFor();
+            assert.equal(await page.getByRole('button', { name: 'Export saved WAV', exact: true }).isDisabled(), false);
         }
         else {
             await page.evaluate(() => {
                 readiness.deferPoll = true;
             });
             await page.waitForFunction(() => readiness.pending.getRenderJob?.length);
-            await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+            await page.getByRole('button', { name: 'Cancel export', exact: true }).click();
             await page.getByText('Injected cancel failure', { exact: true }).waitFor();
-            await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-            await page.getByText('Render cancelled.', { exact: true }).waitFor();
+            await page.getByRole('button', { name: 'Cancel export', exact: true }).click();
+            await page.getByText('WAV export cancelled.', { exact: true }).waitFor();
             await page.evaluate(() => {
                 readiness.release('getRenderJob');
                 readiness.emit({ type: 'renderProgress', job: {
-                        jobId: 'fixture-render-1',
+                        jobId: '00000000000000000000000000000001',
                         state: 'rendering',
                         progress: .5,
                         message: 'Stale progress'
                     } });
             });
             await page.waitForTimeout(100);
-            await page.getByText('Render cancelled.', { exact: true }).waitFor();
+            await page.getByText('WAV export cancelled.', { exact: true }).waitFor();
         }
         checks.push(`${scenario}: pending/queued gating, cancellation capability/error, polling without push and job retention`);
         await page.close();

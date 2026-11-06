@@ -216,7 +216,7 @@ int main() {
         [] {
             const auto timeline = material({event(1, 0, "species:a")});
             for (const auto rate : {22050u, 48000u, 192000u}) {
-                for (const auto settings :
+                for (const auto &settings :
                      {atlas::VoiceSettings{},
                       atlas::VoiceSettings{-12, .002, .100, -60},
                       atlas::VoiceSettings{12, .100, 3, 0},
@@ -363,8 +363,19 @@ int main() {
                     return settings.attackSeconds;
                 case 2:
                     return settings.decaySeconds;
-                default:
+                case 3:
                     return settings.gainDb;
+                case 4:
+                    return settings.brightness;
+                case 5:
+                    return settings.roughness;
+                case 6:
+                    return settings.pulseHz;
+                case 7:
+                    return settings.sweepSemitones;
+                default:
+                    throw std::runtime_error(
+                        "unknown physical parameter fixture");
                 }
             };
             std::uint64_t seed = 0x7a341c649e1235d1ULL;

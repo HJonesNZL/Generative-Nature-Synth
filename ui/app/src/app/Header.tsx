@@ -18,7 +18,7 @@ export function Header({ demoMenu }: { demoMenu?: ReactNode }) {
   const state = useAppState();
   const dispatch = useDispatch();
   const { client, caps, onNotification } = useHost();
-  const [audioQ, refreshAudio] = useHostQuery("getAudioState", {}, [], { refreshMs: 1000 });
+  const [audioQ, refreshAudio] = useHostQuery("getAudioState", {}, [state.soundscape.epoch], { refreshMs: 1000 });
   const [collectionQ, refreshCollection] = useHostQuery("getCollectionState", {}, [], { refreshMs: 1000 });
   const audio = valueOf(audioQ);
   const collection = valueOf(collectionQ);
@@ -117,6 +117,11 @@ export function Header({ demoMenu }: { demoMenu?: ReactNode }) {
   const [gainLocal, setGainLocal] = useState<number | null>(null);
   const gainShown = gainLocal ?? audio?.masterGainDb ?? -18;
   const dragging = useRef(false);
+  useEffect(() => {
+    setGainLocal(null); setTransportError(null); setEnabledPreparation(null);
+    dragging.current = false; gain.resetError();
+    // A scene replaces globals and old transient edit/error context together.
+  }, [state.soundscape.epoch]);
 
   const audioOn = audio?.status === "running" && (caps?.implementation !== "native" || (!!state.transport.preparationId && enabledPreparation === state.transport.preparationId));
   const audioUsable = !!caps && (caps.implementation === "mock" || caps.audioAvailable) && (audio?.status === "running" || audio?.status === "disabled" || audio?.status === "device_lost");

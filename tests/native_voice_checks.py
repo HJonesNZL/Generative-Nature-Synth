@@ -152,7 +152,7 @@ class NativeVoiceTests(unittest.TestCase):
             self.assertLess(time.monotonic(), deadline, 'Callback did not reach ' + state)
             time.sleep(.01)
 
-    def test_truthful_metadata_four_ranges_and_independent_species(self):
+    def test_truthful_metadata_eight_ranges_and_independent_species(self):
         capabilities = self.request('getCapabilities')
         self.assertEqual(capabilities['implementation'], 'native')
         for method in ('getVoiceLibrary', 'getVoice', 'setVoiceParameter', 'saveVoice', 'revertVoice'):
@@ -163,11 +163,11 @@ class NativeVoiceTests(unittest.TestCase):
         library = self.request('getVoiceLibrary')
         self.assertEqual(library['maxDefinitions'], 513)
         self.assertEqual(library['editingBehavior'], 'new_notes')
-        self.assertEqual([(item['id'], item['proposal']) for item in library['types']], [('struck', False)])
+        self.assertEqual([(item['id'], item['proposal']) for item in library['types']], [(name, False) for name in ('struck', 'whistle', 'reed', 'bell', 'air', 'pulse')])
         parameters = {item['id']: item for item in library['parameters']}
-        self.assertEqual(set(parameters), {'tuning', 'attack', 'decay', 'gain'})
+        self.assertEqual(set(parameters), {'tuning', 'attack', 'decay', 'gain', 'brightness', 'roughness', 'pulseHz', 'sweepSemitones'})
         expected = {'tuning': (-12, 12, 0, 'linear', 'st'), 'attack': (.002, .100, .008, 'log', 's'),
-                    'decay': (.100, 3.000, .650, 'log', 's'), 'gain': (-60, 0, 0, 'linear', 'dB')}
+                    'decay': (.100, 3.000, .650, 'log', 's'), 'gain': (-60, 0, 0, 'linear', 'dB'), 'brightness': (0, 1, .5, 'linear', 'ratio'), 'roughness': (0, 1, 0, 'linear', 'ratio'), 'pulseHz': (0, 16, 0, 'linear', 'Hz'), 'sweepSemitones': (-12, 12, 0, 'linear', 'st')}
         for identity, (minimum, maximum, default, curve, unit) in expected.items():
             spec = parameters[identity]
             self.assertEqual((spec['min'], spec['max'], spec['defaultValue'], spec['curve'], spec['unit']),
@@ -223,12 +223,12 @@ class NativeVoiceTests(unittest.TestCase):
         self.assertFalse(reopened['dirty'])
         with sqlite3.connect(self.voices) as db:
             self.assertEqual(db.execute('PRAGMA application_id').fetchone()[0], 0x41545653)
-            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0], 1)
+            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0], 2)
             self.assertEqual(db.execute('SELECT count(*) FROM voice_presets').fetchone()[0], 1)
             row = db.execute('SELECT schema_version,saved_revision,tuning,gain FROM voice_presets').fetchone()
-            self.assertEqual(row[:2], (1, 1))
-            self.assertAlmostEqual(row[2], 22 / 24)
-            self.assertEqual(row[3], 1)
+            self.assertEqual(row[:2], (2, 1))
+            self.assertEqual(row[2], 10)
+            self.assertEqual(row[3], 0)
 
     def test_competing_hosts_compare_and_swap_then_revert_latest(self):
         other = self.new_client()

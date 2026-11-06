@@ -1,9 +1,11 @@
 /** React ownership for a serial parameter queue. Sender closures stay current;
  * the queue identity remains stable. Call flush before Save/Revert/Undo. */
 import { useEffect, useRef, useState } from "react";
+import { useHost } from "./HostContext";
 import { GestureQueue, type GestureSender } from "./gestureQueue";
 
 export function useCoalescedGesture(send: GestureSender) {
+  const { client } = useHost();
   const sendRef = useRef(send);
   sendRef.current = send;
   const alive = useRef(true);
@@ -13,7 +15,8 @@ export function useCoalescedGesture(send: GestureSender) {
   }));
   useEffect(() => {
     alive.current = true;
-    return () => { alive.current = false; void queue.flush(); };
-  }, [queue]);
-  return { resetError: queue.resetError.bind(queue), push: queue.push.bind(queue), flush: queue.flush.bind(queue), pending: status.pending, error: status.error, isOwnEcho: queue.isOwnEcho.bind(queue) };
+    const retire = client.edits.register(() => queue.flush());
+    return () => { alive.current = false; retire(); };
+  }, [queue, client]);
+  return { resetError: queue.resetError.bind(queue), push: (gesture: Parameters<GestureSender>[1], value: number) => { if (!client.edits.locked || gesture === "end") queue.push(gesture, value); }, flush: queue.flush.bind(queue), pending: status.pending, error: status.error, isOwnEcho: queue.isOwnEcho.bind(queue) };
 }

@@ -103,13 +103,13 @@ export interface RegionView {
   effectAssignments: Array<{ effectId: string; enabled: boolean; send: number }>;
 }
 
-export type VoiceType = "struck" | "pluck" | "air" | "resonance" | "bell";
+export type VoiceType = "struck" | "whistle" | "reed" | "bell" | "air" | "pulse" | "pluck" | "resonance";
 export type VoiceScope = "group" | "species" | "individual";
 
 export interface VoiceParameterSpec {
   id: string;
   label: string;
-  unit: "st" | "s" | "ratio" | "dB" | "pan" | "%";
+  unit: "st" | "s" | "ratio" | "dB" | "pan" | "%" | "Hz";
   min: number;
   max: number;
   defaultValue: number;
@@ -148,7 +148,48 @@ export interface VoiceLibraryEntry {
 
 export interface VoiceTypeSpec { id: VoiceType; label: string; proposal: boolean }
 
+export interface SoundscapeView {
+  id: string;
+  name: string;
+  valid: boolean;
+  contentVerified: boolean;
+  error: string | null;
+  contentHash: string | null;
+  sourceSessionId: string | null;
+  eventCount: number;
+  durationUs: Int64String | null;
+  basis: TimeBasis | null;
+  speedNumerator: Int64String | null;
+  speedDenominator: Int64String | null;
+}
+
+export interface RenderJob {
+  jobId: string;
+  state: "queued" | "rendering" | "complete" | "failed" | "cancelled";
+  progress: number;
+  message: string | null;
+  artifactId?: string | null;
+  filename?: string | null;
+  soundscapeId?: string;
+}
+
+export interface VoicePresetView {
+  id: string;
+  name: string;
+  speciesId: string | null;
+  scientificName: string;
+  description: string;
+  evidenceStatus: "research_candidate" | "ecological_metaphor" | "unresolved_taxon";
+  researchPath: string;
+}
+
 export interface HostMethods {
+  listVoicePresets: { request: { voiceId: string }; response: { items: VoicePresetView[]; listeningApproved: false } };
+  applyVoicePreset: { request: { voiceId: string; presetId: string }; response: VoiceDefinition };
+  listSoundscapes: { request: { limit: number }; response: { items: SoundscapeView[]; limited: boolean; unmanagedFiles?: number } };
+  saveSoundscape: { request: { name: string }; response: SoundscapeView };
+  recallSoundscape: { request: { soundscapeId: string }; response: { soundscape: SoundscapeView; preparation: HostMethods["prepareReplay"]["response"] } };
+  startSoundscapeRender: { request: { soundscapeId: string }; response: RenderJob };
   getCapabilities: { request: Record<string, never>; response: HostCapabilities };
   getSourceHealth: { request: Record<string, never>; response: SourceHealth[] };
   getChanges: {

@@ -51,7 +51,7 @@ try {
   await screen('Sound Studio');
   await visible('Voice library unavailable');
   await visible('Region effects unavailable');
-  await disabled(page.getByRole('button', { name: 'Render WAV…', exact: true }));
+  assert.equal(await page.getByRole('button', { name: 'Export saved WAV', exact: true }).count(), 0);
   await page.screenshot({ path: 'test-results/native-studio.png' });
   for (let i = 0; i < 4; i++) {
     await screen('Atlas'); await page.locator('.map-stage canvas').waitFor();

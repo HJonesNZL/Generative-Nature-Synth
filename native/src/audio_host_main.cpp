@@ -81,13 +81,25 @@ class AudioHostApplication final : public juce::JUCEApplicationBase {
                         : library.parent_path() / "voices.sqlite3";
                 if (std::filesystem::weakly_canonical(library) ==
                         std::filesystem::weakly_canonical(sidecar) ||
-                    (std::filesystem::exists(sidecar) &&
+                    (std::filesystem::exists(library) &&
+                     std::filesystem::exists(sidecar) &&
                      std::filesystem::equivalent(library, sidecar)))
                     throw std::invalid_argument(
                         "Voice sidecar must be separate from the wildlife "
                         "library");
                 atlas::VoiceStore voices(sidecar);
-                atlas::UiHost host(library, &playback, &voices);
+                const auto *scenes = std::getenv("ATLAS_SOUNDSCAPE_DIRECTORY");
+                const auto *exports = std::getenv("ATLAS_EXPORT_DIRECTORY");
+                atlas::UiHostStorage storage;
+                storage.soundscapes =
+                    scenes && *scenes ? std::filesystem::path(scenes)
+                                      : library.parent_path() / "soundscapes";
+                storage.exports = exports && *exports
+                                      ? std::filesystem::path(exports)
+                                      : library.parent_path() / "exports";
+                storage.engineSourceSha256 = atlas::nativeSourceSha256;
+                atlas::UiHost host(library, &playback, &voices,
+                                   std::move(storage));
                 serve(host, playback, closing_);
             } catch (const std::exception &exception) {
                 std::cerr << "audio host unavailable: " << exception.what()

@@ -36,6 +36,10 @@ export function VoiceEditor({ parameters, types, editingBehavior, catalog, onDir
   const [parent, setParent] = useState<VoiceDefinition | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [presetId, setPresetId] = useState("");
+  const [presetsQ] = useHostQuery("listVoicePresets", voiceId ? { voiceId } : null, [voiceId]);
+  const presets = valueOf(presetsQ)?.items ?? [];
+  const selectedPreset = presets.find(preset => preset.id === presetId);
   const [undo, setUndo] = useState<UndoEntry[]>([]);
   const [redo, setRedo] = useState<UndoEntry[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
@@ -215,13 +219,26 @@ export function VoiceEditor({ parameters, types, editingBehavior, catalog, onDir
   };
   const setType = async (type: VoiceType) => {
     const snapshot = current.current;
-    if (!snapshot || busyRef.current || recoveryRequired.current) return;
+    if (!snapshot || busyRef.current || recoveryRequired.current || client.edits.locked) return;
     busyRef.current = true; setBusy("type");
     try {
       if (!await flush()) return;
       const reply = await client.call("setVoiceType", { voiceId: snapshot.id, type });
       if (!alive.current) return;
       if (reply.ok) accept(reply.value); else setError(reply.error.message);
+    } finally { busyRef.current = false; if (alive.current) setBusy(null); }
+  };
+  const applyPreset = async () => {
+    const snapshot = current.current;
+    if (!snapshot || !presetId || busyRef.current || recoveryRequired.current || client.edits.locked) return;
+    busyRef.current = true; setBusy("preset");
+    try {
+      if (!await flush()) return;
+      const reply = await client.call("applyVoicePreset", { voiceId: snapshot.id, presetId });
+      if (!alive.current) return;
+      if (!reply.ok) { setError(reply.error.message); return; }
+      accept(reply.value); history([], []); setError(null);
+      setNotice("Experimental preset applied to this voice draft. Save voice or save a soundscape to keep it.");
     } finally { busyRef.current = false; if (alive.current) setBusy(null); }
   };
   const toggleMapping = async (row: MappingRow, enabled: boolean) => {
@@ -275,6 +292,17 @@ export function VoiceEditor({ parameters, types, editingBehavior, catalog, onDir
       {!supportsEditing ? <Notice tone="caution" title="Editing not offered">This host does not accept voice parameter changes yet.</Notice> : null}
       {error ? <Notice tone="problem" title="Voice change not applied">{error}</Notice> : null}
       {notice ? <p className="small" role="status">{notice}</p> : null}
+      {client.supports("listVoicePresets") ? <div className="voice-presets stack-sm">
+        <div className="toolbar">
+          <label className="small">Experimental voice preset <select aria-label="Experimental voice preset" value={presetId} disabled={busy !== null || needsRecovery} onChange={event => setPresetId(event.target.value)}>
+            <option value="">Choose a researched preset</option>
+            {presets.map(preset => <option key={preset.id} value={preset.id}>{preset.name}</option>)}
+          </select></label>
+          <button className="btn btn--outline btn--sm" disabled={!selectedPreset || busy !== null || needsRecovery || !client.supports("applyVoicePreset")} onClick={() => void applyPreset()}>{busy === "preset" ? "Applying…" : "Apply to voice draft"}</button>
+        </div>
+        {selectedPreset ? <p className="small muted">{selectedPreset.evidenceStatus === "ecological_metaphor" ? "Nonvocal ecological metaphor" : selectedPreset.evidenceStatus === "unresolved_taxon" ? "Unresolved taxon — generic candidate" : "Research candidate"} · listening approval pending. {selectedPreset.description}</p> : <p className="small muted">These researched starting points have not received listening approval. Applying one changes the draft without starting playback.</p>}
+        {presetsQ.status === "error" ? <span role="alert" className="small">{presetsQ.error.message}</span> : null}
+      </div> : null}
       <div className="row-between">
         <SegmentedControl<VoiceType> label="Voice type" value={voice.type} onChange={(type) => void setType(type)} options={offeredTypes.map((type) => ({ value: type.id, label: `${type.label}${type.proposal ? " (proposed)" : ""}` }))} disabledValues={client.supports("setVoiceType") && busy === null && !needsRecovery ? [] : offeredTypes.map((type) => type.id)} />
         <span className="small muted" title="Currently sounding synth voices across all definitions">

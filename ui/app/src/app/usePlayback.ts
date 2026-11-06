@@ -1,5 +1,6 @@
 /** Saved-piece preparation and polling live above both screens. C++ owns all audio/time. */
 import { useEffect, useRef } from "react";
+import { playbackContext } from "./playbackContext";
 import { useHost } from "./HostContext";
 import { useAppState, useDispatch } from "./store";
 
@@ -10,9 +11,16 @@ export function usePlayback() {
   const latest = useRef(state.transport);
   latest.current = state.transport;
   const sessionId = state.replay.session?.id;
-  const context = JSON.stringify([state.mode, sessionId, state.timeBasis, state.replay.speedNumerator, state.replay.preparationRevision]);
+  const context = playbackContext(state.mode, sessionId, state.timeBasis, state.replay.speedNumerator, state.replay.speedDenominator, state.replay.preparationRevision);
+  const adoptedContext = useRef<string | null>(null);
   useEffect(() => {
     if (!caps || connection !== "connected") return;
+    // Recall already prepared a quiet native scene. Adopt it once, without a
+    // second preparation that might restore stale context or erase its draft.
+    if (state.transport.preparationId && state.transport.preparedContext === context && adoptedContext.current !== context) {
+      adoptedContext.current = context;
+      return;
+    }
     const controller = new AbortController();
     dispatch({ type: "transport", transport: { preparationId: null, state: "stopped", positionUs: "0", durationUs: null, error: null, preparing: state.mode === "replay" && !!sessionId } });
     void (async () => {
@@ -33,7 +41,7 @@ export function usePlayback() {
         if (!disabled.ok) { dispatch({ type: "transport", transport: { error: disabled.error.message, preparing: false } }); return; }
       }
       if (state.mode !== "replay" || !sessionId || !client.supports("prepareReplay")) return;
-      const prepared = await client.call("prepareReplay", { sessionId, basis: state.timeBasis, speedNumerator: state.replay.speedNumerator, speedDenominator: "1" }, { signal: controller.signal });
+      const prepared = await client.call("prepareReplay", { sessionId, basis: state.timeBasis, speedNumerator: state.replay.speedNumerator, speedDenominator: state.replay.speedDenominator }, { signal: controller.signal });
       if (controller.signal.aborted) return;
       if (!prepared.ok) { dispatch({ type: "transport", transport: { error: prepared.error.message, preparing: false } }); return; }
       dispatch({ type: "transport", transport: { preparationId: prepared.value.preparationId, generation: prepared.value.generation, durationUs: prepared.value.durationUs, positionUs: "0", state: "stopped", preparing: false } });

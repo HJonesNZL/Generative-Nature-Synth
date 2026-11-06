@@ -5,6 +5,10 @@
 #include <string_view>
 
 namespace atlas {
+struct UiHostStorage {
+    std::filesystem::path soundscapes, exports;
+    std::string engineSourceSha256;
+};
 class PlaybackRuntime;
 class VoiceStore;
 // One worker owns this bounded presentation adapter. Optional playback is
@@ -13,7 +17,7 @@ class UiHost {
   public:
     explicit UiHost(const std::filesystem::path &library,
                     PlaybackRuntime *playback = nullptr,
-                    VoiceStore *voices = nullptr);
+                    VoiceStore *voices = nullptr, UiHostStorage storage = {});
     ~UiHost();
     UiHost(const UiHost &) = delete;
     UiHost &operator=(const UiHost &) = delete;

@@ -5,8 +5,9 @@
  * the selection, the live cursor, the piece or the transport.
  */
 import { createContext, useContext, useMemo, useReducer, type Dispatch, type ReactNode } from "react";
-import type { CoverageInterval, SessionView, TimeBasis } from "../host/contracts";
+import type { CoverageInterval, SessionView, TimeBasis, SoundscapeView, HostMethods } from "../host/contracts";
 import type { HistoryFreezeResult, RenderJob } from "../host/provisional";
+import { playbackContext } from "./playbackContext";
 import { DISPLAY_TIMEZONE } from "./time";
 
 export type Screen = "atlas" | "studio";
@@ -38,9 +39,11 @@ export interface TransportView {
   preparationId: string | null;
   error?: string | null;
   preparing?: boolean;
+  preparedContext?: string;
 }
 
 export interface AppState {
+  soundscape: { active: SoundscapeView | null; operation: "save" | "recall" | null; epoch: number };
   screen: Screen;
   mode: ViewMode;
   timeBasis: TimeBasis;
@@ -54,12 +57,14 @@ export interface AppState {
   mapView: "globe" | "map2d";
   reducedMotion: boolean;
   history: { draft: HistoryQueryDraft; result: HistoryResult | null; frozen: HistoryFreezeResult | null };
-  replay: { session: SessionView | null; speedNumerator: string; preparationRevision: number };
+  replay: { session: SessionView | null; speedNumerator: string; speedDenominator: string; preparationRevision: number };
   transport: TransportView;
   globeOrientation: { longitude: number; latitude: number; distance: number };
 }
 
 export type Action =
+  | { type: "soundscapeOperation"; operation: "save" | "recall" | null }
+  | { type: "soundscapeRecalled"; scene: SoundscapeView; preparation: HostMethods["prepareReplay"]["response"] }
   | { type: "screen"; screen: Screen }
   | { type: "mode"; mode: ViewMode }
   | { type: "timeBasis"; basis: TimeBasis }
@@ -94,6 +99,7 @@ function todayInZone(timeZone: string): string {
 
 export function initialState(demo = false): AppState {
   return {
+    soundscape: { active: null, operation: null, epoch: 0 },
     screen: "atlas",
     mode: "live",
     timeBasis: "arrival",
@@ -111,7 +117,7 @@ export function initialState(demo = false): AppState {
       result: null,
       frozen: null,
     },
-    replay: { session: null, speedNumerator: "60", preparationRevision: 0 },
+    replay: { session: null, speedNumerator: "60", speedDenominator: "1", preparationRevision: 0 },
     transport: { generation: "0", state: "stopped", positionUs: "0", durationUs: null, preparationId: null },
     globeOrientation: { longitude: 172, latitude: -34, distance: 4.1 },
   };
@@ -119,6 +125,18 @@ export function initialState(demo = false): AppState {
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
+    case "soundscapeOperation": return { ...state, soundscape: { ...state.soundscape, operation: action.operation } };
+    case "soundscapeRecalled": {
+      const scene = action.scene, preparation = action.preparation;
+      if (!preparation.session || !scene.basis || !scene.speedNumerator || !scene.speedDenominator) return state;
+      const revision = state.replay.preparationRevision + 1;
+      return { ...state, mode: "replay", timeBasis: scene.basis, selectedEventId: null, selectedVoiceId: null, voiceDrafts: {},
+        history: { ...state.history, result: null, frozen: null }, materialReload: state.materialReload + 1,
+        soundscape: { active: scene, operation: null, epoch: state.soundscape.epoch + 1 },
+        replay: { session: preparation.session, speedNumerator: scene.speedNumerator, speedDenominator: scene.speedDenominator, preparationRevision: revision },
+        transport: { preparationId: preparation.preparationId, generation: preparation.generation, durationUs: preparation.durationUs, positionUs: "0", state: "stopped", error: null, preparing: false,
+          preparedContext: playbackContext("replay", preparation.session.id, scene.basis, scene.speedNumerator, scene.speedDenominator, revision) } };
+    }
     case "screen": return { ...state, screen: action.screen };
     case "mode":
       // Changing material mode clears event selection (ids belong to different material) but keeps species/region/voice.
@@ -131,7 +149,7 @@ function reducer(state: AppState, action: Action): AppState {
       const previous = state.render.job;
       if (!previous || previous.jobId !== action.job.jobId) return state;
       const terminal = ["complete", "failed", "cancelled"].includes(previous.state);
-      if (terminal && ["queued", "rendering"].includes(action.job.state)) return state;
+      if (terminal && action.job.state !== previous.state) return state;
       return { ...state, render: { ...state.render, job: action.job } };
     }
     case "retryMaterial": return { ...state, materialReload: state.materialReload + 1 };
@@ -151,7 +169,7 @@ function reducer(state: AppState, action: Action): AppState {
     case "historyResult": return { ...state, history: { ...state.history, result: action.result, frozen: null } };
     case "historyFrozen": return { ...state, history: { ...state.history, frozen: action.frozen } };
     case "replaySession": return { ...state, replay: { ...state.replay, session: action.session, preparationRevision: state.replay.preparationRevision + 1 }, transport: { ...state.transport, preparationId: null, durationUs: null, state: "stopped", positionUs: "0" } };
-    case "replaySpeed": return { ...state, replay: { ...state.replay, speedNumerator: action.speedNumerator }, transport: { ...state.transport, preparationId: null, state: "stopped", positionUs: "0", durationUs: null } };
+    case "replaySpeed": return { ...state, replay: { ...state.replay, speedNumerator: action.speedNumerator, speedDenominator: "1" }, transport: { ...state.transport, preparationId: null, state: "stopped", positionUs: "0", durationUs: null } };
     case "transportAck":
       if (state.transport.preparationId !== action.preparationId || state.transport.generation !== action.generation) return state;
       return { ...state, transport: { ...state.transport, ...action.transport } };

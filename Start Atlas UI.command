@@ -19,6 +19,8 @@ if [[ -z "${ATLAS_NATIVE_BINARY:-}" ]]; then
   fi
 fi
 export ATLAS_VOICE_LIBRARY="${ATLAS_VOICE_LIBRARY:-$atlas_root/.state/voices.sqlite3}"
+export ATLAS_SOUNDSCAPE_DIRECTORY="${ATLAS_SOUNDSCAPE_DIRECTORY:-$atlas_root/.state/soundscapes}"
+export ATLAS_EXPORT_DIRECTORY="${ATLAS_EXPORT_DIRECTORY:-$atlas_root/Exports}"
 export ATLAS_LIBRARY="${ATLAS_LIBRARY:-$atlas_root/.state/atlas.sqlite3}"
 if [[ ! -x "$ATLAS_NATIVE_BINARY" || ! -f "$ATLAS_LIBRARY" ]]; then
   print 'Native binary or library is missing. Build the native target or set ATLAS_LIBRARY.'

@@ -1,5 +1,7 @@
 # Native Sound Studio host integration
 
+**Historical first-voice checkpoint.** The expanded current implementation is specified in [Voice character contract](VOICE_CHARACTER_CONTRACT.md), [Voice store v2](NATIVE_VOICE_STORE_CONTRACT.md) and [Soundscapes milestone](SOUNDSCAPES_AND_SPECIES_CANDIDATES.md). Four-control and struck-only limits below describe the earlier revision.
+
 The optional JUCE audio host now borrows a worker-owned `VoiceStore` alongside its playback runtime. The data-only host remains read-only and does not advertise voice editing. This milestone supplies one implemented struck tone, four per-species parameters and explicit saved definitions. It is not full piece/session sound recall or a final synthesis palette.
 
 ## Data and control flow

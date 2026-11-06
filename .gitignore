@@ -15,3 +15,7 @@ node_modules/
 ui/app/dist/
 ui/app/dist-demo/
 ui/app/test-results/
+
+# User-generated soundscapes, audio exports and research audition renders.
+Exports/
+Auditions/

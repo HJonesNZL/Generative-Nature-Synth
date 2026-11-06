@@ -1,5 +1,7 @@
 # Native first-voice profiles and editing contract
 
+**Historical first-voice checkpoint.** The expanded current implementation is specified in [Voice character contract](VOICE_CHARACTER_CONTRACT.md), [Voice store v2](NATIVE_VOICE_STORE_CONTRACT.md) and [Soundscapes milestone](SOUNDSCAPES_AND_SPECIES_CANDIDATES.md). Four-control and struck-only limits below describe the earlier revision.
+
 7 November 2026. This extends the experimental three-partial struck voice from M2 and the native playback contract. It is a first-voice engineering milestone within the complete synthesizer plan; no final timbre, hardware qualification or owner listening approval is implied. ADSR sustain/release controls, tone, pan and additional synthesis families remain unsupported.
 
 ## Parameters and sound

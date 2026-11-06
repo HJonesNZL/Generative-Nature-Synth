@@ -1,3 +1,4 @@
+#include "atlas_build_identity.hpp"
 // Test-only studio protocol host: disposable sidecar, synthetic output, no
 // hardware.
 #include <algorithm>
@@ -102,7 +103,20 @@ int main(int argc, char **argv) {
             starts ? std::filesystem::path(starts) : std::filesystem::path{});
         auto *fakeOutput = output.get();
         atlas::PlaybackRuntime playback(std::move(output));
-        atlas::UiHost host(std::filesystem::path(argv[3]), &playback, &voices);
+        const auto *scenes = std::getenv("ATLAS_SOUNDSCAPE_DIRECTORY");
+        const auto *exports = std::getenv("ATLAS_EXPORT_DIRECTORY");
+        atlas::UiHostStorage storage;
+        storage.soundscapes =
+            scenes && *scenes
+                ? std::filesystem::path(scenes)
+                : std::filesystem::path(argv[3]).parent_path() / "soundscapes";
+        storage.exports =
+            exports && *exports
+                ? std::filesystem::path(exports)
+                : std::filesystem::path(argv[3]).parent_path() / "exports";
+        storage.engineSourceSha256 = atlas::nativeSourceSha256;
+        atlas::UiHost host(std::filesystem::path(argv[3]), &playback, &voices,
+                           std::move(storage));
         std::string request;
         request.reserve(16385);
         for (;;) {
