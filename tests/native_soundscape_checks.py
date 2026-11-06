@@ -72,6 +72,9 @@ class SoundscapeTests(NativeVoiceTests):
                     offset+=8+size+(size%2)
                 raise AssertionError('WAV data chunk missing')
             self.assertEqual(pcm(cli_output.read_bytes()),pcm(first))
+            self.assertEqual(cli_output.read_bytes(),first,'CLI and UI export must share exact PCM and recipe metadata')
+            self.assertIn(b'"recipe_version":3',first)
+            self.assertIn(b'"regional_tail_policy":"active_wet_12s_final_20ms_fade"',first)
             before_cli=cli_output.read_bytes()
             refused=subprocess.run(command,capture_output=True,text=True,timeout=10)
             self.assertNotEqual(refused.returncode,0)
@@ -148,6 +151,67 @@ class SoundscapeTests(NativeVoiceTests):
         self.assertEqual(self.render(scene),wav)
         self.client.request('prepareReplay',dict(sessionId='scene:'+scene['id'],basis='observed',speedNumerator='2',speedDenominator='1'))
         self.assertEqual(self.client.request('getComposition')['settings'],settings)
+
+    def test_spatial_full_recipe_validation_and_stereo_scene(self):
+        import copy
+        prep=self.prepare()
+        initial=self.client.request('getSpatial')
+        self.assertFalse(initial['settings']['enabled'])
+        self.assertEqual(initial['settings']['regions'],[])
+        region=dict(id='nz-west',name='Synthetic NZ region',south=-48,north=-34,west=166,east=180,
+                    pan=-.8,gainDb=-3,send=.8,echoMix=.6,delayMs=130,feedback=.4,roomSeconds=1.3,tone=.4,positionPan=False)
+        crossing=dict(region,id='dateline',name='Dateline overlap',west=170,east=-170,pan=.7,positionPan=True)
+        settings=dict(enabled=True,amount=.6,regions=[region,crossing])
+        applied=self.client.request('setSpatial',dict(settings=settings,preparationId=prep['preparationId'],generation=prep['generation']))
+        self.assertEqual(applied['settings'],settings)
+        self.assertEqual(self.client.request('getAudioState')['status'],'disabled')
+        prep=applied['preparation']
+        malformed=[]
+        for field,value in [('south',-91),('north',-48),('west',181),('east',166),('pan',1.1),('gainDb',.1),('send',-.1),('echoMix',1.1),('delayMs',19),('feedback',.51),('roomSeconds',2.51),('tone',2),('positionPan',1),('id','bad/id'),('name','bad\nname')]:
+            invalid=copy.deepcopy(settings);invalid['regions'][0][field]=value;malformed.append(invalid)
+        invalid=copy.deepcopy(settings);invalid['regions'][1]['id']=region['id'];malformed.append(invalid)
+        invalid=copy.deepcopy(settings);invalid['regions'][0]['unknown']=1;malformed.append(invalid)
+        invalid=copy.deepcopy(settings);del invalid['regions'][0]['send'];malformed.append(invalid)
+        invalid=copy.deepcopy(settings);invalid['regions']=[dict(region,id='region'+str(i)) for i in range(9)];malformed.append(invalid)
+        invalid=copy.deepcopy(settings);invalid['amount']=1.1;malformed.append(invalid)
+        invalid=copy.deepcopy(settings);invalid['enabled']=1;malformed.append(invalid)
+        for invalid in malformed:
+            self.client.request('setSpatial',dict(settings=invalid,preparationId=prep['preparationId'],generation=prep['generation']),error='invalid_request')
+            unchanged=self.client.request('getSpatial')
+            self.assertEqual(unchanged['settings'],settings)
+            self.assertEqual(unchanged['preparation']['preparationId'],prep['preparationId'])
+        self.client.request('setSpatial',dict(settings=settings,preparationId=initial['preparation']['preparationId'],generation=initial['preparation']['generation']),error='stale_generation')
+        self.client.request('setVoiceParameter',dict(voiceId='species:studio:bird',parameterId='tuning',normalizedValue=.6,gesture='begin'))
+        self.client.request('setSpatial',dict(settings=settings,preparationId=prep['preparationId'],generation=prep['generation']),error='invalid_request')
+        self.client.request('setVoiceParameter',dict(voiceId='species:studio:bird',parameterId='tuning',normalizedValue=.6,gesture='end'))
+        composition=dict(enabled=True,scale='major',tonicPitchClass=5,tempoBpm=100,density=2,variation=.4,seed=19,quantize=True)
+        self.client.request('setComposition',dict(settings=composition,preparationId=prep['preparationId'],generation=prep['generation']))
+        self.assertEqual(self.client.request('getSpatial')['settings'],settings)
+        scene=self.client.request('saveSoundscape',dict(name='Spatial composition'))
+        wav=self.render(scene)
+        scene_path=Path(self.temp.name)/'soundscapes'/(scene['id']+'.atlas-scene')
+        cli_output=Path(self.temp.name)/'spatial-cli.wav'
+        subprocess.run([str(BINARY.with_name('atlas-native')),'scene-render','--scene',str(scene_path),'--output',str(cli_output)],check=True,capture_output=True,timeout=10)
+        self.assertEqual(cli_output.read_bytes(),wav,'CLI and background export must have the same stereo PCM and schema3 recipe')
+        offset=12
+        while wav[offset:offset+4]!=b'data':
+            size=struct.unpack_from('<I',wav,offset+4)[0];offset+=8+size+(size%2)
+        size=struct.unpack_from('<I',wav,offset+4)[0];pcm=wav[offset+8:offset+8+size]
+        self.assertTrue(any(pcm[i:i+3]!=pcm[i+3:i+6] for i in range(0,len(pcm),6)), 'Spatial render must have nonidentical left/right channels')
+        prep=self.client.request('getSpatial')['preparation']
+        other=dict(settings,regions=list(reversed(settings['regions'])))
+        self.client.request('setSpatial',dict(settings=other,preparationId=prep['preparationId'],generation=prep['generation']))
+        changed=self.client.request('saveSoundscape',dict(name='Reordered overlap'))
+        self.assertNotEqual(changed['contentHash'],scene['contentHash'])
+        self.assertEqual(self.render(scene),wav)
+        self.client.request('recallSoundscape',dict(soundscapeId=scene['id']))
+        self.assertEqual(self.client.request('getSpatial')['settings'],settings)
+        self.assertEqual(self.client.request('getComposition')['settings'],composition)
+        self.assertEqual(self.render(scene),wav)
+        self.assertEqual(self.client.request('getAudioState')['status'],'disabled')
+        self.client.request('prepareReplay',dict(sessionId='scene:'+scene['id'],basis='observed',speedNumerator='2',speedDenominator='1'))
+        self.assertEqual(self.client.request('getSpatial')['settings'],settings)
+        self.assertEqual(self.client.request('getComposition')['settings'],composition)
 
     def test_capture_rejects_active_gesture_and_unprepared(self):
         self.client.request('saveSoundscape',dict(name='Unavailable'),error='invalid_request')

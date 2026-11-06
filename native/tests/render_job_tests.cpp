@@ -62,6 +62,35 @@ Soundscape scene(Microseconds duration = 200000,
     capture.audio.composition = {
         true, CompositionScale::minorPentatonic, 7, 113,
         CompositionDensity::active, .61999999999999988, 812345, true};
+    RegionSettings west;
+    west.id = "west";
+    west.name = "Western fixture region";
+    west.west = 160;
+    west.east = 180;
+    west.pan = -.71;
+    west.gainDb = -3;
+    west.send = .85;
+    west.echoMix = .68;
+    west.delayMs = 493.5;
+    west.feedback = .49;
+    west.roomSeconds = 2.3;
+    west.tone = .73;
+    west.positionPan = true;
+    RegionSettings east;
+    east.id = "east";
+    east.name = "Dateline fixture region";
+    east.west = 175;
+    east.east = -160;
+    east.pan = .62;
+    east.gainDb = -7;
+    east.send = .67;
+    east.echoMix = .41;
+    east.delayMs = 317.5;
+    east.feedback = .43;
+    east.roomSeconds = 2.5;
+    east.tone = .38;
+    capture.audio.spatial = {true, .61, {west, east}};
+    constexpr std::array longitudes{170.0, 174.0, 178.0, -179.0, -175.0, 30.0};
     capture.profiles.push_back({"", {}});
     for (int i = 0; i < 6; ++i) {
         const auto suffix = std::to_string(i), fraction = "0" + suffix + "0000";
@@ -77,6 +106,8 @@ Soundscape scene(Microseconds duration = 200000,
         event.firstSeenAt = event.observedAt;
         event.ingestedAt = event.observedAt;
         event.revisionSequence = i + 1;
+        event.position =
+            Position{-40.0 + i * 2, longitudes[static_cast<std::size_t>(i)]};
         event.normalizedJson =
             "{\"schema_version\":1,\"event_id\":\"" + event.id +
             "\",\"source_id\":\"fixture\",\"provider_event_id\":\"" + suffix +
@@ -84,7 +115,9 @@ Soundscape scene(Microseconds duration = 200000,
             "\",\"event_kind\":\"gps_fix\",\"location_kind\":\"individual_"
             "fix\",\"species_id\":\"" +
             *event.speciesId + "\",\"individual_id\":\"" + *event.individualId +
-            "\",\"latitude\":null,\"longitude\":null,\"coordinate_order\":"
+            "\",\"latitude\":" + std::to_string(event.position->latitude) +
+            ",\"longitude\":" + std::to_string(event.position->longitude) +
+            ",\"coordinate_order\":"
             "\"latitude,longitude\",\"provenance_mode\":\"demo\",\"first_seen_"
             "at_utc\":\"" +
             stamp + "\",\"ingested_at_utc\":\"" + stamp + "\"}";
@@ -205,13 +238,16 @@ int main() {
         Temporary temp;
         const auto output = temp.file("renders");
         std::filesystem::create_directory(output);
-        const auto shortScene = scene(), longScene = scene(1800000000, 48000);
+        const auto shortScene = scene(), longScene = scene(1700000000, 48000);
         const auto shortPath = temp.file("short.atlas-scene"),
                    longPath = temp.file("long.atlas-scene");
         saveSoundscape(shortPath, shortScene);
         saveSoundscape(longPath, longScene);
         const std::string sourceHash(64, 'a');
         RenderJobs jobs(output, sourceHash);
+        error(RenderJobErrorCode::invalidArgument, [&] {
+            soundscapeRenderRecipe(shortScene, "invalid-source-hash");
+        });
         error(RenderJobErrorCode::invalidArgument, [&] {
             jobs.start(shortPath, shortScene.contentHash(), "../escape");
         });
@@ -264,24 +300,71 @@ int main() {
         check(actual.bytes.find(shortScene.contentHash()) !=
                       std::string::npos &&
                   actual.bytes.find(sourceHash) != std::string::npos &&
-                  actual.bytes.find("\"scene_schema_revision\":2") !=
+                  actual.bytes.find("\"scene_schema_revision\":3") !=
                       std::string::npos &&
-                  actual.bytes.find("\"synthesis_revision\":3") !=
+                  actual.bytes.find("\"synthesis_revision\":4") !=
                       std::string::npos &&
-                  actual.bytes.find("\"mapping_revision\":2") !=
+                  actual.bytes.find("\"mapping_revision\":3") !=
                       std::string::npos &&
                   actual.bytes.find("editable_voice_maximum") !=
                       std::string::npos,
               "WAV recipe lost scene/source/tail traceability");
+        bool stereo{};
+        for (std::size_t i = 0; i < actual.data.size(); i += 6)
+            for (std::size_t channelByte = 0; channelByte < 3; ++channelByte)
+                stereo = stereo || actual.data[i + channelByte] !=
+                                       actual.data[i + channelByte + 3];
+        auto dryCapture = shortScene.capture();
+        dryCapture.audio.spatial.amount = 0;
+        AudioPlan dryPlan(shortScene.timeline(), dryCapture.audio,
+                          dryCapture.profiles, true);
+        check(stereo && done.totalFrames > dryPlan.totalFrames(),
+              "Wet export fixture did not exercise stereo and effect horizon");
+        const auto tailStart = static_cast<std::size_t>(dryPlan.totalFrames()) * 6;
+        check(std::any_of(
+                  actual.data.begin() + static_cast<std::ptrdiff_t>(tailStart),
+                  actual.data.end(),
+                  [](unsigned char byte) { return byte != 0; }),
+              "Offline fixture contains no wet energy after dry voices end");
+        check(actual.bytes.find("active_wet_12s_final_20ms_fade") !=
+                  std::string::npos,
+              "Export recipe omits regional tail policy");
         check(jobs.cancel("complete").state == RenderJobState::completed &&
                   read(output / done.outputFilename).size() ==
                       actual.bytes.size(),
               "Late cancellation invalidated published artifact");
+        auto compositionCapture = shortScene.capture();
+        compositionCapture.schemaRevision = 2;
+        compositionCapture.synthesisRevision = 3;
+        compositionCapture.mappingRevision = 2;
+        compositionCapture.audio.spatial = {};
+        const auto compositionScene =
+            captureSoundscape(shortScene.timeline(), compositionCapture);
+        const auto compositionPath = temp.file("composition-v2.atlas-scene");
+        saveSoundscape(compositionPath, compositionScene);
+        jobs.start(compositionPath, compositionScene.contentHash(),
+                   "composition-v2");
+        const auto compositionDone = terminal(jobs, "composition-v2");
+        check(compositionDone.state == RenderJobState::completed,
+              "Schema-2 export failed");
+        const auto compositionWave =
+            wave(output / compositionDone.outputFilename, 44100);
+        check(compositionWave.data == reference(compositionScene) &&
+                  compositionWave.bytes.find("\"scene_schema_revision\":2") !=
+                      std::string::npos &&
+                  compositionWave.bytes.find("\"synthesis_revision\":3") !=
+                      std::string::npos &&
+                  compositionWave.bytes.find("\"mapping_revision\":2") !=
+                      std::string::npos &&
+                  compositionWave.bytes.find("regional_tail_policy") ==
+                      std::string::npos,
+              "Schema-2 export substituted current recipe or PCM");
         auto legacyCapture = shortScene.capture();
         legacyCapture.schemaRevision = 1;
         legacyCapture.synthesisRevision = 2;
         legacyCapture.mappingRevision = 1;
         legacyCapture.audio.composition = {};
+        legacyCapture.audio.spatial = {};
         const auto legacy =
             captureSoundscape(shortScene.timeline(), legacyCapture);
         const auto legacyPath = temp.file("legacy.atlas-scene");

@@ -201,7 +201,32 @@ export interface CompositionState {
   suppressedSourceEvents?: number;
 }
 
+export interface SpatialRegionSettings {
+  id: string;
+  name: string;
+  south: number;
+  north: number;
+  west: number;
+  east: number;
+  pan: number;
+  gainDb: number;
+  send: number;
+  echoMix: number;
+  delayMs: number;
+  feedback: number;
+  roomSeconds: number;
+  tone: number;
+  positionPan: boolean;
+}
+export interface SpatialSettings { enabled: boolean; amount: number; regions: SpatialRegionSettings[] }
+export interface SpatialState {
+  settings: SpatialSettings; preparation: HostMethods["prepareReplay"]["response"] | null;
+  routedNotes?: number; unassignedNotes?: number; wetActive?: boolean;
+}
+
 export interface HostMethods {
+  getSpatial: { request: Record<string, never>; response: SpatialState };
+  setSpatial: { request: { settings: SpatialSettings; preparationId: string; generation: Int64String }; response: SpatialState };
   getComposition: { request: Record<string, never>; response: CompositionState };
   setComposition: { request: { settings: CompositionSettings; preparationId: string; generation: Int64String }; response: CompositionState };
   listVoicePresets: { request: { voiceId: string }; response: { items: VoicePresetView[]; listeningApproved: false } };

@@ -2,6 +2,7 @@
 #include <array>
 #include <atlas/composition.hpp>
 #include <atlas/core.hpp>
+#include <atlas/spatial.hpp>
 
 namespace atlas {
 using VoiceSlot = std::uint16_t;
@@ -41,6 +42,7 @@ struct AudioSettings {
     unsigned rootMidi{60};
     double attackSeconds{0.008}, decaySeconds{0.650}, masterDb{};
     CompositionSettings composition{};
+    SpatialSettings spatial{};
 };
 enum class Admission { accepted, density };
 struct AudioDecision {
@@ -56,6 +58,7 @@ struct MusicalAction {
     std::uint32_t phaseSeed{};
     double velocity{1};
     std::uint32_t gateFrames{};
+    SpatialRoute route{};
 };
 
 // Worker-owned immutable numeric plan. Do not move/destroy while a renderer
@@ -83,6 +86,7 @@ class AudioPlan {
     }
     VoiceSlot voiceSlot(std::string_view speciesId) const noexcept;
     bool editableVoices() const noexcept { return editableVoices_; }
+    const SpatialPlan &spatialPlan() const noexcept { return spatialPlan_; }
     // Worker-only validation and coefficient preparation, before publication.
     bool prepareVoiceUpdate(VoiceSlot, const VoiceSettings &,
                             VoiceCoefficients &) const noexcept;
@@ -102,6 +106,8 @@ class AudioPlan {
     std::array<double, 12> maximumScalePitchMultipliers_{};
     std::array<VoiceCoefficients, voiceSlotCapacity> voiceBank_{};
     bool editableVoices_{};
+    SpatialPlan spatialPlan_;
+    std::uint32_t spatialEndFadeFrames_{};
 };
 
 enum class AudioState { ready, playing, pausing, paused, draining, finished };
@@ -115,7 +121,7 @@ struct AudioStatistics {
 class AudioRenderer {
   public:
     static constexpr std::size_t voiceCapacity = 8, maxBlockFrames = 4096;
-    explicit AudioRenderer(const AudioPlan &) noexcept;
+    explicit AudioRenderer(const AudioPlan &);
     AudioRenderer(AudioPlan &&) = delete;
     AudioRenderer(const AudioRenderer &) = delete;
     AudioRenderer &operator=(const AudioRenderer &) = delete;
@@ -137,6 +143,7 @@ class AudioRenderer {
         std::uint64_t started{};
         std::uint32_t age{}, fadeAge{}, releaseStart{}, endAge{};
         double velocity{1};
+        SpatialRoute route{};
         double phase{}, phaseStep{}, decay{1};
         VoiceCoefficients coefficients;
         std::array<double, voicePartialCapacity> partialPhases{},
@@ -144,6 +151,7 @@ class AudioRenderer {
         double sweep{1}, pulsePhase{}, roughnessPhase{};
     };
     const AudioPlan &plan_;
+    SpatialProcessor spatial_;
     std::array<Voice, voiceCapacity> voices_{}, retiring_{};
     std::array<VoiceCoefficients, voiceSlotCapacity> voiceBank_{};
     std::size_t nextAction_{};

@@ -208,7 +208,7 @@ Metadata metadata(const SoundscapeCapture &capture, Microseconds duration) {
         {"synthesis_revision", std::to_string(capture.synthesisRevision)},
         {"mapping_revision", std::to_string(capture.mappingRevision)},
         {"profile_count", std::to_string(capture.profiles.size())}};
-    if (capture.schemaRevision == 2) {
+    if (capture.schemaRevision >= 2) {
         const auto &composition = capture.audio.composition;
         result["composition_enabled"] = composition.enabled ? "1" : "0";
         result["composition_scale"] =
@@ -222,6 +222,31 @@ Metadata metadata(const SoundscapeCapture &capture, Microseconds duration) {
         result["composition_seed"] = std::to_string(composition.seed);
         result["composition_quantize"] = composition.quantize ? "1" : "0";
     }
+    if (capture.schemaRevision == 3) {
+        const auto &spatial = capture.audio.spatial;
+        result["spatial_enabled"] = spatial.enabled ? "1" : "0";
+        result["spatial_amount"] = numberText(spatial.amount);
+        result["region_count"] = std::to_string(spatial.regions.size());
+        for (std::size_t i = 0; i < spatial.regions.size(); ++i) {
+            const auto prefix = "region_" + std::to_string(i) + "_";
+            const auto &region = spatial.regions[i];
+            result[prefix + "id"] = region.id;
+            result[prefix + "name"] = region.name;
+            result[prefix + "south"] = numberText(region.south);
+            result[prefix + "north"] = numberText(region.north);
+            result[prefix + "west"] = numberText(region.west);
+            result[prefix + "east"] = numberText(region.east);
+            result[prefix + "pan"] = numberText(region.pan);
+            result[prefix + "gain_db"] = numberText(region.gainDb);
+            result[prefix + "send"] = numberText(region.send);
+            result[prefix + "echo_mix"] = numberText(region.echoMix);
+            result[prefix + "delay_ms"] = numberText(region.delayMs);
+            result[prefix + "feedback"] = numberText(region.feedback);
+            result[prefix + "room_seconds"] = numberText(region.roomSeconds);
+            result[prefix + "tone"] = numberText(region.tone);
+            result[prefix + "position_pan"] = region.positionPan ? "1" : "0";
+        }
+    }
     addBounds(result, "observed", session.observedBounds);
     addBounds(result, "arrival", session.arrivalBounds);
     addBounds(result, "selected", capture.bounds);
@@ -233,7 +258,7 @@ void hashValue(detail::Sha256 &hash, std::string_view value) {
     hash.update(value);
 }
 void hashMetadata(detail::Sha256 &hash, const Metadata &meta, unsigned revision) {
-    hashValue(hash, revision == 1 ? "atlas-scene-v1" : "atlas-scene-v2");
+    hashValue(hash, "atlas-scene-v" + std::to_string(revision));
     for (const auto &[key, value] : meta) {
         hashValue(hash, key);
         hashValue(hash, value);
@@ -341,6 +366,11 @@ void validateCapture(const SoundscapeCapture &capture, std::size_t eventCount) {
              "Selected bounds must preserve original source timeline bounds");
     if (!validCompositionSettings(capture.audio.composition))
         fail(Code::invalidArgument, "Invalid soundscape composition settings");
+    if (!validSpatialSettings(capture.audio.spatial))
+        fail(Code::invalidArgument, "Invalid soundscape spatial settings");
+    const auto &spatial = capture.audio.spatial;
+    const bool legacySpatial = !spatial.enabled && spatial.amount == .25 &&
+                               spatial.regions.empty();
     const auto &composition = capture.audio.composition;
     const bool legacyComposition =
         !composition.enabled &&
@@ -350,8 +380,10 @@ void validateCapture(const SoundscapeCapture &capture, std::size_t eventCount) {
         composition.variation == .25 && composition.seed == 1 &&
         composition.quantize;
     if (!((capture.schemaRevision == 1 && capture.synthesisRevision == 2 &&
-           capture.mappingRevision == 1 && legacyComposition) ||
-          (capture.schemaRevision == 2 &&
+           capture.mappingRevision == 1 && legacyComposition && legacySpatial) ||
+          (capture.schemaRevision == 2 && capture.synthesisRevision == 3 &&
+           capture.mappingRevision == 2 && legacySpatial) ||
+          (capture.schemaRevision == 3 &&
            capture.synthesisRevision == soundscapeSynthesisRevision &&
            capture.mappingRevision == soundscapeMappingRevision)))
         fail(Code::unsupportedSchema,
@@ -393,7 +425,7 @@ unsigned checkSchema(sqlite3 *db) {
         db, "SELECT (SELECT application_id FROM pragma_application_id),(SELECT "
             "user_version FROM pragma_user_version)");
     if (!identity.next() || identity.integer(0) != applicationId ||
-        (identity.integer(1) != 1 && identity.integer(1) != 2))
+        (identity.integer(1) < 1 || identity.integer(1) > 3))
         fail(Code::unsupportedSchema,
              "Unsupported soundscape application or schema identity");
     const std::map<std::string, std::string> expected{
@@ -424,11 +456,13 @@ struct Header {
 Header readHeader(sqlite3 *db) {
     const auto revision = checkSchema(db);
     detail::Statement query(
-        db, "SELECT key,value FROM scene_meta ORDER BY key LIMIT 64");
+        db, "SELECT key,value,typeof(key),typeof(value) FROM scene_meta ORDER BY "
+            "key LIMIT 193");
     Metadata values;
     while (query.next()) {
         auto key = query.text(0), value = query.text(1);
-        if (key.size() > 64 || value.size() > 1024 ||
+        if (query.text(2) != "text" || query.text(3) != "text" ||
+            values.size() >= 192 || key.size() > 64 || value.size() > 1024 ||
             !values.emplace(std::move(key), std::move(value)).second)
             fail(Code::corrupt, "Invalid soundscape metadata row");
     }
@@ -489,7 +523,7 @@ Header readHeader(sqlite3 *db) {
              "Unsupported soundscape synthesis or mapping revision");
     capture.synthesisRevision = static_cast<unsigned>(synthesis);
     capture.mappingRevision = static_cast<unsigned>(mapping);
-    if (revision == 2) {
+    if (revision >= 2) {
         const auto enabled = integer(values, "composition_enabled"),
                    scale = integer(values, "composition_scale"),
                    tonic = integer(values, "composition_tonic_pitch_class"),
@@ -509,6 +543,38 @@ Header readHeader(sqlite3 *db) {
             static_cast<CompositionDensity>(density),
             number(values, "composition_variation"),
             static_cast<std::uint32_t>(seed), quantize != 0};
+    }
+    if (revision == 3) {
+        const auto enabled = integer(values, "spatial_enabled"),
+                   count = integer(values, "region_count");
+        if (enabled < 0 || enabled > 1 || count < 0 || count > 8)
+            fail(Code::corrupt, "Invalid soundscape spatial flags or count");
+        auto &spatial = capture.audio.spatial;
+        spatial.enabled = enabled != 0;
+        spatial.amount = number(values, "spatial_amount");
+        spatial.regions.resize(static_cast<std::size_t>(count));
+        for (std::size_t i = 0; i < spatial.regions.size(); ++i) {
+            const auto prefix = "region_" + std::to_string(i) + "_";
+            auto &region = spatial.regions[i];
+            region.id = values.at(prefix + "id");
+            region.name = values.at(prefix + "name");
+            region.south = number(values, prefix + "south");
+            region.north = number(values, prefix + "north");
+            region.west = number(values, prefix + "west");
+            region.east = number(values, prefix + "east");
+            region.pan = number(values, prefix + "pan");
+            region.gainDb = number(values, prefix + "gain_db");
+            region.send = number(values, prefix + "send");
+            region.echoMix = number(values, prefix + "echo_mix");
+            region.delayMs = number(values, prefix + "delay_ms");
+            region.feedback = number(values, prefix + "feedback");
+            region.roomSeconds = number(values, prefix + "room_seconds");
+            region.tone = number(values, prefix + "tone");
+            const auto positionPan = integer(values, prefix + "position_pan");
+            if (positionPan < 0 || positionPan > 1)
+                fail(Code::corrupt, "Invalid soundscape position pan flag");
+            region.positionPan = positionPan != 0;
+        }
     }
     header.duration = integer(values, "duration_us");
     if (header.duration < 0 || header.duration > 1800000000LL)

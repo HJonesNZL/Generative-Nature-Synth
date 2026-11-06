@@ -1,0 +1,155 @@
+{
+  "milestone": "native-regional-spatial-ui",
+  "recordedAtUtc": "2026-11-06T22:31:22.192506+00:00",
+  "workingDirectory": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/ui/app",
+  "scope": "Real C++ native host, silent fixture driver and disposable synthetic library; user-authored geographic selections, no habitat or animal-track inference.",
+  "steps": [
+    {
+      "command": "/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node node_modules/typescript/bin/tsc --noEmit",
+      "exitCode": 0,
+      "result": "Final strict TypeScript passed after internal-ID UI removal."
+    },
+    {
+      "command": "/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node --experimental-transform-types --test tests/*.test.mjs > /private/tmp/atlas-spatial-unit-results.txt",
+      "execution": "unsandboxed for disposable localhost bridge/export tests",
+      "exitCode": 0,
+      "result": {
+        "tests": 34,
+        "passed": 34,
+        "failed": 0
+      }
+    },
+    {
+      "command": "/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node --experimental-transform-types --test tests/spatial.test.mjs",
+      "exitCode": 0,
+      "result": {
+        "tests": 6,
+        "passed": 6,
+        "failed": 0,
+        "scope": "Final focused spatial DTO/draft/recipe/conflict tests after presentation cleanup."
+      }
+    },
+    {
+      "command": "/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node node_modules/vite/bin/vite.js build > /private/tmp/atlas-spatial-build-results.txt",
+      "exitCode": 0,
+      "result": "Final production bundle passed."
+    },
+    {
+      "command": "ATLAS_TEST_COMPOSITION=1 PLAYWRIGHT_MODULE=/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs ATLAS_SOUNDSCAPE_TEST_PORT=5194 ATLAS_SOUNDSCAPE_SCREENSHOT=/private/tmp/atlas-composition-after-spatial.png /Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node tests/native-soundscapes-browser.mjs > /private/tmp/atlas-composition-after-spatial-result.json",
+      "exitCode": 0,
+      "result": {
+        "checks": [
+          "sequential tempo and uint32 seed keyboard entry",
+          "invalid numeric text draft blocks native mutation and capture",
+          "atomic full composition draft across pages",
+          "save waits for delayed composition acknowledgement",
+          "invalid/stale composition rejection without mutation",
+          "composition exact recall and immutable WAV export",
+          "composition preserved during speed changes",
+          "unmanaged filename notice coexists with valid scene",
+          "full native capture after voice edits",
+          "scene-only WAV export despite later draft edits",
+          "app-owned WAV download",
+          "atomic recall restoring voice and copied scene context",
+          "recall remains silent",
+          "same-scene speed preparation preserves current draft"
+        ],
+        "knownSpeciesPresetApplied": false,
+        "savedId": "a7f0184b09443e3496a110804fe89041",
+        "wavBytes": 4320654,
+        "pageErrors": [],
+        "rejected": []
+      }
+    },
+    {
+      "command": "PLAYWRIGHT_MODULE=/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs ATLAS_SPATIAL_TEST_PORT=5195 ATLAS_SPATIAL_SCREENSHOT=/private/tmp/atlas-spatial-ui.png /Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node tests/native-spatial-browser.mjs > /private/tmp/atlas-spatial-browser-result.json",
+      "execution": "unsandboxed isolated localhost fixture; real native spatial API",
+      "exitCode": 0,
+      "result": {
+        "checks": [
+          "temporary negative-decimal editing and invalid numeric rejection",
+          "two ordered user-authored bounds including dateline preview",
+          "composition Apply preserves pending spatial draft",
+          "spatial Apply preserves pending composition draft",
+          "combined Save waits for each independent acknowledgement and fresh preparation",
+          "complete composition and ordered spatial recipe exact recall",
+          "real stereo wet WAV with immutable export after later edits",
+          "quiet recall without autoplay",
+          "stale and malformed spatial requests leave preparation unchanged",
+          "composition and spatial settings survive rational retiming",
+          "same-piece external recipe change cannot be silently overwritten"
+        ],
+        "savedId": "04b9efac4ff0f5f7bb0e4d3f47f4a700",
+        "wavBytes": 5081268,
+        "differentStereoFrames": 62581,
+        "settings": {
+          "enabled": true,
+          "amount": 0.55,
+          "regions": [
+            {
+              "id": "region-2",
+              "name": "Dateline geographic selection",
+              "south": -90,
+              "north": 90,
+              "west": 170,
+              "east": -170,
+              "pan": -0.4,
+              "gainDb": 0,
+              "send": 0.4,
+              "echoMix": 0.3,
+              "delayMs": 180,
+              "feedback": 0.35,
+              "roomSeconds": 1.2,
+              "tone": 0.5,
+              "positionPan": true
+            },
+            {
+              "id": "region-1",
+              "name": "Local geographic selection",
+              "south": -40,
+              "north": -37,
+              "west": 175,
+              "east": 178,
+              "pan": -0.7,
+              "gainDb": -4,
+              "send": 0.8,
+              "echoMix": 0.6,
+              "delayMs": 210,
+              "feedback": 0.3,
+              "roomSeconds": 1.5,
+              "tone": 0.4,
+              "positionPan": false
+            }
+          ]
+        },
+        "composition": {
+          "enabled": true,
+          "tempoBpm": 119,
+          "tonicPitchClass": 0,
+          "scale": "majorPentatonic",
+          "density": 1,
+          "variation": 0.25,
+          "seed": 1,
+          "quantize": true
+        },
+        "pageErrors": [],
+        "rejected": []
+      }
+    }
+  ],
+  "screenshots": [
+    "evidence/spatial/spatial-ui.png",
+    "evidence/spatial/spatial-controls.png"
+  ],
+  "unrun": [
+    "Physical output device qualification",
+    "Actual DAW integration",
+    "Owner listening approval"
+  ],
+  "notes": [
+    "Region IDs are generated internally and preserved in ordered DTO/storage, with no ID edit field in the user flow.",
+    "Explicit Apply affects only that editor; Save completes acknowledged voice gestures then composition then spatial with a fresh preparation for each.",
+    "Rebasing rejects changed own recipe or source session; backend generation fencing guards the subsequent get/set interval.",
+    "Observed stereo frame difference is an engineering check, not evidence of subjective quality or realistic acoustic space."
+  ]
+}

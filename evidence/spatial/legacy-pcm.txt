@@ -1,0 +1,3 @@
+Exact arm64 legacy PCM baseline passed
+Exact arm64 composition PCM baseline passed
+Soundscape atomic save, strict schema, provenance, complete profiles, independent recall/PCM, corrupt input and bounded listing passed

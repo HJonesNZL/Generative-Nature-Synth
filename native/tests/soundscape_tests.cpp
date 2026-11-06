@@ -159,6 +159,22 @@ SoundscapeCapture capture(const SavedSession &session) {
         {"", fallback}, {"fixture:bird", bird}, {"fixture:fish", fish}};
     return result;
 }
+bool sameSpatial(const SpatialSettings &a, const SpatialSettings &b) {
+    if (a.enabled != b.enabled || a.amount != b.amount ||
+        a.regions.size() != b.regions.size())
+        return false;
+    for (std::size_t i = 0; i < a.regions.size(); ++i) {
+        const auto &x = a.regions[i], &y = b.regions[i];
+        if (x.id != y.id || x.name != y.name || x.south != y.south ||
+            x.north != y.north || x.west != y.west || x.east != y.east ||
+            x.pan != y.pan || x.gainDb != y.gainDb || x.send != y.send ||
+            x.echoMix != y.echoMix || x.delayMs != y.delayMs ||
+            x.feedback != y.feedback || x.roomSeconds != y.roomSeconds ||
+            x.tone != y.tone || x.positionPan != y.positionPan)
+            return false;
+    }
+    return true;
+}
 std::vector<float> render(const Soundscape &scene) {
     AudioPlan plan(scene.timeline(), scene.capture().audio,
                    scene.capture().profiles);
@@ -189,6 +205,9 @@ int main() {
         legacyCapture.schemaRevision = 1;
         legacyCapture.synthesisRevision = 2;
         legacyCapture.mappingRevision = 1;
+        auto nonrepresentableLegacy = legacyCapture;
+        nonrepresentableLegacy.audio.spatial.amount = .5;
+        rejected([&] { captureSoundscape(timeline, nonrepresentableLegacy); });
         const auto legacy = captureSoundscape(timeline, legacyCapture);
         // Recorded before the schema-2/composition implementation. This oracle
         // seals the original metadata/profile/event framing, not a new hash.
@@ -239,6 +258,80 @@ int main() {
             true, CompositionScale::naturalMinor, 9, 127,
             CompositionDensity::active, std::nextafter(.37, 1.0),
             std::numeric_limits<std::uint32_t>::max(), false};
+        expectedCapture.schemaRevision = 2;
+        expectedCapture.synthesisRevision = 3;
+        expectedCapture.mappingRevision = 2;
+        const auto compositionOnly = captureSoundscape(timeline, expectedCapture);
+        check(compositionOnly.contentHash() ==
+                  "55377fdffad0fc41a1c3e8fa0048b73d75324488c59b5f709b3c617330606e02",
+              "Schema-2 composition content hash changed");
+        const auto compositionSamples = render(compositionOnly);
+        if (baseline && std::string_view(baseline) == "1") {
+            detail::Sha256 pcm;
+            pcm.update(std::string_view(
+                reinterpret_cast<const char *>(compositionSamples.data()),
+                compositionSamples.size() * sizeof(float)));
+            check(pcm.hexDigest() ==
+                      "6e39c8aaf34d2617dd97154387f46d4fdcbf377798665c984b265dd886aea98c",
+                  "Schema-2 composition PCM baseline changed");
+            std::cout << "Exact arm64 composition PCM baseline passed\n";
+        }
+        const auto compositionPath = temp.file("composition-v2.atlas-scene");
+        saveSoundscape(compositionPath, compositionOnly);
+        const auto compositionLoaded = loadSoundscape(compositionPath);
+        check(compositionLoaded.capture().schemaRevision == 2 &&
+                  compositionLoaded.capture().synthesisRevision == 3 &&
+                  compositionLoaded.capture().mappingRevision == 2 &&
+                  sameSpatial(compositionLoaded.capture().audio.spatial,
+                              SpatialSettings{}) &&
+                  compositionLoaded.contentHash() ==
+                      compositionOnly.contentHash() &&
+                  render(compositionLoaded) == compositionSamples,
+              "Schema-2 scene migrated or changed PCM");
+        const auto compositionCopy = temp.file("composition-v2-copy.atlas-scene");
+        saveSoundscape(compositionCopy, compositionLoaded);
+        {
+            RawDatabase db(compositionCopy);
+            check(db.scalar("PRAGMA user_version") == "2" &&
+                      loadSoundscape(compositionCopy).contentHash() ==
+                          compositionOnly.contentHash(),
+                  "Saving schema-2 scene silently migrated its identity");
+        }
+        auto nonrepresentable = expectedCapture;
+        nonrepresentable.audio.spatial.amount = .5;
+        rejected([&] { captureSoundscape(timeline, nonrepresentable); });
+        expectedCapture.schemaRevision = soundscapeSchemaRevision;
+        expectedCapture.synthesisRevision = soundscapeSynthesisRevision;
+        expectedCapture.mappingRevision = soundscapeMappingRevision;
+        RegionSettings pacific;
+        pacific.id = "pacific";
+        pacific.name = "Te Moana – Pacific";
+        pacific.south = -60;
+        pacific.north = 10;
+        pacific.west = 160;
+        pacific.east = -160;
+        pacific.pan = -.73;
+        pacific.gainDb = -7;
+        pacific.send = .81;
+        pacific.echoMix = .63;
+        pacific.delayMs = std::nextafter(137.25, 200.0);
+        pacific.feedback = .37;
+        pacific.roomSeconds = .83;
+        pacific.tone = .29;
+        pacific.positionPan = true;
+        RegionSettings world;
+        world.id = "world";
+        world.name = "Second overlapping region";
+        world.pan = .67;
+        world.gainDb = -11;
+        world.send = .41;
+        world.echoMix = .17;
+        world.delayMs = 219.75;
+        world.feedback = .19;
+        world.roomSeconds = 1.73;
+        world.tone = .87;
+        expectedCapture.audio.spatial = {
+            true, std::nextafter(.42, 1.0), {pacific, world}};
         const auto scene = captureSoundscape(timeline, expectedCapture);
         auto adjacentVariation = expectedCapture;
         adjacentVariation.audio.composition.variation =
@@ -246,13 +339,26 @@ int main() {
         check(captureSoundscape(timeline, adjacentVariation).contentHash() !=
                   scene.contentHash(),
               "Adjacent representable composition doubles share a hash");
+        auto adjacentSpatial = expectedCapture;
+        adjacentSpatial.audio.spatial.regions[0].delayMs =
+            std::nextafter(pacific.delayMs, 200.0);
+        check(captureSoundscape(timeline, adjacentSpatial).contentHash() !=
+                  scene.contentHash(),
+              "Adjacent representable region doubles share a hash");
         const auto originalSamples = render(scene);
+        auto reordered = expectedCapture;
+        std::swap(reordered.audio.spatial.regions[0],
+                  reordered.audio.spatial.regions[1]);
+        const auto reorderedScene = captureSoundscape(timeline, reordered);
+        check(reorderedScene.contentHash() != scene.contentHash() &&
+                  render(reorderedScene) != originalSamples,
+              "Region precedence/order lost from hash or rendering");
         const auto target = temp.file("original.atlas-scene");
         saveSoundscape(target, scene);
         {
             RawDatabase db(target);
             check(db.scalar("PRAGMA application_id") == "1096045379" &&
-                      db.scalar("PRAGMA user_version") == "2",
+                      db.scalar("PRAGMA user_version") == "3",
                   "Scene identity wrong");
             check(db.scalar("SELECT count(*) FROM sqlite_schema") == "3",
                   "Unexpected scene schema");
@@ -285,9 +391,9 @@ int main() {
                   recalled.timeline().events()[0].id == "fixture:a",
               "Original timeline or event identity lost");
         const auto &composition = recalled.capture().audio.composition;
-        check(recalled.capture().schemaRevision == 2 &&
-                  recalled.capture().synthesisRevision == 3 &&
-                  recalled.capture().mappingRevision == 2 &&
+        check(recalled.capture().schemaRevision == 3 &&
+                  recalled.capture().synthesisRevision == 4 &&
+                  recalled.capture().mappingRevision == 3 &&
                   composition.enabled &&
                   composition.scale == CompositionScale::naturalMinor &&
                   composition.tonicPitchClass == 9 &&
@@ -309,6 +415,37 @@ int main() {
                   recalled.capture().profiles[1].settings.pulseHz == 7 &&
                   recalled.capture().profiles[2].settings.sweepSemitones == -7,
               "Complete independent profiles lost");
+        check(sameSpatial(recalled.capture().audio.spatial,
+                          expectedCapture.audio.spatial),
+              "Complete ordered spatial recipe lost");
+        bool stereo{};
+        for (std::size_t i = 0; i < originalSamples.size(); i += 2)
+            stereo = stereo || originalSamples[i] != originalSamples[i + 1];
+        check(stereo, "Spatial recall fixture did not exercise stereo");
+        auto maximumRegions = expectedCapture;
+        while (maximumRegions.audio.spatial.regions.size() < 8) {
+            auto extra = world;
+            extra.id =
+                "extra-" +
+                std::to_string(maximumRegions.audio.spatial.regions.size());
+            maximumRegions.audio.spatial.regions.push_back(std::move(extra));
+        }
+        auto disabledSpatial = expectedCapture;
+        disabledSpatial.audio.spatial.enabled = false;
+        const auto disabledScene = captureSoundscape(timeline, disabledSpatial);
+        const auto disabledPath = temp.file("disabled-regions.atlas-scene");
+        saveSoundscape(disabledPath, disabledScene);
+        check(sameSpatial(loadSoundscape(disabledPath).capture().audio.spatial,
+                          disabledSpatial.audio.spatial),
+              "Disabled spatial configuration silently dropped its regions");
+        const auto maximumScene = captureSoundscape(timeline, maximumRegions);
+        const auto maximumPath = temp.file("eight-regions.atlas-scene");
+        saveSoundscape(maximumPath, maximumScene);
+        check(sameSpatial(loadSoundscape(maximumPath).capture().audio.spatial,
+                          maximumRegions.audio.spatial),
+              "Maximum complete region header lost or truncated");
+        maximumRegions.audio.spatial.regions.push_back(world);
+        rejected([&] { captureSoundscape(timeline, maximumRegions); });
         check(originalSamples == render(recalled),
               "Source-independent recalled PCM changed");
         error(SoundscapeErrorCode::alreadyExists,
@@ -333,6 +470,14 @@ int main() {
         rejected([&] { captureSoundscape(timeline, invalid); });
         invalid = expectedCapture;
         invalid.audio.masterDb = std::numeric_limits<double>::quiet_NaN();
+        rejected([&] { captureSoundscape(timeline, invalid); });
+        invalid = expectedCapture;
+        invalid.audio.spatial.regions[1].id = pacific.id;
+        rejected([&] { captureSoundscape(timeline, invalid); });
+        invalid = expectedCapture;
+        invalid.audio.spatial.enabled = false;
+        invalid.audio.spatial.regions[0].pan =
+            std::numeric_limits<double>::quiet_NaN();
         rejected([&] { captureSoundscape(timeline, invalid); });
         invalid = expectedCapture;
         invalid.audio.composition.variation =
@@ -401,6 +546,47 @@ int main() {
         mutate("composition-missing",
                "DELETE FROM scene_meta WHERE key='composition_variation'",
                true);
+        for (const auto &[key, value] :
+             std::array<std::pair<const char *, const char *>, 19>{{
+                 {"spatial_enabled", "2"}, {"spatial_amount", "1.1"},
+                 {"region_count", "9"}, {"region_count", "-1"},
+                 {"region_0_south", "-91"}, {"region_0_north", "-60"},
+                 {"region_0_west", "181"}, {"region_0_east", "160"},
+                 {"region_0_pan", "1.1"}, {"region_0_gain_db", "1"},
+                 {"region_0_send", "-0.1"}, {"region_0_echo_mix", "1.1"},
+                 {"region_0_delay_ms", "19"}, {"region_0_feedback", "0.51"},
+                 {"region_0_room_seconds", "2.6"}, {"region_0_tone", "-0.1"},
+                 {"region_0_position_pan", "2"},
+                 {"region_0_delay_ms", "137.2500"},
+                 {"region_0_id", "invalid id"}}}) {
+            mutate(std::string(key) + value,
+                   "UPDATE scene_meta SET value='" + std::string(value) +
+                       "' WHERE key='" + key + "'", true);
+        }
+        mutate("region-name-invalid-utf8",
+               "UPDATE scene_meta SET value=CAST(X'80' AS TEXT) "
+               "WHERE key='region_0_name'", true);
+        mutate("region-name-control",
+               "UPDATE scene_meta SET value=CAST(X'610062' AS TEXT) "
+               "WHERE key='region_0_name'", true);
+        mutate("region-name-overlong",
+               "UPDATE scene_meta SET value=replace(hex(zeroblob(65)),'0','x') "
+               "WHERE key='region_0_name'", true);
+        mutate("region-id-duplicate",
+               "UPDATE scene_meta SET value='pacific' WHERE key='region_1_id'",
+               true);
+        mutate("region-blob-type",
+               "UPDATE scene_meta SET value=CAST(value AS BLOB) "
+               "WHERE key='region_0_delay_ms'", true);
+        mutate("region-valid-resealed-edit",
+               "UPDATE scene_meta SET value='138' WHERE key='region_0_delay_ms'",
+               true);
+        mutate("region-unknown-field",
+               "INSERT INTO scene_meta VALUES('region_0_future','1')", true);
+        mutate("region-unknown-ordinal",
+               "INSERT INTO scene_meta VALUES('region_8_id','unknown')", true);
+        mutate("region-missing-field",
+               "DELETE FROM scene_meta WHERE key='region_1_name'", true);
         mutate("globals",
                "UPDATE scene_meta SET value='-20' WHERE key='master_db'");
         mutate("valid-globals-resealed",

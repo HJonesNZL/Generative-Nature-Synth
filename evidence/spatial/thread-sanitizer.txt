@@ -1,0 +1,14 @@
+PASS preparation requires deliberate enable and never autoplays
+PASS callback output equals existing renderer across device partitions
+PASS pause freezes callback position; stop and panic advance generations
+PASS plan replacement retires off callback and invalidates old preparation
+PASS failed preparation retains identity and disables audio
+PASS partial start failure and disable are recoverable and quiescent
+PASS device fault and invalid callback produce silence
+PASS missing callbacks time out safely and can restart
+PASS callback lease expires without worker heartbeat
+PASS unsupported device and complete start failure remain observable
+PASS concurrent callback replacement establishes quiescence
+PASS wet regional renderer replacement retires buffers off callback
+PASS coherent snapshot reader while callback progresses
+PASS callback has no C++ allocation or deallocation

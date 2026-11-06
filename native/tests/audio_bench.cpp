@@ -20,8 +20,12 @@ int main(int argc, char **argv) {
         argc == 2 && std::string_view(argv[1]) == "--characters";
     const bool compositionMode =
         argc == 2 && std::string_view(argv[1]) == "--composition";
-    if (argc > 1 && !characterMode && !compositionMode) {
-        std::cerr << "Usage: atlas-audio-bench [--characters|--composition]\n";
+    const bool spatialMode =
+        argc == 2 && std::string_view(argv[1]) == "--spatial";
+    bool spatialComposition{};
+    if (argc > 1 && !characterMode && !compositionMode && !spatialMode) {
+        std::cerr << "Usage: atlas-audio-bench "
+                     "[--characters|--composition|--spatial]\n";
         return 2;
     }
     std::vector<atlas::Event> events;
@@ -34,15 +38,18 @@ int main(int argc, char **argv) {
             event.locationKind = "station_detection";
             event.stationId = "bench:station";
             event.revisionSequence = group * 4 + j + 1;
-            if (characterMode) {
+            if (characterMode || spatialMode) {
                 constexpr std::array offsets{0, 10000, 29999, 30000};
                 event.observedAt = (group / 4) * 40000 +
                                    offsets[static_cast<std::size_t>(group % 4)];
                 event.speciesId = "tone:1";
             } else
                 event.observedAt = group * 10000;
-            if (compositionMode)
+            if (compositionMode || spatialMode)
                 event.speciesId = "birdweather:species:2561";
+            if (spatialMode)
+                event.position =
+                    atlas::Position{0, -157.5 + 45 * ((group * 4 + j) % 8)};
             event.firstSeenAt = event.observedAt;
             events.push_back(std::move(event));
         }
@@ -54,17 +61,37 @@ int main(int argc, char **argv) {
                          std::uint32_t rate, unsigned block) {
         atlas::AudioSettings settings;
         settings.sampleRate = rate;
-        if (compositionMode) {
+        if (compositionMode || (spatialMode && spatialComposition)) {
             settings.composition.enabled = true;
             settings.composition.density = atlas::CompositionDensity::active;
             settings.composition.variation = .7;
             settings.composition.seed = 812;
         }
+        if (spatialMode) {
+            settings.spatial.enabled = true;
+            settings.spatial.amount = 1;
+            for (unsigned region = 0; region < 8; ++region) {
+                atlas::RegionSettings value;
+                value.id = "bench" + std::to_string(region);
+                value.name = value.id;
+                value.west = -180 + 45.0 * region;
+                value.east = value.west + 45;
+                value.pan = -1 + 2.0 * region / 7;
+                value.send = 1;
+                value.feedback = .5;
+                value.delayMs = 500;
+                value.roomSeconds = 2.5;
+                value.echoMix = .5;
+                settings.spatial.regions.push_back(value);
+            }
+        }
         const std::array<atlas::VoiceProfile, 2> profiles{
             {{"", {}},
-             {compositionMode ? "birdweather:species:2561" : "tone:1", voice}}};
+             {(compositionMode || spatialMode) ? "birdweather:species:2561"
+                                               : "tone:1",
+              voice}}};
         const auto selected =
-            (characterMode || compositionMode)
+            (characterMode || compositionMode || spatialMode)
                 ? std::span<const atlas::VoiceProfile>(profiles)
                 : std::span<const atlas::VoiceProfile>{};
         const atlas::AudioPlan plan(timeline, settings, selected);
@@ -80,6 +107,7 @@ int main(int argc, char **argv) {
         if (!renderer.panic(renderer.generation()) ||
             !renderer.play(renderer.generation()))
             return false;
+        const auto warmed = renderer.statistics();
         std::size_t misses{};
         const double deadline = 1e6 * block / rate;
         while (renderer.state() != atlas::AudioState::finished) {
@@ -101,20 +129,54 @@ int main(int argc, char **argv) {
                              std::ceil(q * static_cast<double>(times.size()))) -
                          1];
         };
-        if (characterMode || compositionMode)
+        if (characterMode || compositionMode || spatialMode)
             std::cout << name << ',';
         std::cout << rate << ',' << block << ',' << times.size() << ','
                   << percentile(.50) << ',' << percentile(.95) << ','
                   << percentile(.99) << ',' << times.back() << ',' << deadline
                   << ',' << misses;
-        if (characterMode || compositionMode)
-            std::cout << ',' << renderer.statistics().triggered << ','
-                      << renderer.statistics().stolen << ','
-                      << renderer.statistics().peak;
+        if (characterMode || compositionMode || spatialMode)
+            std::cout << ','
+                      << renderer.statistics().triggered - warmed.triggered
+                      << ',' << renderer.statistics().stolen - warmed.stolen
+                      << ',' << renderer.statistics().peak;
         std::cout << '\n';
         return true;
     };
-    if (compositionMode) {
+    if (spatialMode) {
+        std::cout << "Eight configured buses with max feedback/decay/delay and "
+                     "send1, "
+                     "12000 source events cycling all regions, amount1; 12s "
+                     "bounded tail.\n";
+        std::cout << "character,rate,block,calls,p50_us,p95_us,p99_us,max_us,"
+                     "deadline_us,misses,triggered,stolen,peak\n";
+        constexpr std::array names{"struck", "whistle", "reed",
+                                   "bell",   "air",     "pulse"};
+        for (const bool composed : {false, true}) {
+            spatialComposition = composed;
+            for (unsigned character = 0; character < names.size();
+                 ++character) {
+                atlas::VoiceSettings voice;
+                voice.character = static_cast<atlas::VoiceCharacter>(character);
+                voice.attackSeconds = .100;
+                voice.decaySeconds = 3;
+                voice.brightness = .9;
+                voice.roughness = .8;
+                voice.pulseHz = 13;
+                voice.sweepSemitones = -7;
+                const auto name =
+                    std::string(composed ? "composed-" : "direct-") +
+                    names[character];
+                for (const auto block : {64u, 512u})
+                    if (!run(name, voice, 48000, block))
+                        return 3;
+                if (character == 5)
+                    for (const auto block : {32u, 512u})
+                        if (!run(name, voice, 192000, block))
+                            return 3;
+            }
+        }
+    } else if (compositionMode) {
         std::cout
             << "Composition active-density Tui motif, seed812, variation.7, "
                "12000 source events over30s; all six modulation characters.\n";

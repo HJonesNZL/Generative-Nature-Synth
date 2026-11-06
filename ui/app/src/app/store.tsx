@@ -43,7 +43,7 @@ export interface TransportView {
 }
 
 export interface AppState {
-  soundscape: { active: SoundscapeView | null; operation: "save" | "recall" | "composition" | null; epoch: number };
+  soundscape: { active: SoundscapeView | null; operation: "save" | "recall" | "composition" | "spatial" | null; epoch: number };
   screen: Screen;
   mode: ViewMode;
   timeBasis: TimeBasis;
@@ -63,7 +63,7 @@ export interface AppState {
 }
 
 export type Action =
-  | { type: "soundscapeOperation"; operation: "save" | "recall" | "composition" | null }
+  | { type: "soundscapeOperation"; operation: "save" | "recall" | "composition" | "spatial" | null }
   | { type: "soundscapeRecalled"; scene: SoundscapeView; preparation: HostMethods["prepareReplay"]["response"] }
   | { type: "screen"; screen: Screen }
   | { type: "mode"; mode: ViewMode }
@@ -84,6 +84,7 @@ export type Action =
   | { type: "historyFrozen"; frozen: HistoryFreezeResult | null }
   | { type: "replaySession"; session: SessionView | null }
   | { type: "replaySpeed"; speedNumerator: string }
+  | { type: "recipePrepared"; preparation: HostMethods["prepareReplay"]["response"] }
   | { type: "transport"; transport: Partial<TransportView> }
   | { type: "transportAck"; preparationId: string | null; generation: string; transport: Partial<TransportView> }
   | { type: "globeOrientation"; orientation: AppState["globeOrientation"] };
@@ -170,6 +171,12 @@ function reducer(state: AppState, action: Action): AppState {
     case "historyFrozen": return { ...state, history: { ...state.history, frozen: action.frozen } };
     case "replaySession": return { ...state, replay: { ...state.replay, session: action.session, preparationRevision: state.replay.preparationRevision + 1 }, transport: { ...state.transport, preparationId: null, durationUs: null, state: "stopped", positionUs: "0" } };
     case "replaySpeed": return { ...state, replay: { ...state.replay, speedNumerator: action.speedNumerator, speedDenominator: "1" }, transport: { ...state.transport, preparationId: null, state: "stopped", positionUs: "0", durationUs: null } };
+    case "recipePrepared": {
+      const preparation = action.preparation;
+      if (state.mode !== "replay" || !preparation.session || state.replay.session?.id !== preparation.session.id) return state;
+      return { ...state, transport: { ...state.transport, preparationId: preparation.preparationId, generation: preparation.generation,
+        durationUs: preparation.durationUs, positionUs: "0", state: "stopped", error: null, preparing: false } };
+    }
     case "transportAck":
       if (state.transport.preparationId !== action.preparationId || state.transport.generation !== action.generation) return state;
       return { ...state, transport: { ...state.transport, ...action.transport } };

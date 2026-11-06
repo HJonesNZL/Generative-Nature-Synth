@@ -246,3 +246,16 @@
 .composition-panel__controls input[type="number"] { width: 82px; }
 .composition-panel__controls input[aria-label="Composition seed"] { width: 112px; }
 .composition-panel__controls input[type="range"] { width: 85px; }
+
+.native-spatial fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.spatial-field { display: flex; flex-direction: column; gap: 3px; font-size: 11px; margin: 6px 0; }
+.native-spatial input[type="number"], .native-spatial input[type="text"], .spatial-field input { min-width: 0; width: 100%; padding: 5px; border: 1px solid var(--c-rule); background: var(--c-ground-raised); color: var(--c-ink); font: inherit; border-radius: var(--r-sm); }
+.spatial-switch { display: flex; align-items: center; gap: 6px; font-size: 12px; margin: 8px 0; }
+.spatial-number-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 12px; }
+.spatial-preview { height: 150px; border: var(--rule-hair); margin-top: 10px; }
+.spatial-preview .map2d { width: 100%; height: 100%; }
+.spatial-order { list-style: none; padding: 0; margin: 8px 0; }
+.spatial-order button { width: 100%; padding: 6px; text-align: left; border-bottom: var(--rule-hair); }
+.spatial-order button.is-selected { color: var(--c-on-accent); background: var(--c-accent); border-radius: var(--r-sm); }
+.spatial-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.spatial-actions .btn { font-size: 10px; }

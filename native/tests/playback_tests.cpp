@@ -285,6 +285,83 @@ int main() {
         f.runtime.enable(false); done = true; callbacks.join();
         check(valid && f.driver->active == 0 && !f.driver->running, "replacement crossed active callback");
     });
+    test("wet regional renderer replacement retires buffers off callback", [] {
+        const auto allocationsBefore = callbackAllocations.load(),
+                   freesBefore = callbackFrees.load();
+        atlas::AudioSettings settings;
+        settings.masterDb = -18;
+        settings.spatial.enabled = true;
+        settings.spatial.amount = 1;
+        std::vector<atlas::Event> events;
+        for (unsigned i = 0; i < 8; ++i) {
+            atlas::RegionSettings region;
+            region.id = "region" + std::to_string(i);
+            region.name = region.id;
+            region.west = -180 + 45.0 * i;
+            region.east = region.west + 45;
+            region.delayMs = 20;
+            region.send = 1;
+            region.feedback = .5;
+            region.pan = i % 2 ? 1 : -1;
+            settings.spatial.regions.push_back(region);
+            auto record = event(static_cast<int>(i + 1), i * 20000);
+            record.position = atlas::Position{0, region.west + 20};
+            events.push_back(std::move(record));
+        }
+        events.push_back(
+            event(9, 160000)); // Missing position stays unassigned.
+        const atlas::Timeline timeline(std::move(events),
+                                       atlas::TimeBasis::observed);
+        Fixture f;
+        auto prepared = f.runtime.prepare(timeline, settings);
+        check(prepared.ok && prepared.snapshot.routedNotes == 8 &&
+                  prepared.snapshot.unassignedNotes == 1 &&
+                  prepared.snapshot.wetActive,
+              "worker route accounting");
+        check(f.runtime.enable(true).ok &&
+                  f.command(atlas::PlaybackCommandKind::play).ok,
+              "wet playback start");
+        for (unsigned i = 0; i < 500; ++i) {
+            f.runtime.heartbeat();
+            f.pump();
+        }
+        check(f.command(atlas::PlaybackCommandKind::panic).ok && silent(f),
+              "wet panic left stale output");
+        std::atomic<bool> done{};
+        std::thread callbacks([&] {
+            std::array<float, 64> left{}, right{};
+            std::array<float *, 2> outputs{left.data(), right.data()};
+            while (!done.load()) {
+                f.driver->pump(f.runtime, outputs.data());
+                std::this_thread::sleep_for(std::chrono::microseconds(500));
+            }
+        });
+        bool valid = true;
+        for (unsigned i = 0; i < 24; ++i) {
+            settings.spatial.regions[0].delayMs = i % 2 ? 20 : 500;
+            const auto previous = f.runtime.snapshot().preparationId;
+            prepared = f.runtime.prepare(timeline, settings);
+            valid = valid && prepared.ok &&
+                    prepared.snapshot.preparationId != previous &&
+                    !prepared.snapshot.enabled && f.driver->active == 0;
+            if (!f.runtime.enable(true).ok)
+                valid = false;
+            const auto snapshot = f.runtime.snapshot();
+            if (!f.runtime
+                     .command({atlas::PlaybackCommandKind::play,
+                               snapshot.preparationId, snapshot.generation, 0})
+                     .ok)
+                valid = false;
+        }
+        f.runtime.enable(false);
+        done = true;
+        callbacks.join();
+        check(valid && !f.driver->running && f.driver->active == 0,
+              "wet replacement failed quiescence");
+        check(callbackAllocations == allocationsBefore &&
+                  callbackFrees == freesBefore,
+              "wet lifecycle allocated/freed on callback");
+    });
     test("coherent snapshot reader while callback progresses", [] {
         Fixture f; prepare(f); check(f.command(atlas::PlaybackCommandKind::play).ok, "play");
         const auto identity = f.runtime.snapshot();

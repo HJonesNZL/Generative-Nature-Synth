@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { CompositionSettings, CompositionState } from "../host/contracts";
+import { recipeStillCurrent } from "./recipeIdentity";
 import { useHost, useHostQuery, valueOf } from "./HostContext";
 import { useAppState, useDispatch } from "./store";
 
@@ -19,15 +20,20 @@ export function CompositionPanel() {
   const acceptedRef = useRef(accepted); acceptedRef.current = accepted;
   const loadedId = useRef<string | null>(null);
   const inFlight = useRef(false);
+  const epoch = useRef(state.soundscape.epoch);
   const value = valueOf(query);
   useEffect(() => {
     if (query.status !== "ready" || !value || value.preparation?.preparationId !== current.current.preparationId) return;
-    if (loadedId.current !== value.preparation.preparationId) setMessage(null);
-    acceptedRef.current = value; draftRef.current = value.settings;
-    loadedId.current = value.preparation.preparationId;
+    const previous = acceptedRef.current;
+    const preserve = previous && epoch.current === state.soundscape.epoch &&
+      previous.preparation?.session?.id === value.preparation.session?.id && JSON.stringify(previous.settings) === JSON.stringify(value.settings);
+    epoch.current = state.soundscape.epoch; acceptedRef.current = value;
+    loadedId.current = value.preparation.preparationId; setAccepted(value);
+    if (preserve) return;
+    setMessage(null); draftRef.current = value.settings;
     numeric.current = { tempoBpm: String(value.settings.tempoBpm), seed: String(value.settings.seed) };
     setNumericText(numeric.current);
-    setAccepted(value); setDraft(value.settings);
+    setDraft(value.settings);
   }, [query, value]);
   const flush = useRef<() => Promise<boolean>>(async () => true);
   flush.current = async () => {
@@ -44,14 +50,18 @@ export function CompositionPanel() {
       numeric.current = { tempoBpm: String(settings.tempoBpm), seed: String(settings.seed) };
       setNumericText(numeric.current); return true;
     }
-    const transport = current.current;
-    if (inFlight.current || !transport.preparationId || loadedId.current !== transport.preparationId) {
+    if (inFlight.current || !current.current.preparationId) {
       setMessage("Wait for the current piece settings before applying composition."); return false;
     }
     inFlight.current = true; setApplying(true); setMessage(null);
     try {
       // Submitted mutations are never cancelled on a screen change.
-      const result = await client.call("setComposition", { settings, preparationId: transport.preparationId, generation: transport.generation }, { timeoutMs: 30000 });
+      const fresh = await client.call("getComposition", {});
+      if (!fresh.ok || !fresh.value.preparation || !recipeStillCurrent(fresh.value, previous)) {
+        setMessage(fresh.ok ? "The source piece or composition recipe changed. Reload its settings before applying." : fresh.error.message); return false;
+      }
+      const preparation = fresh.value.preparation;
+      const result = await client.call("setComposition", { settings, preparationId: preparation.preparationId, generation: preparation.generation }, { timeoutMs: 30000 });
       if (!result.ok || !result.value.preparation) {
         setMessage(result.ok ? "Composition did not return a preparation." : result.error.message); return false;
       }
@@ -60,10 +70,7 @@ export function CompositionPanel() {
       numeric.current = { tempoBpm: String(next.settings.tempoBpm), seed: String(next.settings.seed) };
       setNumericText(numeric.current);
       setAccepted(next); setDraft(next.settings);
-      dispatch({ type: "transportAck", preparationId: transport.preparationId, generation: transport.generation, transport: {
-        preparationId: next.preparation!.preparationId, generation: next.preparation!.generation,
-        durationUs: next.preparation!.durationUs, positionUs: "0", state: "stopped", error: null, preparing: false,
-      } });
+      dispatch({ type: "recipePrepared", preparation: next.preparation! });
       setMessage("Composition applied. Listening is off; enable it and press Play to hear this candidate.");
       return true;
     } finally { inFlight.current = false; setApplying(false); }
@@ -72,7 +79,7 @@ export function CompositionPanel() {
   const apply = async () => {
     if (!client.edits.begin()) return;
     dispatch({ type: "soundscapeOperation", operation: "composition" });
-    try { await client.edits.drain(); }
+    try { if (await client.edits.drain(true, false)) await flush.current(); }
     finally { client.edits.end(); dispatch({ type: "soundscapeOperation", operation: null }); }
   };
   if (!client.supports("getComposition") || !client.supports("setComposition")) return null;

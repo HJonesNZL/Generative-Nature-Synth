@@ -8,6 +8,7 @@
  * - Adds request ids, timeouts and AbortSignal support. It never retries
  *   mutations on its own; callers decide.
  */
+import { validSpatialSettings } from "./spatialSettings.ts";
 import { EditBarrier } from "../app/editBarrier.ts";
 import type { AtlasHost, HostCapabilities, HostReply } from "./contracts";
 import type { AllMethods, HostNotification, MethodName } from "./provisional";
@@ -108,6 +109,16 @@ function validCompositionReply(method: string, value: unknown): boolean {
     (result.suppressedSourceEvents === undefined || boundedInteger(result.suppressedSourceEvents, 0, 50000));
 }
 
+function validSpatialReply(method: string, value: unknown): boolean {
+  if (!["getSpatial", "setSpatial"].includes(method)) return true;
+  if (!value || typeof value !== "object") return false;
+  const result = value as Record<string, unknown>;
+  return validSpatialSettings(result.settings) && (result.preparation === null && method === "getSpatial" ||
+    result.preparation !== null && validPlaybackReply("prepareReplay", result.preparation)) &&
+    [result.routedNotes, result.unassignedNotes].every(v => v === undefined || Number.isInteger(v) && (v as number) >= 0 && (v as number) <= 1000000) &&
+    (result.wetActive === undefined || typeof result.wetActive === "boolean");
+}
+
 const opaqueId = (value: unknown): value is string => typeof value === "string" && /^[0-9a-f]{32}$/.test(value);
 function validSceneSession(value: unknown): boolean {
   if (!value || typeof value !== "object") return false;
@@ -205,9 +216,9 @@ export class HostClient {
   }
 
   call<M extends MethodName>(method: M, args: AllMethods[M]["request"], options: { signal?: AbortSignal; timeoutMs?: number } = {}) {
-    if (["prepareReplay", "setTransport", "setAudioEnabled", "recallSoundscape", "setComposition"].includes(method)) this.playbackMutation += 1;
+    if (["prepareReplay", "setTransport", "setAudioEnabled", "recallSoundscape", "setComposition", "setSpatial"].includes(method)) this.playbackMutation += 1;
     const request = this.send(method, args, options);
-    return ["setVoiceParameter", "setVoiceType", "setMasterGain", "saveVoice", "revertVoice", "applyVoicePreset", "setComposition"].includes(method)
+    return ["setVoiceParameter", "setVoiceType", "setMasterGain", "saveVoice", "revertVoice", "applyVoicePreset", "setComposition", "setSpatial"].includes(method)
       ? this.edits.track(request) : request;
   }
 
@@ -240,7 +251,7 @@ export class HostClient {
       const request = { protocolVersion: 1 as const, requestId, method, args };
       const reply = (this.host as ExtendedHost).request(request, controller.signal).then((r): HostResult<AllMethods[M]["response"]> => {
         if (!r || typeof r !== "object" || typeof r.ok !== "boolean" || r.requestId !== requestId) return { ok: false, error: { code: "internal", message: "Reply did not match request id" } };
-        if (r.ok) return "result" in r && validPlaybackReply(method, r.result) && validVoiceReply(method, r.result, args) && validSoundscapeReply(method, r.result, args) && validCompositionReply(method, r.result) ? { ok: true, value: r.result } : { ok: false, error: { code: "internal", message: "Malformed host result" } };
+        if (r.ok) return "result" in r && validPlaybackReply(method, r.result) && validVoiceReply(method, r.result, args) && validSoundscapeReply(method, r.result, args) && validCompositionReply(method, r.result) && validSpatialReply(method, r.result) ? { ok: true, value: r.result } : { ok: false, error: { code: "internal", message: "Malformed host result" } };
         if (!r.error || typeof r.error.message !== "string" || !["unsupported", "invalid_request", "unavailable", "stale_generation", "internal"].includes(r.error.code))
           return { ok: false, error: { code: "internal", message: "Malformed host error" } };
         return { ok: false, error: r.error };

@@ -290,7 +290,8 @@ AudioPlan::AudioPlan(const Timeline &timeline, AudioSettings settings,
         !std::isfinite(settings.decaySeconds) || settings.decaySeconds < .100 ||
         settings.decaySeconds > 3.0 || !std::isfinite(settings.masterDb) ||
         settings.masterDb < -60 || settings.masterDb > 0 ||
-        !validCompositionSettings(settings.composition))
+        !validCompositionSettings(settings.composition) ||
+        !validSpatialSettings(settings.spatial))
         throw std::invalid_argument("audio settings outside revision-1 limits");
     if (timeline.durationUs() < 0 || timeline.durationUs() > maximumDurationUs)
         throw std::invalid_argument(
@@ -398,49 +399,87 @@ AudioPlan::AudioPlan(const Timeline &timeline, AudioSettings settings,
                                 note.phaseSeed, note.velocity, gate});
             totalFrames_ = std::max(totalFrames_, frame + tail);
         }
-        return;
-    }
-    actions_.reserve(timeline.schedule().size());
-    decisions_.reserve(timeline.schedule().size());
-    constexpr std::array<unsigned, 8> offsets{0, 2, 4, 7, 9, 12, 14, 16};
-    Microseconds window = -1;
-    unsigned admitted{};
-    for (const auto &item : timeline.schedule()) {
-        const auto nextWindow = item.dueUs / 10000;
-        if (nextWindow != window) {
-            window = nextWindow;
-            admitted = 0;
+    } else {
+        actions_.reserve(timeline.schedule().size());
+        decisions_.reserve(timeline.schedule().size());
+        constexpr std::array<unsigned, 8> offsets{0, 2, 4, 7, 9, 12, 14, 16};
+        Microseconds window = -1;
+        unsigned admitted{};
+        for (const auto &item : timeline.schedule()) {
+            const auto nextWindow = item.dueUs / 10000;
+            if (nextWindow != window) {
+                window = nextWindow;
+                admitted = 0;
+            }
+            if (admitted == 4) {
+                decisions_.push_back({item.eventIndex, Admission::density});
+                continue;
+            }
+            ++admitted;
+            const auto &event = timeline.events()[item.eventIndex];
+            const bool hasSpecies =
+                event.speciesId && !event.speciesId->empty();
+            const auto voiceSlot =
+                hasSpecies ? this->voiceSlot(*event.speciesId) : VoiceSlot{};
+            const auto offset =
+                hasSpecies
+                    ? offsets[hashSpecies(*event.speciesId) % offsets.size()]
+                    : 0;
+            if (!hasSpecies)
+                ++missingSpecies_;
+            const auto midi = settings.rootMidi + offset;
+            const auto frequency =
+                440.0 * std::exp2((static_cast<double>(midi) - 69.0) / 12.0);
+            const auto frame = frameAt(item.dueUs, settings.sampleRate);
+            actions_.push_back({frame, 2 * pi * frequency / settings.sampleRate,
+                                item.eventIndex, midi, voiceSlot,
+                                seedFor(event)});
+            decisions_.push_back({item.eventIndex, Admission::accepted});
+            totalFrames_ = std::max(
+                totalFrames_,
+                frame + (editableVoices_ ? maximumVoiceFrames
+                                         : lifetime(voiceBank_[voiceSlot])));
         }
-        if (admitted == 4) {
-            decisions_.push_back({item.eventIndex, Admission::density});
-            continue;
-        }
-        ++admitted;
-        const auto &event = timeline.events()[item.eventIndex];
-        const bool hasSpecies = event.speciesId && !event.speciesId->empty();
-        const auto voiceSlot =
-            hasSpecies ? this->voiceSlot(*event.speciesId) : VoiceSlot{};
-        const auto offset =
-            hasSpecies ? offsets[hashSpecies(*event.speciesId) % offsets.size()]
-                       : 0;
-        if (!hasSpecies)
-            ++missingSpecies_;
-        const auto midi = settings.rootMidi + offset;
-        const auto frequency =
-            440.0 * std::exp2((static_cast<double>(midi) - 69.0) / 12.0);
-        const auto frame = frameAt(item.dueUs, settings.sampleRate);
-        actions_.push_back({frame, 2 * pi * frequency / settings.sampleRate,
-                            item.eventIndex, midi, voiceSlot, seedFor(event)});
-        decisions_.push_back({item.eventIndex, Admission::accepted});
-        totalFrames_ = std::max(
-            totalFrames_,
-            frame + (editableVoices_ ? maximumVoiceFrames
-                                     : lifetime(voiceBank_[voiceSlot])));
     }
+    bool hasWetAction{};
+    std::uint64_t lastVoiceEnd{};
+    if (settings.spatial.enabled) {
+        const auto routes =
+            prepareSpatialRoutes(settings.spatial, timeline.events());
+        for (auto &action : actions_) {
+            action.route = routes[action.eventIndex];
+            const auto region = action.route.regionSlot;
+            hasWetAction =
+                hasWetAction ||
+                (region && settings.spatial.regions[region - 1].send > 0);
+            const auto &coefficients = voiceBank_[action.voiceSlot];
+            auto tail = lifetime(coefficients);
+            if (action.gateFrames)
+                tail = std::min(coefficients.attackFrames +
+                                    coefficients.decayFrames,
+                                std::max(coefficients.attackFrames,
+                                         action.gateFrames)) +
+                       coefficients.releaseFrames;
+            lastVoiceEnd = std::max(
+                lastVoiceEnd,
+                action.frame + (editableVoices_ ? maximumVoiceFrames : tail));
+        }
+    }
+    spatialPlan_ =
+        prepareSpatialPlan(settings.spatial, settings.sampleRate, hasWetAction);
+    if (spatialPlan_.wetActive) {
+        totalFrames_ =
+            std::max(totalFrames_, lastVoiceEnd + 12ULL * settings.sampleRate);
+        spatialEndFadeFrames_ = frames(.020);
+    }
+    if (settings.spatial.enabled &&
+        totalFrames_ > frameAt(maximumDurationUs, settings.sampleRate))
+        throw std::invalid_argument("spatial plan including voice and effect "
+                                    "tails exceeds 30 minute limit");
 }
 
-AudioRenderer::AudioRenderer(const AudioPlan &plan) noexcept
-    : plan_(plan), voiceBank_(plan.voiceBank_) {}
+AudioRenderer::AudioRenderer(const AudioPlan &plan)
+    : plan_(plan), spatial_(plan.spatialPlan_), voiceBank_(plan.voiceBank_) {}
 bool AudioRenderer::updateVoice(
     VoiceSlot slot, const VoiceCoefficients &coefficients) noexcept {
     if (!plan_.editableVoices_ || slot >= plan_.voiceProfiles_.size())
@@ -455,6 +494,7 @@ bool AudioRenderer::updateVoice(
     return true;
 }
 void AudioRenderer::clearVoices() noexcept {
+    spatial_.reset();
     voices_ = {};
     retiring_ = {};
 }
@@ -557,6 +597,7 @@ void AudioRenderer::trigger(const MusicalAction &action) noexcept {
              ? coefficients.scalePitchMultipliers[action.midiNote % 12]
              : coefficients.pitchMultiplier);
     slot->velocity = action.velocity;
+    slot->route = action.route;
     slot->releaseStart = coefficients.attackFrames + coefficients.decayFrames;
     if (action.gateFrames)
         slot->releaseStart =
@@ -688,10 +729,45 @@ bool AudioRenderer::process(std::span<float> output) noexcept {
                 trigger(plan_.actions_[nextAction_++]);
         }
         double sample{};
-        for (auto &voice : voices_)
-            sample += tick(voice, false);
-        for (auto &voice : retiring_)
-            sample += tick(voice, true);
+        StereoSample stereo;
+        if (plan_.spatialPlan_.enabled) {
+            std::array<double, spatialRegionCapacity> buses{};
+            const auto mixVoice = [&](Voice &voice, bool retiring) {
+                const auto value =
+                    tick(voice, retiring) * voice.route.regionGain;
+                stereo.left += value * voice.route.leftGain;
+                stereo.right += value * voice.route.rightGain;
+                if (voice.route.regionSlot)
+                    buses[voice.route.regionSlot - 1] += value;
+            };
+            for (auto &voice : voices_)
+                mixVoice(voice, false);
+            for (auto &voice : retiring_)
+                mixVoice(voice, true);
+            if (plan_.spatialPlan_.wetActive) {
+                const auto faults = spatial_.faults();
+                const auto wet = spatial_.process(buses);
+                statistics_.faults += spatial_.faults() - faults;
+                stereo.left =
+                    (stereo.left + plan_.spatialPlan_.amount * wet.left) *
+                    plan_.spatialPlan_.outputGain;
+                stereo.right =
+                    (stereo.right + plan_.spatialPlan_.amount * wet.right) *
+                    plan_.spatialPlan_.outputGain;
+                const auto remaining = plan_.totalFrames_ - frame_;
+                if (remaining <= plan_.spatialEndFadeFrames_) {
+                    const auto fade = static_cast<double>(remaining - 1) /
+                                      plan_.spatialEndFadeFrames_;
+                    stereo.left *= fade;
+                    stereo.right *= fade;
+                }
+            }
+        } else {
+            for (auto &voice : voices_)
+                sample += tick(voice, false);
+            for (auto &voice : retiring_)
+                sample += tick(voice, true);
+        }
         if (rampRemaining_) {
             --rampRemaining_;
             const auto fraction =
@@ -699,14 +775,32 @@ bool AudioRenderer::process(std::span<float> output) noexcept {
             gain_ = rampFrom_ +
                     (rampTo_ - rampFrom_) * (1 - std::cos(pi * fraction)) * .5;
         }
-        sample *= gain_ * plan_.masterGain_;
-        if (!std::isfinite(sample) || std::abs(sample) > .800001) {
-            sample = 0;
-            clearVoices();
-            ++statistics_.faults;
+        if (plan_.spatialPlan_.enabled) {
+            const auto outputGain = gain_ * plan_.masterGain_;
+            stereo.left *= outputGain;
+            stereo.right *= outputGain;
+            if (!std::isfinite(stereo.left) || !std::isfinite(stereo.right) ||
+                std::abs(stereo.left) > .800001 ||
+                std::abs(stereo.right) > .800001) {
+                stereo = {};
+                clearVoices();
+                ++statistics_.faults;
+            }
+            output[i] = static_cast<float>(stereo.left);
+            output[i + 1] = static_cast<float>(stereo.right);
+            statistics_.peak =
+                std::max(statistics_.peak, std::max(std::abs(stereo.left),
+                                                    std::abs(stereo.right)));
+        } else {
+            sample *= gain_ * plan_.masterGain_;
+            if (!std::isfinite(sample) || std::abs(sample) > .800001) {
+                sample = 0;
+                clearVoices();
+                ++statistics_.faults;
+            }
+            output[i] = output[i + 1] = static_cast<float>(sample);
+            statistics_.peak = std::max(statistics_.peak, std::abs(sample));
         }
-        output[i] = output[i + 1] = static_cast<float>(sample);
-        statistics_.peak = std::max(statistics_.peak, std::abs(sample));
         ++frame_;
         if (!rampRemaining_ && state_ == AudioState::pausing)
             state_ = AudioState::paused;

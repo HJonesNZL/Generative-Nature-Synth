@@ -1,9 +1,5 @@
-/**
- * Region effects (Sound Studio right column): which places shape the sound,
- * how overlaps and uncertain positions are resolved, and the routing of the
- * selected voice. Region geometry editing is not offered until the host
- * provides it (see INTEGRATION_GAPS.md).
- */
+/** Native bounded spatial editor when advertised; otherwise the illustrative legacy region view. */
+import { NativeSpatialEditor } from "./NativeSpatialEditor";
 import { useMemo, useRef, useState } from "react";
 import type { RegionView } from "../../host/contracts";
 import { useHost, useHostQuery, valueOf } from "../../app/HostContext";
@@ -15,6 +11,10 @@ import { Notice } from "../../components/Notice";
 import { Toggle } from "../../components/Toggle";
 
 export function RegionEffectsPanel({ voiceName }: { voiceName: string | null }) {
+  const { client } = useHost();
+  return client.supports("getSpatial") && client.supports("setSpatial") ? <NativeSpatialEditor /> : <LegacyRegionEffectsPanel voiceName={voiceName} />;
+}
+function LegacyRegionEffectsPanel({ voiceName }: { voiceName: string | null }) {
   const { client } = useHost();
   const state = useAppState();
   const dispatch = useDispatch();

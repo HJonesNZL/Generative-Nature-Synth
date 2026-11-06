@@ -1,0 +1,56 @@
+{
+  "sourceSha256": "6ab43e1925b126a4749c7ab41923b86173cbe02386d42db066c7eabe6f94d618",
+  "recordedAtUtc": "2026-11-06T22:38:03.228775+00:00",
+  "platform": "macOS-15.6.1-arm64-arm-64bit",
+  "nativeArtifact": "build/spatial-qualified-6ab43e1925b1/atlas-audio-host",
+  "nativeArtifactSha256": "243072d718295e94010b9c8039ea1b5456dc7a861b25d783702b39321d73ce70",
+  "cliArtifactSha256": "4c767a6c4b25dc9dddd4d4f2ebad7a85699273ce74117629633c2c85a7ccdfde",
+  "benchmarkArtifactSha256": "8038ca5763b0755415d64139ce98878baa1c95df16e07b8ef9c6e6738e91ab98",
+  "threadSanitizerArtifactSha256": "9d63974a4b7eb890f2fce03a482ae7fcd7caec8fca799a0c6bd8df86a46bb87b",
+  "benchmarks": [
+    {
+      "file": "benchmark-initial.csv",
+      "cases": 28,
+      "calls": 1013715,
+      "deadlineMisses": 1,
+      "deadlineMisses48k": 0,
+      "worstP99DeadlineFraction": 0.17275165449669103,
+      "missCases": [
+        {
+          "character": "composed-pulse",
+          "sampleRate": 192000,
+          "blockFrames": 512,
+          "misses": 1,
+          "maxMicroseconds": 3728.54,
+          "deadlineMicroseconds": 2666.67
+        }
+      ]
+    },
+    {
+      "file": "benchmark.csv",
+      "cases": 28,
+      "calls": 1013715,
+      "deadlineMisses": 3,
+      "deadlineMisses48k": 0,
+      "worstP99DeadlineFraction": 0.172253655492689,
+      "missCases": [
+        {
+          "character": "composed-pulse",
+          "sampleRate": 192000,
+          "blockFrames": 32,
+          "misses": 3,
+          "maxMicroseconds": 1050.29,
+          "deadlineMicroseconds": 166.667
+        }
+      ]
+    }
+  ],
+  "maximumDelayBytesPerRenderer": 16379904,
+  "maximumThreeRendererOverlapDelayBytes": 49139712,
+  "hardwareQualified": false,
+  "notes": [
+    "Benchmark initial run reports cumulative trigger/steal counters including warm-up; final run fixes counters by subtracting warm-up. Timing methodology/DSP unchanged. Both runs retained.",
+    "Each run has12000 source events, eight buses at maxsend/feedback/nominaldecay/delay, six characters direct/composed at48k64/512 pluspulse192k32/512. No test/browser/build job ran during measurement. OS and owner background load uncontrolled.",
+    "Observed high-rate timing outliers remain unqualified; neither run certifies realtime device deadlines, UI/DAW mixed load or multi-instance performance."
+  ]
+}

@@ -19,6 +19,7 @@ from animal_atlas.sessions import Sessions
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--output', type=Path, required=True)
+parser.add_argument('--spatial', action='store_true', help='Add two explicit synthetic regions with stereo echo/ambience')
 args = parser.parse_args()
 output = args.output.resolve()
 output.mkdir(parents=True, exist_ok=False)
@@ -39,7 +40,7 @@ for name, density, spacing in [('sparse', 0, 1.75), ('dense', 2, .19)]:
     for index in range(int(24 / spacing)):
         identity, label = species[index % len(species)]
         record = event('composition-demo', str(index), stamp(start + timedelta(seconds=index * spacing)),
-            'acoustic_species_detection', 'station_detection', -41, 174,
+            'acoustic_species_detection', 'station_detection', -41, 170 + (index % 6) * 1.5,
             species_id='birdweather:species:' + identity, common_name=label,
             station_id='composition-demo:station', provenance_mode='demo')
         records.append((record, {}))
@@ -51,6 +52,15 @@ for name, density, spacing in [('sparse', 0, 1.75), ('dense', 2, .19)]:
         prep = client.request('prepareReplay', dict(sessionId=session['id'], basis='observed', speedNumerator='1', speedDenominator='1'))
         settings = dict(enabled=True, tempoBpm=96, tonicPitchClass=2, scale='minorPentatonic', density=density, variation=.35, seed=812, quantize=True)
         applied = client.request('setComposition', dict(settings=settings, preparationId=prep['preparationId'], generation=prep['generation']))
+        spatial = None
+        if args.spatial:
+            west = dict(id='west', name='Synthetic western sound region', south=-48, north=-34, west=166, east=174,
+                pan=-.6, gainDb=0, send=.75, echoMix=.2, delayMs=230, feedback=.35, roomSeconds=1.8, tone=.35, positionPan=True)
+            east = dict(west, id='east', name='Synthetic eastern sound region', west=174, east=180,
+                pan=.65, echoMix=.75, delayMs=320, feedback=.45, roomSeconds=.9, tone=.7)
+            spatial = dict(enabled=True, amount=.7, regions=[west, east])
+            preparation = applied['preparation']
+            client.request('setSpatial', dict(settings=spatial, preparationId=preparation['preparationId'], generation=preparation['generation']))
         scene = client.request('saveSoundscape', dict(name='Synthetic ' + name + ' ensemble'))
     finally:
         client.close()
@@ -58,7 +68,7 @@ for name, density, spacing in [('sparse', 0, 1.75), ('dense', 2, .19)]:
     wav = output / (name + '.wav')
     subprocess.run([str(ROOT / 'build/native-playback/atlas-native'), 'scene-render', '--scene', str(scene_path), '--output', str(wav)], check=True)
     manifest['examples'].append(dict(name=name, file=wav.name, sha256=hashlib.sha256(wav.read_bytes()).hexdigest(),
-        sceneHash=scene['contentHash'], settings=settings, sourceEvents=len(records), generatedNotes=applied['generatedNotes'],
+        sceneHash=scene['contentHash'], settings=settings, spatial=spatial, sourceEvents=len(records), generatedNotes=applied['generatedNotes'],
         suppressedSourceEvents=applied['suppressedSourceEvents'], suppressedPhraseNotes=applied['suppressed']))
 (output / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
 items = ''.join('<h2>' + html.escape(item['name']) + '</h2><audio controls src="' + item['file'] + '"></audio>' for item in manifest['examples'])

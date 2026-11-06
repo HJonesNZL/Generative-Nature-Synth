@@ -1,0 +1,125 @@
+{
+  "context": "Synthetic demonstration events; original musical hypotheses, not recordings or listening-approved presets.",
+  "examples": [
+    {
+      "name": "sparse",
+      "file": "sparse.wav",
+      "sha256": "c90ee6bdf3a51a107d3d226a8ffdec06f0529dd20a4f177ba8d20c2dbd439954",
+      "sceneHash": "af4f52c97fa119e5d76732835a95555349c2ce18c6c2c65b0ab604134e2c5afc",
+      "settings": {
+        "enabled": true,
+        "tempoBpm": 96,
+        "tonicPitchClass": 2,
+        "scale": "minorPentatonic",
+        "density": 0,
+        "variation": 0.35,
+        "seed": 812,
+        "quantize": true
+      },
+      "spatial": {
+        "enabled": true,
+        "amount": 0.7,
+        "regions": [
+          {
+            "id": "west",
+            "name": "Synthetic western sound region",
+            "south": -48,
+            "north": -34,
+            "west": 166,
+            "east": 174,
+            "pan": -0.6,
+            "gainDb": 0,
+            "send": 0.75,
+            "echoMix": 0.2,
+            "delayMs": 230,
+            "feedback": 0.35,
+            "roomSeconds": 1.8,
+            "tone": 0.35,
+            "positionPan": true
+          },
+          {
+            "id": "east",
+            "name": "Synthetic eastern sound region",
+            "south": -48,
+            "north": -34,
+            "west": 174,
+            "east": 180,
+            "pan": 0.65,
+            "gainDb": 0,
+            "send": 0.75,
+            "echoMix": 0.75,
+            "delayMs": 320,
+            "feedback": 0.45,
+            "roomSeconds": 0.9,
+            "tone": 0.7,
+            "positionPan": true
+          }
+        ]
+      },
+      "sourceEvents": 13,
+      "generatedNotes": 13,
+      "suppressedSourceEvents": 0,
+      "suppressedPhraseNotes": 0
+    },
+    {
+      "name": "dense",
+      "file": "dense.wav",
+      "sha256": "021b8e455930b45cbf379ee976c75ed5031bf01326bb71f39515a6b0cf09660b",
+      "sceneHash": "e6a5db7fadd90b5859cb20f43315d7ddc9299f866ad1c224687332c779f2cc14",
+      "settings": {
+        "enabled": true,
+        "tempoBpm": 96,
+        "tonicPitchClass": 2,
+        "scale": "minorPentatonic",
+        "density": 2,
+        "variation": 0.35,
+        "seed": 812,
+        "quantize": true
+      },
+      "spatial": {
+        "enabled": true,
+        "amount": 0.7,
+        "regions": [
+          {
+            "id": "west",
+            "name": "Synthetic western sound region",
+            "south": -48,
+            "north": -34,
+            "west": 166,
+            "east": 174,
+            "pan": -0.6,
+            "gainDb": 0,
+            "send": 0.75,
+            "echoMix": 0.2,
+            "delayMs": 230,
+            "feedback": 0.35,
+            "roomSeconds": 1.8,
+            "tone": 0.35,
+            "positionPan": true
+          },
+          {
+            "id": "east",
+            "name": "Synthetic eastern sound region",
+            "south": -48,
+            "north": -34,
+            "west": 174,
+            "east": 180,
+            "pan": 0.65,
+            "gainDb": 0,
+            "send": 0.75,
+            "echoMix": 0.75,
+            "delayMs": 320,
+            "feedback": 0.45,
+            "roomSeconds": 0.9,
+            "tone": 0.7,
+            "positionPan": true
+          }
+        ]
+      },
+      "sourceEvents": 126,
+      "generatedNotes": 441,
+      "suppressedSourceEvents": 0,
+      "suppressedPhraseNotes": 0
+    }
+  ]
+}

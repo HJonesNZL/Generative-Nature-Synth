@@ -55,7 +55,7 @@ struct PlaybackRuntime::Impl {
     std::unique_ptr<AudioPlan> plan;
     std::unique_ptr<AudioRenderer> renderer;
     std::uint64_t preparationId{};
-    std::size_t suppressedSourceEvents{};
+    std::size_t suppressedSourceEvents{}, routedNotes{};
     std::atomic<bool> enabled{}, started{};
     std::atomic<unsigned> failure{static_cast<unsigned>(PlaybackError::none)};
     std::atomic<std::uint64_t> snapshotSerial{}, position{}, generation{};
@@ -139,6 +139,9 @@ PlaybackSnapshot PlaybackRuntime::snapshot() const noexcept {
         value.generatedNotes = p.plan->actions().size();
         value.suppressedSourceEvents = p.suppressedSourceEvents;
         value.omittedCompositionNotes = p.plan->omittedCompositionNotes();
+        value.routedNotes = p.routedNotes;
+        value.unassignedNotes = value.generatedNotes - p.routedNotes;
+        value.wetActive = p.plan->spatialPlan().wetActive;
         value.gainDb = p.plan->settings().masterDb;
     }
     // Only the worker retries. All payload fields are atomic; the callback
@@ -174,6 +177,11 @@ PlaybackResult PlaybackRuntime::prepare(const Timeline &timeline,
         impl_->plan->decisions().begin(), impl_->plan->decisions().end(),
         [](const AudioDecision &decision) {
             return decision.reason == Admission::density;
+        }));
+    impl_->routedNotes = static_cast<std::size_t>(std::count_if(
+        impl_->plan->actions().begin(), impl_->plan->actions().end(),
+        [](const MusicalAction &action) {
+            return action.route.regionSlot != 0;
         }));
     ++impl_->preparationId;
     impl_->publish();

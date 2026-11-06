@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="(empty)"
+	tests="20"
+	failures="0"
+	disabled="0"
+	skipped="0"
+	hostname=""
+	time="5"
+	timestamp="2026-11-07T11:34:23"
+	>
+	<testcase name="atlas-core" classname="atlas-core" time="0.00416767" status="run">
+		<properties/>
+		<system-out>PASS explicit UTC and timezone equivalence
+PASS fractional and pre-epoch timestamps
+PASS historical and future dates avoid 32-bit day multiplication
+PASS invalid calendar and timezone rejection
+PASS station identity and position validation
+PASS bounded rational speeds
+PASS four hours into four minutes
+PASS late upload changes observation versus arrival ordering
+PASS simultaneous stable order and bounded omission
+PASS sample positions invariant across partitions
+PASS seek and half-open block boundary
+PASS recording bounds retain leading and trailing silence
+PASS empty timeline and zero-output capacity
+PASS invalid/overflow block inputs fail without throwing
+PASS duration overflow is explicit
+PASS sliding one-second density
+PASS timeline sorting avoids per-comparison ID allocations
+PASS prepared block lookup performs no C++ allocations
+18 passed, 0 failed
+</system-out>
+	</testcase>
+	<testcase name="atlas-sha256" classname="atlas-sha256" time="0.258013" status="run">
+		<properties/>
+		<system-out>SHA-256 known answers, chunking and nonmutating digest passed
+</system-out>
+	</testcase>
+	<testcase name="atlas-audio" classname="atlas-audio" time="0.153058" status="run">
+		<properties/>
+		<system-out>PASS direct equation normal and parameter/rate extremes
+PASS absolute admission and upward timing
+PASS overload partition invariance and retiring capacity
+PASS oldest steals with eight simultaneous retiring states
+PASS pause resume stop panic seek and stale controls
+PASS normal-level analytical transport ramps and repeated retarget
+PASS dense stealing callback allocates and destroys nothing
+PASS near-end stop regression
+PASS zero invalid buffers and no callback allocation or destruction
+PASS empty windows and seek clear prior voices
+PASS invalid settings rejected
+</system-out>
+	</testcase>
+	<testcase name="atlas-voice-audio" classname="atlas-voice-audio" time="0.705033" status="run">
+		<properties/>
+		<system-out>PASS profile controls follow independent pitch envelope and gain equations
+PASS default profiles preserve legacy PCM and deterministic species pitches
+PASS actual store defaults and saved normalized roundtrips preserve legacy PCM
+PASS normalized endpoints adjacent values and random settings compile into bounded audio updates
+PASS edits affect new notes of one species and retain captured ringing voices
+PASS bounded bank and invalid parameter boundaries are explicit
+PASS runtime acknowledges edits without changing device preparation or transport
+</system-out>
+	</testcase>
+	<testcase name="atlas-soundscapes" classname="atlas-soundscapes" time="0.80609" status="run">
+		<properties/>
+		<system-out>Exact platform PCM artifact comparison not requested; set ATLAS_VERIFY_LEGACY_PCM_BASELINE=1 on its recorded platform
+Soundscape atomic save, strict schema, provenance, complete profiles, independent recall/PCM, corrupt input and bounded listing passed
+</system-out>
+	</testcase>
+	<testcase name="atlas-composition" classname="atlas-composition" time="0.638627" status="run">
+		<properties/>
+		<system-out>PASS scale membership safely normalizes signed note and rejects malformed controls
+PASS absolute phrase oracle, event provenance and independent gated PCM
+PASS tempo, quantization and density have absolute musical effects
+PASS all exact candidates have distinct bounded motifs and honest fallback
+PASS every scale/tonic keeps default and edited voices in key
+PASS seeds ordering and block partitions are reproducible
+PASS bounded dense callback, onset snapshots and malformed coefficient defence
+PASS full source capacity, overload decisions, tails and settings boundaries
+PASS disabled composition settings preserve legacy PCM exactly
+</system-out>
+	</testcase>
+	<testcase name="atlas-spatial" classname="atlas-spatial" time="0.322487" status="run">
+		<properties/>
+		<system-out>PASS geographic boundaries dateline priority and actual position semantics
+PASS strict settings and UTF8 validation including disabled drafts
+PASS echo impulse has absolute delay stereo spacing and geometric decay
+PASS damped-comb impulse agrees with independent transfer-function expansion
+PASS enabled dry panning gain mono and delayed engine output have absolute oracles
+PASS voice retirement retains onset route after later region arrivals
+PASS historical multi-region energy normalized and fixed memory bounded
+PASS logical reset nonfinite recovery and tiny-state policy
+PASS all plan paths reserve effects after possible voice lifetime and enforce total limit
+PASS block parity pause seek stop panic and exact natural final zero
+PASS nonzero late ambience follows the independently specified final linear fade
+PASS maximum-region callback and transport allocate and destroy nothing
+PASS spatial disabled retains legacy and composition PCM exactly
+</system-out>
+	</testcase>
+	<testcase name="atlas-alias-probe" classname="atlas-alias-probe" time="3.38136" status="run">
+		<properties/>
+		<system-out>PASS rate=22050 character=0 sweep=-12.00 partials=3 residual_dBr=-90.43 convergence_dBr=-131.09 padding_dBr=-134.99 integer_error=1.76e-09
+PASS rate=22050 character=0 sweep=0.00 partials=3 residual_dBr=-89.39 convergence_dBr=-130.02 padding_dBr=-134.36 integer_error=1.34e-09
+PASS rate=22050 character=0 sweep=12.00 partials=3 residual_dBr=-88.28 convergence_dBr=-128.91 padding_dBr=-133.58 integer_error=1.74e-09
+PASS rate=22050 character=1 sweep=-12.00 partials=3 residual_dBr=-86.40 convergence_dBr=-127.13 padding_dBr=-132.44 integer_error=1.57e-09
+PASS rate=22050 character=1 sweep=0.00 partials=3 residual_dBr=-85.62 convergence_dBr=-126.34 padding_dBr=-131.68 integer_error=1.85e-09
+PASS rate=22050 character=1 sweep=12.00 partials=3 residual_dBr=-84.96 convergence_dBr=-125.66 padding_dBr=-131.01 integer_error=1.83e-09
+PASS rate=22050 character=2 sweep=-12.00 partials=4 residual_dBr=-75.25 convergence_dBr=-132.24 padding_dBr=-106.57 integer_error=9.06e-10
+PASS rate=22050 character=2 sweep=0.00 partials=4 residua...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="atlas-presets" classname="atlas-presets" time="1.73009" status="run">
+		<properties/>
+		<system-out>PASS immutable catalog metadata, exact IDs and unique valid settings
+PASS exact species coverage includes explicit legacy and unresolved taxonomy
+PASS related families share cores and substantial gestures remain distinct
+PASS every candidate compiles across rate boundaries and renders finite
+</system-out>
+	</testcase>
+	<testcase name="atlas-voice-characters" classname="atlas-voice-characters" time="2.32339" status="run">
+		<properties/>
+		<system-out>PASS independent closed-form oscillator, modal decay and gesture oracle
+PASS exact neutral legacy dispatch and independent legacy equation
+PASS same-register spectra differ without changing old envelope controls
+PASS every macro changes observable behaviour and zero gestures remain neutral
+PASS stable event identity and revision seeds, replay and partition invariance
+PASS coefficient frequency admission and all-rate endpoint numerical bounds
+PASS prepared updates captured only at the next onset
+PASS invalid new settings and hostile POD updates retain valid bank
+PASS transposed note bounds and root-specific POD pitch rejection
+PASS all-character dense stealing allocates nothing and obeys shared peak bound
+</system-out>
+	</testcase>
+	<testcase name="atlas-render-jobs" classname="atlas-render-jobs" time="1.94926" status="run">
+		<properties/>
+		<system-out>Offline jobs: exact frozen scene PCM/rate/tails, bounded async control/history, cancellation/shutdown, no overwrite, failures and recipe traceability passed
+</system-out>
+	</testcase>
+	<testcase name="atlas-voice-store" classname="atlas-voice-store" time="0.546285" status="run">
+		<properties/>
+		<system-out>Voice drafts, normalized values, durable CAS, rollback, read-only, corruption and capacity passed
+</system-out>
+	</testcase>
+	<testcase name="atlas-playback" classname="atlas-playback" time="0.610735" status="run">
+		<properties/>
+		<system-out>PASS preparation requires deliberate enable and never autoplays
+PASS callback output equals existing renderer across device partitions
+PASS pause freezes callback position; stop and panic advance generations
+PASS plan replacement retires off callback and invalidates old preparation
+PASS failed preparation retains identity and disables audio
+PASS partial start failure and disable are recoverable and quiescent
+PASS device fault and invalid callback produce silence
+PASS missing callbacks time out safely and can restart
+PASS callback lease expires without worker heartbeat
+PASS unsupported device and complete start failure remain observable
+PASS concurrent callback replacement establishes quiescence
+PASS wet regional renderer replacement retires buffers off callback
+PASS coherent snapshot reader while callback progresses
+PASS callback has no C++ allocation or deallocation
+</system-out>
+	</testcase>
+	<testcase name="atlas-soundscape-ui" classname="atlas-soundscape-ui" time="0.785692" status="run">
+		<properties/>
+		<system-out>......
+----------------------------------------------------------------------
+Ran 6 tests in 0.729s
+
+OK
+</system-out>
+	</testcase>
+	<testcase name="atlas-voice-ui" classname="atlas-voice-ui" time="1.07153" status="run">
+		<properties/>
+		<system-out>.......
+----------------------------------------------------------------------
+Ran 7 tests in 1.018s
+
+OK
+</system-out>
+	</testcase>
+	<testcase name="atlas-playback-ui" classname="atlas-playback-ui" time="0.897244" status="run">
+		<properties/>
+		<system-out>.........
+----------------------------------------------------------------------
+Ran 9 tests in 0.847s
+
+OK
+</system-out>
+	</testcase>
+	<testcase name="atlas-audio-host-lifecycle" classname="atlas-audio-host-lifecycle" time="0.678162" status="run">
+		<properties/>
+		<system-out>{"status": "passed_host_lifecycle_smoke", "elapsedSeconds": 0.622887, "artifactSha256": "243072d718295e94010b9c8039ea1b5456dc7a861b25d783702b39321d73ce70", "evidence": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native-playback/audio-host-lifecycle.json"}
+</system-out>
+	</testcase>
+	<testcase name="atlas-storage" classname="atlas-storage" time="0.756284" status="run">
+		<properties/>
+		<system-out>..................
+----------------------------------------------------------------------
+Ran 18 tests in 0.708s
+
+OK
+</system-out>
+	</testcase>
+	<testcase name="atlas-ui-host" classname="atlas-ui-host" time="0.144846" status="run">
+		<properties/>
+		<system-out>........
+----------------------------------------------------------------------
+Ran 8 tests in 0.095s
+
+OK
+</system-out>
+	</testcase>
+	<testcase name="atlas-wav" classname="atlas-wav" time="1.91261" status="run">
+		<properties/>
+		<system-out>.............
+----------------------------------------------------------------------
+Ran 13 tests in 1.821s
+
+OK
+</system-out>
+	</testcase>
+</testsuite>

@@ -32,10 +32,20 @@ bool validHash(std::string_view hash) {
                       (value >= 'a' && value <= 'f');
            });
 }
-std::string recipe(const Soundscape &scene, std::string_view sourceHash) {
+} // namespace
+std::string soundscapeRenderRecipe(const Soundscape &scene,
+                                  std::string_view sourceHash) {
+    if (!validHash(sourceHash))
+        fail(Code::invalidArgument,
+             "Render engine source SHA-256 must be lowercase hex");
     const auto &capture = scene.capture();
-    return "{\"recipe_version\":2,\"engine\":\"atlas-additive\",\"scene_"
-           "hash\":" +
+    const auto regional = capture.schemaRevision >= 3
+                              ? ",\"regional_tail_policy\":"
+                                "\"active_wet_12s_final_20ms_fade\""
+                              : "";
+    return "{\"recipe_version\":" +
+           std::to_string(capture.schemaRevision >= 3 ? 3 : 2) +
+           ",\"engine\":\"atlas-additive\",\"scene_hash\":" +
            detail::quoteJson(scene.contentHash()) +
            ",\"scene_schema_revision\":" +
            std::to_string(capture.schemaRevision) +
@@ -51,10 +61,10 @@ std::string recipe(const Soundscape &scene, std::string_view sourceHash) {
            ",\"sample_rate\":" + std::to_string(capture.audio.sampleRate) +
            ",\"engine_source_sha256\":" + detail::quoteJson(sourceHash) +
            ",\"channel_count\":2,\"pcm_bits\":24,\"tail_policy\":\"editable_"
-           "voice_maximum\",\"authoritative_recipe\":\"self-contained-atlas-"
+           "voice_maximum\"" + std::string(regional) +
+           ",\"authoritative_recipe\":\"self-contained-atlas-"
            "scene\"}";
 }
-} // namespace
 struct RenderJobs::Impl {
     struct Job {
         RenderJobSnapshot snapshot;
@@ -135,7 +145,7 @@ struct RenderJobs::Impl {
             job->snapshot.sampleRate = capture.audio.sampleRate;
         }
         const auto output = directory / job->snapshot.outputFilename;
-        renderWave(plan, output, recipe(scene, engineSourceHash), 512,
+        renderWave(plan, output, soundscapeRenderRecipe(scene, engineSourceHash), 512,
                    {stop, &job->framesWritten, &job->totalFrames});
     }
     void render(std::stop_token stop, const std::shared_ptr<Job> &job,

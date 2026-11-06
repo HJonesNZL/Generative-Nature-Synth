@@ -4,8 +4,10 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 
 namespace atlas {
+class Soundscape;
 enum class RenderJobState { running, completed, cancelled, failed };
 struct RenderJobSnapshot {
     std::string id;
@@ -24,6 +26,10 @@ class RenderJobError : public std::runtime_error {
   private:
     RenderJobErrorCode code_;
 };
+// Shared worker-side traceability metadata for both CLI and asynchronous WAV
+// export. Rejects a malformed lowercase engine source SHA-256.
+std::string soundscapeRenderRecipe(const Soundscape &,
+                                  std::string_view engineSourceSha256);
 // Control/UI worker API. One independent offline jthread, one active job,
 // sixteen retained terminal snapshots. No method belongs on an audio callback.
 class RenderJobs {

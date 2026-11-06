@@ -137,7 +137,7 @@ export function nativeBridge() {
             if (pending.size >= 16) { reject(429); return; }
             start();
             const result = await new Promise((resolveReply, rejectReply) => {
-              const timer = setTimeout(fail, ['saveSoundscape', 'recallSoundscape', 'setComposition'].includes(request.method) ? 30000 : 5000);
+              const timer = setTimeout(fail, ['saveSoundscape', 'recallSoundscape', 'setComposition', 'setSpatial'].includes(request.method) ? 30000 : 5000);
               pending.set(request.requestId, { resolve: resolveReply, reject: rejectReply, timer, line: JSON.stringify(request) + '\n' });
               res.once('close', () => {
                 if (res.writableEnded) return;
@@ -145,7 +145,7 @@ export function nativeBridge() {
                   // Reads and preparation may finish into a discarded response;
                   // preserve FIFO correlation for the replacement selection.
                   // An abandoned audible mutation retires the process immediately.
-                  if (!['getCapabilities', 'getChanges', 'getCatalog', 'listSessions', 'getMaterialEvents', 'getTransport', 'getAudioState', 'getVoiceLibrary', 'getVoice', 'getComposition', 'prepareReplay', 'listSoundscapes', 'getRenderJob'].includes(request.method)) fail();
+                  if (!['getCapabilities', 'getChanges', 'getCatalog', 'listSessions', 'getMaterialEvents', 'getTransport', 'getAudioState', 'getVoiceLibrary', 'getVoice', 'getComposition', 'getSpatial', 'prepareReplay', 'listSoundscapes', 'getRenderJob'].includes(request.method)) fail();
                   return;
                 }
                 const entry = pending.get(request.requestId);

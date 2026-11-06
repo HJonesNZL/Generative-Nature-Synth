@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="(empty)"
+	tests="2"
+	failures="0"
+	disabled="0"
+	skipped="0"
+	hostname=""
+	time="2"
+	timestamp="2026-11-07T11:29:02"
+	>
+	<testcase name="atlas-spatial" classname="atlas-spatial" time="1.69901" status="run">
+		<properties/>
+		<system-out>PASS geographic boundaries dateline priority and actual position semantics
+PASS strict settings and UTF8 validation including disabled drafts
+PASS echo impulse has absolute delay stereo spacing and geometric decay
+PASS damped-comb impulse agrees with independent transfer-function expansion
+PASS enabled dry panning gain mono and delayed engine output have absolute oracles
+PASS voice retirement retains onset route after later region arrivals
+PASS historical multi-region energy normalized and fixed memory bounded
+PASS logical reset nonfinite recovery and tiny-state policy
+PASS all plan paths reserve effects after possible voice lifetime and enforce total limit
+PASS block parity pause seek stop panic and exact natural final zero
+PASS nonzero late ambience follows the independently specified final linear fade
+PASS maximum-region callback and transport allocate and destroy nothing
+PASS spatial disabled retains legacy and composition PCM exactly
+</system-out>
+	</testcase>
+	<testcase name="atlas-playback" classname="atlas-playback" time="0.882517" status="run">
+		<properties/>
+		<system-out>PASS preparation requires deliberate enable and never autoplays
+PASS callback output equals existing renderer across device partitions
+PASS pause freezes callback position; stop and panic advance generations
+PASS plan replacement retires off callback and invalidates old preparation
+PASS failed preparation retains identity and disables audio
+PASS partial start failure and disable are recoverable and quiescent
+PASS device fault and invalid callback produce silence
+PASS missing callbacks time out safely and can restart
+PASS callback lease expires without worker heartbeat
+PASS unsupported device and complete start failure remain observable
+PASS concurrent callback replacement establishes quiescence
+PASS wet regional renderer replacement retires buffers off callback
+PASS coherent snapshot reader while callback progresses
+PASS callback has no C++ allocation or deallocation
+</system-out>
+	</testcase>
+</testsuite>

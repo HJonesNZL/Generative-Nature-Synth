@@ -71,6 +71,12 @@ class Object {
             throw std::invalid_argument("object argument required");
         return field.value;
     }
+    std::string array(std::string_view key) const {
+        const auto &field = at(key);
+        if (field.type != "array")
+            throw std::invalid_argument("array argument required");
+        return field.value;
+    }
     std::int64_t number(std::string_view key, std::int64_t maximum) const {
         const auto &field = at(key);
         if (field.type != "integer")
@@ -121,6 +127,7 @@ class Object {
     }
 };
 std::string decimal(double value);
+void append(std::string &array, std::string_view value);
 std::string compositionView(const CompositionSettings &settings) {
     constexpr std::string_view scales[]{"majorPentatonic", "minorPentatonic",
                                         "major", "naturalMinor"};
@@ -164,6 +171,67 @@ CompositionSettings readComposition(sqlite3 *db, std::string_view json) {
         throw std::invalid_argument("Variation must be 0 to 1");
     settings.seed = static_cast<std::uint32_t>(args.number("seed", UINT32_MAX));
     settings.quantize = args.boolean("quantize");
+    return settings;
+}
+std::string spatialView(const SpatialSettings &settings) {
+    std::string regions = "[";
+    for (const auto &region : settings.regions) {
+        append(regions,
+               "{\"id\":" + quoteJson(region.id) +
+                   ",\"name\":" + quoteJson(region.name) +
+                   ",\"south\":" + decimal(region.south) + ",\"north\":" +
+                   decimal(region.north) + ",\"west\":" + decimal(region.west) +
+                   ",\"east\":" + decimal(region.east) +
+                   ",\"pan\":" + decimal(region.pan) +
+                   ",\"gainDb\":" + decimal(region.gainDb) +
+                   ",\"send\":" + decimal(region.send) +
+                   ",\"echoMix\":" + decimal(region.echoMix) +
+                   ",\"delayMs\":" + decimal(region.delayMs) +
+                   ",\"feedback\":" + decimal(region.feedback) +
+                   ",\"roomSeconds\":" + decimal(region.roomSeconds) +
+                   ",\"tone\":" + decimal(region.tone) + ",\"positionPan\":" +
+                   (region.positionPan ? "true" : "false") + "}");
+    }
+    return "{\"enabled\":" + std::string(settings.enabled ? "true" : "false") +
+           ",\"amount\":" + decimal(settings.amount) +
+           ",\"regions\":" + regions + "]}";
+}
+SpatialSettings readSpatial(sqlite3 *db, std::string_view json) {
+    const Object args(db, json, {"enabled", "amount", "regions"});
+    SpatialSettings settings;
+    settings.enabled = args.boolean("enabled");
+    settings.amount = args.real("amount");
+    Statement entries(db, "SELECT type,value FROM json_each(?1)");
+    entries.bindJson(args.array("regions"));
+    while (entries.next()) {
+        if (entries.text(0) != "object" || settings.regions.size() >= 8)
+            throw std::invalid_argument(
+                "At most eight region objects required");
+        const Object fields(db, entries.text(1),
+                            {"id", "name", "south", "north", "west", "east",
+                             "pan", "gainDb", "send", "echoMix", "delayMs",
+                             "feedback", "roomSeconds", "tone", "positionPan"});
+        RegionSettings region;
+        region.id = fields.text("id", 64);
+        region.name = fields.text("name", 128);
+        region.south = fields.real("south");
+        region.north = fields.real("north");
+        region.west = fields.real("west");
+        region.east = fields.real("east");
+        region.pan = fields.real("pan");
+        region.gainDb = fields.real("gainDb");
+        region.send = fields.real("send");
+        region.echoMix = fields.real("echoMix");
+        region.delayMs = fields.real("delayMs");
+        region.feedback = fields.real("feedback");
+        region.roomSeconds = fields.real("roomSeconds");
+        region.tone = fields.real("tone");
+        region.positionPan = fields.boolean("positionPan");
+        settings.regions.push_back(std::move(region));
+    }
+    if (!validSpatialSettings(settings))
+        throw std::invalid_argument(
+            "Invalid spatial settings or region bounds");
     return settings;
 }
 struct CloseDb {
@@ -487,6 +555,20 @@ struct UiHost::Impl {
                       std::to_string(snapshot.omittedCompositionNotes) +
                       ",\"suppressedSourceEvents\":" +
                       std::to_string(snapshot.suppressedSourceEvents);
+        }
+        return result + "}";
+    }
+    std::string spatialState() const {
+        std::string result =
+            "{\"settings\":" + spatialView(context.audio.spatial) +
+            ",\"preparation\":" + (prepared ? preparation() : "null");
+        if (prepared && playback) {
+            const auto snapshot = playback->snapshot();
+            result +=
+                ",\"routedNotes\":" + std::to_string(snapshot.routedNotes) +
+                ",\"unassignedNotes\":" +
+                std::to_string(snapshot.unassignedNotes) +
+                ",\"wetActive\":" + (snapshot.wetActive ? "true" : "false");
         }
         return result + "}";
     }
@@ -859,7 +941,7 @@ std::string UiHost::request(std::string_view envelope) {
                     R"(,"getTransport","setTransport","getAudioState","setAudioEnabled")";
             if (impl_->voices)
                 result +=
-                    R"(,"getVoiceLibrary","getVoice","setVoiceParameter","saveVoice","revertVoice","getComposition","setComposition")";
+                    R"(,"getVoiceLibrary","getVoice","setVoiceParameter","saveVoice","revertVoice","getComposition","setComposition","getSpatial","setSpatial")";
             if (!impl_->storage.soundscapes.empty() && impl_->voices)
                 result +=
                     R"(,"listSoundscapes","saveSoundscape","recallSoundscape")";
@@ -982,6 +1064,46 @@ std::string UiHost::request(std::string_view envelope) {
             }
             impl_->prepare(*impl_->prepared, impl_->saved, std::move(context));
             result = impl_->compositionState();
+        } else if (impl_->voices && method == "getSpatial") {
+            Object args(impl_->db.get(), arguments);
+            if (args.size())
+                throw std::invalid_argument("unexpected arguments");
+            result = impl_->spatialState();
+        } else if (impl_->voices && method == "setSpatial") {
+            Object args(impl_->db.get(), arguments,
+                        {"settings", "preparationId", "generation"});
+            const auto settings =
+                readSpatial(impl_->db.get(), args.object("settings"));
+            if (!impl_->prepared)
+                throw std::invalid_argument(
+                    "Prepare material before spatial editing");
+            const auto snapshot = impl_->playback ? impl_->playback->snapshot()
+                                                  : PlaybackSnapshot{};
+            const auto currentId =
+                impl_->playback ? preparationId(snapshot)
+                                : "native-" + std::to_string(impl_->generation);
+            const auto currentGeneration =
+                impl_->playback ? snapshot.generation : impl_->generation;
+            if (args.text("preparationId", 32) != currentId ||
+                static_cast<std::uint64_t>(
+                    integer(args.text("generation", 20), INT64_MAX)) !=
+                    currentGeneration)
+                return failure("stale_generation",
+                               "Spatial preparation is no longer current");
+            for (const auto &voice : impl_->voices->voices())
+                if (voice.gestureActive)
+                    throw std::invalid_argument("Finish voice gestures before "
+                                                "changing spatial settings");
+            auto context = impl_->context;
+            context.audio.spatial = settings;
+            context.profiles = impl_->currentProfiles(*impl_->prepared);
+            if (impl_->playback) {
+                const auto quiet = impl_->playback->enable(false);
+                if (!quiet.ok)
+                    return failure("unavailable", playbackMessage(quiet.error));
+            }
+            impl_->prepare(*impl_->prepared, impl_->saved, std::move(context));
+            result = impl_->spatialState();
         } else if (impl_->voices && method == "getVoiceLibrary") {
             Object args(impl_->db.get(), arguments);
             if (args.size())

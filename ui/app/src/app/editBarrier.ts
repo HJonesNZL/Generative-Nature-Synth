@@ -2,9 +2,9 @@
  * Lock stops new UI gestures synchronously; queued host mutations are never aborted. */
 export class EditBarrier {
   private queues = new Set<() => Promise<boolean>>();
-  private finalizers = new Set<() => Promise<boolean>>();
-  registerFinalizer(flush: () => Promise<boolean>): () => void {
-    this.finalizers.add(flush);
+  private finalizers = new Map<() => Promise<boolean>, number>();
+  registerFinalizer(flush: () => Promise<boolean>, order = 0): () => void {
+    this.finalizers.set(flush, order);
     return () => { this.finalizers.delete(flush); };
   }
   private mutations = new Set<Promise<{ ok: boolean }>>();
@@ -23,7 +23,7 @@ export class EditBarrier {
     this.locked = true;
     return true;
   }
-  async drain(requireSuccess = true): Promise<boolean> {
+  async drain(requireSuccess = true, finalize = true): Promise<boolean> {
     const replies = await Promise.all([...this.queues].map(flush => flush()));
     let succeeded = replies.every(Boolean);
     while (this.mutations.size) {
@@ -31,8 +31,10 @@ export class EditBarrier {
       succeeded = succeeded && results.every(result => result.ok);
     }
     // Complete voice gestures before a full recipe re-preparation.
-    if (succeeded || !requireSuccess) {
-      for (const flush of this.finalizers) succeeded = await flush() && succeeded;
+    if (finalize && (succeeded || !requireSuccess)) {
+      for (const [flush] of [...this.finalizers].sort((a, b) => a[1] - b[1])) {
+        if (!await flush()) { succeeded = false; if (requireSuccess) break; }
+      }
     }
     return !requireSuccess || succeeded;
   }

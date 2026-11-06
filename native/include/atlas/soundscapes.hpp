@@ -5,9 +5,9 @@
 #include <stdexcept>
 
 namespace atlas {
-inline constexpr unsigned soundscapeSchemaRevision = 2;
-inline constexpr unsigned soundscapeSynthesisRevision = 3;
-inline constexpr unsigned soundscapeMappingRevision = 2;
+inline constexpr unsigned soundscapeSchemaRevision = 3;
+inline constexpr unsigned soundscapeSynthesisRevision = 4;
+inline constexpr unsigned soundscapeMappingRevision = 3;
 struct SoundscapeCapture {
     std::string name, sourceLibraryLabel;
     SavedSession session;

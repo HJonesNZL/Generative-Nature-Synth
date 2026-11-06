@@ -2,6 +2,7 @@
 #include "json_text.hpp"
 #include <algorithm>
 #include <atlas/presets.hpp>
+#include <atlas/render_jobs.hpp>
 #include <atlas/soundscapes.hpp>
 #include <atlas/storage.hpp>
 #include <atlas/ui_host.hpp>
@@ -79,14 +80,7 @@ int main(int argc, char **argv) {
             const atlas::AudioPlan plan(scene.timeline(), capture.audio,
                                         capture.profiles, true);
             const auto recipe =
-                "{\"recipe_version\":2,\"scene_hash\":" +
-                quoteJson(scene.contentHash()) + ",\"engine_source_sha256\":" +
-                quoteJson(atlas::nativeSourceSha256) +
-                ",\"synthesis_revision\":" +
-                std::to_string(capture.synthesisRevision) +
-                ",\"mapping_revision\":" +
-                std::to_string(capture.mappingRevision) +
-                ",\"authoritative_recipe\":\"self-contained-atlas-scene\"}";
+                atlas::soundscapeRenderRecipe(scene, atlas::nativeSourceSha256);
             atlas::renderWave(plan, get("--output", ""), recipe);
             std::cout << "{\"sceneHash\":" << quoteJson(scene.contentHash())
                       << ",\"frames\":" << plan.totalFrames() << "}\n";
