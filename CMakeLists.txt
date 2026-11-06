@@ -1,10 +1,12 @@
 cmake_minimum_required(VERSION 3.22)
-project(AnimalAtlas VERSION 0.3.0 LANGUAGES CXX)
+project(AnimalAtlas VERSION 0.4.0 LANGUAGES CXX)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(ATLAS_BUILD_TESTS "Build portable core tests" ON)
 option(ATLAS_SANITIZERS "Enable address and undefined behaviour sanitizers" OFF)
 option(ATLAS_WARNINGS_AS_ERRORS "Treat project compiler warnings as errors" ON)
+option(ATLAS_BUILD_STANDALONE "Build the local JUCE/WebKit macOS app" OFF)
+set(ATLAS_UI_DIST "${CMAKE_CURRENT_SOURCE_DIR}/ui/app/dist" CACHE PATH "Prebuilt offline React assets")
 option(ATLAS_BUILD_AUDIO_HOST "Build the optional JUCE native playback host" OFF)
 set(ATLAS_JUCE_SOURCE_DIR "" CACHE PATH "Existing JUCE source checkout; no automatic download")
 
@@ -48,13 +50,16 @@ add_executable(atlas-native native/src/main.cpp)
 target_include_directories(atlas-native PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
 target_link_libraries(atlas-native PRIVATE atlas_storage)
 
-if(ATLAS_BUILD_AUDIO_HOST)
+if(ATLAS_BUILD_AUDIO_HOST OR ATLAS_BUILD_STANDALONE)
     if(NOT EXISTS "${ATLAS_JUCE_SOURCE_DIR}/modules/juce_audio_devices/juce_audio_devices.h")
         message(FATAL_ERROR "ATLAS_JUCE_SOURCE_DIR must name an existing JUCE checkout")
     endif()
     enable_language(C)
     set(JUCE_MODULES_ONLY ON CACHE BOOL "Use JUCE modules without packaging tools" FORCE)
     add_subdirectory("${ATLAS_JUCE_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/juce" EXCLUDE_FROM_ALL)
+endif()
+
+if(ATLAS_BUILD_AUDIO_HOST)
     add_executable(atlas-audio-host native/src/audio_host_main.cpp native/src/juce_output.cpp)
     target_link_libraries(atlas-audio-host PRIVATE atlas_storage atlas_playback juce::juce_audio_devices juce::juce_events)
     target_include_directories(atlas-audio-host PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
@@ -62,8 +67,44 @@ if(ATLAS_BUILD_AUDIO_HOST)
         JUCE_STANDALONE_APPLICATION=1 JUCE_USE_CURL=0 JUCE_WEB_BROWSER=0)
 endif()
 
+if(ATLAS_BUILD_STANDALONE)
+    if(NOT APPLE)
+        message(FATAL_ERROR "The standalone package is currently qualified only on macOS")
+    endif()
+    if(NOT EXISTS "${ATLAS_UI_DIST}/index.html")
+        message(FATAL_ERROR "Build ui/app first or set ATLAS_UI_DIST to its offline production assets")
+    endif()
+    add_executable(atlas-standalone MACOSX_BUNDLE native/src/standalone_main.cpp
+        native/src/standalone_support.cpp native/src/juce_output.cpp)
+    target_link_libraries(atlas-standalone PRIVATE atlas_storage atlas_playback
+        juce::juce_gui_extra juce::juce_audio_devices juce::juce_events)
+    target_include_directories(atlas-standalone PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
+    target_compile_definitions(atlas-standalone PRIVATE JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1
+        JUCE_STANDALONE_APPLICATION=1 JUCE_USE_CURL=0 JUCE_WEB_BROWSER=1)
+    set_target_properties(atlas-standalone PROPERTIES OUTPUT_NAME "Animal Atlas"
+        MACOSX_BUNDLE_BUNDLE_NAME "Animal Atlas"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "nz.hjones.animal-atlas"
+        MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
+        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/native/cmake/StandaloneInfo.plist.in")
+    find_package(Python3 3.9 REQUIRED COMPONENTS Interpreter)
+    add_custom_target(atlas-standalone-package
+        COMMAND ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/scripts/package_standalone.py"
+            --app "$<TARGET_BUNDLE_DIR:atlas-standalone>" --ui "${ATLAS_UI_DIST}"
+            --sqlite "${SQLite3_LIBRARY}" --juce "${ATLAS_JUCE_SOURCE_DIR}"
+        DEPENDS atlas-standalone VERBATIM)
+endif()
+
 if(ATLAS_BUILD_TESTS)
     enable_testing()
+    if(ATLAS_BUILD_STANDALONE)
+        add_executable(atlas-standalone-support-tests tests/standalone_support_tests.cpp native/src/standalone_support.cpp)
+        target_include_directories(atlas-standalone-support-tests PRIVATE native/src)
+        target_link_libraries(atlas-standalone-support-tests PRIVATE atlas_storage juce::juce_gui_extra)
+        target_compile_definitions(atlas-standalone-support-tests PRIVATE JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1
+            JUCE_STANDALONE_APPLICATION=1 JUCE_USE_CURL=0 JUCE_WEB_BROWSER=1)
+        add_test(NAME atlas-standalone-support COMMAND atlas-standalone-support-tests)
+    endif()
     add_executable(atlas-core-tests native/tests/core_tests.cpp)
     target_link_libraries(atlas-core-tests PRIVATE atlas_core)
     add_test(NAME atlas-core COMMAND atlas-core-tests)
@@ -124,6 +165,8 @@ if(ATLAS_BUILD_TESTS)
     find_package(Python3 3.9 REQUIRED COMPONENTS Interpreter)
     add_test(NAME atlas-soundscape-ui COMMAND ${Python3_EXECUTABLE} -B
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/native_soundscape_checks.py $<TARGET_FILE:atlas-studio-fixture-host>)
+    add_test(NAME atlas-audio-devices COMMAND ${Python3_EXECUTABLE} -B
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/native_audio_device_checks.py $<TARGET_FILE:atlas-studio-fixture-host>)
     add_test(NAME atlas-voice-ui COMMAND ${Python3_EXECUTABLE} -B
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/native_voice_checks.py $<TARGET_FILE:atlas-studio-fixture-host>)
     add_test(NAME atlas-playback-ui COMMAND ${Python3_EXECUTABLE} -B
@@ -145,6 +188,12 @@ endif()
 set(atlas_targets atlas_core atlas_audio atlas_playback atlas_storage atlas-native)
 if(ATLAS_BUILD_AUDIO_HOST)
     list(APPEND atlas_targets atlas-audio-host)
+endif()
+if(ATLAS_BUILD_STANDALONE)
+    list(APPEND atlas_targets atlas-standalone)
+    if(ATLAS_BUILD_TESTS)
+        list(APPEND atlas_targets atlas-standalone-support-tests)
+    endif()
 endif()
 if(ATLAS_BUILD_TESTS)
     list(APPEND atlas_targets atlas-core-tests atlas-sha256-tests atlas-audio-tests atlas-audio-bench atlas-playback-tests atlas-playback-fixture-host atlas-voice-audio-tests atlas-voice-store-tests atlas-studio-fixture-host atlas-soundscape-tests atlas-render-job-tests atlas-voice-character-tests atlas-preset-tests atlas-composition-tests atlas-spatial-tests atlas-alias-tests)

@@ -16,7 +16,7 @@ process.on('SIGTERM', () => { setTimeout(() => { process.stdout.write('{"request
 readline.createInterface({ input: process.stdin }).on('line', line => {
  const req = JSON.parse(line);
  if (req.method === 'hold' || req.method === 'setTransport') return;
- setTimeout(() => process.stdout.write(JSON.stringify({ requestId: req.requestId, ok: true, result: { pid: process.pid, exportDirectory: process.env.ATLAS_EXPORT_DIRECTORY } }) + '\\n'), ['wait', 'prepareReplay', 'getCatalog'].includes(req.method) ? 150 : 0);
+ setTimeout(() => process.stdout.write(JSON.stringify({ requestId: req.requestId, ok: true, result: { pid: process.pid, exportDirectory: process.env.ATLAS_EXPORT_DIRECTORY } }) + '\\n'), ['wait', 'prepareReplay', 'getCatalog', 'getAudioDevices'].includes(req.method) ? 150 : 0);
 });
 `);
   // The nested source needs actual JS backslash-n string literals.
@@ -65,7 +65,7 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
     const replacementPid = JSON.parse(replacement.text).result.pid;
     assert.notEqual(replacementPid, workerPid);
     workerPid = replacementPid;
-    for (const method of ['prepareReplay', 'getCatalog']) {
+    for (const method of ['prepareReplay', 'getCatalog', 'getAudioDevices']) {
       const preparing = send(envelope(`cancelled-${method}`, method)); preparing.promise.catch(() => {});
       await new Promise(resolve => setTimeout(resolve, 20)); preparing.cancel();
       const afterPrepare = await send(envelope(`after-${method}`)).promise;

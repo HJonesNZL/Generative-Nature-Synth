@@ -2,7 +2,7 @@
 import { useMemo } from "react";
 import type { CatalogView } from "../host/provisional";
 import { useAppState } from "./store";
-import { useHostQuery, valueOf } from "./HostContext";
+import { useHost, useHostQuery, valueOf } from "./HostContext";
 
 export interface Catalog {
   data: CatalogView | null;
@@ -15,8 +15,9 @@ export interface Catalog {
 
 export function useCatalog(): Catalog {
   const state = useAppState();
+  const { caps } = useHost();
   const sessionId = state.mode === "replay" ? state.replay.session?.id : state.mode === "history" ? state.history.frozen?.id : undefined;
-  const [q] = useHostQuery("getCatalog", sessionId ? { material: { kind: "session", sessionId } } : {}, [sessionId], { refreshMs: 30000 });
+  const [q] = useHostQuery("getCatalog", sessionId ? { material: { kind: "session", sessionId } } : caps?.libraryAvailable === false ? null : {}, [sessionId], { refreshMs: 30000 });
   const data = valueOf(q);
   return useMemo(() => {
     const species = new Map(data?.species.map((s) => [s.id, s]) ?? []);

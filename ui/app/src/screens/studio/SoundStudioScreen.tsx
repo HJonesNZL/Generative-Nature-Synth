@@ -54,7 +54,7 @@ function ContextStrip({ actions }: { actions: ReactNode }) {
   const { caps } = useHost();
   const state = useAppState();
   const catalog = useCatalog();
-  const text = caps?.implementation === "native" && !caps.audioAvailable ? "Data preview — audio output is not available from this host." : state.mode === "live"
+  const text = caps?.libraryAvailable === false && state.mode === "live" ? "Choose a soundscape to edit its voices and settings." : caps?.implementation === "native" && !caps.audioAvailable ? "Data preview — audio output is not available from this host." : state.mode === "live"
     ? "Editing while listening live — changes apply to new arrivals."
     : state.mode === "replay"
       ? state.replay.session ? `Editing for ${state.replay.session.id.startsWith("scene:") ? "soundscape" : "saved piece"} “${state.replay.session.name}”${state.replay.session.origin === "imported_bundle" ? " (imported)" : ""}.` : "Replay — no piece open."

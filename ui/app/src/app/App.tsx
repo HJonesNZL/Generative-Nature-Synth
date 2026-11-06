@@ -58,10 +58,11 @@ function StatusBanners() {
       {connection === "connecting" ? <Notice tone="info" title="Connecting to the host…" /> : null}
       {connection === "reconnecting" ? <Notice tone="caution" title="Reconnecting to the host" live>{connectionError ?? "The bridge dropped."} Controls that change the piece are paused; nothing will be replayed when it returns.</Notice> : null}
       {connection === "failed" ? <Notice tone="problem" title="Host unavailable" action={<button type="button" className="btn btn--quiet btn--sm" onClick={reconnect}>Retry</button>}>{connectionError}</Notice> : null}
+      {caps?.libraryAvailable === false ? <Notice tone="info" title="Scene-only mode">Import a soundscape or choose a wildlife library in the app toolbar.</Notice> : null}
       {caps?.implementation === "native" && !caps.audioAvailable ? <Notice tone="info" title="Native data preview — audio controls unavailable">Audio output is unavailable. Records, voice editing and soundscape export controls are shown when offered by this host.</Notice> : null}
       {caps?.implementation === "native" && caps.audioAvailable ? <Notice tone="info" title="Saved-piece native playback">Select a saved piece, enable Listening, then press Play. Sound Studio exposes the voice controls offered by this host. Save a soundscape to preserve its events and settings or export its saved WAV.</Notice> : null}
       {audio?.status === "unavailable" ? <Notice tone="problem" title="Audio unavailable">No output device. Collection and the map keep working; nothing will sound.</Notice> : null}
-      {audio?.status === "device_lost" ? <Notice tone="problem" title="Audio device lost">Output stopped and every note was released. Reconnect a device in the host’s audio settings.</Notice> : null}
+      {audio?.status === "device_lost" ? <Notice tone="problem" title="Audio device lost">Output stopped and every note was released. {caps?.supportedMethods.includes("getAudioDevices") ? "Open Audio settings, refresh and apply an available output. Enable Listening and press Play when ready." : "Reconnect a device in the host’s audio settings."}</Notice> : null}
       {caps && caps.implementation === "mock" ? <span className="sr-only">Demo host: all data is illustrative and no audio is produced.</span> : null}
     </div>
   );

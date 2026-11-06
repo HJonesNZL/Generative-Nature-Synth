@@ -1,0 +1,209 @@
+TAP version 13
+# (node:33671) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: device catalogs preserve unavailable metadata and bounded silent configurations
+ok 1 - device catalogs preserve unavailable metadata and bounded silent configurations
+  ---
+  duration_ms: 0.603875
+  ...
+# Subtest: malformed native catalogs fail closed before becoming device choices
+ok 2 - malformed native catalogs fail closed before becoming device choices
+  ---
+  duration_ms: 0.95625
+  ...
+# Subtest: device mutations use advertised methods, validate replies and invalidate earlier playback reads
+ok 3 - device mutations use advertised methods, validate replies and invalidate earlier playback reads
+  ---
+  duration_ms: 1.11
+  ...
+# (node:33672) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: capability gate prevents sending unsupported mutations
+ok 4 - capability gate prevents sending unsupported mutations
+  ---
+  duration_ms: 1.139958
+  ...
+# Subtest: invalid capabilities and mismatched replies fail closed
+ok 5 - invalid capabilities and mismatched replies fail closed
+  ---
+  duration_ms: 0.507084
+  ...
+# Subtest: abort settles promptly even when the host ignores its signal
+ok 6 - abort settles promptly even when the host ignores its signal
+  ---
+  duration_ms: 0.431792
+  ...
+# Subtest: timeout remains distinct from user cancellation
+ok 7 - timeout remains distinct from user cancellation
+  ---
+  duration_ms: 4.795541
+  ...
+# Subtest: duplicate and older revisions cannot re-pulse or replace newer records
+ok 8 - duplicate and older revisions cannot re-pulse or replace newer records
+  ---
+  duration_ms: 0.7375
+  ...
+# Subtest: bounded buffers explicitly count display omissions and reset across material
+ok 9 - bounded buffers explicitly count display omissions and reset across material
+  ---
+  duration_ms: 0.781833
+  ...
+# Subtest: late musical outcomes cannot cross a material reset
+ok 10 - late musical outcomes cannot cross a material reset
+  ---
+  duration_ms: 138.314333
+  ...
+# Subtest: playback payload validation rejects malformed native timelines and audio states
+ok 11 - playback payload validation rejects malformed native timelines and audio states
+  ---
+  duration_ms: 0.627167
+  ...
+# (node:33673) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: composition finalization follows retiring voice gestures and acknowledged mutations before capture
+ok 12 - composition finalization follows retiring voice gestures and acknowledged mutations before capture
+  ---
+  duration_ms: 9.384959
+  ...
+# Subtest: failed composition acknowledgement prevents capture
+ok 13 - failed composition acknowledgement prevents capture
+  ---
+  duration_ms: 0.129916
+  ...
+# Subtest: composition host replies require complete bounded canonical settings and preparation
+ok 14 - composition host replies require complete bounded canonical settings and preparation
+  ---
+  duration_ms: 1.656959
+  ...
+# Subtest: WAV download serves only opaque app-owned regular files with same-origin boundaries
+ok 15 - WAV download serves only opaque app-owned regular files with same-origin boundaries
+  ---
+  duration_ms: 99.087125
+  ...
+# (node:33675) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: loaded scope retains old measured fixes without the former forty-fix cutoff
+ok 16 - loaded scope retains old measured fixes without the former forty-fix cutoff
+  ---
+  duration_ms: 1.881542
+  ...
+# Subtest: station detections remain receiver aggregates, never animal fixes
+ok 17 - station detections remain receiver aggregates, never animal fixes
+  ---
+  duration_ms: 0.2465
+  ...
+# Subtest: display bound preserves selected and highlighted locations and leaves input intact
+ok 18 - display bound preserves selected and highlighted locations and leaves input intact
+  ---
+  duration_ms: 8.13625
+  ...
+# Subtest: newest observation compares UTC instants, including offsets and sub-millisecond times
+ok 19 - newest observation compares UTC instants, including offsets and sub-millisecond times
+  ---
+  duration_ms: 0.222792
+  ...
+# Subtest: loaded receiver positions remain available when omitted by sampled catalogue
+ok 20 - loaded receiver positions remain available when omitted by sampled catalogue
+  ---
+  duration_ms: 0.099375
+  ...
+# Subtest: individual fix station metadata never counts as a receiver detection
+ok 21 - individual fix station metadata never counts as a receiver detection
+  ---
+  duration_ms: 0.157292
+  ...
+# Subtest: bridge validates mutation envelopes, bounds FIFO, retires children and ignores old stdout
+ok 22 - bridge validates mutation envelopes, bounds FIFO, retires children and ignores old stdout
+  ---
+  duration_ms: 6293.1195
+  ...
+# (node:33677) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: capture waits for held and retiring edit queues plus pending type changes
+ok 23 - capture waits for held and retiring edit queues plus pending type changes
+  ---
+  duration_ms: 6.060291
+  ...
+# Subtest: capture blocks failed edits while explicit recall may discard their drained drafts
+ok 24 - capture blocks failed edits while explicit recall may discard their drained drafts
+  ---
+  duration_ms: 0.154542
+  ...
+# Subtest: scene replies reject wrong recall identity, incomplete data and unsafe artifact names
+ok 25 - scene replies reject wrong recall identity, incomplete data and unsafe artifact names
+  ---
+  duration_ms: 3.807584
+  ...
+# (node:33678) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: spatial DTO enforces ordered bounded regions, IDs, Unicode and complete finite ranges
+ok 26 - spatial DTO enforces ordered bounded regions, IDs, Unicode and complete finite ranges
+  ---
+  duration_ms: 1.872792
+  ...
+# Subtest: temporary spatial number text survives editing and only complete valid settings convert
+ok 27 - temporary spatial number text survives editing and only complete valid settings convert
+  ---
+  duration_ms: 1.747583
+  ...
+# Subtest: explicit Apply skips sibling finalizers while Save runs composition then spatial using fresh identity
+ok 28 - explicit Apply skips sibling finalizers while Save runs composition then spatial using fresh identity
+  ---
+  duration_ms: 0.229625
+  ...
+# Subtest: failed first recipe prevents later mutation and capture
+ok 29 - failed first recipe prevents later mutation and capture
+  ---
+  duration_ms: 0.275791
+  ...
+# Subtest: spatial replies reject malformed settings, incomplete preparation and fabricated note accounting
+ok 30 - spatial replies reject malformed settings, incomplete preparation and fabricated note accounting
+  ---
+  duration_ms: 2.184958
+  ...
+# Subtest: fresh preparation rebases only across unchanged own recipe and the same source piece
+ok 31 - fresh preparation rebases only across unchanged own recipe and the same source piece
+  ---
+  duration_ms: 0.106333
+  ...
+# (node:33679) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: flush waits for coalesced changes and closes a held gesture before persistence
+ok 32 - flush waits for coalesced changes and closes a held gesture before persistence
+  ---
+  duration_ms: 3.889375
+  ...
+# Subtest: a rejected change restores the acknowledged value in its closing end and blocks save
+ok 33 - a rejected change restores the acknowledged value in its closing end and blocks save
+  ---
+  duration_ms: 0.319708
+  ...
+# Subtest: throws settle flush and do not leave waiters pending
+ok 34 - throws settle flush and do not leave waiters pending
+  ---
+  duration_ms: 0.1265
+  ...
+# Subtest: host rejects malformed voice metadata, wrong identity and invalid canonical acknowledgements
+ok 35 - host rejects malformed voice metadata, wrong identity and invalid canonical acknowledgements
+  ---
+  duration_ms: 1.429833
+  ...
+# Subtest: native voice IDs include the full 256-character species ID plus prefix
+ok 36 - native voice IDs include the full 256-character species ID plus prefix
+  ---
+  duration_ms: 0.257875
+  ...
+# Subtest: failed gestures discard later queued gestures without sending unmatched ends
+ok 37 - failed gestures discard later queued gestures without sending unmatched ends
+  ---
+  duration_ms: 0.224
+  ...
+1..37
+# tests 37
+# suites 0
+# pass 37
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6366.368458

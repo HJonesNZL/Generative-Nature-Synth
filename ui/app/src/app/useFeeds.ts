@@ -21,6 +21,7 @@ export function useLiveFeed() {
   const { client, caps, connection, liveStore, onNotification } = useHost();
   useEffect(() => {
     if (!caps || connection !== "connected") return;
+    if (caps.libraryAvailable === false) { liveStore.clear(); liveStore.setFeed({ status: "unsupported" }); return; }
     if (!client.supports("getChanges")) { liveStore.setFeed({ status: "unsupported" }); return; }
     let cancelled = false;
     let timer = 0;

@@ -1,0 +1,20 @@
+TAP version 13
+# Subtest: embedded bridge bounds requests, matches replies, and retires abort/timeout/page state
+ok 1 - embedded bridge bounds requests, matches replies, and retires abort/timeout/page state
+  ---
+  duration_ms: 3.914709
+  ...
+# Subtest: WAV link uses a native export event only for opaque artifact ids
+ok 2 - WAV link uses a native export event only for opaque artifact ids
+  ---
+  duration_ms: 0.439167
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 2
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 53.533833

@@ -1,0 +1,21 @@
+{
+  "origin": "http://127.0.0.1:4191",
+  "hostTransport": "injected silent fixture",
+  "browser": "156.0.8078.80",
+  "errors": [],
+  "checks": [
+    "capability gate",
+    "draft selection stays local until Apply",
+    "explicit device and buffer fence",
+    "active output rate and buffer",
+    "applying during playback stops and disables without autoplay",
+    "catalog refresh blocks draft edits until complete",
+    "stale fence requires refresh",
+    "native opening failure is visible",
+    "disconnect with missing device and recovery",
+    "default output mode",
+    "manual Listening and Play use fresh generation",
+    "no external requests"
+  ],
+  "screenshot": "test-results/audio-device-preferences.png"
+}

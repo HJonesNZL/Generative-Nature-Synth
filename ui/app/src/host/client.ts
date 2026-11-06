@@ -8,6 +8,7 @@
  * - Adds request ids, timeouts and AbortSignal support. It never retries
  *   mutations on its own; callers decide.
  */
+import { validAudioDeviceCatalog } from "./audioDevices.ts";
 import { validSpatialSettings } from "./spatialSettings.ts";
 import { EditBarrier } from "../app/editBarrier.ts";
 import type { AtlasHost, HostCapabilities, HostReply } from "./contracts";
@@ -197,6 +198,7 @@ export class HostClient {
       if (!value || value.protocolVersion !== 1 || !["native", "mock"].includes(value.implementation) ||
           !Array.isArray(value.supportedMethods) || value.supportedMethods.length > 100 ||
           !value.supportedMethods.every((method) => typeof method === "string") || typeof value.audioAvailable !== "boolean" ||
+          value.libraryAvailable !== undefined && typeof value.libraryAvailable !== "boolean" ||
           !Number.isInteger(value.maxEventBatch) || value.maxEventBatch < 1 || value.maxEventBatch > 500 ||
           !Number.isInteger(value.maxVisibleMarkers) || value.maxVisibleMarkers < 1 || value.maxVisibleMarkers > 2000) {
         return { ok: false, error: { code: "unsupported", message: "Invalid or unsupported native capabilities" } };
@@ -216,7 +218,7 @@ export class HostClient {
   }
 
   call<M extends MethodName>(method: M, args: AllMethods[M]["request"], options: { signal?: AbortSignal; timeoutMs?: number } = {}) {
-    if (["prepareReplay", "setTransport", "setAudioEnabled", "recallSoundscape", "setComposition", "setSpatial"].includes(method)) this.playbackMutation += 1;
+    if (["prepareReplay", "setTransport", "setAudioEnabled", "recallSoundscape", "setComposition", "setSpatial", "setAudioDevice"].includes(method)) this.playbackMutation += 1;
     const request = this.send(method, args, options);
     return ["setVoiceParameter", "setVoiceType", "setMasterGain", "saveVoice", "revertVoice", "applyVoicePreset", "setComposition", "setSpatial"].includes(method)
       ? this.edits.track(request) : request;
@@ -251,7 +253,7 @@ export class HostClient {
       const request = { protocolVersion: 1 as const, requestId, method, args };
       const reply = (this.host as ExtendedHost).request(request, controller.signal).then((r): HostResult<AllMethods[M]["response"]> => {
         if (!r || typeof r !== "object" || typeof r.ok !== "boolean" || r.requestId !== requestId) return { ok: false, error: { code: "internal", message: "Reply did not match request id" } };
-        if (r.ok) return "result" in r && validPlaybackReply(method, r.result) && validVoiceReply(method, r.result, args) && validSoundscapeReply(method, r.result, args) && validCompositionReply(method, r.result) && validSpatialReply(method, r.result) ? { ok: true, value: r.result } : { ok: false, error: { code: "internal", message: "Malformed host result" } };
+        if (r.ok) return "result" in r && validPlaybackReply(method, r.result) && validVoiceReply(method, r.result, args) && validSoundscapeReply(method, r.result, args) && validCompositionReply(method, r.result) && validSpatialReply(method, r.result) && (!["getAudioDevices", "setAudioDevice"].includes(method) || validAudioDeviceCatalog(r.result)) ? { ok: true, value: r.result } : { ok: false, error: { code: "internal", message: "Malformed host result" } };
         if (!r.error || typeof r.error.message !== "string" || !["unsupported", "invalid_request", "unavailable", "stale_generation", "internal"].includes(r.error.code))
           return { ok: false, error: { code: "internal", message: "Malformed host error" } };
         return { ok: false, error: r.error };

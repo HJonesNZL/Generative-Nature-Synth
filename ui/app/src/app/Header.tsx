@@ -12,6 +12,8 @@ import type { CollectionState } from "../host/provisional";
 import { useHost, useHostQuery, valueOf } from "./HostContext";
 import { useAppState, useDispatch, type ViewMode } from "./store";
 import { formatTime, formatUs, zoneAbbreviation } from "./time";
+import { AudioDeviceSettings } from "./AudioDeviceSettings";
+import type { HostMethods } from "../host/contracts";
 import { useCoalescedGesture } from "./useCoalescedGesture";
 
 export function Header({ demoMenu }: { demoMenu?: ReactNode }) {
@@ -111,6 +113,25 @@ export function Header({ demoMenu }: { demoMenu?: ReactNode }) {
     setBusy(false);
     if (current.current.preparationId === expected.preparationId && !result.ok) setTransportError(result.error.message);
     refreshAudio();
+  };
+
+  const setDevice = async (request: HostMethods["setAudioDevice"]["request"]) => {
+    setBusy(true); setTransportError(null); setEnabledPreparation(null);
+    const expected = current.current;
+    try {
+      const result = await client.call("setAudioDevice", request, { timeoutMs: 30000 });
+      // Opening a device can fail after native output has already been quieted.
+      // Always read its resulting fence, and never reinstate an older preparation.
+      if (client.supports("getTransport")) {
+        const status = await client.call("getTransport", {});
+        if (current.current.preparationId === expected.preparationId) {
+          if (status.ok && status.value.preparationId === expected.preparationId && BigInt(status.value.generation) >= BigInt(current.current.generation)) {
+            dispatch({ type: "transportAck", preparationId: current.current.preparationId, generation: current.current.generation, transport: status.value });
+          } else if (!status.ok) setTransportError(status.error.message);
+        }
+      }
+      return result;
+    } finally { refreshAudio(); setBusy(false); }
   };
 
   const gain = useCoalescedGesture((value, gesture) => client.call("setMasterGain", { gainDb: value, gesture }));
@@ -226,6 +247,7 @@ export function Header({ demoMenu }: { demoMenu?: ReactNode }) {
         </span>
       </div>
 
+      <AudioDeviceSettings audio={audio} busy={busy} apply={setDevice} />
       {demoMenu}
       {transportError || state.transport.error || audio?.error || (audioQ.status === "error" ? audioQ.error.message : null) || gain.error ? <span className="header-error" role="alert">{transportError ?? state.transport.error ?? audio?.error ?? (audioQ.status === "error" ? audioQ.error.message : null) ?? gain.error}</span> : null}
     </header>

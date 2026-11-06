@@ -1,0 +1,49 @@
+Test project /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone
+      Start  1: atlas-standalone-support
+ 1/22 Test  #1: atlas-standalone-support .........   Passed    0.02 sec
+      Start  2: atlas-core
+ 2/22 Test  #2: atlas-core .......................   Passed    0.00 sec
+      Start  3: atlas-sha256
+ 3/22 Test  #3: atlas-sha256 .....................   Passed    0.01 sec
+      Start  4: atlas-audio
+ 4/22 Test  #4: atlas-audio ......................   Passed    0.15 sec
+      Start  5: atlas-voice-audio
+ 5/22 Test  #5: atlas-voice-audio ................   Passed    0.45 sec
+      Start  6: atlas-soundscapes
+ 6/22 Test  #6: atlas-soundscapes ................   Passed    0.35 sec
+      Start  7: atlas-composition
+ 7/22 Test  #7: atlas-composition ................   Passed    0.17 sec
+      Start  8: atlas-spatial
+ 8/22 Test  #8: atlas-spatial ....................   Passed    0.33 sec
+      Start  9: atlas-alias-probe
+ 9/22 Test  #9: atlas-alias-probe ................   Passed    3.43 sec
+      Start 10: atlas-presets
+10/22 Test #10: atlas-presets ....................   Passed    1.50 sec
+      Start 11: atlas-voice-characters
+11/22 Test #11: atlas-voice-characters ...........   Passed    2.35 sec
+      Start 12: atlas-render-jobs
+12/22 Test #12: atlas-render-jobs ................   Passed    1.39 sec
+      Start 13: atlas-voice-store
+13/22 Test #13: atlas-voice-store ................   Passed    0.28 sec
+      Start 14: atlas-playback
+14/22 Test #14: atlas-playback ...................   Passed    3.55 sec
+      Start 15: atlas-soundscape-ui
+15/22 Test #15: atlas-soundscape-ui ..............   Passed    1.42 sec
+      Start 16: atlas-audio-devices
+16/22 Test #16: atlas-audio-devices ..............   Passed    0.24 sec
+      Start 17: atlas-voice-ui
+17/22 Test #17: atlas-voice-ui ...................   Passed    0.73 sec
+      Start 18: atlas-playback-ui
+18/22 Test #18: atlas-playback-ui ................   Passed    0.57 sec
+      Start 19: atlas-audio-host-lifecycle
+19/22 Test #19: atlas-audio-host-lifecycle .......   Passed    0.40 sec
+      Start 20: atlas-storage
+20/22 Test #20: atlas-storage ....................   Passed    0.81 sec
+      Start 21: atlas-ui-host
+21/22 Test #21: atlas-ui-host ....................   Passed    0.15 sec
+      Start 22: atlas-wav
+22/22 Test #22: atlas-wav ........................   Passed    1.67 sec
+
+100% tests passed, 0 tests failed out of 22
+
+Total Test time (real) =  19.99 sec

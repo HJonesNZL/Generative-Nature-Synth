@@ -19,3 +19,6 @@ ui/app/test-results/
 # User-generated soundscapes, audio exports and research audition renders.
 Exports/
 Auditions/
+
+# Locally packaged beta bundles and installation archives.
+Releases/

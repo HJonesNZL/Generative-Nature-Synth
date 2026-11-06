@@ -1,0 +1,145 @@
+{
+  "startedAtUtc": "2026-11-06T22:56:31.316Z",
+  "scope": "Real native protocol and fake output; no physical audio, owner database or owner state",
+  "binary": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/atlas-studio-fixture-host",
+  "binarySha256": "8f316dc2d7284705aa65ec0ec51c648cf314c809c1c90fdf7fd4fde01a8a8110",
+  "browser": "156.0.8078.80",
+  "errors": [],
+  "rejected": [
+    {
+      "method": "setAudioDevice",
+      "error": {
+        "code": "stale_generation",
+        "message": "Audio devices changed. Refresh the output choices and try again."
+      }
+    }
+  ],
+  "checks": [
+    "real native device catalog decoded by React",
+    "explicit device and buffer draft stays local",
+    "apply while playing stops and disables",
+    "fresh transport generation and no automatic audio/play",
+    "competing native apply rejects stale UI fence",
+    "refresh and reapply recovers",
+    "manual Listening and Play reach configured fake output",
+    "truthful callback progress and active rate/buffer"
+  ],
+  "applied": [
+    {
+      "available": true,
+      "devices": [
+        {
+          "id": "fixture-default",
+          "name": "Synthetic default output",
+          "type": "Fixture",
+          "isDefault": true,
+          "outputChannels": 2,
+          "sampleRates": [
+            44100,
+            48000
+          ],
+          "bufferFrames": [
+            64,
+            128,
+            256,
+            512
+          ],
+          "defaultBufferFrames": 64
+        },
+        {
+          "id": "fixture-external",
+          "name": "Synthetic external output",
+          "type": "Fixture",
+          "isDefault": false,
+          "outputChannels": 2,
+          "sampleRates": [
+            48000
+          ],
+          "bufferFrames": [
+            128,
+            256,
+            512
+          ],
+          "defaultBufferFrames": 128
+        }
+      ],
+      "configuration": {
+        "mode": "explicitDevice",
+        "deviceId": "fixture-external",
+        "bufferFrames": 256
+      },
+      "active": null,
+      "controlRevision": "2",
+      "error": null,
+      "preparationId": "audio-1",
+      "generation": "3"
+    },
+    {
+      "available": true,
+      "devices": [
+        {
+          "id": "fixture-default",
+          "name": "Synthetic default output",
+          "type": "Fixture",
+          "isDefault": true,
+          "outputChannels": 2,
+          "sampleRates": [
+            44100,
+            48000
+          ],
+          "bufferFrames": [
+            64,
+            128,
+            256,
+            512
+          ],
+          "defaultBufferFrames": 64
+        },
+        {
+          "id": "fixture-external",
+          "name": "Synthetic external output",
+          "type": "Fixture",
+          "isDefault": false,
+          "outputChannels": 2,
+          "sampleRates": [
+            48000
+          ],
+          "bufferFrames": [
+            128,
+            256,
+            512
+          ],
+          "defaultBufferFrames": 128
+        }
+      ],
+      "configuration": {
+        "mode": "explicitDevice",
+        "deviceId": "fixture-external",
+        "bufferFrames": 128
+      },
+      "active": null,
+      "controlRevision": "4",
+      "error": null,
+      "preparationId": "audio-1",
+      "generation": "5"
+    }
+  ],
+  "audio": {
+    "status": "running",
+    "deviceName": "Synthetic external output",
+    "masterGainDb": -18,
+    "peakDbfs": null,
+    "meterIsSimulated": false,
+    "clipping": false,
+    "activeSynthVoices": null,
+    "maxSynthVoices": 8,
+    "sampleRate": 48000,
+    "bufferFrames": 128,
+    "outputChannels": 2,
+    "callbackCount": "146",
+    "callbackFrames": "11456",
+    "faultCount": "0",
+    "error": null
+  },
+  "screenshot": "test-results/native-audio-device-preferences.png"
+}

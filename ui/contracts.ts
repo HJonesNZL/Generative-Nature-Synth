@@ -14,6 +14,8 @@ export interface HostCapabilities {
   implementation: "mock" | "native";
   supportedMethods: string[];
   audioAvailable: boolean;
+  /** False is intentional scene-only operation; absent preserves older hosts. */
+  libraryAvailable?: boolean;
   maxEventBatch: number;
   maxVisibleMarkers: number;
 }
@@ -38,6 +40,33 @@ export interface AudioState {
   maxSynthVoices: number;
   sampleRate?: number | null;
   error?: string | null;
+  bufferFrames?: number | null;
+  outputChannels?: number | null;
+  callbackCount?: string | null;
+  callbackFrames?: string | null;
+  faultCount?: string | null;
+}
+
+/** Device configuration is applied silently; Listening and Play stay explicit. */
+export interface AudioDeviceConfiguration {
+  mode: "systemDefault" | "explicitDevice";
+  deviceId: string | null;
+  /** Zero requests the device default. */
+  bufferFrames: number;
+}
+export interface AudioDeviceView {
+  id: string; name: string; type: string; isDefault: boolean;
+  outputChannels: number; sampleRates: number[]; bufferFrames: number[]; defaultBufferFrames: number;
+}
+export interface AudioDeviceCatalog {
+  available: boolean;
+  devices: AudioDeviceView[];
+  configuration: AudioDeviceConfiguration;
+  active: { deviceId: string; name: string; type: string; sampleRate: number; bufferFrames: number; outputChannels: number } | null;
+  controlRevision: Int64String;
+  preparationId: string | null;
+  generation: Int64String;
+  error: string | null;
 }
 
 export interface EventView {
@@ -256,6 +285,8 @@ export interface HostMethods {
       | { action: "stop" | "panic"; preparationId?: string; generation?: Int64String };
     response: TransportState;
   };
+  getAudioDevices: { request: Record<string, never>; response: AudioDeviceCatalog };
+  setAudioDevice: { request: { controlRevision: Int64String; preparationId: string | null; generation: Int64String; configuration: AudioDeviceConfiguration }; response: AudioDeviceCatalog };
   getAudioState: { request: Record<string, never>; response: AudioState };
   setAudioEnabled: { request: { enabled: boolean }; response: AudioState };
   setMasterGain: { request: { gainDb: number; gesture: "begin" | "change" | "end" }; response: { gainDb: number; changeRevision: Int64String } };

@@ -15,10 +15,11 @@ import type { MaterialView } from "../shared/useMaterialView";
 
 export function LeftColumn({ view, catalog }: { view: MaterialView; catalog: Catalog }) {
   const { mode } = useAppState();
+  const { caps } = useHost();
   return (
     <aside className="atlas__left" aria-label={mode === "history" ? "History query" : mode === "replay" ? "Saved pieces" : "Species and sources"}>
       {mode === "history" ? <HistoryQueryPanel catalog={catalog} /> : mode === "replay" ? <SessionsPanel /> : <SpeciesPanel view={view} catalog={catalog} />}
-      {mode !== "history" ? <SourcesPanel catalog={catalog} /> : null}
+      {mode !== "history" && caps?.libraryAvailable !== false ? <SourcesPanel catalog={catalog} /> : null}
     </aside>
   );
 }
@@ -113,15 +114,16 @@ function SourceRow({ health, name, now }: { health: SourceHealth; name: string; 
 }
 
 function SessionsPanel() {
-  const { client } = useHost();
+  const { client, caps } = useHost();
   const state = useAppState();
   const dispatch = useDispatch();
-  const [q, refreshSessions] = useHostQuery("listSessions", { limit: 100 }, []);
+  const [q, refreshSessions] = useHostQuery("listSessions", caps?.libraryAvailable === false ? null : { limit: 100 }, []);
   const sessions = valueOf(q) ?? [];
 
   return (
     <section className="stack-sm">
       <span className="label">SAVED PIECES</span>
+      {caps?.libraryAvailable === false ? <p className="small muted">Choose a wildlife library to list its pieces. Saved soundscapes remain available above.</p> : null}
       {q.status === "unsupported" ? <Notice tone="caution" title="Saved pieces unavailable">This host cannot list sessions.</Notice> : null}
       {q.status === "error" ? <Notice tone="problem" title="Could not read saved pieces" action={<button type="button" className="btn btn--quiet btn--sm" onClick={refreshSessions}>Retry</button>}>{q.error.message}</Notice> : null}
       {sessions.length === 100 ? <Notice tone="caution" title="Library display limit">Showing the newest 100 pieces. Full library pagination is not implemented yet.</Notice> : null}

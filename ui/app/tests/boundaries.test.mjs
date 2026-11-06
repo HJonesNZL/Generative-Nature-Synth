@@ -20,7 +20,7 @@ test('capability gate prevents sending unsupported mutations', async () => {
 });
 
 test('invalid capabilities and mismatched replies fail closed', async () => {
-  for (const value of [null, {}, { ...caps, maxEventBatch: 0 }, { ...caps, supportedMethods: [12] }]) {
+  for (const value of [null, {}, { ...caps, maxEventBatch: 0 }, { ...caps, supportedMethods: [12] }, { ...caps, libraryAvailable: "false" }, { ...caps, libraryAvailable: null }]) {
     const client = new HostClient({ request: async (request) => ok(request, value) });
     assert.equal((await client.connect()).ok, false);
     assert.equal(client.supports('listSessions'), false);

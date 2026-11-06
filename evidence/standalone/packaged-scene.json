@@ -1,0 +1,271 @@
+{
+  "ok": true,
+  "webview": {
+    "finished": true,
+    "ok": true,
+    "rounds": 30,
+    "capabilities": {
+      "protocolVersion": 1,
+      "implementation": "native",
+      "supportedMethods": [
+        "getCapabilities",
+        "getChanges",
+        "getCatalog",
+        "listSessions",
+        "prepareReplay",
+        "getMaterialEvents",
+        "getTransport",
+        "setTransport",
+        "getAudioState",
+        "setAudioEnabled",
+        "getAudioDevices",
+        "setAudioDevice",
+        "getVoiceLibrary",
+        "getVoice",
+        "setVoiceParameter",
+        "saveVoice",
+        "revertVoice",
+        "getComposition",
+        "setComposition",
+        "getSpatial",
+        "setSpatial",
+        "listSoundscapes",
+        "saveSoundscape",
+        "recallSoundscape",
+        "startSoundscapeRender",
+        "getRenderJob",
+        "cancelRender",
+        "listVoicePresets",
+        "applyVoicePreset"
+      ],
+      "audioAvailable": true,
+      "libraryAvailable": false,
+      "maxEventBatch": 500,
+      "maxVisibleMarkers": 500
+    },
+    "audio": {
+      "status": "disabled",
+      "deviceName": null,
+      "masterGainDb": -18,
+      "peakDbfs": null,
+      "meterIsSimulated": false,
+      "clipping": false,
+      "activeSynthVoices": null,
+      "maxSynthVoices": 8,
+      "sampleRate": null,
+      "bufferFrames": null,
+      "outputChannels": null,
+      "callbackCount": "0",
+      "callbackFrames": "0",
+      "faultCount": "0",
+      "error": null
+    },
+    "audioDevices": {
+      "available": true,
+      "devices": [
+        {
+          "id": "juce-a577d05d19707751",
+          "name": "MacBook Pro Speakers",
+          "type": "CoreAudio",
+          "isDefault": true,
+          "outputChannels": 2,
+          "sampleRates": [
+            44100,
+            48000,
+            88200,
+            96000
+          ],
+          "bufferFrames": [
+            16,
+            32,
+            64,
+            128,
+            256,
+            512,
+            1024,
+            2048,
+            4096
+          ],
+          "defaultBufferFrames": 512
+        },
+        {
+          "id": "juce-30da844212d84383",
+          "name": "Inject IO",
+          "type": "CoreAudio",
+          "isDefault": false,
+          "outputChannels": 2,
+          "sampleRates": [
+            44100,
+            48000,
+            88200,
+            96000,
+            176400,
+            192000
+          ],
+          "bufferFrames": [
+            16,
+            32,
+            64,
+            128,
+            256,
+            512,
+            1024,
+            2048,
+            4096
+          ],
+          "defaultBufferFrames": 512
+        },
+        {
+          "id": "juce-8b5c0a98023c3d15",
+          "name": "ZoomAudioDevice",
+          "type": "CoreAudio",
+          "isDefault": false,
+          "outputChannels": 2,
+          "sampleRates": [
+            44100,
+            48000,
+            88200,
+            96000,
+            176400,
+            192000
+          ],
+          "bufferFrames": [
+            16,
+            32,
+            64,
+            128,
+            256,
+            512
+          ],
+          "defaultBufferFrames": 512
+        }
+      ],
+      "configuration": {
+        "mode": "systemDefault",
+        "deviceId": null,
+        "bufferFrames": 0
+      },
+      "active": null,
+      "controlRevision": "1",
+      "error": null,
+      "preparationId": null,
+      "generation": "0"
+    },
+    "deviceUI": {
+      "visible": true,
+      "text": "Audio output\nOutput off\nOutput device\nBuffer size\nApplying stops playback and releases sounding notes. Listening stays off. After a device disconnects, refresh, apply an available output, then enable Listening and press Play.\nRefresh devices\nApply output\n",
+      "outputs": [
+        "System default",
+        "MacBook Pro Speakers (CoreAudio) \u00b7 default",
+        "Inject IO (CoreAudio)",
+        "ZoomAudioDevice (CoreAudio)"
+      ],
+      "buffers": [
+        "Device default (512 frames)",
+        "16 frames",
+        "32 frames",
+        "64 frames",
+        "128 frames",
+        "256 frames",
+        "512 frames",
+        "1024 frames",
+        "2048 frames",
+        "4096 frames"
+      ]
+    },
+    "afterDiscoveryAudio": {
+      "status": "disabled",
+      "deviceName": null,
+      "masterGainDb": -18,
+      "peakDbfs": null,
+      "meterIsSimulated": false,
+      "clipping": false,
+      "activeSynthVoices": null,
+      "maxSynthVoices": 8,
+      "sampleRate": null,
+      "bufferFrames": null,
+      "outputChannels": null,
+      "callbackCount": "0",
+      "callbackFrames": "0",
+      "faultCount": "0",
+      "error": null
+    },
+    "scenes": {
+      "items": [
+        {
+          "id": "1cf53db4a7354474879700a66d7d1fa5",
+          "name": "Synthetic sparse ensemble",
+          "valid": true,
+          "contentVerified": false,
+          "error": null,
+          "contentHash": "af4f52c97fa119e5d76732835a95555349c2ce18c6c2c65b0ab604134e2c5afc",
+          "sourceSessionId": "8e3bafa9-26e2-4a45-89e5-e370210df179",
+          "eventCount": 13,
+          "durationUs": "26000000",
+          "basis": "observed",
+          "speedNumerator": "1",
+          "speedDenominator": "1"
+        }
+      ],
+      "limited": false,
+      "unmanagedFiles": 0
+    },
+    "dom": {
+      "title": "Animal Atlas",
+      "text": "Skip to content\nANIMAL ATLAS\n\nAtlas\n\nSound Studio\nLive\nReplay\nHistory\n\n\n\n\nAll off\n\nCollect\n12:27:17\nNZDT \u00b7 ARRIVAL\n\nMaster level\n-18.0 dB\n\nAudio settings\nScene-only mode\nImport a soundscape or choose a wildlife library in the app toolbar.\nSaved-piece native playback\nSelect a saved piece, enable Listening, then press Play. Sound Studio exposes the voice controls offered by this host. Save a soundscape to preserve its events and settings or export its saved WAV.\nSOUNDSCAPES\nSave soundscape\n\nOpen soundscape\nExport saved WAV\nOpen a saved piece in Replay, then save its events and complete sound settings as a soundscape.\nSCENE COMPOSITION\nExperimental musical phrases \u00b7 awaiting owner listening\n\nCompose phrases\nTempo \nKey \nScale \nDensity \nVariation \n25%\nSeed \nQuantize phrase timing\nApply composition\nOpen a saved piece in Replay to compose its verified records.\nSPECIES \u00b7 0 AVAILABLE\nFind species\nAll available species\nCounts use all loaded records. Select a species to highlight its reported locations.\nLIVE \u00b7 ARRIVAL TIME\nReported receivers and measured fixes\nGlobe\n2D map\n\n\n\nReduce motion\nAll loaded records\nLast 60 min\n0 records \u00b7 0 of 0 locations shown.\nNewest loaded observation: unknown\nCoverage and display limits\nBrowse 0 displayed locations\nReported receiver\nHighlighted species in selected map records\nMeasured GPS / satellite fix\nEffect region\nCoastlines: Natural Earth\nREGION MIX \u00b7 60 MIN\nRegionChange region\nRegion\nRegion mix unavailable\nThis host does not report per-region activity.\nSelected\nIncoming 0\nNo event selected\nPick a station on the map, a line in Grain, or an item under Incoming.\nGRAIN \u00b7 LAST 60 MIN\nEvery detection in view, one line each\nShort lines were filtered or held back. Placed by arrival time.\nRecent received records only; coverage may be incomplete.\nNo detections in this window. That is not proof the animals were silent \u2014 only that nothing was recorded or received.\n11:27\n11:42\n11:57\n12:12\nnow\nNZDT\nOutcome detail unavailable from this host; all lines drawn full height.",
+      "buttons": [
+        "\n Atlas",
+        "\n Sound Studio",
+        "Live",
+        "Replay",
+        "History",
+        "\n",
+        "\n",
+        "\n",
+        "\n All off",
+        "\nCollect",
+        "",
+        "Audio settings",
+        "Save soundscape",
+        "Open soundscape",
+        "Export saved WAV",
+        "Apply composition",
+        "All available species",
+        "Globe",
+        "2D map",
+        "\n",
+        "\n",
+        "\n",
+        "Reduce motion",
+        "All loaded records",
+        "Last 60 min",
+        "Selected",
+        "Incoming 0"
+      ]
+    },
+    "render": {
+      "jobId": "f59f18fdb04b5869120e887253578365",
+      "state": "complete",
+      "progress": 1,
+      "artifactId": "f59f18fdb04b5869120e887253578365",
+      "filename": "f59f18fdb04b5869120e887253578365.wav",
+      "soundscapeId": "1cf53db4a7354474879700a66d7d1fa5",
+      "message": null
+    }
+  },
+  "nativeStatus": "WAV saved: exported.wav",
+  "nativeRequests": 95,
+  "rejectedRequests": 0,
+  "audioEnabled": false,
+  "shutdownComplete": true,
+  "elapsedSeconds": 4.83902025,
+  "exportedWav": {
+    "channels": 2,
+    "pcmBits": 24,
+    "sampleRate": 48000,
+    "frames": 1738260,
+    "bytes": 10430212,
+    "engineSourceSha256": "5d48f60a54fd2bee328c71923466d3680ab9b6a0b7d0fe0b79bc1155458d749d",
+    "sceneHash": "af4f52c97fa119e5d76732835a95555349c2ce18c6c2c65b0ab604134e2c5afc"
+  }
+}

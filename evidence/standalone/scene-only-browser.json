@@ -1,0 +1,19 @@
+{
+  "origin": "http://127.0.0.1:4191",
+  "browser": "156.0.8078.80",
+  "errors": [],
+  "checks": [
+    "intentional scene-only guidance",
+    "no live feed poll across its interval",
+    "no unavailable library-wide catalog/session/source requests",
+    "no misleading retry or data-loss promises",
+    "saved soundscape recall remains available",
+    "scene-specific catalog and material stay available",
+    "Sound Studio and fallback voice remain available",
+    "no external requests"
+  ],
+  "screenshots": [
+    "test-results/scene-only-atlas.png",
+    "test-results/scene-only-studio.png"
+  ]
+}

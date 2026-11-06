@@ -259,3 +259,7 @@
 .spatial-order button.is-selected { color: var(--c-on-accent); background: var(--c-accent); border-radius: var(--r-sm); }
 .spatial-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .spatial-actions .btn { font-size: 10px; }
+
+.audio-preferences { width: min(360px, calc(100vw - 64px)); max-height: min(580px, calc(100vh - 140px)); overflow-y: auto; }
+.audio-preferences label { display: flex; flex-direction: column; gap: var(--s-2); font-size: var(--fs-small); }
+.audio-preferences select { width: 100%; min-height: 34px; padding: 5px 8px; font: inherit; color: inherit; background: var(--c-ground-raised); border: 1px solid var(--c-rule); border-radius: 4px; }
