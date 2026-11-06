@@ -1,0 +1,1690 @@
+{
+  "schema": "animal-atlas.species-sound-design-research.v1",
+  "research_date": "2026-11-07",
+  "scope": "21 requested named species/taxon candidates plus one unresolved bat-order record; 19 other bird species, legacy cabaret redpoll and white shark. Companion native-species research is outside this file.",
+  "status": "design research only; no sample assets or production registration",
+  "method": {
+    "listened_recordings": 0,
+    "audio_files_downloaded": 0,
+    "measurements_performed": false,
+    "archive_metadata_reviewed": true,
+    "availability_definition": "Public source page and listed media/player references verified in page metadata; no promise of successful playback, permanent hosting or reusable sample rights",
+    "proposal_definition": "All numeric synth controls, musical register/envelope/timbre and synthesis-family assignments are original hypotheses. They are not transcriptions, natural-frequency estimates or owner approvals.",
+    "archive_date_caution": "Raw published dates are identifiers for finding references, not independently established observation precision.",
+    "coverage_limits": [
+      "Most sources are New Zealand archive examples; this is not a global dialect survey.",
+      "No complete species repertoire is claimed; selected contexts prioritize contrast.",
+      "Published descriptors cannot replace direct listening and level-matched musical evaluation.",
+      "Scientific names and provider ids are preserved separately from later taxonomic treatments."
+    ]
+  },
+  "control_units_and_ranges": {
+    "tuning_semitones": [
+      -12,
+      12
+    ],
+    "attack_ms": [
+      2,
+      100
+    ],
+    "decay_seconds": [
+      0.1,
+      3
+    ],
+    "gain_db": [
+      -60,
+      0
+    ],
+    "scope": "Current controls provide a rough starting contour only; proposed extensions are not implemented or approved. Gain proposals anticipate ensemble balancing, not calibrated natural loudness."
+  },
+  "rights": {
+    "policy_url": "https://www.nzbirdsonline.org.nz/copyright",
+    "policy_summary": "Public personal/reference listening is distinct from redistribution. Commercial reproduction and unauthorized metadata mining are restricted. No recorded audio is copied into the project. Selected links are research references; do not turn them into a sample pack or automatic bulk collector.",
+    "holders": {
+      "rights_1": "McPherson Natural History Unit Sound Archive",
+      "rights_2": "Nicholas Allen",
+      "rights_3": "Peter Frost",
+      "rights_4": "Ralph Powlesland"
+    }
+  },
+  "species": [
+    {
+      "provider_species_id": "birdweather:species:1",
+      "common_name": "House sparrow",
+      "provider_scientific_name": "Passer domesticus",
+      "family": "Passeridae",
+      "taxon_scope": "exact species; retain provider identity",
+      "status": "research_candidate_not_listening_approved",
+      "evidence_basis": "Published descriptions plus recorder/archive metadata; no direct listening or signal measurement",
+      "source_page": "https://www.nzbirdsonline.org.nz/species/house-sparrow",
+      "documented_observations": "The account distinguishes the ordinary social/song chirp from a rougher alarm. Selected references cover an individual in vegetation, a flock and chattering.",
+      "acoustic_coverage": "Chirp repetition is documented; cadence is unmeasured. The source calls the basic voice unmelodious; natural pitch range, spectral balance and envelope times remain unmeasured.",
+      "recordings": [
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "CbGD432kQLWR0fEVPnepig",
+          "context_paraphrase": "individual shrub call",
+          "recordist": "Les McPherson",
+          "location_as_published": "St Albans Christchurch",
+          "date_as_published": "1969-10-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/house-sparrow",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691644856-01-20-20unknown-20title-20-20unknown-20artist.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "fAYZ3U-oQx23TYYoxPCl4A",
+          "context_paraphrase": "flock social calls",
+          "recordist": "Les McPherson",
+          "location_as_published": "Christchurch",
+          "date_as_published": "1971-06-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/house-sparrow",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691644870-22-20-20house-20sparrow.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "EqBbZ_rZQyiHs7iZMAJjng",
+          "context_paraphrase": "chattering",
+          "recordist": "Nicholas Allen",
+          "location_as_published": "Waitaki Waters Otago",
+          "date_as_published": "2017-01-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/house-sparrow",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691644895-nia-202409-20house-20sparrow.mp3",
+          "copyright_ref": "rights_2",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        }
+      ],
+      "musical_hypothesis": "Use a compact, woody, slightly nasal keyboard chip: two unequal pulses, tiny upward scoops and dry silence between clusters. Flock density becomes restrained overlap, not a continuous glitter wash.",
+      "musical_gesture": "upper-mid; clipped attack; mildly rough harmonic body; uneven two/three-note cells; fast release",
+      "current_controls": {
+        "tuning_semitones": 3,
+        "attack_ms": 4,
+        "decay_seconds": 0.24,
+        "gain_db": -18
+      },
+      "needed_extensions": [
+        "band-limited noise transient",
+        "nasal spectral emphasis",
+        "bounded pulse clustering"
+      ],
+      "relationship_and_distinction": "Keep shorter and drier than goldfinch; no long greenfinch buzz. Sparrow-like appearance of dunnock is not a family relationship.",
+      "listening_approved": false
+    },
+    {
+      "provider_species_id": "birdweather:species:35",
+      "common_name": "Eurasian blackbird",
+      "provider_scientific_name": "Turdus merula",
+      "family": "Turdidae",
+      "taxon_scope": "exact species; retain provider identity",
+      "status": "research_candidate_not_listening_approved",
+      "evidence_basis": "Published descriptions plus recorder/archive metadata; no direct listening or signal measurement",
+      "source_page": "https://www.nzbirdsonline.org.nz/species/eurasian-blackbird",
+      "documented_observations": "Male territorial song differs from song thrush by avoiding its immediate phrase repetitions. The archive also separates an alarm sequence with clucks from full song.",
+      "acoustic_coverage": "Song-versus-fast-alarm phrasing is documented. A clean flute-like synthesis is a design hypothesis; no Hz limits or attack/decay measurements were established here.",
+      "recordings": [
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "Ihz6ZyUTQROlwBpw3TTRUg",
+          "context_paraphrase": "male full song in pine",
+          "recordist": "Les McPherson",
+          "location_as_published": "Richmond Christchurch",
+          "date_as_published": "1984-11-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/eurasian-blackbird",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691644635-07-20-20blackbird.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "WY_U78H9SFOtQ6sr7MvdHw",
+          "context_paraphrase": "adult alarm rattle and clucking",
+          "recordist": "Nicholas Allen",
+          "location_as_published": "Harts Creek Lake Ellesmere",
+          "date_as_published": "2012-12-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/eurasian-blackbird",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691644648-nia-20582-20blackbird.mp3",
+          "copyright_ref": "rights_2",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "JUynIlukSkefmlu8D-6WTQ",
+          "context_paraphrase": "alarm call",
+          "recordist": "Les McPherson",
+          "location_as_published": "Okuti Reserve Banks Peninsula",
+          "date_as_published": "1979-09-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/eurasian-blackbird",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691644705-08-20-20track-208_19.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        }
+      ],
+      "musical_hypothesis": "Make a rounded flute/reed voice with three or four freely changing intervals, a slow dip at each phrase end, and a quiet breath edge. A separate alarm variant uses dry repeated taps.",
+      "musical_gesture": "mid; rounded onset; tonal core with small airy edge; changing melodic arcs; gently tapered ends",
+      "current_controls": {
+        "tuning_semitones": -2,
+        "attack_ms": 24,
+        "decay_seconds": 1.15,
+        "gain_db": -20
+      },
+      "needed_extensions": [
+        "continuous pitch contour",
+        "phrase grammar without immediate repetition",
+        "independent breath/noise envelope"
+      ],
+      "relationship_and_distinction": "Share the Turdus core with song thrush but change syntax: blackbird varies phrases, thrush repeats a motif before moving on.",
+      "listening_approved": false
+    },
+    {
+      "provider_species_id": "birdweather:species:89",
+      "common_name": "European goldfinch",
+      "provider_scientific_name": "Carduelis carduelis",
+      "family": "Fringillidae",
+      "taxon_scope": "exact species; retain provider identity",
+      "status": "research_candidate_not_listening_approved",
+      "evidence_basis": "Published descriptions plus recorder/archive metadata; no direct listening or signal measurement",
+      "source_page": "https://www.nzbirdsonline.org.nz/species/european-goldfinch",
+      "documented_observations": "The account describes clear, fluid, ringing calls; archive references separate male territory song, two adults in flight and an aggression buzz.",
+      "acoustic_coverage": "Song, flight and aggression are distinct documented contexts. Descriptive brightness is supported; precise note rates, pitch range and envelopes are unmeasured.",
+      "recordings": [
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "BX4QInG6RaSLjNsdEe71pw",
+          "context_paraphrase": "male territory song",
+          "recordist": "Les McPherson",
+          "location_as_published": "Victoria Park",
+          "date_as_published": "1969-11-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/european-goldfinch",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691645174-11-20-20unknown-20title-20-20unknown-20artist_0.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "WuLdVqNVQYaQFrKMJKbrDw",
+          "context_paraphrase": "two adults calling during flight",
+          "recordist": "Nicholas Allen",
+          "location_as_published": "Harts Creek Lake Ellesmere",
+          "date_as_published": "2012-12-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/european-goldfinch",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691645187-nia-20580-20goldfinch.mp3",
+          "copyright_ref": "rights_2",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "OH-eRamMSeitUmJRW3aNCA",
+          "context_paraphrase": "aggression buzz",
+          "recordist": "Nicholas Allen",
+          "location_as_published": "Quail Island Lyttelton Harbour",
+          "date_as_published": "2013-09-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/european-goldfinch",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691645207-nia-20909-20goldfinch.mp3",
+          "copyright_ref": "rights_2",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        }
+      ],
+      "musical_hypothesis": "Build a light plucked-glass/reed hybrid that rolls through two or three notes and briefly trills, then leaves air. Let the aggression variant introduce a short buzz rather than making all phrases noisy.",
+      "musical_gesture": "high; quick soft-edged onset; bright tonal sparkle; small rolling groups and brief trills; short taper",
+      "current_controls": {
+        "tuning_semitones": 7,
+        "attack_ms": 6,
+        "decay_seconds": 0.42,
+        "gain_db": -22
+      },
+      "needed_extensions": [
+        "rapid pitch segments",
+        "bounded trill",
+        "brief harmonic-to-noise transition"
+      ],
+      "relationship_and_distinction": "Same finch family as greenfinch/chaffinch/redpoll; preserve fluid contour rather than sharing the greenfinch sustained buzz or redpoll dry chatter.",
+      "listening_approved": false
+    },
+    {
+      "provider_species_id": "birdweather:species:294",
+      "common_name": "European greenfinch",
+      "provider_scientific_name": "Chloris chloris",
+      "family": "Fringillidae",
+      "taxon_scope": "exact species; retain provider identity",
+      "status": "research_candidate_not_listening_approved",
+      "evidence_basis": "Published descriptions plus recorder/archive metadata; no direct listening or signal measurement",
+      "source_page": "https://www.nzbirdsonline.org.nz/species/european-greenfinch",
+      "documented_observations": "The account separates breeding song from an emphatic buzzing-type call. Archive references identify buzz, full song and adult flight calls.",
+      "acoustic_coverage": "The buzz/song contrast is documented; no measured buzz modulation rate, pitch extent or envelope duration is asserted.",
+      "recordings": [
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "PtqrSLUUT2-gXWXcEV6RGQ",
+          "context_paraphrase": "buzz",
+          "recordist": "William Ward",
+          "location_as_published": "Rough Island Nelson",
+          "date_as_published": "1969-11-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/european-greenfinch",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691645142-19-20-20greenfinch_0.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "Z_jcyEGMRB-EY1r_6dUAmA",
+          "context_paraphrase": "complete song",
+          "recordist": "William Ward",
+          "location_as_published": "Rough Island Nelson",
+          "date_as_published": "1969-11-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/european-greenfinch",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691645151-19a.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "b65I9abiT92T-C3ZsgQJbQ",
+          "context_paraphrase": "adult flight calls",
+          "recordist": "Nicholas Allen",
+          "location_as_published": "Harts Creek Lake Ellesmere",
+          "date_as_published": "2012-12-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/european-greenfinch",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691645159-nia-20582-20greenfinch.mp3",
+          "copyright_ref": "rights_2",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        }
+      ],
+      "musical_hypothesis": "Use a bright reed that opens into a stable electric buzz, with a falling tail. Alternate a small clean lead-in with the buzz, and reserve rapid short packets for flight variation.",
+      "musical_gesture": "upper-mid; moderate attack; strong harmonic buzz; sustained accent after clean pickup; tapered falling release",
+      "current_controls": {
+        "tuning_semitones": 2,
+        "attack_ms": 12,
+        "decay_seconds": 0.85,
+        "gain_db": -22
+      },
+      "needed_extensions": [
+        "harmonic richness control",
+        "amplitude/frequency modulation",
+        "clean-to-buzz spectral morph"
+      ],
+      "relationship_and_distinction": "Finch-family overlap is a useful core; its longer rough accent must remain distinct from goldfinch sparkle and chaffinch cadential rattle.",
+      "listening_approved": false
+    },
+    {
+      "provider_species_id": "birdweather:species:25",
+      "common_name": "Chaffinch",
+      "provider_scientific_name": "Fringilla coelebs",
+      "family": "Fringillidae",
+      "taxon_scope": "exact species; retain provider identity",
+      "status": "research_candidate_not_listening_approved",
+      "evidence_basis": "Published descriptions plus recorder/archive metadata; no direct listening or signal measurement",
+      "source_page": "https://www.nzbirdsonline.org.nz/species/chaffinch",
+      "documented_observations": "The account distinguishes year-round contact chips from a short repeated rattling male song and notes regional contact-call differences within New Zealand.",
+      "acoustic_coverage": "Repeated song and contact-call categories are documented. Timing of the terminal gesture and exact register require listening; regional variants are not universal species constants.",
+      "recordings": [
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "clsnvQJnQp6WkNcaIm7jgw",
+          "context_paraphrase": "male territory song",
+          "recordist": "Les McPherson",
+          "location_as_published": "Mount Fyffe Station Kowhai River Kaikoura",
+          "date_as_published": "1972-11-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/chaffinch",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691645098-16-20-20track-2016_1.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "Xq7uEk8FSRuOb_XLNVqynw",
+          "context_paraphrase": "simple contact call",
+          "recordist": "Les McPherson",
+          "location_as_published": "Kowhai Bush Kaikoura study area",
+          "date_as_published": "1983-10-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/chaffinch",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691645060-18-20-20chaffinch.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "S_4jbswnS8yN0-kIW-R8uw",
+          "context_paraphrase": "male contact call from forest floor",
+          "recordist": "Nicholas Allen",
+          "location_as_published": "Routeburn Track  Wakatipu end",
+          "date_as_published": "2012-10-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/chaffinch",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691645075-nia-20465-20chaffinch.mp3",
+          "copyright_ref": "rights_2",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        }
+      ],
+      "musical_hypothesis": "Design a crisp mallet/reed figure: a few steady notes tighten into a brief descending rattle and a clear final accent. Keep a separate single-chip variant for sparse event loads.",
+      "musical_gesture": "upper-mid; hard clean front; bright grain; tightening repeated figure and final accent; short decay",
+      "current_controls": {
+        "tuning_semitones": 4,
+        "attack_ms": 5,
+        "decay_seconds": 0.36,
+        "gain_db": -20
+      },
+      "needed_extensions": [
+        "accelerating bounded subnotes",
+        "cadential contour",
+        "regional-variant metadata"
+      ],
+      "relationship_and_distinction": "Related to the other finches; distinguish by its closed cadential shape rather than only by transposition.",
+      "listening_approved": false
+    },
+    {
+      "provider_species_id": "birdweather:species:61",
+      "common_name": "Song thrush",
+      "provider_scientific_name": "Turdus philomelos",
+      "family": "Turdidae",
+      "taxon_scope": "exact species; retain provider identity",
+      "status": "research_candidate_not_listening_approved",
+      "evidence_basis": "Published descriptions plus recorder/archive metadata; no direct listening or signal measurement",
+      "source_page": "https://www.nzbirdsonline.org.nz/species/song-thrush",
+      "documented_observations": "The account describes broad note variety and immediate motif repetition, typically two or three renditions, with separate alarm and contact recordings.",
+      "acoustic_coverage": "Motif repeat count is documented; no measured tonal/noise ratio, range or attack/decay is supplied by this review.",
+      "recordings": [
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "bO6867BjRCOF9S6YoW09tw",
+          "context_paraphrase": "male territory song",
+          "recordist": "Les McPherson",
+          "location_as_published": "Christchurch",
+          "date_as_published": "1969-11-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/song-thrush",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691644710-03-20-20unknown-20title-20-20unknown-20artist_0.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "A3y9S-ZCRGqMZ9UWXACxvw",
+          "context_paraphrase": "alarm rattle",
+          "recordist": "Nicholas Allen",
+          "location_as_published": "Hanmer Springs",
+          "date_as_published": "2012-04-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/song-thrush",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691644724-nia-2025x-20song-20thrush.mp3",
+          "copyright_ref": "rights_2",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "fVViEtyFQNeOEK2Y_KXIuA",
+          "context_paraphrase": "contact call",
+          "recordist": "Nicholas Allen",
+          "location_as_published": "Hanmer Springs",
+          "date_as_published": "2012-04-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/song-thrush",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691644727-nia-20217-20song-20thrush.mp3",
+          "copyright_ref": "rights_2",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        }
+      ],
+      "musical_hypothesis": "Make a clear resonant whistle with a little struck warmth. Repeat one compact motif two or three times, then answer it with a different interval pattern. Alarm becomes a short grainy rattle.",
+      "musical_gesture": "mid-to-high; clean rounded onset; tonal whistle plus sparse grain; repeated motifs with gaps; clean tapered ends",
+      "current_controls": {
+        "tuning_semitones": 0,
+        "attack_ms": 16,
+        "decay_seconds": 0.8,
+        "gain_db": -21
+      },
+      "needed_extensions": [
+        "motif memory with bounded repeats",
+        "pitch-contour segments",
+        "alternate alarm noise layer"
+      ],
+      "relationship_and_distinction": "The Turdus sibling of blackbird should sound related in body but unmistakably different in repetition syntax.",
+      "listening_approved": false
+    },
+    {
+      "provider_species_id": "birdweather:species:534",
+      "common_name": "Common myna",
+      "provider_scientific_name": "Acridotheres tristis",
+      "family": "Sturnidae",
+      "taxon_scope": "exact species; retain provider identity",
+      "status": "research_candidate_not_listening_approved",
+      "evidence_basis": "Published descriptions plus recorder/archive metadata; no direct listening or signal measurement",
+      "source_page": "https://www.nzbirdsonline.org.nz/species/common-myna",
+      "documented_observations": "The account describes a repeated territorial proclamation plus quieter bell-like, guttural and trill material. Recordings include territory, communal roost and dawn settings.",
+      "acoustic_coverage": "Mixed tonal and guttural material is documented; natural formant frequencies, exact envelope and phrase durations remain unmeasured.",
+      "recordings": [
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "EeTIvOreStuNNn31JcTdvw",
+          "context_paraphrase": "territory song",
+          "recordist": "Carl & Lise Wiesmann",
+          "location_as_published": "Ngongotaha near Rotorua",
+          "date_as_published": "1957-02-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/common-myna",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691644810-09-20-20track-209.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "LW-5ygoESqGDjVdX4OHkrA",
+          "context_paraphrase": "roost group",
+          "recordist": "Allan J Baker",
+          "location_as_published": "Meeanee Napier",
+          "date_as_published": "1971-12-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/common-myna",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691644829-22-20track-2022.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "CzJZ_bJbQ1ioBpMGsPnBNQ",
+          "context_paraphrase": "dawn song",
+          "recordist": "Les McPherson",
+          "location_as_published": "Port Fitzroy Great Barrier Island",
+          "date_as_published": "1975-12-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/common-myna",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691644843-07-20-20track-207_12.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        }
+      ],
+      "musical_hypothesis": "Use a conversational hollow reed with a bell overtone: a repeated three-part declaration answered by a softer low murmur. A small repertoire should alternate discrete gestures rather than randomize every note.",
+      "musical_gesture": "mid; assertive onset; hollow/bell-like overtones and guttural layer; declaration/answer; rounded short tail",
+      "current_controls": {
+        "tuning_semitones": -1,
+        "attack_ms": 12,
+        "decay_seconds": 0.65,
+        "gain_db": -23
+      },
+      "needed_extensions": [
+        "moving formant-like peaks",
+        "small motif repertoire",
+        "layered tonal/guttural excitation"
+      ],
+      "relationship_and_distinction": "A true Sturnidae relative of starling. Keep myna declamatory and hollow while starling changes texture within a phrase. Do not borrow hill myna evidence.",
+      "listening_approved": false
+    },
+    {
+      "provider_species_id": "birdweather:species:44",
+      "common_name": "Dunnock",
+      "provider_scientific_name": "Prunella modularis",
+      "family": "Prunellidae",
+      "taxon_scope": "exact species; retain provider identity",
+      "status": "research_candidate_not_listening_approved",
+      "evidence_basis": "Published descriptions plus recorder/archive metadata; no direct listening or signal measurement",
+      "source_page": "https://www.nzbirdsonline.org.nz/species/dunnock",
+      "documented_observations": "The account describes a slender warbling song and a high contact sound; archive references separate song, roost contact and adult anxiety.",
+      "acoustic_coverage": "High/thin quality and varied contexts are documented; precise contour, pacing and envelope are still unmeasured.",
+      "recordings": [
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "Skkwm73LTcCeEiJdbZ9nwg",
+          "context_paraphrase": "male song",
+          "recordist": "Les McPherson",
+          "location_as_published": "St Albans Christchurch",
+          "date_as_published": "1984-08-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/dunnock",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691645011-36-20-20dunnock.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "GrRzHzWNSdKr4zh4hA05Tw",
+          "context_paraphrase": "contact at roost",
+          "recordist": "Nicholas Allen",
+          "location_as_published": "Hanmer Springs",
+          "date_as_published": "2012-04-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/dunnock",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691645025-nia-20215-20dunnock.mp3",
+          "copyright_ref": "rights_2",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "MS2WcXJ1QEakn16GVLKj7w",
+          "context_paraphrase": "adult anxiety",
+          "recordist": "Nicholas Allen",
+          "location_as_published": "L2 River Mouth  Lake Ellesmere",
+          "date_as_published": "2012-06-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/dunnock",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691645028-nia-20249-20dunnock.mp3",
+          "copyright_ref": "rights_2",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        }
+      ],
+      "musical_hypothesis": "Create a fine sine/reed filament, quieter in body than either Turdus voice. Let a short wavering line finish with a narrow upward sigh; anxiety uses isolated, spare points.",
+      "musical_gesture": "high; soft quick onset; thin tonal body; compact wavering lines and isolated contact points; delicate taper",
+      "current_controls": {
+        "tuning_semitones": 6,
+        "attack_ms": 14,
+        "decay_seconds": 0.55,
+        "gain_db": -25
+      },
+      "needed_extensions": [
+        "subtle pitch inflection",
+        "low-partial spectral weighting",
+        "short warble grammar"
+      ],
+      "relationship_and_distinction": "An accentor, not a sparrow or finch. Its soft narrow spectrum offers an arrangement counterweight to the brighter finch cluster.",
+      "listening_approved": false
+    },
+    {
+      "provider_species_id": "birdweather:species:2952",
+      "common_name": "Masked lapwing / spur-winged plover",
+      "provider_scientific_name": "Vanellus miles",
+      "family": "Charadriidae",
+      "taxon_scope": "exact species; retain provider identity",
+      "status": "research_candidate_not_listening_approved",
+      "evidence_basis": "Published descriptions plus recorder/archive metadata; no direct listening or signal measurement",
+      "source_page": "https://www.nzbirdsonline.org.nz/species/spur-winged-plover",
+      "documented_observations": "The account describes an incisive staccato rattle. References include a nesting pair, an individual call and alarm.",
+      "acoustic_coverage": "Staccato/rattling delivery is documented. Exact register, note rate, noisy components and envelope lengths need direct listening.",
+      "recordings": [
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "BUIWl_73SWqwyJ2WlYOhQw",
+          "context_paraphrase": "nesting pair",
+          "recordist": "Les McPherson",
+          "location_as_published": "Kaituna Banks Peninsula",
+          "date_as_published": "1977-08-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/spur-winged-plover",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691641251-18-20-20spur-winged-20plover.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "Gt5eOoMrSO2tZ4VTLk_SNg",
+          "context_paraphrase": "individual call",
+          "recordist": "Les McPherson",
+          "location_as_published": "Pleasant Valley School near Geraldine",
+          "date_as_published": "1979-10-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/spur-winged-plover",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691641260-14-20-20track-2014_10.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "LT891T-BTXivL-QAJ_VkCg",
+          "context_paraphrase": "alarm",
+          "recordist": "Les McPherson",
+          "location_as_published": "Lake Alexandrina Mackenzie Country",
+          "date_as_published": "1979-11-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/spur-winged-plover",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691641263-06-20-20track-206_25.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        }
+      ],
+      "musical_hypothesis": "Use a sharp tuned wood/metal clatter with a strained reed edge: a small burst accelerates, stops abruptly and leaves a clear gap. The pair variant answers rather than doubling loudly.",
+      "musical_gesture": "upper-mid; hard front; bright noisy/tonal mix; accelerating burst and response; abrupt release",
+      "current_controls": {
+        "tuning_semitones": 2,
+        "attack_ms": 3,
+        "decay_seconds": 0.22,
+        "gain_db": -24
+      },
+      "needed_extensions": [
+        "rattle subnotes",
+        "roughness control",
+        "two-part antiphonal grammar"
+      ],
+      "relationship_and_distinction": "Taxonomically a shorebird. Avoid routing it to a generic songbird flute merely because a bird detector reported the event.",
+      "listening_approved": false
+    },
+    {
+      "provider_species_id": "birdweather:species:100",
+      "common_name": "Canada goose",
+      "provider_scientific_name": "Branta canadensis",
+      "family": "Anatidae",
+      "taxon_scope": "exact species; retain provider identity",
+      "status": "research_candidate_not_listening_approved",
+      "evidence_basis": "Published descriptions plus recorder/archive metadata; no direct listening or signal measurement",
+      "source_page": "https://www.nzbirdsonline.org.nz/species/canada-goose",
+      "documented_observations": "The account identifies a conspicuous honk used in flight and disturbance. References distinguish a captive pair, a flying group and an adult uneasy on a nest.",
+      "acoustic_coverage": "Honk contexts are documented; natural spectral/formant frequencies, pitch range and inter-call timing are not measured here.",
+      "recordings": [
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "JpP37ZhXTla3lhyOA8z_zw",
+          "context_paraphrase": "captive pair",
+          "recordist": "Les McPherson",
+          "location_as_published": "Greenpark hatchery Tai Tapu",
+          "date_as_published": "1970-11-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/canada-goose",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691646794-17-20-20unknown-20title-20-20unknown-20artist.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "E_wp7mQQTSm6LDzWAaDdng",
+          "context_paraphrase": "small flying flock",
+          "recordist": "Les McPherson",
+          "location_as_published": "Peacock Springs Christchurch",
+          "date_as_published": "1986-05-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/canada-goose",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691646799-21-20-20canada-20goose.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "QshzdbFvSr2ACVHhdUA-8w",
+          "context_paraphrase": "adult anxiety at nest",
+          "recordist": "Nicholas Allen",
+          "location_as_published": "Te Anau",
+          "date_as_published": "2012-10-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/canada-goose",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691646804-nia-20444-20canada-20goose.mp3",
+          "copyright_ref": "rights_2",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        }
+      ],
+      "musical_hypothesis": "Build a low-mid brass/reed swell with a bent pitch and hollow chest. A two-register answer can suggest a small group; leave substantial gaps and avoid a heavy continuous bass drone.",
+      "musical_gesture": "low-mid; swelling onset; rich nasal harmonics; separated bent calls; breathy tapered end",
+      "current_controls": {
+        "tuning_semitones": -9,
+        "attack_ms": 45,
+        "decay_seconds": 1.25,
+        "gain_db": -24
+      },
+      "needed_extensions": [
+        "formant-like spectral envelope",
+        "slow pitch bend",
+        "call-and-answer register pair"
+      ],
+      "relationship_and_distinction": "Anatidae sibling of mallard: share a hollow excitation family while goose stretches the contour and mallard pulses it.",
+      "listening_approved": false
+    },
+    {
+      "provider_species_id": "birdweather:species:106",
+      "common_name": "Eurasian / Australian coot",
+      "provider_scientific_name": "Fulica atra",
+      "family": "Rallidae",
+      "taxon_scope": "exact species; retain provider identity",
+      "status": "research_candidate_not_listening_approved",
+      "evidence_basis": "Published descriptions plus recorder/archive metadata; no direct listening or signal measurement",
+      "source_page": "https://www.nzbirdsonline.org.nz/species/australian-coot",
+      "documented_observations": "The account describes a rough emphatic call. Archive references cover a group below trees, calls during pursuit of scaup, and chicks followed by adult defence.",
+      "acoustic_coverage": "Harsh quality and contrasting age/interaction contexts are documented; no exact spectrum, register or duration has been measured.",
+      "recordings": [
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "b3oJPRdsRWG0MYBsqi2KsQ",
+          "context_paraphrase": "group under trees",
+          "recordist": "Les McPherson",
+          "location_as_published": "St Annes Lagoon Cheviot",
+          "date_as_published": "1981-10-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/australian-coot",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691640289-13-20-20australian-20coot.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "Z0mstOI0SUKdTevlBk2pHg",
+          "context_paraphrase": "calls during scaup pursuit",
+          "recordist": "Nicholas Allen",
+          "location_as_published": "Lake Hayes Otago",
+          "date_as_published": "2014-01-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/australian-coot",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691640305-nia-201075-20coot.mp3",
+          "copyright_ref": "rights_2",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "Wgwh1uaLStCXiasRZwyHZQ",
+          "context_paraphrase": "chicks and adult defence",
+          "recordist": "Nicholas Allen",
+          "location_as_published": "Paraparaumu Beach",
+          "date_as_published": "2016-11-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/australian-coot",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691640308-nia-202301-20australian-20coot.mp3",
+          "copyright_ref": "rights_2",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        }
+      ],
+      "musical_hypothesis": "Make a low-mid wooden clonk with a pinched noisy reed tail. Give it an uneven double hit, and allow a quieter fine-grained chick variant only as a separately labelled context.",
+      "musical_gesture": "low-mid; abrupt attack; hollow transient with rough tail; uneven singles/doubles; short release",
+      "current_controls": {
+        "tuning_semitones": -5,
+        "attack_ms": 4,
+        "decay_seconds": 0.34,
+        "gain_db": -23
+      },
+      "needed_extensions": [
+        "hollow resonant peak",
+        "independent noisy tail",
+        "asymmetric double strike"
+      ],
+      "relationship_and_distinction": "Share a Rallidae core with swamphen; coot remains compact and percussive while swamphen is more open and nasal. Archive taxon is F. atra australis within F. atra.",
+      "listening_approved": false
+    },
+    {
+      "provider_species_id": "birdweather:species:12",
+      "common_name": "Spotted dove",
+      "provider_scientific_name": "Streptopelia chinensis",
+      "family": "Columbidae",
+      "taxon_scope": "exact species; retain provider identity",
+      "status": "research_candidate_not_listening_approved",
+      "evidence_basis": "Published descriptions plus recorder/archive metadata; no direct listening or signal measurement",
+      "source_page": "https://www.nzbirdsonline.org.nz/species/spotted-dove",
+      "documented_observations": "The account describes a low lilting three-part coo phrase lasting about three seconds, repeated persistently; it also distinguishes display and quieter perch contexts. References come from Fiji and Indonesia.",
+      "acoustic_coverage": "Low register, syllabic rise/fall and three-second phrase are source descriptions, not measurements of the linked examples. Exact envelopes and harmonic balance remain unmeasured.",
+      "recordings": [
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "BtWdOo-eSLWLeGyxj6AjGw",
+          "context_paraphrase": "tree-perching adults, Fiji",
+          "recordist": "Les McPherson",
+          "location_as_published": "Adventist Cemetery Lami Suva Fiji",
+          "date_as_published": "1986-06-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/spotted-dove",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691641772-51-20-20malay-20spotted-20dove.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "GRhEkzVTTbCR3U-nOYELNg",
+          "context_paraphrase": "adult call, Indonesia",
+          "recordist": "Peter Frost",
+          "location_as_published": "Bogor",
+          "date_as_published": "2004-01-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/spotted-dove",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691641778-spotted-20dove_brown-cheeked-20bulbul_bogor.mp3",
+          "copyright_ref": "rights_3",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        }
+      ],
+      "musical_hypothesis": "Use a warm low sine/woodwind voice with three rounded swells. Each swell rises slightly then relaxes, and the final short syllable closes the pattern. Phrase space matters more than reverberation.",
+      "musical_gesture": "low-mid; rounded onset; near-tonal warm body; three swells with slight arcs; soft release",
+      "current_controls": {
+        "tuning_semitones": -7,
+        "attack_ms": 65,
+        "decay_seconds": 1.8,
+        "gain_db": -23
+      },
+      "needed_extensions": [
+        "per-syllable pitch arc",
+        "three-part amplitude phrase",
+        "low spectral tilt"
+      ],
+      "relationship_and_distinction": "Columbidae: share slow contour capability with owl only as a synthesis relationship, not a taxonomic one. Spilopelia chinensis is an explicit same-species synonym mapping.",
+      "listening_approved": false,
+      "taxonomy": {
+        "accepted_name_in_government_reference": "Spilopelia chinensis",
+        "aliases": [
+          "Streptopelia chinensis"
+        ],
+        "reference": "https://www.mybis.gov.my/sp/22588",
+        "mapping_policy": "Explicit same-species genus synonym; preserve source spelling and id. NZBO recordings are overseas, not an asserted New Zealand dialect."
+      }
+    },
+    {
+      "provider_species_id": "birdweather:species:46",
+      "common_name": "Little owl",
+      "provider_scientific_name": "Athene noctua",
+      "family": "Strigidae",
+      "taxon_scope": "exact species; retain provider identity",
+      "status": "research_candidate_not_listening_approved",
+      "evidence_basis": "Published descriptions plus recorder/archive metadata; no direct listening or signal measurement",
+      "source_page": "https://www.nzbirdsonline.org.nz/species/little-owl",
+      "documented_observations": "The species account identifies an evening contact call; the archive provides a long adult call, alarm and a sequence with short/long calls from several birds.",
+      "acoustic_coverage": "Long/short and alarm categories are documented; the source account alone does not supply a natural frequency range, harmonic balance or envelope times.",
+      "recordings": [
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "DBC9IoJKQI6uHZ6Sm0EGgw",
+          "context_paraphrase": "long adult call",
+          "recordist": "Nicholas Allen",
+          "location_as_published": "Kaikoura",
+          "date_as_published": "2011-12-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/little-owl",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691642482-nia-20080-20little-20owl.mp3",
+          "copyright_ref": "rights_2",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "JYNVpEgTSh6IddV64icIaA",
+          "context_paraphrase": "alarm",
+          "recordist": "Nicholas Allen",
+          "location_as_published": "Coes Ford",
+          "date_as_published": "2014-09-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/little-owl",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691642489-nia-201351-20little-20owl.mp3",
+          "copyright_ref": "rights_2",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "ZrpIsqxeSqGIDT6TVsbN1Q",
+          "context_paraphrase": "multiple birds with short and long calls",
+          "recordist": "Nicholas Allen",
+          "location_as_published": "Lakeside village Canterbury",
+          "date_as_published": "2018-07-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/little-owl",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691642494-nia-202998-20little-20owl.mp3",
+          "copyright_ref": "rights_2",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        }
+      ],
+      "musical_hypothesis": "Make a compact ceramic/woodwind tone whose centre bends downward and returns slightly. Long variants sustain a plaintive arc; alarms are short pointed interruptions. Avoid substituting a generic two-hoot owl stereotype.",
+      "musical_gesture": "mid; rounded but definite onset; hollow tonal centre; single bent arcs or spaced exchanges; tapering release",
+      "current_controls": {
+        "tuning_semitones": -4,
+        "attack_ms": 30,
+        "decay_seconds": 1.35,
+        "gain_db": -23
+      },
+      "needed_extensions": [
+        "asymmetric continuous pitch arc",
+        "long/short duration variants",
+        "sustain/release shape"
+      ],
+      "relationship_and_distinction": "A Strigidae owl; do not use morepork recordings as evidence. Shares rounded phrasing machinery with dove but needs a distinct bend and hollow centre.",
+      "listening_approved": false
+    },
+    {
+      "provider_species_id": "birdweather:species:53",
+      "common_name": "Common starling",
+      "provider_scientific_name": "Sturnus vulgaris",
+      "family": "Sturnidae",
+      "taxon_scope": "exact species; retain provider identity",
+      "status": "research_candidate_not_listening_approved",
+      "evidence_basis": "Published descriptions plus recorder/archive metadata; no direct listening or signal measurement",
+      "source_page": "https://www.nzbirdsonline.org.nz/species/common-starling",
+      "documented_observations": "The account describes whistles mixed with clicks, gurgles and learned imitations. References include territory song, a juvenile social/begging-type call and a roost group.",
+      "acoustic_coverage": "Texture switching and mimicry are documented. This review does not establish precise rates or envelopes and cannot assign every background imitation to a target species.",
+      "recordings": [
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "OeroeZkzSHCRlnbSqPvs0w",
+          "context_paraphrase": "territory song",
+          "recordist": "Les McPherson",
+          "location_as_published": "Richmond Christchurch",
+          "date_as_published": "1981-03-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/common-starling",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691644774-23-20-20starling.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "fNSXeWU3SWWMsyH6wjsK6A",
+          "context_paraphrase": "juvenile social/begging call",
+          "recordist": "Nicholas Allen",
+          "location_as_published": "Omokoroa",
+          "date_as_published": "2011-12-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/common-starling",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691644778-nia-20047-20eurasian-20starling-20juv.mp3",
+          "copyright_ref": "rights_2",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "FmQwtcerQKyC-OBmw9eTkA",
+          "context_paraphrase": "roost group",
+          "recordist": "Ralph Powlesland",
+          "location_as_published": "Manaroa, Marlborough Sounds",
+          "date_as_published": "2023-06-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/common-starling",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691644804-2023-06-21-2016_36.mp3",
+          "copyright_ref": "rights_4",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        }
+      ],
+      "musical_hypothesis": "Build a small electronic chamber ensemble inside one voice: a narrow whistle becomes a bubbling low figure, then two dry clicks. Limit the repertoire to coherent motifs, leaving gaps before the next texture.",
+      "musical_gesture": "mid-to-high; variable onset; whistle/noise/gurgle contrasts; discrete texture montage; sharply separated tails",
+      "current_controls": {
+        "tuning_semitones": 1,
+        "attack_ms": 8,
+        "decay_seconds": 0.62,
+        "gain_db": -24
+      },
+      "needed_extensions": [
+        "spectral morph through phrase",
+        "independent transient/tonal envelopes",
+        "small bounded montage grammar"
+      ],
+      "relationship_and_distinction": "Sturnidae relative of myna; distinguish by changes of texture inside a phrase, not by adding an arbitrary loud metallic overtone.",
+      "listening_approved": false
+    },
+    {
+      "provider_species_id": "birdweather:species:130",
+      "common_name": "Mallard",
+      "provider_scientific_name": "Anas platyrhynchos",
+      "family": "Anatidae",
+      "taxon_scope": "exact species; retain provider identity",
+      "status": "research_candidate_not_listening_approved",
+      "evidence_basis": "Published descriptions plus recorder/archive metadata; no direct listening or signal measurement",
+      "source_page": "https://www.nzbirdsonline.org.nz/species/mallard",
+      "documented_observations": "The account distinguishes female falling-intensity series of roughly six to eight quacks, quieter maternal communication and a softer male voice. Selected archive references include both sexes and nesting-female alarm.",
+      "acoustic_coverage": "Sex-linked contrast and decreasing intensity are documented; formant frequencies, exact spacing and envelope times are unmeasured. The archive hybrid recording is excluded from exact-species evidence.",
+      "recordings": [
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "XiyUZL9LS2mm3LwjlAKu9Q",
+          "context_paraphrase": "wild group with both sexes",
+          "recordist": "Les McPherson",
+          "location_as_published": "St Annes Lagoon near Cheviot",
+          "date_as_published": "1981-05-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/mallard",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691646980-25-20-20mallard.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "AFTcRD5RSXaRZgptPWzfPQ",
+          "context_paraphrase": "quiet male and female calls",
+          "recordist": "Les McPherson",
+          "location_as_published": "Mount Bruce National Wildlife Centre",
+          "date_as_published": "1979-08-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/mallard",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691646985-02-20-20track-202_22.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "T14w5uAnTpa7XYEBtvpB6g",
+          "context_paraphrase": "nesting-female alarm",
+          "recordist": "Les McPherson",
+          "location_as_published": "Oreti gravel pits Otatara near Invercargill Southland",
+          "date_as_published": "1979-12-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/mallard",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691646989-16-20-20track-2016_11.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        }
+      ],
+      "musical_hypothesis": "Use a compact hollow bassoon-like pulse with gentle rasp. A female-inspired variant repeats with decreasing velocity; the male-inspired variant is softer and shorter. Keep explicit variant labels rather than inferring sex from an event.",
+      "musical_gesture": "low-mid; quick soft-edged front; hollow nasal/rough tone; decaying pulse train; rounded short release",
+      "current_controls": {
+        "tuning_semitones": -6,
+        "attack_ms": 10,
+        "decay_seconds": 0.48,
+        "gain_db": -24
+      },
+      "needed_extensions": [
+        "formant-like spectral filtering",
+        "per-subnote gain contour",
+        "labelled sex/context variants"
+      ],
+      "relationship_and_distinction": "Anatidae sibling of goose; shorter pulse groups and declining accents give mallard its own musical shape.",
+      "listening_approved": false
+    },
+    {
+      "provider_species_id": "birdweather:species:1051",
+      "common_name": "Australasian swamphen / pūkeko",
+      "provider_scientific_name": "Porphyrio melanotus",
+      "family": "Rallidae",
+      "taxon_scope": "exact species; retain provider identity",
+      "status": "research_candidate_not_listening_approved",
+      "evidence_basis": "Published descriptions plus recorder/archive metadata; no direct listening or signal measurement",
+      "source_page": "https://www.nzbirdsonline.org.nz/species/pukeko",
+      "documented_observations": "The account separates conspicuous territory calls, varied contact material, a shrill defensive cry and deeper rough aggression. References cover contact, adult anxiety and a family conflict with adolescents.",
+      "acoustic_coverage": "Contextual tonal/noisy and high/deeper contrasts are documented; no exact pitch bounds, rates or amplitude/envelope values were measured.",
+      "recordings": [
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "185208875",
+          "context_paraphrase": "contact",
+          "recordist": "Carl & Lise Wiesmann (deceased)",
+          "location_as_published": "Otaki",
+          "date_as_published": "1956-08-31",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/pukeko",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691640178-07-20-20track-207.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "185208879",
+          "context_paraphrase": "adult anxiety",
+          "recordist": "Nicholas Allen",
+          "location_as_published": "Harts Creek Lake Ellesmere",
+          "date_as_published": "2012-11-30",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/pukeko",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691640204-nia-20610-20pukeko.mp3",
+          "copyright_ref": "rights_2",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "185208884",
+          "context_paraphrase": "family conflict with young birds",
+          "recordist": "Nicholas Allen",
+          "location_as_published": "Rotorua",
+          "date_as_published": "2014-03-31",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/pukeko",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691640226-nia-201180-20pukeko.mp3",
+          "copyright_ref": "rights_2",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        }
+      ],
+      "musical_hypothesis": "Create an open nasal reed that breaks into a husky resonant squawk. Use an irregular two-part gesture with a small upward inflection, while a softer contact variant uses an isolated hiccup-like point.",
+      "musical_gesture": "mid; pronounced onset; nasal tone with rough extension; asymmetric two-part gesture; open then clipped tail",
+      "current_controls": {
+        "tuning_semitones": -3,
+        "attack_ms": 9,
+        "decay_seconds": 0.7,
+        "gain_db": -25
+      },
+      "needed_extensions": [
+        "resonant spectral peaks",
+        "controlled roughness/noise",
+        "context-specific two-part phrase"
+      ],
+      "relationship_and_distinction": "Rallidae relative of coot. Give swamphen a more open, longer, nasal contour so the pair does not collapse into one clonk preset.",
+      "listening_approved": false
+    },
+    {
+      "provider_species_id": "birdweather:species:113",
+      "common_name": "Yellowhammer",
+      "provider_scientific_name": "Emberiza citrinella",
+      "family": "Emberizidae",
+      "taxon_scope": "exact species; retain provider identity",
+      "status": "research_candidate_not_listening_approved",
+      "evidence_basis": "Published descriptions plus recorder/archive metadata; no direct listening or signal measurement",
+      "source_page": "https://www.nzbirdsonline.org.nz/species/yellowhammer",
+      "documented_observations": "The account describes a strongly repeated male phrase and frequent brief contact notes. Archive references include dawn song, a male phrase lacking the final flourish and adult flock flight calls.",
+      "acoustic_coverage": "Repetition and optional ending are documented; natural pitch spacing, detailed trill rate and envelope times remain unmeasured.",
+      "recordings": [
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "GUoxiNA2TrWlsTkYJMB0Ow",
+          "context_paraphrase": "dawn male song",
+          "recordist": "Les McPherson",
+          "location_as_published": "Pioneer Park Fairlie",
+          "date_as_published": "1970-12-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/yellowhammer",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691645250-27-20-20unknown-20title-20-20unknown-20artist.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "TS1NizphTyiT5uE_CqlBtA",
+          "context_paraphrase": "male song with ending absent",
+          "recordist": "Nicholas Allen",
+          "location_as_published": "Omokoroa",
+          "date_as_published": "2011-12-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/yellowhammer",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691645261-nia-20040-20yellowhammer.mp3",
+          "copyright_ref": "rights_2",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "DGAcIKUhSpme619NHRVvwA",
+          "context_paraphrase": "small adult flock in flight",
+          "recordist": "Nicholas Allen",
+          "location_as_published": "Moeraki North Otago",
+          "date_as_published": "2012-10-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/yellowhammer",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691645264-nia-20366-20yellowhammer.mp3",
+          "copyright_ref": "rights_2",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        }
+      ],
+      "musical_hypothesis": "Make a bright sustained reed/string hybrid: a row of restrained repeated notes leads to a longer, slightly bending finish. Offer the unfinished phrase as an alternate, not a randomly missing release.",
+      "musical_gesture": "high-mid; clean onset; bright harmonic centre; repeated pickup notes plus long ending; gentle finish",
+      "current_controls": {
+        "tuning_semitones": 5,
+        "attack_ms": 10,
+        "decay_seconds": 0.95,
+        "gain_db": -23
+      },
+      "needed_extensions": [
+        "repeated pickups and longer cadence",
+        "optional phrase ending",
+        "sustained spectral contour"
+      ],
+      "relationship_and_distinction": "A bunting, not a Fringillidae finch. Its sustained final gesture separates it from chaffinch rattle and goldfinch small rolls.",
+      "listening_approved": false
+    },
+    {
+      "provider_species_id": "birdweather:species:64",
+      "common_name": "Common pheasant",
+      "provider_scientific_name": "Phasianus colchicus",
+      "family": "Phasianidae",
+      "taxon_scope": "exact species; retain provider identity",
+      "status": "research_candidate_not_listening_approved",
+      "evidence_basis": "Published descriptions plus recorder/archive metadata; no direct listening or signal measurement",
+      "source_page": "https://www.nzbirdsonline.org.nz/species/common-pheasant",
+      "documented_observations": "The account separates male crowing from a throaty alarm during flushing. References include a fight followed by quieter female and male material, a male crow and crowing associated with wingbeats.",
+      "acoustic_coverage": "Two-part crow and alarm contexts are documented; wingbeats are explicitly nonvocal. Precise spectral bands, durations and natural amplitudes are unmeasured.",
+      "recordings": [
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "Olm3KuLxSOG1V21Y_HVHFA",
+          "context_paraphrase": "fight, quiet female, then male crow",
+          "recordist": "Les McPherson",
+          "location_as_published": "Rangiora Canterbury",
+          "date_as_published": "1972-02-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/common-pheasant",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691645298-46-20-20pheasant.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "XoGyVObVRZWCBZPMy0w4FA",
+          "context_paraphrase": "male crow",
+          "recordist": "Nicholas Allen",
+          "location_as_published": "Omokoroa",
+          "date_as_published": "2011-12-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/common-pheasant",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691645306-nia-20048-20ring-necked-20pheasant.mp3",
+          "copyright_ref": "rights_2",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "B53IyHqZRrq0q5hFyhmywg",
+          "context_paraphrase": "crow plus nonvocal wingbeats",
+          "recordist": "Nicholas Allen",
+          "location_as_published": "Quail Island Lyttelton Harbour",
+          "date_as_published": "2015-09-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/common-pheasant",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691645313-nia-201628-20pheasant.mp3",
+          "copyright_ref": "rights_2",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        }
+      ],
+      "musical_hypothesis": "Use a low-mid rough reed/drum call with two emphatic unequal attacks and a small pitched tail. A separately labelled wing gesture may add a soft tremulous percussion layer, never presented as a vocalization.",
+      "musical_gesture": "low-mid; strong paired attacks; rough resonant harmonic body; uneven pair and optional flutter; quick cut",
+      "current_controls": {
+        "tuning_semitones": -8,
+        "attack_ms": 3,
+        "decay_seconds": 0.4,
+        "gain_db": -26
+      },
+      "needed_extensions": [
+        "double attack phrase",
+        "rough excitation into resonator",
+        "optional labelled nonvocal flutter"
+      ],
+      "relationship_and_distinction": "Phasianidae relative of peafowl. Keep pheasant paired and compact; peafowl stretches into open, nasal cries.",
+      "listening_approved": false
+    },
+    {
+      "provider_species_id": "birdweather:species:928",
+      "common_name": "Indian peafowl",
+      "provider_scientific_name": "Pavo cristatus",
+      "family": "Phasianidae",
+      "taxon_scope": "exact species; retain provider identity",
+      "status": "research_candidate_not_listening_approved",
+      "evidence_basis": "Published descriptions plus recorder/archive metadata; no direct listening or signal measurement",
+      "source_page": "https://www.nzbirdsonline.org.nz/species/peafowl",
+      "documented_observations": "The account separates repeated male crow/cry material from female clucks and young. The archive includes two captive-male settings and week-old captive chicks.",
+      "acoustic_coverage": "Shrill male calls and repetition of up to eight units are described; the linked examples were not measured. Captive context must remain visible.",
+      "recordings": [
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "IyKnXQG9SAiENqwxHxjZ-g",
+          "context_paraphrase": "free-running captive males",
+          "recordist": "Les McPherson",
+          "location_as_published": "North Beach Zoo Christchurch",
+          "date_as_published": "1970-10-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/peafowl",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691645334-18-20-20track-2018_1.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "HZBdG4sATSaIWhDycnjxfw",
+          "context_paraphrase": "captive males",
+          "recordist": "Les McPherson",
+          "location_as_published": "North Beach Mini Zoo Christchurch",
+          "date_as_published": "1970-10-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/peafowl",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691645349-47-20-20peafowl_0.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        },
+        {
+          "archive": "New Zealand Birds Online",
+          "record_id": "P1WmqUFrR3aqVaaAmjCBVg",
+          "context_paraphrase": "captive young chicks",
+          "recordist": "Les McPherson",
+          "location_as_published": "Peacock Springs Christchurch",
+          "date_as_published": "1987-01-02",
+          "date_caveat": "Archive field preserved; day precision not independently checked",
+          "source_page": "https://www.nzbirdsonline.org.nz/species/peafowl",
+          "media_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691645353-47a.mp3",
+          "copyright_ref": "rights_1",
+          "availability": "Public audio link present in species-page metadata; playback and media bytes not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "Not established for redistribution or sampling; reference only"
+        }
+      ],
+      "musical_hypothesis": "Design a projecting high reed/brass voice with a nasal rising middle and a sliding fall, in spaced repeated cries. The chick option uses much smaller, softer points and remains separately labelled.",
+      "musical_gesture": "upper-mid; definite onset; bright nasal harmonics; long bent cry with spaced repeats; sliding taper",
+      "current_controls": {
+        "tuning_semitones": 0,
+        "attack_ms": 20,
+        "decay_seconds": 1.2,
+        "gain_db": -27
+      },
+      "needed_extensions": [
+        "formant-like band movement",
+        "long pitch inflection",
+        "bounded repeated cries"
+      ],
+      "relationship_and_distinction": "Phasianidae sibling of pheasant. Distinguish with a stretched cry and open spectral band, not merely higher output level.",
+      "listening_approved": false
+    },
+    {
+      "provider_species_id": "birdweather:species:913",
+      "common_name": "Lesser redpoll (legacy provider species)",
+      "provider_scientific_name": "Acanthis cabaret",
+      "family": "Fringillidae",
+      "taxon_scope": "legacy exact named taxon; IOC now places it within Acanthis flammea",
+      "status": "research_candidate_taxonomy_review_required_not_listening_approved",
+      "evidence_basis": "Primary recordist publication and descriptions; no listening or signal measurement",
+      "source_page": "https://books.soundapproach.co.uk/chapter-14-a-flock-of-birds-forever-in-flight/",
+      "documented_observations": "Primary recordists describe compact fast flight-call groups, commonly two or three units, sometimes interspersed with an upward-inflected social call. Two named cabaret examples cover flight alone and flight plus social context.",
+      "acoustic_coverage": "Rhythm and rising social contour are described. Exact frequency range, durations and tonal/noisy proportions remain unmeasured. No generic common-redpoll recording is silently substituted.",
+      "recordings": [
+        {
+          "archive": "The Sound Approach",
+          "record_id": "CD1-74 / 081009.MR.081354.02",
+          "context_paraphrase": "single migrant with flight calls",
+          "location_as_published": "Durlston, Dorset, England",
+          "date_as_published": "2008-10-09",
+          "source_page": "https://books.soundapproach.co.uk/chapter-14-a-flock-of-birds-forever-in-flight/",
+          "media_url": "https://books.soundapproach.co.uk/wp-content/uploads/2019/03/1-74-Lesser-Redpoll-Flight-Calls-Of-Single-Migrant.wav",
+          "availability": "Direct player/media link listed; playback not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "No reusable licence verified; reference only"
+        },
+        {
+          "archive": "The Sound Approach",
+          "record_id": "CD1-75 / 03.039.MR.01740.02",
+          "context_paraphrase": "migrants with social and flight material",
+          "location_as_published": "IJmuiden, Noord-Holland, Netherlands",
+          "date_as_published": "2003-11-09",
+          "source_page": "https://books.soundapproach.co.uk/chapter-14-a-flock-of-birds-forever-in-flight/",
+          "media_url": "https://books.soundapproach.co.uk/wp-content/uploads/2019/03/4CD1-75WAV48eSonaLesserRedpoll-PyueeAndFlightCallsOfTwoMigrants.m4v",
+          "availability": "Direct player/media link listed; playback not checked",
+          "listened": false,
+          "downloaded": false,
+          "reuse_permission": "No reusable licence verified; reference only"
+        }
+      ],
+      "taxonomy": {
+        "current_ioc_treatment": "Redpoll Acanthis flammea includes former Lesser and Arctic redpolls (IOC 14.2)",
+        "reference": "https://www.worldbirdnames.org/new/updates/species-updates/",
+        "nz_caution": "New Zealand 2022 checklist recommends A. flammea without assigning subspecies pending study; NZBO assigns cabaret. The difference remains unresolved in this brief.",
+        "nz_reference": "https://www.birdsnz.org.nz/wp-content/uploads/2022/05/checklist-2022.pdf",
+        "mapping_policy": "Bind this candidate to original BirdWeather id 913/legacy cabaret label. Do not equate all A. flammea records with this narrower vocal taxon."
+      },
+      "musical_hypothesis": "Use a light dry reed/pizzicato voice in pairs and triplets, interrupted occasionally by one upward sigh. The rise is a deliberately musical analogue of the described social contour.",
+      "musical_gesture": "high; small fast onset; dry fine harmonic grain; two/three-note packets and occasional rising answer; short release",
+      "current_controls": {
+        "tuning_semitones": 8,
+        "attack_ms": 4,
+        "decay_seconds": 0.26,
+        "gain_db": -25
+      },
+      "needed_extensions": [
+        "paired/triplet bounded subnotes",
+        "rising social-note contour",
+        "legacy taxon scope metadata"
+      ],
+      "relationship_and_distinction": "Finch-family relation to goldfinch/greenfinch/chaffinch; maintain dry small packets rather than fluid goldfinch rolls or greenfinch sustained buzz.",
+      "listening_approved": false
+    },
+    {
+      "provider_species_id": "nzsharks:species:great_white_shark",
+      "common_name": "Great white shark",
+      "provider_scientific_name": "Carcharodon carcharias",
+      "family": "Lamnidae",
+      "taxon_scope": "exact species",
+      "status": "nonvocal_ecological_metaphor_candidate_not_listening_approved",
+      "evidence_basis": "Primary shark-sound paper plus government species/telemetry research; absence of exact-species evidence in this review is not proof of silence",
+      "source_page": "https://www.doc.govt.nz/nature/native-animals/marine-fish-and-reptiles/sharks-rays/great-white-shark/",
+      "documented_observations": "No established Carcharodon carcharias vocal repertoire or exact-species call recording was found. A 2025 first-shark-sound study concerns juvenile Mustelus lenticulatus under handling, not Carcharodon. DOC/NIWA describe seasonal long-distance movements and coastal/offshore habitat use for white sharks.",
+      "acoustic_coverage": "No supported vocal rhythm, register, spectrum, envelope or phrasing. All proposed acoustic dimensions are artistic invention, not reconstructed shark calls.",
+      "recordings": [],
+      "research_references": [
+        {
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11937917/",
+          "purpose": "Primary 2025 rig sound-production study; excludes transfer of rig clicks to white shark",
+          "species_evidence_scope": "Mustelus lenticulatus only; not an exact-species sound reference"
+        },
+        {
+          "url": "https://niwa.co.nz/oceans/white-sharks",
+          "purpose": "Government tagging programme and approximate popup-tag tracking context",
+          "species_evidence_scope": "Carcharodon carcharias ecological research"
+        }
+      ],
+      "musical_hypothesis": "Explicit nonvocal metaphor: a low warm bowed/rounded tone with a slow descending spectral opening and long space, suggesting large-scale travel. Any pulse is compositional, never labelled as a heartbeat, fin beat, sonar or shark call. A location report can trigger this sound without inventing a continuous track.",
+      "musical_gesture": "low; slow swelling onset; dark harmonic body; one long arc separated by silence; long release",
+      "current_controls": {
+        "tuning_semitones": -12,
+        "attack_ms": 100,
+        "decay_seconds": 2.8,
+        "gain_db": -28
+      },
+      "needed_extensions": [
+        "sustain and release beyond struck-note envelope",
+        "slow spectral envelope",
+        "explicit nonvocal metaphor label"
+      ],
+      "relationship_and_distinction": "Shares slow musical contour machinery with goose/dove only by design. Do not transfer calls from rig, rays, whales or imagined underwater ambience.",
+      "listening_approved": false
+    }
+  ],
+  "unresolved_records": [
+    {
+      "provider_species_id": "birdweather:species:17651",
+      "common_name": "Bats",
+      "provider_scientific_name": "Chiroptera",
+      "taxon_scope": "order",
+      "status": "unresolved_no_exact_species_preset",
+      "source_page": "https://www.itis.gov/servlet/SingleRpt/SingleRpt?search_topic=TSN&search_value=179985",
+      "reason": "Chiroptera is an order containing many species, not an exact species identification. No species-specific echolocation contour, ultrasonic band or audible voice can be assigned from this record.",
+      "mapping_policy": "Retain unresolved order provenance. Request/use a genuine species-level detection before researching an exact-species voice; a generic order fallback must be explicitly labelled and separately approved.",
+      "recordings": [],
+      "current_controls": null,
+      "listening_approved": false
+    }
+  ],
+  "perceptual_design_research": {
+    "status": "primary literature reviewed; hypotheses not listening-validated",
+    "references": [
+      {
+        "authors": "McAdams, Winsberg, Donnadieu, De Soete and Krimphoff",
+        "year": 1995,
+        "title": "Perceptual scaling of synthesized musical timbres: Common dimensions, specificities, and latent subject classes",
+        "url": "https://sites.music.mcgill.ca/orchestration/files/2014/10/McAdams_1995_PsycholRes.pdf",
+        "evidence": "Ratings of synthetic instrument timbres were modelled with common dimensions, sound-specific attributes and listener classes. Attack rise, spectral centre and spectral change helped explain the common dimensions; listeners weighted cues differently.",
+        "design_inference": "Use related starting bodies plus distinctive temporal/spectral gestures, with owner evaluation. A fixed brightness-only taxonomy or a fixed small palette cannot be justified by this study.",
+        "limit": "Instrument stimuli and perceptual ratings do not establish animal taxonomy, natural vocal structure or a complete synthesis parameter set."
+      },
+      {
+        "authors": "Caclin, McAdams, Smith and Winsberg",
+        "year": 2005,
+        "title": "Acoustic correlates of timbre space dimensions: a confirmatory study using synthetic tones",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/16119366/",
+        "evidence": "Controlled synthetic-tone experiments supported attack time, spectral centre and spectrum fine structure as perceptually useful dimensions. Spectral flux was less consistently salient and depended on how many other dimensions varied.",
+        "design_inference": "Make attack shape, spectral envelope and harmonic distribution independently controllable; audition spectral motion against competing changes instead of assuming it always creates an obvious identity.",
+        "limit": "This is evidence about those stimuli, not a guarantee that a parameter separates all 32 species or that four controls suffice."
+      },
+      {
+        "authors": "Elhilali, Ma, Micheyl, Oxenham and Shamma",
+        "year": 2009,
+        "title": "Temporal Coherence in the Perceptual Organization and Cortical Representation of Auditory Scenes",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC2673083/",
+        "evidence": "Human perceptual results showed that synchronous distant spectral components could group together even when the comparable successive components separated. The authors compared behavioural and ferret neural results and proposed a temporal-coherence model.",
+        "design_inference": "If independent species need to remain audible, test separate phrase accents, gaps and contour timing alongside register and timbre; identical quantized pulses may fuse. Use synchrony deliberately when a blended ensemble is wanted.",
+        "limit": "The experiment does not prescribe arbitrary event-time changes or prove reliable identification in a dense animal arrangement."
+      },
+      {
+        "authors": "Fischer, Soden, Thoret, Montrey and McAdams",
+        "year": 2021,
+        "title": "Instrument Timbre Enhances Perceptual Segregation in Orchestral Music",
+        "url": "https://online.ucpress.edu/mp/article/38/5/473/117149/Instrument-Timbre-Enhances-Perceptual-Segregation",
+        "evidence": "Three orchestral-excerpt experiments found greater segregation with timbral heterogeneity, and lower segregation after reducing timbral differences. Ratings of isolated-stream blend did not predict global segregation; several musical/acoustic cues contributed.",
+        "design_inference": "Judge presets in actual event arrangements as well as in isolation. Test phrase overlap, crossings and simultaneous attacks; a pleasant isolated voice may still disappear in context.",
+        "limit": "The work used one/two-stream orchestral excerpts. It does not establish a maximum number of identifiable species or guarantee that more contrast always sounds better."
+      },
+      {
+        "authors": "Walker",
+        "year": 2002,
+        "title": "Magnitude Estimation of Conceptual Data Dimensions for Use in Sonification",
+        "url": "https://sonify.psych.gatech.edu/publications/pdfs/2002JEPA-Walker.pdf",
+        "evidence": "Three experiments examined listeners’ scaling/polarity expectations for conceptual variables and auditory mappings, then tested matching auditory graphs to data. Appropriate mapping direction and amount depended on the concept.",
+        "design_inference": "Validate actual data mappings separately from artistic species timbre. Do not assume that louder means more certain, higher means further north, or a faster phrase means an individual moved faster. Label the chosen mapping and preserve source uncertainty.",
+        "limit": "This supports testing mappings; it does not validate the specific metaphor proposals in this bank."
+      },
+      {
+        "authors": "Hermann",
+        "year": 2008,
+        "title": "Taxonomy and definitions for sonification and auditory display",
+        "url": "https://www.icad.org/Proceedings/2008/Hermann2008.pdf",
+        "evidence": "This methodological paper distinguishes approaches such as direct parameter mapping and model-based sonification, and discusses the relationship of information-bearing sound and artistic uses.",
+        "design_inference": "Keep traceable data relationships distinct from musical arrangement choices and source-inspired metaphors. A white-shark location can trigger an expressly artistic sound without being presented as an animal vocalization.",
+        "limit": "A proposed taxonomy is a design framework, not a perceptual validation or an implementation benchmark."
+      }
+    ],
+    "evaluation_proposal": [
+      "First compare near-neighbour species within a family at matched pitch, duration and perceived loudness; report distinctiveness separately from liking.",
+      "Then transpose each candidate across intended host registers and compare short/long contexts; preserve a recognisable body while retaining meaningful context differences.",
+      "Test the same captured events in sparse and dense mixes with fixed event provenance. Compare voice-only, phrases, phrase overlap and region processing; never claim isolated ratings predict ensemble clarity.",
+      "Use small balanced sessions with randomized order, repeats and an explicit unsure response. Measure confusion/ratings rather than forcing species recognition from untrained listeners.",
+      "Do not impose numeric pass thresholds or a voice-count ceiling from these papers. Define practical acceptance criteria with the owner and record audition decisions."
+    ]
+  }
+}

@@ -63,3 +63,7 @@ These rules apply now to this project. Read only the design/API documents releva
 ## Canonical workspace — 7 November 2026
 
 All future Animal Atlas / Generative Nature Synth work belongs in `/Users/henryjones/Documents/ChatGPT/Generative Nature Synth`. Run commands from this folder. The previous Other 2/AnimalAtlas location is a relocation notice only. Preserve existing design-reference material. Old build artifacts are archived under `build/pre-relocation-2026-11-07`; configure fresh builds in `build/native`.
+
+## Sound design — owner instruction, 7 November 2026
+
+Use the broader research workflow in `docs/sound-design/RESEARCH_AND_DESIGN_PRACTICE.md`, not Field DSP alone. Consult primary synthesis/perception/bioacoustics sources and exact-taxon recordings; retain access, rights, evidence and uncertainty. Distinguish read descriptions, actual listening, original musical hypotheses, implemented candidates and listener-approved sounds. Evaluate phrases and ensembles as well as isolated timbres. Do not cap the instrument at the initial synthesis characters or claim waveform difference proves audible recognition.

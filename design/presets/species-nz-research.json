@@ -1,0 +1,993 @@
+{
+  "schema": "animal-atlas.species-sound-research.v1",
+  "status": "research_and_original_design_hypotheses_only",
+  "region": "Aotearoa New Zealand",
+  "prepared_date": "2026-11-07",
+  "species_count": 11,
+  "audio_files_included": false,
+  "audio_auditioned": false,
+  "source_policy": {
+    "copyright_url": "https://www.nzbirdsonline.org.nz/copyright",
+    "copyright_read_date": "2026-11-07",
+    "notes": "Temporary private viewing/listening and limited research quotation are described by source; commercial reproduction, substantial extraction and unauthorized text/data mining are restricted. These are narrowly selected research references, not an audio/metadata dataset for redistribution. No audio downloaded or bundled. Do not ship recordings or this reference metadata as licensed assets. Obtain appropriate permission for reuse.",
+    "provider_authority_url": "https://www.tepapa.govt.nz/digital-museum/explore-digital-museum/science/birds-new-zealand/new-zealand-birds-online"
+  },
+  "interpretation_policy": "Documented observations are source-supported paraphrases. Roles, controls, oscillator colours, contours and all synthesis mechanisms are original untested hypotheses, not biological measurements or sample reconstructions. Exact species keys are supplied mapping IDs, not independently verified BirdWeather taxonomy API results.",
+  "shared_design_recommendation": {
+    "principle": "Separate immutable species character from context/phrase variant; related species can share a tonal core while preserving distinctive articulations. Do not infer character from taxonomy alone.",
+    "primitives": [
+      "Bounded additive/harmonic tone with per-partial decay and spectral tilt.",
+      "Continuous pitch trajectory in semitones with optional bounded pitch/amplitude trill.",
+      "Fixed-capacity phrase cells with per-cell onset, duration, pitch, amplitude and timbre segment; compile off callback.",
+      "Optional deterministic band-limited noise and bounded roughness; independent tonal/noisy segment envelopes."
+    ],
+    "characters_represented": [
+      "rounded_hoot",
+      "liquid_whistle",
+      "bright_ring",
+      "dry_chatter",
+      "rough_reed"
+    ],
+    "closest_family_pair": "Bellbird and tui share Meliphagidae and a ringing song core, but tui rough interruptions provide a major contrast; population/context exceptions remain visible.",
+    "realtime_note": "Research brief is not an implementation specification: state/update order, oscillator alias policy, sample-rate/reset behaviour, capacities and off-thread publication/retirement still need definition before production integration."
+  },
+  "species": [
+    {
+      "species_key": "birdweather:species:2298",
+      "scientific_name_supplied": "Ninox novaeseelandiae",
+      "common_name": "Morepork / Ruru",
+      "biological_family_as_source": "Strigidae",
+      "source_taxonomy_note": "NZ recordings only. The NZBO page retains a broad historical boobook treatment; do not treat Australian boobook recordings as automatically the same exact taxon.",
+      "source_page": {
+        "url": "https://www.nzbirdsonline.org.nz/species/morepork",
+        "provider": "New Zealand Birds Online (Te Papa / Birds New Zealand / DOC partnership)",
+        "accessed_date": "2026-11-07",
+        "reading_depth": "Exact-species identity, Voice/identification account, relevant variation and Sounds references inspected; selected recording metadata read from page. Linked papers not read.",
+        "media_auditioned": false
+      },
+      "documented_observations": {
+        "rhythm": "Repeated characteristic two-part call; other repetitive calls occur.",
+        "tonality": "Hoot-like characteristic call; a rising call and yelping alternative are described.",
+        "register": "Absolute frequencies not established in this research.",
+        "noise": "Call-specific spectral noise not quantified.",
+        "phrasing": "Characteristic call plus rising and repetitive alternatives; nocturnal calling."
+      },
+      "recording_references": [
+        {
+          "source_record_id": "DxGKbu5GSe6viQl-D8d5XQ",
+          "context": "Evening vocalisations",
+          "recorder": "Carl & Lise Wiesmann (deceased)",
+          "location_as_supplied": "Tikitiki",
+          "date_raw_as_supplied": "1957-02-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "Night",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691642360-05-20-20track-205.mp3",
+          "copyright_as_supplied": "McPherson Natural History Unit Sound Archive",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        },
+        {
+          "source_record_id": "W9TdMJ3LTFmHUInt5SmeGQ",
+          "context": "Mew-like vocalisation",
+          "recorder": "Francis de Hamel",
+          "location_as_supplied": "Ulva Island, Stewart Island",
+          "date_raw_as_supplied": "1976-01-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "Evening",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691642383-03-20-20track-203_23.mp3",
+          "copyright_as_supplied": "McPherson Natural History Unit Sound Archive",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        },
+        {
+          "source_record_id": "UkXhpuOhRNGVMTE8u5lU-w",
+          "context": "Cree-type vocalisation",
+          "recorder": "Francis de Hamel",
+          "location_as_supplied": "Cobb Valley Nelson",
+          "date_raw_as_supplied": "1977-12-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "Evening",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691642395-23-20-20track-2023_5.mp3",
+          "copyright_as_supplied": "McPherson Natural History Unit Sound Archive",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        }
+      ],
+      "design_hypothesis": {
+        "status": "Designed from documented descriptions and varied recording contexts; not audition-validated or owner-approved.",
+        "musical_role": "Low-register, rounded answering voice; paired pulses with a gently inflected second pulse, separated by generous silence.",
+        "shared_timbre_character": "rounded_hoot",
+        "desired_timbre_and_mechanism": "Fundamental-dominant additive tone, weak upper harmonics, soft onset; optional brief upward whistle variant and slightly grainy repeated pulse. A paired phrase is essential to its identity.",
+        "current_four_control_start": {
+          "tuning_semitones": -12,
+          "attack_seconds": 0.025,
+          "decay_seconds": 0.65,
+          "gain_db": -14
+        },
+        "control_value_provenance": "Original provisional musical choice; tuning is relative to mapped note, not measured animal pitch. Gain is a starting compensation, not equal-loudness evidence.",
+        "distinct_identifying_gesture": "Low-register, rounded answering voice; paired pulses with a gently inflected second pulse, separated by generous silence.",
+        "contrast_listening_test": "Pair versus single-note ablation; distinguish from cuckoo rising whistle and from dry kingfisher repetitions.",
+        "gaps": [
+          "No reference audio audition or spectrogram/pitch extraction.",
+          "No measured source Hz, timing, spectrum, noise ratio or loudness matching.",
+          "Four current controls cannot express the proposed species identity on their own."
+        ]
+      }
+    },
+    {
+      "species_key": "birdweather:species:102",
+      "scientific_name_supplied": "Todiramphus sanctus",
+      "common_name": "Sacred Kingfisher / Kōtare",
+      "biological_family_as_source": "Halcyonidae (as NZBO names it)",
+      "source_taxonomy_note": "NZBO identifies the New Zealand subspecies as vagans. Family spelling is preserved from source, not asserted as a universal current checklist treatment.",
+      "source_page": {
+        "url": "https://www.nzbirdsonline.org.nz/species/sacred-kingfisher",
+        "provider": "New Zealand Birds Online (Te Papa / Birds New Zealand / DOC partnership)",
+        "accessed_date": "2026-11-07",
+        "reading_depth": "Exact-species identity, Voice/identification account, relevant variation and Sounds references inspected; selected recording metadata read from page. Linked papers not read.",
+        "media_auditioned": false
+      },
+      "documented_observations": {
+        "rhythm": "Territorial voice described as staccato repeated calls.",
+        "tonality": "Calls described as generally unmusical.",
+        "register": "Absolute frequencies and relative register not established.",
+        "noise": "Unmusical descriptor does not establish a measured noise ratio.",
+        "phrasing": "Territorial repetitions; recording references include nestling begging and anxiety contexts."
+      },
+      "recording_references": [
+        {
+          "source_record_id": "MGnAbkTETtiwp6EoZ-arWw",
+          "context": "Territorial adult vocalisation; other birds audible",
+          "recorder": "Les McPherson",
+          "location_as_supplied": "Kaituna Reserve Banks Peninsula",
+          "date_raw_as_supplied": "1982-12-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "1919",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691642588-21-20-20new-20zealand-20kingfisher_0.mp3",
+          "copyright_as_supplied": "McPherson Natural History Unit Sound Archive",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        },
+        {
+          "source_record_id": "TMQ9e9CPTWir-H7IxCYP4Q",
+          "context": "Nestlings begging at a bank nest",
+          "recorder": "Les McPherson",
+          "location_as_supplied": "Port Fitzroy Great Barrier Island",
+          "date_raw_as_supplied": "1975-12-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "1115",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691642576-21a.mp3",
+          "copyright_as_supplied": "McPherson Natural History Unit Sound Archive",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        },
+        {
+          "source_record_id": "LWYy3MkaSeWSwh8azhllrQ",
+          "context": "Anxiety vocalisation",
+          "recorder": "Nicholas Allen",
+          "location_as_supplied": "Ashley River mouth",
+          "date_raw_as_supplied": "2014-02-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "1155",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691642613-nia-201163-20kingfisher.mp3",
+          "copyright_as_supplied": "Nicholas Allen",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        }
+      ],
+      "design_hypothesis": {
+        "status": "Designed from documented descriptions and varied recording contexts; not audition-validated or owner-approved.",
+        "musical_role": "Firm mid/high rhythmic accent; small repeated bursts rather than a long melodious line.",
+        "shared_timbre_character": "dry_chatter",
+        "desired_timbre_and_mechanism": "Short bright harmonic pulse with a small filtered-noise onset; harder attack and stronger upper partials than fantail. Use repeated level accents and narrow pitch movement.",
+        "current_four_control_start": {
+          "tuning_semitones": 1,
+          "attack_seconds": 0.003,
+          "decay_seconds": 0.15,
+          "gain_db": -18
+        },
+        "control_value_provenance": "Original provisional musical choice; tuning is relative to mapped note, not measured animal pitch. Gain is a starting compensation, not equal-loudness evidence.",
+        "distinct_identifying_gesture": "Firm mid/high rhythmic accent; small repeated bursts rather than a long melodious line.",
+        "contrast_listening_test": "At equal pitch and duration, distinguish dry hard pulses from fine fantail chatter; noise-onset ablation tests whether spectral body adds identity.",
+        "gaps": [
+          "No reference audio audition or spectrogram/pitch extraction.",
+          "No measured source Hz, timing, spectrum, noise ratio or loudness matching.",
+          "Four current controls cannot express the proposed species identity on their own."
+        ]
+      }
+    },
+    {
+      "species_key": "birdweather:species:420",
+      "scientific_name_supplied": "Zosterops lateralis",
+      "common_name": "Silvereye / Tauhou",
+      "biological_family_as_source": "Zosteropidae",
+      "source_taxonomy_note": "NZBO assigns New Zealand birds to nominate lateralis; no other Zosterops species used.",
+      "source_page": {
+        "url": "https://www.nzbirdsonline.org.nz/species/silvereye",
+        "provider": "New Zealand Birds Online (Te Papa / Birds New Zealand / DOC partnership)",
+        "accessed_date": "2026-11-07",
+        "reading_depth": "Exact-species identity, Voice/identification account, relevant variation and Sounds references inspected; selected recording metadata read from page. Linked papers not read.",
+        "media_auditioned": false
+      },
+      "documented_observations": {
+        "rhythm": "Repeated calls and trills; brief flight calls contrast with longer song.",
+        "tonality": "Clear melodic calls, with a quiet liquid warbling full song.",
+        "register": "Calls often high; no measured Hz range.",
+        "noise": "Noise proportion not established.",
+        "phrasing": "Contact, flight and full-song forms; selected references add juvenile and winter contexts."
+      },
+      "recording_references": [
+        {
+          "source_record_id": "EE979N_IR7OEBOBs_UuDRA",
+          "context": "Song at lagoon willow habitat; other birds audible",
+          "recorder": "Les McPherson",
+          "location_as_supplied": "St Annes Lagoon Cheviot",
+          "date_raw_as_supplied": "1981-10-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "1715",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691644499-08-20-20silvereye.mp3",
+          "copyright_as_supplied": "McPherson Natural History Unit Sound Archive",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        },
+        {
+          "source_record_id": "SMXtd2DbSUOWKotxq2PAqQ",
+          "context": "Juvenile solicitation with wing movement; blackbird also present",
+          "recorder": "Nicholas Allen",
+          "location_as_supplied": "Omokoroa",
+          "date_raw_as_supplied": "2011-12-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "7.30am",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691644513-nia-20052-20silvereye.mp3",
+          "copyright_as_supplied": "Nicholas Allen",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        },
+        {
+          "source_record_id": "GEbNY-MwQq2gkp9eNjCrRA",
+          "context": "Winter song and calls",
+          "recorder": "Rob Guest",
+          "location_as_supplied": "Linwood Christchurch",
+          "date_raw_as_supplied": "1979-07-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "1330",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691644554-27-20-20track-2027_4.mp3",
+          "copyright_as_supplied": "McPherson Natural History Unit Sound Archive",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        }
+      ],
+      "design_hypothesis": {
+        "status": "Designed from documented descriptions and varied recording contexts; not audition-validated or owner-approved.",
+        "musical_role": "Light upper-register ornament; small fluid run, occasional delicate two-note contact gesture.",
+        "shared_timbre_character": "liquid_whistle",
+        "desired_timbre_and_mechanism": "Sine-dominant harmonic tone with gentle breath-like component, smoothly curved short pitch transitions and restrained trill; quieter/rounder than fantail, less resonant than honeyeaters.",
+        "current_four_control_start": {
+          "tuning_semitones": 10,
+          "attack_seconds": 0.008,
+          "decay_seconds": 0.24,
+          "gain_db": -22
+        },
+        "control_value_provenance": "Original provisional musical choice; tuning is relative to mapped note, not measured animal pitch. Gain is a starting compensation, not equal-loudness evidence.",
+        "distinct_identifying_gesture": "Light upper-register ornament; small fluid run, occasional delicate two-note contact gesture.",
+        "contrast_listening_test": "Differentiate liquid connected motion from fantail clipped pulse; compare with grey warbler sustained trill at matched register.",
+        "gaps": [
+          "No reference audio audition or spectrogram/pitch extraction.",
+          "No measured source Hz, timing, spectrum, noise ratio or loudness matching.",
+          "Four current controls cannot express the proposed species identity on their own."
+        ]
+      }
+    },
+    {
+      "species_key": "birdweather:species:4456",
+      "scientific_name_supplied": "Rhipidura fuliginosa",
+      "common_name": "New Zealand Fantail / Pīwakawaka",
+      "biological_family_as_source": "Rhipiduridae",
+      "source_taxonomy_note": "North Island, South Island and Chatham forms in NZBO remain exact R. fuliginosa references; do not substitute Australian grey fantail R. albiscapa.",
+      "source_page": {
+        "url": "https://www.nzbirdsonline.org.nz/species/new-zealand-fantail",
+        "provider": "New Zealand Birds Online (Te Papa / Birds New Zealand / DOC partnership)",
+        "accessed_date": "2026-11-07",
+        "reading_depth": "Exact-species identity, Voice/identification account, relevant variation and Sounds references inspected; selected recording metadata read from page. Linked papers not read.",
+        "media_auditioned": false
+      },
+      "documented_observations": {
+        "rhythm": "Song described as regular rhythmic chatter.",
+        "tonality": "Distinctive repeated chattering song; short calls also occur.",
+        "register": "High-pitched song; absolute frequencies unmeasured.",
+        "noise": "Harsh territorial chatter is described; quantitative noisiness unknown.",
+        "phrasing": "Brief calls and regular song; recordings cover southern song and northern flight-song contexts."
+      },
+      "recording_references": [
+        {
+          "source_record_id": "Eg78wipJSBKE5ui2949_Ag",
+          "context": "Male song, South Island form",
+          "recorder": "Carl & Lise Wiesmann (deceased)",
+          "location_as_supplied": "Franz Josef Glacier",
+          "date_raw_as_supplied": "1956-12-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "Afternoon",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691643648-35-20-20unknown-20title-20-20unknown-20artist.mp3",
+          "copyright_as_supplied": "Mcpherson Natural History Unit Sound Archive",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        },
+        {
+          "source_record_id": "Q7OuHqbTTMWhHpbP2ZUWMg",
+          "context": "Northern flight-song during insect hunting",
+          "recorder": "Les McPherson",
+          "location_as_supplied": "Mapara Wildlife Reserve King Country",
+          "date_raw_as_supplied": "1988-01-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "1855",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691643658-47-20-20fantail-20-28north-20island-29.mp3",
+          "copyright_as_supplied": "McPherson Natural History Unit Sound Archive",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        },
+        {
+          "source_record_id": "ZQQprqzZRsaijkafwHXLOQ",
+          "context": "Southern calls followed by song",
+          "recorder": "Les McPherson",
+          "location_as_supplied": "Pleasant Valley School near Geraldine",
+          "date_raw_as_supplied": "1979-10-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "1330",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691643732-22-20-20track-2022_8.mp3",
+          "copyright_as_supplied": "McPherson Natural History Unit Sound Archive",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        }
+      ],
+      "design_hypothesis": {
+        "status": "Designed from documented descriptions and varied recording contexts; not audition-validated or owner-approved.",
+        "musical_role": "Fine upper-register ticking melody; rapid repeated cells with light skips and short gaps.",
+        "shared_timbre_character": "dry_chatter",
+        "desired_timbre_and_mechanism": "Small bright pulse with fine upper harmonics, minimal low body and tiny noisier accents. Repeated two/three-note cells supply identity; do not equate fast notes with louder notes.",
+        "current_four_control_start": {
+          "tuning_semitones": 8,
+          "attack_seconds": 0.003,
+          "decay_seconds": 0.12,
+          "gain_db": -21
+        },
+        "control_value_provenance": "Original provisional musical choice; tuning is relative to mapped note, not measured animal pitch. Gain is a starting compensation, not equal-loudness evidence.",
+        "distinct_identifying_gesture": "Fine upper-register ticking melody; rapid repeated cells with light skips and short gaps.",
+        "contrast_listening_test": "Compare with kingfisher at identical phrase rate: fantail should remain smaller and finer; compare with whitehead two-stage phrase.",
+        "gaps": [
+          "No reference audio audition or spectrogram/pitch extraction.",
+          "No measured source Hz, timing, spectrum, noise ratio or loudness matching.",
+          "Four current controls cannot express the proposed species identity on their own."
+        ]
+      }
+    },
+    {
+      "species_key": "birdweather:species:1276",
+      "scientific_name_supplied": "Anthornis melanura",
+      "common_name": "New Zealand Bellbird / Korimako",
+      "biological_family_as_source": "Meliphagidae",
+      "source_taxonomy_note": "Three subspecies are described by NZBO; selected Poor Knights chorus is an explicit population context, not a generic solo timbre measurement.",
+      "source_page": {
+        "url": "https://www.nzbirdsonline.org.nz/species/bellbird",
+        "provider": "New Zealand Birds Online (Te Papa / Birds New Zealand / DOC partnership)",
+        "accessed_date": "2026-11-07",
+        "reading_depth": "Exact-species identity, Voice/identification account, relevant variation and Sounds references inspected; selected recording metadata read from page. Linked papers not read.",
+        "media_auditioned": false
+      },
+      "documented_observations": {
+        "rhythm": "Song patterns vary regionally; ensemble bell effect associated with multiple birds.",
+        "tonality": "Ringing song distinguished from typical tui grunts/wheezes.",
+        "register": "Absolute pitch and register not measured.",
+        "noise": "Harsh alarm noted; a separate Auckland Islands reference includes grating notes.",
+        "phrasing": "Solo adult song, dawn ensemble and alarm contexts are separately available."
+      },
+      "recording_references": [
+        {
+          "source_record_id": "Ye97g-yKSZuP_QH4Oh7W3Q",
+          "context": "Adult song",
+          "recorder": "Carl & Lise Wiesmann (deceased)",
+          "location_as_supplied": "Taupo",
+          "date_raw_as_supplied": "1956-09-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": null,
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691643125-32-20-20unknown-20title-20-20unknown-20artist.mp3",
+          "copyright_as_supplied": "McPherson Natural History Unit Sound Archive",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        },
+        {
+          "source_record_id": "YZmco-wZTtu_xWdZidYqXg",
+          "context": "Poor Knights population dawn ensemble",
+          "recorder": "Paul Sagar",
+          "location_as_supplied": "Aorangi Island Poor Knights Islands",
+          "date_raw_as_supplied": "1980-03-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "0730",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691643134-11-20-20bellbird-20-28poor-20knights-29.mp3",
+          "copyright_as_supplied": "McPherson Natural History Unit Sound Archive",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        },
+        {
+          "source_record_id": "FLPpUfVRQfCIyP-W2DU5Dg",
+          "context": "Multiple-bird alarm",
+          "recorder": "Les McPherson",
+          "location_as_supplied": "Pioneer Park Fairlie",
+          "date_raw_as_supplied": "1984-05-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "1245",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691643139-12-20-20bellbird.mp3",
+          "copyright_as_supplied": "McPherson Natural History Unit Sound Archive",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        },
+        {
+          "source_record_id": "FPXDkIvkR_2rHVgRw9OfOw",
+          "context": "Auckland Islands dialect: bell and grating material",
+          "recorder": "Nicholas Allen",
+          "location_as_supplied": "Enderby Island  Auckland Islands",
+          "date_raw_as_supplied": "2011-12-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "1pm",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691643152-nia-20104-20nz-20bellbird.mp3",
+          "copyright_as_supplied": "Nicholas Allen",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        }
+      ],
+      "design_hypothesis": {
+        "status": "Designed from documented descriptions and varied recording contexts; not audition-validated or owner-approved.",
+        "musical_role": "Clear resonant melodic anchor; a few ringing notes with lingering, frequency-dependent tails.",
+        "shared_timbre_character": "bright_ring",
+        "desired_timbre_and_mechanism": "Bright additive body with stable clean core and independently decaying upper partials, modest pitch scoop and audible space between syllables. Share tonal core with tui, keep default phrase fluid and mostly clean.",
+        "current_four_control_start": {
+          "tuning_semitones": 3,
+          "attack_seconds": 0.006,
+          "decay_seconds": 0.85,
+          "gain_db": -18
+        },
+        "control_value_provenance": "Original provisional musical choice; tuning is relative to mapped note, not measured animal pitch. Gain is a starting compensation, not equal-loudness evidence.",
+        "distinct_identifying_gesture": "Clear resonant melodic anchor; a few ringing notes with lingering, frequency-dependent tails.",
+        "contrast_listening_test": "Bellbird versus tui same-note comparison: bellbird should remain clean/connected while tui interrupts with rough segments. Also verify bellbird alarm/dialect variants do not define every song.",
+        "gaps": [
+          "No reference audio audition or spectrogram/pitch extraction.",
+          "No measured source Hz, timing, spectrum, noise ratio or loudness matching.",
+          "Four current controls cannot express the proposed species identity on their own."
+        ]
+      }
+    },
+    {
+      "species_key": "birdweather:species:4452",
+      "scientific_name_supplied": "Gerygone igata",
+      "common_name": "Grey Warbler / Riroriro",
+      "biological_family_as_source": "Acanthizidae",
+      "source_taxonomy_note": "Gray Gerygone, Grey Gerygone and New Zealand gerygone are common-name aliases; exact taxon remains G. igata.",
+      "source_page": {
+        "url": "https://www.nzbirdsonline.org.nz/species/grey-warbler",
+        "provider": "New Zealand Birds Online (Te Papa / Birds New Zealand / DOC partnership)",
+        "accessed_date": "2026-11-07",
+        "reading_depth": "Exact-species identity, Voice/identification account, relevant variation and Sounds references inspected; selected recording metadata read from page. Linked papers not read.",
+        "media_auditioned": false
+      },
+      "documented_observations": {
+        "rhythm": "Long trilled male song; short contact chirps also occur.",
+        "tonality": "Distinctive sustained trilling song; no measured spectral model.",
+        "register": "Young begging is described as high-pitched; adult-song Hz range unmeasured.",
+        "noise": "Noise proportion not established.",
+        "phrasing": "Territorial song, subsong and fledgling begging references are distinct."
+      },
+      "recording_references": [
+        {
+          "source_record_id": "dLypOalJQNanvITTusgG_A",
+          "context": "Territorial song",
+          "recorder": "Les McPherson",
+          "location_as_supplied": "Spencerville Plantation eastern Christchurch",
+          "date_raw_as_supplied": "1971-09-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "1035",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691643043-30-20-20unknown-20title-20-20unknown-20artist.mp3",
+          "copyright_as_supplied": "McPherson Natural History Unit Sound Archive",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        },
+        {
+          "source_record_id": "VwxLcvNhR-iM3irHoAmC7Q",
+          "context": "Subsong",
+          "recorder": "Nicholas Allen",
+          "location_as_supplied": "L2 River Mouth  Lake Ellesmere",
+          "date_raw_as_supplied": "2012-06-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "11am",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691643062-nia-20255-20grey-20warbler.mp3",
+          "copyright_as_supplied": "Nicholas Allen",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        },
+        {
+          "source_record_id": "C7ybneMQQ0WAEB2VY6Ud5w",
+          "context": "Fledgling begging",
+          "recorder": "Nicholas Allen",
+          "location_as_supplied": "Hawdon Valley Arthur's Pass",
+          "date_raw_as_supplied": "2013-12-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "1120",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691643104-nia-201029-20grey-20warbler-20opining-20call.mp3",
+          "copyright_as_supplied": "Nicholas Allen",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        }
+      ],
+      "design_hypothesis": {
+        "status": "Designed from documented descriptions and varied recording contexts; not audition-validated or owner-approved.",
+        "musical_role": "Thin, sweet sustained filigree; one long-shaped trill rather than a string of disconnected plucks.",
+        "shared_timbre_character": "liquid_whistle",
+        "desired_timbre_and_mechanism": "Fundamental-led thin harmonic voice with continuous smooth pitch contour and bounded faster amplitude/pitch oscillation late in the phrase. Retain continuity through the trill.",
+        "current_four_control_start": {
+          "tuning_semitones": 9,
+          "attack_seconds": 0.012,
+          "decay_seconds": 0.55,
+          "gain_db": -22
+        },
+        "control_value_provenance": "Original provisional musical choice; tuning is relative to mapped note, not measured animal pitch. Gain is a starting compensation, not equal-loudness evidence.",
+        "distinct_identifying_gesture": "Thin, sweet sustained filigree; one long-shaped trill rather than a string of disconnected plucks.",
+        "contrast_listening_test": "At matched loudness/register distinguish long connected trill from silvereye liquid wandering run and fantail repeated clipped cells.",
+        "gaps": [
+          "No reference audio audition or spectrogram/pitch extraction.",
+          "No measured source Hz, timing, spectrum, noise ratio or loudness matching.",
+          "Four current controls cannot express the proposed species identity on their own."
+        ]
+      }
+    },
+    {
+      "species_key": "birdweather:species:2561",
+      "scientific_name_supplied": "Prosthemadera novaeseelandiae",
+      "common_name": "Tūī",
+      "biological_family_as_source": "Meliphagidae",
+      "source_taxonomy_note": "Selected Chatham recording is the explicitly named chathamensis population. Do not generalise a single mainland song to all populations.",
+      "source_page": {
+        "url": "https://www.nzbirdsonline.org.nz/species/tui",
+        "provider": "New Zealand Birds Online (Te Papa / Birds New Zealand / DOC partnership)",
+        "accessed_date": "2026-11-07",
+        "reading_depth": "Exact-species identity, Voice/identification account, relevant variation and Sounds references inspected; selected recording metadata read from page. Linked papers not read.",
+        "media_auditioned": false
+      },
+      "documented_observations": {
+        "rhythm": "Complicated sequence alternates musical and rough vocal material.",
+        "tonality": "Tuneful elements alternate with coughs, grunts and wheezes.",
+        "register": "No quantitative pitch range established.",
+        "noise": "Rough vocal segments are explicit; noisy wing sound is a separate non-vocal context.",
+        "phrasing": "Adult song differs from repetitive flight scream; selected sources include Chatham song and alarm."
+      },
+      "recording_references": [
+        {
+          "source_record_id": "Iai1vNvqRdm6OFV6avRyvw",
+          "context": "Adult song",
+          "recorder": "Carl & Lise Wiesmann (deceased)",
+          "location_as_supplied": "Kapiti Island",
+          "date_raw_as_supplied": "1956-10-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "Daylight",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691643265-31-20-20unknown-20title-20-20unknown-20artist.mp3",
+          "copyright_as_supplied": "McPherson Natural History Unit Sound Archive",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        },
+        {
+          "source_record_id": "KJd3KuwdT0y7qtbJBWuJ4Q",
+          "context": "Individual Chatham population song; redpoll also present",
+          "recorder": "Les McPherson",
+          "location_as_supplied": "Tuku Gully area Chatham Islands",
+          "date_raw_as_supplied": "1979-01-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "1640",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691643280-14-20-20tui-20-28chatham-20islands-29.mp3",
+          "copyright_as_supplied": "McPherson Natural History Unit Sound Archive",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        },
+        {
+          "source_record_id": "XZdIlRcUQfWxf8Nm7xA56w",
+          "context": "Alarm vocalisation",
+          "recorder": "Nicholas Allen",
+          "location_as_supplied": "Kawhaka Valley",
+          "date_raw_as_supplied": "2015-04-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "1405",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691643327-nia-201477-20tui.mp3",
+          "copyright_as_supplied": "Nicholas Allen",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        }
+      ],
+      "design_hypothesis": {
+        "status": "Designed from documented descriptions and varied recording contexts; not audition-validated or owner-approved.",
+        "musical_role": "Expressive foreground voice; ringing notes unexpectedly interrupted by low rough articulations.",
+        "shared_timbre_character": "bright_ring",
+        "desired_timbre_and_mechanism": "Reuse bellbird ringing spectrum but switch a bounded subset of phrase segments to coarser harmonics, low-amplitude deterministic noise and irregular modulation; alternate connected notes and sudden dry interruptions.",
+        "current_four_control_start": {
+          "tuning_semitones": -1,
+          "attack_seconds": 0.006,
+          "decay_seconds": 0.65,
+          "gain_db": -19
+        },
+        "control_value_provenance": "Original provisional musical choice; tuning is relative to mapped note, not measured animal pitch. Gain is a starting compensation, not equal-loudness evidence.",
+        "distinct_identifying_gesture": "Expressive foreground voice; ringing notes unexpectedly interrupted by low rough articulations.",
+        "contrast_listening_test": "Same pitch/level as bellbird: listeners should hear shared core yet identify contrast from rough interruptions. Remove roughness and remove phrase switching separately.",
+        "gaps": [
+          "No reference audio audition or spectrogram/pitch extraction.",
+          "No measured source Hz, timing, spectrum, noise ratio or loudness matching.",
+          "Four current controls cannot express the proposed species identity on their own."
+        ]
+      }
+    },
+    {
+      "species_key": "birdweather:species:2195",
+      "scientific_name_supplied": "Mohoua albicilla",
+      "common_name": "Whitehead / Pōpokotea",
+      "biological_family_as_source": "Mohouidae",
+      "source_taxonomy_note": "Exact Mohoua albicilla only; related yellowhead and brown creeper not used as substitutes.",
+      "source_page": {
+        "url": "https://www.nzbirdsonline.org.nz/species/whitehead",
+        "provider": "New Zealand Birds Online (Te Papa / Birds New Zealand / DOC partnership)",
+        "accessed_date": "2026-11-07",
+        "reading_depth": "Exact-species identity, Voice/identification account, relevant variation and Sounds references inspected; selected recording metadata read from page. Linked papers not read.",
+        "media_auditioned": false
+      },
+      "documented_observations": {
+        "rhythm": "Song transcription has repeated initial syllables followed by a different repeated syllable; group communication is frequent.",
+        "tonality": "Canary-like twitter with chirps and chatter.",
+        "register": "Absolute and relative pitch ranges unmeasured.",
+        "noise": "No quantitative noise measurement.",
+        "phrasing": "Song and group calls differ; references include observer-mobbing and mixed calls/song."
+      },
+      "recording_references": [
+        {
+          "source_record_id": "OZ199v9hQcyPXyb7N4L3Mg",
+          "context": "Male song",
+          "recorder": "Carl & Lise Wiesmann (deceased)",
+          "location_as_supplied": "Kapiti Island",
+          "date_raw_as_supplied": "1956-10-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "Morning",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691643438-34-20-20unknown-20title-20-20unknown-20artist.mp3",
+          "copyright_as_supplied": "McPherson Natural History Unit Sound Archive",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        },
+        {
+          "source_record_id": "Cqy-ndr3Sx-lktC8SU1COw",
+          "context": "Mixed calls and song; sheep and bellbird also present",
+          "recorder": "Les McPherson",
+          "location_as_supplied": "Near bunkhouse Little Barrier Island",
+          "date_raw_as_supplied": "1977-01-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "1850",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691643456-02-20-20track-202_4.mp3",
+          "copyright_as_supplied": "McPherson Natural History Unit Sound Archive",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        },
+        {
+          "source_record_id": "Wxnr_l1QSI2hDFthAoKcMw",
+          "context": "Observer-directed mobbing and song; other birds also present",
+          "recorder": "Les McPherson",
+          "location_as_supplied": "Main track Little Barrier Island",
+          "date_raw_as_supplied": "1977-01-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "0941",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691643460-03-20-20track-203_21.mp3",
+          "copyright_as_supplied": "McPherson Natural History Unit Sound Archive",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        }
+      ],
+      "design_hypothesis": {
+        "status": "Designed from documented descriptions and varied recording contexts; not audition-validated or owner-approved.",
+        "musical_role": "Conversational mid/high counterpoint; a few rounded chirps pivot into a brighter buzzing/reedy tail.",
+        "shared_timbre_character": "dry_chatter",
+        "desired_timbre_and_mechanism": "Short harmonic chirp with restrained body followed by a higher-harmonic, lightly roughened segment. Two-stage envelope/colour change supplies a distinction from fantail regular single-colour chatter.",
+        "current_four_control_start": {
+          "tuning_semitones": 6,
+          "attack_seconds": 0.004,
+          "decay_seconds": 0.18,
+          "gain_db": -21
+        },
+        "control_value_provenance": "Original provisional musical choice; tuning is relative to mapped note, not measured animal pitch. Gain is a starting compensation, not equal-loudness evidence.",
+        "distinct_identifying_gesture": "Conversational mid/high counterpoint; a few rounded chirps pivot into a brighter buzzing/reedy tail.",
+        "contrast_listening_test": "Whitehead versus fantail same register/rate: test whether two-stage colour transition survives. Avoid mistaking background bellbird for the target.",
+        "gaps": [
+          "No reference audio audition or spectrogram/pitch extraction.",
+          "No measured source Hz, timing, spectrum, noise ratio or loudness matching.",
+          "Four current controls cannot express the proposed species identity on their own."
+        ]
+      }
+    },
+    {
+      "species_key": "birdweather:species:4251",
+      "scientific_name_supplied": "Nestor meridionalis",
+      "common_name": "Kākā",
+      "biological_family_as_source": "Strigopidae",
+      "source_taxonomy_note": "North/South Island labels retained as source contexts. NZBO notes that traditional subspecies distinction is not supported by cited genetic data; do not invent separate taxon identities.",
+      "source_page": {
+        "url": "https://www.nzbirdsonline.org.nz/species/kaka",
+        "provider": "New Zealand Birds Online (Te Papa / Birds New Zealand / DOC partnership)",
+        "accessed_date": "2026-11-07",
+        "reading_depth": "Exact-species identity, Voice/identification account, relevant variation and Sounds references inspected; selected recording metadata read from page. Linked papers not read.",
+        "media_auditioned": false
+      },
+      "documented_observations": {
+        "rhythm": "Rhythmic harsh flight calls and repeated guttural solicitation calls described.",
+        "tonality": "Harsh calls coexist with musical whistles; whistles vary geographically.",
+        "register": "Absolute pitch range not measured.",
+        "noise": "Grating alarm and harsh flight voice explicit; spectral balance unmeasured.",
+        "phrasing": "Flight, alarm, courtship/site-display and food solicitation are different contexts."
+      },
+      "recording_references": [
+        {
+          "source_record_id": "JsFgdxWZRe-H7UenLX7_CQ",
+          "context": "Several birds, northern population",
+          "recorder": "Carl & Lise Wiesmann (deceased)",
+          "location_as_supplied": "Kapiti Island",
+          "date_raw_as_supplied": "1956-10-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "Late afternoon",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691641847-03-20-20track-203_0.mp3",
+          "copyright_as_supplied": "McPherson Natural History Unit Sound Archive",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        },
+        {
+          "source_record_id": "VTbskhQYR2WDfnjSB4Qslg",
+          "context": "Small southern flock; tui also present",
+          "recorder": "Les McPherson",
+          "location_as_supplied": "Codfish Island",
+          "date_raw_as_supplied": "1989-11-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "1200",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691641859-56-20-20south-20island-20kaka.mp3",
+          "copyright_as_supplied": "McPherson Natural History Unit Sound Archive",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        },
+        {
+          "source_record_id": "ATh9pKn9Q8WjTKVNuoouBQ",
+          "context": "Northern song and calls; multiple other species present",
+          "recorder": "Carl & Lise Weismann (deceased)",
+          "location_as_supplied": "Kapiti Island",
+          "date_raw_as_supplied": "1956-10-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "Morning",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691641863-38-20-20track-2038_0.mp3",
+          "copyright_as_supplied": "McPherson Natural History Unit Sound Archive",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        }
+      ],
+      "design_hypothesis": {
+        "status": "Designed from documented descriptions and varied recording contexts; not audition-validated or owner-approved.",
+        "musical_role": "Coarse lower-register reed/brass-like punctuation, with an occasional clear whistle answering the rough call.",
+        "shared_timbre_character": "rough_reed",
+        "desired_timbre_and_mechanism": "Stronger harmonic body and broad band-limited noise component, bounded amplitude irregularity and curved pitch fall; alternate with a nearly pure whistle segment rather than making every note uniformly abrasive.",
+        "current_four_control_start": {
+          "tuning_semitones": -7,
+          "attack_seconds": 0.008,
+          "decay_seconds": 0.32,
+          "gain_db": -20
+        },
+        "control_value_provenance": "Original provisional musical choice; tuning is relative to mapped note, not measured animal pitch. Gain is a starting compensation, not equal-loudness evidence.",
+        "distinct_identifying_gesture": "Coarse lower-register reed/brass-like punctuation, with an occasional clear whistle answering the rough call.",
+        "contrast_listening_test": "Kaka versus tui at matched pitch: kaka should keep coarse call body; tui should retain bell-like islands and abrupt interruptions. Test whistle alternative without copying a recorded call.",
+        "gaps": [
+          "No reference audio audition or spectrogram/pitch extraction.",
+          "No measured source Hz, timing, spectrum, noise ratio or loudness matching.",
+          "Four current controls cannot express the proposed species identity on their own."
+        ]
+      }
+    },
+    {
+      "species_key": "birdweather:species:4459",
+      "scientific_name_supplied": "Petroica macrocephala",
+      "common_name": "Tomtit / Miromiro",
+      "biological_family_as_source": "Petroicidae",
+      "source_taxonomy_note": "Five source subspecies are population context. Page description says adult males give full song, yet catalog labels female song; preserve both evidence statements rather than silently resolving the discrepancy.",
+      "source_page": {
+        "url": "https://www.nzbirdsonline.org.nz/species/tomtit",
+        "provider": "New Zealand Birds Online (Te Papa / Birds New Zealand / DOC partnership)",
+        "accessed_date": "2026-11-07",
+        "reading_depth": "Exact-species identity, Voice/identification account, relevant variation and Sounds references inspected; selected recording metadata read from page. Linked papers not read.",
+        "media_auditioned": false
+      },
+      "documented_observations": {
+        "rhythm": "Contact notes singly or short groups; descending call begins quickly and ends slowly.",
+        "tonality": "Adult male song described as a repeated motif; downscale has descending notes.",
+        "register": "No measured Hz range.",
+        "noise": "Noise ratio not established.",
+        "phrasing": "Song reported about 2–3 seconds; contact and descending chuck-call sequences are distinct."
+      },
+      "recording_references": [
+        {
+          "source_record_id": "ZDlEfMvHQF-FnAz2yCdqlQ",
+          "context": "Northern male territorial song",
+          "recorder": "Carl & Lise Wiesmann (deceased)",
+          "location_as_supplied": "The Chateau",
+          "date_raw_as_supplied": "1956-10-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "Afternoon",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691643805-39-20-20unknown-20title-20-20unknown-20artist.mp3",
+          "copyright_as_supplied": "McPherson Natural History Unit Sound Archive",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        },
+        {
+          "source_record_id": "WpOn76wtTi-QeAiQZ_4IBw",
+          "context": "Southern male song",
+          "recorder": "Les McPherson",
+          "location_as_supplied": "Mount Sinclair Reserve Banks Peninsula",
+          "date_raw_as_supplied": "1984-08-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "1150",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691643817-51-20-20yellow-breasted-20tit.mp3",
+          "copyright_as_supplied": "Mcpherson Natural History Unit Sound Archive",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        },
+        {
+          "source_record_id": "d8RZYue3QaqFvtOFyYvWPQ",
+          "context": "Southern male subsong and contact vocalisation",
+          "recorder": "Francis de Hamel",
+          "location_as_supplied": "Stewart Island",
+          "date_raw_as_supplied": "1985-01-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "morning",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691643886-05-20-20track-205_19.mp3",
+          "copyright_as_supplied": "McPherson Natural History Unit Sound Archive",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        }
+      ],
+      "design_hypothesis": {
+        "status": "Designed from documented descriptions and varied recording contexts; not audition-validated or owner-approved.",
+        "musical_role": "Compact tuneful middle-register motif; a small repeated figure resolves downwards, with a separate descending slowing gesture.",
+        "shared_timbre_character": "liquid_whistle",
+        "desired_timbre_and_mechanism": "Rounded clear harmonic note, short modest scoop, little spectral splash; repeated notes should remain distinct. A shared contour sequencer expresses downward pitch and widening note spacing.",
+        "current_four_control_start": {
+          "tuning_semitones": 5,
+          "attack_seconds": 0.008,
+          "decay_seconds": 0.36,
+          "gain_db": -21
+        },
+        "control_value_provenance": "Original provisional musical choice; tuning is relative to mapped note, not measured animal pitch. Gain is a starting compensation, not equal-loudness evidence.",
+        "distinct_identifying_gesture": "Compact tuneful middle-register motif; a small repeated figure resolves downwards, with a separate descending slowing gesture.",
+        "contrast_listening_test": "Tomtit versus shining cuckoo: repeated motif with stepped slowing descent versus recurring smooth upward slurs and a closing fall; compare at same pitch.",
+        "gaps": [
+          "No reference audio audition or spectrogram/pitch extraction.",
+          "No measured source Hz, timing, spectrum, noise ratio or loudness matching.",
+          "Four current controls cannot express the proposed species identity on their own."
+        ]
+      }
+    },
+    {
+      "species_key": "birdweather:species:591",
+      "scientific_name_supplied": "Chrysococcyx lucidus",
+      "common_name": "Shining Bronze Cuckoo / Pīpīwharauroa",
+      "biological_family_as_source": "Cuculidae",
+      "source_taxonomy_note": "Chrysococcyx lucidus (supplied/NZBO) and Chalcites lucidus (BirdLife) are explicit taxonomic aliases; NZ breeding form is lucidus. No other bronze-cuckoo species used.",
+      "source_page": {
+        "url": "https://www.nzbirdsonline.org.nz/species/shining-cuckoo",
+        "provider": "New Zealand Birds Online (Te Papa / Birds New Zealand / DOC partnership)",
+        "accessed_date": "2026-11-07",
+        "reading_depth": "Exact-species identity, Voice/identification account, relevant variation and Sounds references inspected; selected recording metadata read from page. Linked papers not read.",
+        "media_auditioned": false
+      },
+      "documented_observations": {
+        "rhythm": "Repeated whistle sequence, with different ending gesture.",
+        "tonality": "Main whistle repeatedly slurs upward, usually finishing with a downward slur.",
+        "register": "Loudness described, but absolute pitch range unmeasured.",
+        "noise": "No quantitative noise evidence.",
+        "phrasing": "Repeated downward whistles associated, with stated uncertainty, with gatherings/courtship."
+      },
+      "recording_references": [
+        {
+          "source_record_id": "Y8pjyXV2SAa_uz4YjG0uAA",
+          "context": "Male song; frogs and chaffinch also present",
+          "recorder": "Frances de Hamel",
+          "location_as_supplied": "Lake Waihola South Otago",
+          "date_raw_as_supplied": "1977-12-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "Afternoon",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691642254-14-20-20shining-20cuckoo.mp3",
+          "copyright_as_supplied": "McPherson Natural History Unit Sound Archive",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        },
+        {
+          "source_record_id": "SV1SQq6AT3Gdmv6rileQag",
+          "context": "Courtship context; other birds and a vehicle siren also present",
+          "recorder": "Nicholas Allen",
+          "location_as_supplied": "Victoria Park Christchurch",
+          "date_raw_as_supplied": "2012-11-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "8.04am",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691642258-nia-20554-20shining-20cuckoo.mp3",
+          "copyright_as_supplied": "Nicholas Allen",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        },
+        {
+          "source_record_id": "d3UiVb63T--ruZtP6UtDzw",
+          "context": "Contact vocalisation",
+          "recorder": "Nicholas Allen",
+          "location_as_supplied": "Harts Creek Lake Ellesmere",
+          "date_raw_as_supplied": "2012-12-02",
+          "date_precision_status": "Unverified; metadata consistently uses day 02 across this source selection. Do not infer verified exact observation day.",
+          "time_as_supplied": "7.26am",
+          "reference_url": "https://www.nzbirdsonline.org.nz/assets/95597/1691642262-nia-20595-20shining-20cuckoo.mp3",
+          "copyright_as_supplied": "Nicholas Allen",
+          "reuse_permission": "Not granted; reference only. See source copyright terms.",
+          "access_state": "Reference URL obtained from exact-species public page; media not fetched, played or analysed.",
+          "duration_seconds": null
+        }
+      ],
+      "design_hypothesis": {
+        "status": "Designed from documented descriptions and varied recording contexts; not audition-validated or owner-approved.",
+        "musical_role": "Pure whistled rising ostinato; each note bends upward, then a lower falling whistle closes the phrase.",
+        "shared_timbre_character": "liquid_whistle",
+        "desired_timbre_and_mechanism": "Near-sine voice with light second harmonic; deterministic continuous upward curve within repeated notes and a terminal downward curve. Avoid a metallic bell tail or generic random chirps.",
+        "current_four_control_start": {
+          "tuning_semitones": 4,
+          "attack_seconds": 0.018,
+          "decay_seconds": 0.48,
+          "gain_db": -20
+        },
+        "control_value_provenance": "Original provisional musical choice; tuning is relative to mapped note, not measured animal pitch. Gain is a starting compensation, not equal-loudness evidence.",
+        "distinct_identifying_gesture": "Pure whistled rising ostinato; each note bends upward, then a lower falling whistle closes the phrase.",
+        "contrast_listening_test": "Compare with morepork rising alternative and tomtit downscale; cuckoo identity should come from repeated upsweeps and terminal falling gesture, not pitch alone.",
+        "gaps": [
+          "No reference audio audition or spectrogram/pitch extraction.",
+          "No measured source Hz, timing, spectrum, noise ratio or loudness matching.",
+          "Four current controls cannot express the proposed species identity on their own."
+        ]
+      },
+      "taxonomic_aliases": [
+        {
+          "scientific_name": "Chalcites lucidus",
+          "source_url": "https://datazone.birdlife.org/species/factsheet/shining-bronze-cuckoo-chalcites-lucidus",
+          "accessed_date": "2026-11-07",
+          "reading_depth": "Search-result taxonomy statement read; linked full factsheet not read."
+        }
+      ]
+    }
+  ]
+}
