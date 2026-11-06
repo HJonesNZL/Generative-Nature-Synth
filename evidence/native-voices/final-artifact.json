@@ -1,11 +1,11 @@
 {
   "version": {
     "engine": "animal-atlas-native-audio",
-    "source_sha256": "19e53af802d932c05805b4ca783b3a2f45a999a9d240c977d3f884e56137e898"
+    "source_sha256": "555d140da49ec003f13ea95c58e89952aab34bbee18718b0ed03945bbf28ce9c"
   },
   "configuration": "Release",
-  "artifact": "build/native-voices-qualified-19e53af802d9/atlas-audio-host",
-  "artifactSha256": "f10b4abfb5c9576400a95e0b84faaa02357bdc7949113f4ac135fc670b031e97",
+  "artifact": "build/native-voices-qualified-555d140da49e/atlas-audio-host",
+  "artifactSha256": "5c1d1c626120edc1de6669723ed1614f0a177f5b6055ce09266846fd24a77d16",
   "qualification": "experimental integration; native host voice edit/save lifecycle without device; no edited-voice hardware/listening qualification",
   "sourceUnchangedDuringFinalSuites": true
 }

@@ -12,7 +12,7 @@ export function fromNormalized(spec: VoiceParameterSpec, normalized: number): nu
 export function formatParameter(spec: VoiceParameterSpec, normalized: number): string {
   const v = fromNormalized(spec, normalized);
   switch (spec.unit) {
-    case "st": return `${v >= 0 ? "+" : ""}${v.toFixed(1)} st`;
+    case "st": return `${v >= 0 ? "+" : ""}${v.toFixed(spec.step === 1 ? 0 : 1)} st`;
     case "s": return v < 1 ? `${Math.round(v * 1000)} ms` : `${v.toFixed(2)} s`;
     case "dB": return `${v.toFixed(1)} dB`;
     case "pan": return Math.abs(v) < 0.005 ? "C" : `${v < 0 ? "L" : "R"}${Math.round(Math.abs(v) * 50)}`;

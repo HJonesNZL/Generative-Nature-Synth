@@ -99,12 +99,12 @@ function values(overrides: Record<string, number>): Record<string, number> {
 
 export function initialVoices(): VoiceDefinition[] {
   return [
-    { id: "voice-group-forest", name: "Forest birds default", scope: "group", targetId: "forest_bird", inheritsFromId: null, type: "pluck", values: values({}), overriddenParameterIds: [], savedRevision: "11", dirty: false },
-    { id: "voice-group-sharks", name: "Sharks default", scope: "group", targetId: "shark", inheritsFromId: null, type: "resonance", values: values({ attack: 0.3, release: 4, tone: 0.35, tuning: -12 }), overriddenParameterIds: [], savedRevision: "4", dirty: false },
-    { id: "voice-tui", name: "Voice A · Pluck", scope: "species", targetId: "tui", inheritsFromId: "voice-group-forest", type: "pluck", values: values({ attack: 0.18, decay: 0.42, sustain: 0.72, release: 1.2 }), overriddenParameterIds: ["attack", "decay", "sustain"], savedRevision: "12", dirty: false },
-    { id: "voice-korimako", name: "Voice B · Air", scope: "species", targetId: "korimako", inheritsFromId: "voice-group-forest", type: "air", values: values({ attack: 0.4, release: 2.5, tone: 0.5 }), overriddenParameterIds: ["attack", "release", "tone"], savedRevision: "7", dirty: false },
-    { id: "voice-riroriro", name: "Voice C · Bell", scope: "species", targetId: "riroriro", inheritsFromId: "voice-group-forest", type: "bell", values: values({ decay: 1.6, sustain: 0.1, tuning: 12 }), overriddenParameterIds: ["decay", "sustain", "tuning"], savedRevision: "3", dirty: false },
-    { id: "voice-ws07", name: "WS-07 override", scope: "individual", targetId: "WS-07", inheritsFromId: "voice-group-sharks", type: "resonance", values: values({ attack: 0.3, release: 4, tone: 0.5, tuning: -7 }), overriddenParameterIds: ["tone", "tuning"], savedRevision: "2", dirty: false },
+    { id: "voice-group-forest", name: "Forest birds default", scope: "group", targetId: "forest_bird", inheritsFromId: null, type: "pluck", values: values({}), overriddenParameterIds: [], changeRevision: "0", savedRevision: "11", dirty: false },
+    { id: "voice-group-sharks", name: "Sharks default", scope: "group", targetId: "shark", inheritsFromId: null, type: "resonance", values: values({ attack: 0.3, release: 4, tone: 0.35, tuning: -12 }), overriddenParameterIds: [], changeRevision: "0", savedRevision: "4", dirty: false },
+    { id: "voice-tui", name: "Voice A · Pluck", scope: "species", targetId: "tui", inheritsFromId: "voice-group-forest", type: "pluck", values: values({ attack: 0.18, decay: 0.42, sustain: 0.72, release: 1.2 }), overriddenParameterIds: ["attack", "decay", "sustain"], changeRevision: "0", savedRevision: "12", dirty: false },
+    { id: "voice-korimako", name: "Voice B · Air", scope: "species", targetId: "korimako", inheritsFromId: "voice-group-forest", type: "air", values: values({ attack: 0.4, release: 2.5, tone: 0.5 }), overriddenParameterIds: ["attack", "release", "tone"], changeRevision: "0", savedRevision: "7", dirty: false },
+    { id: "voice-riroriro", name: "Voice C · Bell", scope: "species", targetId: "riroriro", inheritsFromId: "voice-group-forest", type: "bell", values: values({ decay: 1.6, sustain: 0.1, tuning: 12 }), overriddenParameterIds: ["decay", "sustain", "tuning"], changeRevision: "0", savedRevision: "3", dirty: false },
+    { id: "voice-ws07", name: "WS-07 override", scope: "individual", targetId: "WS-07", inheritsFromId: "voice-group-sharks", type: "resonance", values: values({ attack: 0.3, release: 4, tone: 0.5, tuning: -7 }), overriddenParameterIds: ["tone", "tuning"], changeRevision: "0", savedRevision: "2", dirty: false },
   ];
 }
 

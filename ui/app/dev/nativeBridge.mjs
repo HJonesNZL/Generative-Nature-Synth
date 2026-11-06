@@ -31,7 +31,7 @@ export function nativeBridge() {
     const audioBinary = resolve('../../build/native-playback/atlas-audio-host');
     const binary = process.env.ATLAS_AUDIO_HOST_BINARY || process.env.ATLAS_NATIVE_BINARY ||
       (existsSync(audioBinary) ? audioBinary : '../../build/native/atlas-native');
-    const child = spawn(resolve(binary), ['ui-host', '--db', resolve(process.env.ATLAS_LIBRARY)], { stdio: ['pipe', 'pipe', 'pipe'] });
+    const child = spawn(resolve(binary), ['ui-host', '--db', resolve(process.env.ATLAS_LIBRARY)], { stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, ATLAS_VOICE_LIBRARY: process.env.ATLAS_VOICE_LIBRARY || resolve('../../.state/voices.sqlite3') } });
     worker = child;
     child.stdout.setEncoding('utf8');
     child.stdout.on('data', (chunk) => {
@@ -111,7 +111,7 @@ export function nativeBridge() {
                   // Reads and preparation may finish into a discarded response;
                   // preserve FIFO correlation for the replacement selection.
                   // An abandoned audible mutation retires the process immediately.
-                  if (!['getCapabilities', 'getChanges', 'getCatalog', 'listSessions', 'getMaterialEvents', 'getTransport', 'getAudioState', 'prepareReplay'].includes(request.method)) fail();
+                  if (!['getCapabilities', 'getChanges', 'getCatalog', 'listSessions', 'getMaterialEvents', 'getTransport', 'getAudioState', 'getVoiceLibrary', 'getVoice', 'prepareReplay'].includes(request.method)) fail();
                   return;
                 }
                 const entry = pending.get(request.requestId);

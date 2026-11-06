@@ -1,11 +1,11 @@
 {
   "schema": "animal-atlas-native-device-smoke-v1",
-  "startedAtUtc": "2026-11-06T20:39:10.595767+00:00",
+  "startedAtUtc": "2026-11-06T20:47:30.236563+00:00",
   "platform": "macOS-15.6.1-arm64-arm-64bit",
   "status": "passed_host_lifecycle_smoke",
   "protocol": [
     {
-      "elapsedSeconds": 0.001444,
+      "elapsedSeconds": 0.001168,
       "request": {
         "protocolVersion": 1,
         "requestId": "device-smoke-1",
@@ -42,7 +42,7 @@
       }
     },
     {
-      "elapsedSeconds": 0.043239,
+      "elapsedSeconds": 0.050083,
       "request": {
         "protocolVersion": 1,
         "requestId": "device-smoke-2",
@@ -67,13 +67,13 @@
       }
     },
     {
-      "elapsedSeconds": 0.043335,
+      "elapsedSeconds": 0.050143,
       "request": {
         "protocolVersion": 1,
         "requestId": "device-smoke-3",
         "method": "prepareReplay",
         "args": {
-          "sessionId": "648ed483-1af4-4dd8-b185-390f6fdc83c8",
+          "sessionId": "28ccb419-f334-47dd-b420-0ed9e3abad15",
           "basis": "observed",
           "speedNumerator": "1",
           "speedDenominator": "1"
@@ -89,7 +89,7 @@
           "eventCount": 3,
           "peakEventsPerSecond": 3,
           "session": {
-            "id": "648ed483-1af4-4dd8-b185-390f6fdc83c8",
+            "id": "28ccb419-f334-47dd-b420-0ed9e3abad15",
             "name": "Disposable synthetic device smoke",
             "state": "frozen",
             "origin": "archive_snapshot",
@@ -102,15 +102,15 @@
               "1767225603000000"
             ],
             "arrivalBoundsUs": [
-              "1793997550617434",
-              "1793997550617434"
+              "1793998050725712",
+              "1793998050725712"
             ]
           }
         }
       }
     },
     {
-      "elapsedSeconds": 0.049865,
+      "elapsedSeconds": 0.057313,
       "request": {
         "protocolVersion": 1,
         "requestId": "device-smoke-4",
@@ -130,7 +130,7 @@
       }
     },
     {
-      "elapsedSeconds": 0.049925,
+      "elapsedSeconds": 0.057376,
       "request": {
         "protocolVersion": 1,
         "requestId": "device-smoke-5",
@@ -157,7 +157,7 @@
       }
     },
     {
-      "elapsedSeconds": 0.049978,
+      "elapsedSeconds": 0.057426,
       "request": {
         "protocolVersion": 1,
         "requestId": "device-smoke-6",
@@ -240,7 +240,7 @@
       }
     },
     {
-      "elapsedSeconds": 0.050342,
+      "elapsedSeconds": 0.057775,
       "request": {
         "protocolVersion": 1,
         "requestId": "device-smoke-7",
@@ -273,7 +273,7 @@
       }
     },
     {
-      "elapsedSeconds": 0.050382,
+      "elapsedSeconds": 0.05782,
       "request": {
         "protocolVersion": 1,
         "requestId": "device-smoke-8",
@@ -296,7 +296,7 @@
       }
     },
     {
-      "elapsedSeconds": 0.050421,
+      "elapsedSeconds": 0.057859,
       "request": {
         "protocolVersion": 1,
         "requestId": "device-smoke-9",
@@ -319,7 +319,7 @@
       }
     },
     {
-      "elapsedSeconds": 0.050452,
+      "elapsedSeconds": 0.057891,
       "request": {
         "protocolVersion": 1,
         "requestId": "device-smoke-10",
@@ -342,7 +342,7 @@
       }
     },
     {
-      "elapsedSeconds": 0.050479,
+      "elapsedSeconds": 0.057921,
       "request": {
         "protocolVersion": 1,
         "requestId": "device-smoke-11",
@@ -376,7 +376,7 @@
       }
     },
     {
-      "elapsedSeconds": 0.050942,
+      "elapsedSeconds": 0.058387,
       "request": {
         "protocolVersion": 1,
         "requestId": "device-smoke-12",
@@ -398,7 +398,7 @@
       }
     },
     {
-      "elapsedSeconds": 0.050975,
+      "elapsedSeconds": 0.058439,
       "request": {
         "protocolVersion": 1,
         "requestId": "device-smoke-13",
@@ -460,23 +460,23 @@
   },
   "artifact": {
     "source": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native-playback/atlas-audio-host",
-    "immutableCopy": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native-playback-smoke-f10b4abfb5c95764/atlas-audio-host",
-    "sha256": "f10b4abfb5c9576400a95e0b84faaa02357bdc7949113f4ac135fc670b031e97",
+    "immutableCopy": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native-playback-smoke-5c1d1c626120edc1/atlas-audio-host",
+    "sha256": "5c1d1c626120edc1de6669723ed1614f0a177f5b6055ce09266846fd24a77d16",
     "version": {
       "engine": "animal-atlas-native-audio",
-      "source_sha256": "19e53af802d932c05805b4ca783b3a2f45a999a9d240c977d3f884e56137e898"
+      "source_sha256": "555d140da49ec003f13ea95c58e89952aab34bbee18718b0ed03945bbf28ce9c"
     },
     "versionStderr": ""
   },
   "fixture": {
     "eventCount": 3,
-    "sessionId": "648ed483-1af4-4dd8-b185-390f6fdc83c8",
+    "sessionId": "28ccb419-f334-47dd-b420-0ed9e3abad15",
     "provenance": "demo",
     "databaseFileName": "synthetic device smoke.sqlite3",
     "databasePathContainsSpaces": true,
-    "databaseSha256Before": "db07636e10ac98db0d23247a5a9f2e3fbbb591173da178b0069475e2db09e230",
+    "databaseSha256Before": "837de098a54cfb70b41728d80b67701d3e37aecef63c4de80414178de8446fd0",
     "temporaryDatabaseDeletedOnExit": true,
-    "databaseSha256After": "db07636e10ac98db0d23247a5a9f2e3fbbb591173da178b0069475e2db09e230"
+    "databaseSha256After": "837de098a54cfb70b41728d80b67701d3e37aecef63c4de80414178de8446fd0"
   },
-  "elapsedSeconds": 0.068732
+  "elapsedSeconds": 0.540922
 }

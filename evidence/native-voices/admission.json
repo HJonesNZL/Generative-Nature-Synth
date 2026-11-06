@@ -1,0 +1,220 @@
+{
+  "schema": 1,
+  "candidate_id": "native-voices-555d140da49ec003f13ea95c58e89952aab34bbee18718b0ed03945bbf28ce9c",
+  "stage": "experimental_integration",
+  "files": {
+    "CMakeLists.txt": "b2b84dc161d3cddda1380391fe264aa082b751570d3085da7b91f7248d3dbbf0",
+    "Start Atlas UI.command": "8fefce4caf011e5d056148ddd07821b4de956c907acb82c6376f3c7a4346afdd",
+    "build/native-voices-qualified-555d140da49e/atlas-audio-host": "5c1d1c626120edc1de6669723ed1614f0a177f5b6055ce09266846fd24a77d16",
+    "docs/milestones/NATIVE_VOICE_DSP_CONTRACT.md": "9ac7eb071ac79f82d3c6e29ea499cea1d21c45f97477f2c38716ce7a1d788f16",
+    "docs/milestones/NATIVE_VOICE_HOST_CONTRACT.md": "93f56480ff16a770dde256b0bd9afd6ef5e65300202ccbc26002f75145b3fce1",
+    "docs/milestones/NATIVE_VOICE_STORE_CONTRACT.md": "c449ca5b338ffe0dfd39ca460c8a08fe859d50251720ae1d4a7ce182363814db",
+    "docs/milestones/UI_NATIVE_VOICES.md": "a0dac2d32e590b1e1fa461a9c81041870decc83a38bc875bf5dbc946e4f53443",
+    "evidence/native-voices/checkpoint-debug-commands.json": "e8c6857448f00ec8a6601155cb1d787ea1dbbaad88a66636a2235d91dcd3c901",
+    "evidence/native-voices/checkpoint-debug.log": "2f657cb3dd937721015a4ffe50244d472c97a2c500796be4dc1e994295ac1315",
+    "evidence/native-voices/final-artifact.json": "d27a6e7c9423b354ba504f173898234bce9dfb991d7cf6b14c9f9d906f21e33f",
+    "evidence/native-voices/final-debug-commands.json": "3d107451fbef34168d08b4a87ddd219a77a8e5de865ee4a573b35cdd8abc8cfc",
+    "evidence/native-voices/final-debug.log": "5cadf10b6657661bf29dea3b61a6e5c960232ddd1dc885b659b82fa99e2775d8",
+    "evidence/native-voices/final-release-commands.json": "f09d78789bdb99fd33e465bd0fc7243abb250ce05e59be6564744bfb873705ad",
+    "evidence/native-voices/final-release.log": "7e710bc84fbfe8e0b5a1efd6f2ef357d6f5d9ee8d3f97c6e21fe9c76654acb94",
+    "evidence/native-voices/final-sanitized-commands.json": "2e49137c7859bc884fd67c57583a84fd28561106c15458db2b9a949a90cf6128",
+    "evidence/native-voices/final-sanitized.log": "d2e4d2ec786778b52995ab867bd52e937da7636ed8794a85035ff86a994211a3",
+    "evidence/native-voices/host-lifecycle-before-tail-expectation.json": "c93d6bb4bb12aea628727f7bc5709af6e44d0a4ffdb20d68287f62713495ade3",
+    "evidence/native-voices/host-lifecycle.json": "5afd8d49c26adb29e8b60dd0c5d8faf73c5b787c6d4a339a03ace60e87f1bb4f",
+    "evidence/native-voices/native-independent-review.md": "65a49f017e8f94b648d9d850e4d84e2041dd025790e7781b7670ed6602fe811a",
+    "evidence/native-voices/qualification.md": "7e11e07cfc7ba2945ec44337ba51ac376e388b6ef0bda7f51f2c33015faa7d16",
+    "evidence/native-voices/release-before-tail-expectation-commands.json": "849d7bdcc8fec68147f7bbcb038e1e2fa3a4668d91a133fd5a3c3f59f26d5831",
+    "evidence/native-voices/release-before-tail-expectation.log": "04802baac73a07753c81289962c2476ca0b1e107b1a7b2edf532d18aa9aba8c5",
+    "evidence/native-voices/thread-sanitizer.json": "34db8d16ca38ae8099146b08cad23834c80a63fe55bfcda3cf601e762477c8c3",
+    "evidence/native-voices/ui-checks.json": "c0516c7180f24a8d48877c26232fa80e1d8ad3636e1853fd9eb040724f1e7938",
+    "evidence/native-voices/ui-independent-review.md": "09b0df8c589cb9c770e4442b7f3064e5d53645d8d4401e694bcd95d138713288",
+    "native/cmake/build_identity.hpp.in": "5e74f4abbea2ea8dac7d55244693c1448a1e771e3e9447b2729995eeec626b12",
+    "native/include/atlas/audio.hpp": "00dc17961e58f4459fe8e9f4aa75f4733bbac73b4bc0dc82984f6dea79b2ecc9",
+    "native/include/atlas/core.hpp": "86c5e72c5e0723a382032574e395f6fac9492d64349b81b08a1d0da3ac767e49",
+    "native/include/atlas/playback.hpp": "4eea078cdedb4f0bfde4c92754beafade31de14759c5970c0320c757af703386",
+    "native/include/atlas/storage.hpp": "d0fcb14739ecafa966a62b7a70b73839f0eb65515c683697ec59f6f26943bf5a",
+    "native/include/atlas/ui_host.hpp": "5e5b47e043224622a87371c614b33867644811f472f06e757468886fb798e1a3",
+    "native/include/atlas/voices.hpp": "f4227f8244fc39e47c7841faf1db91cb137129e29945821b00c0b7e46ef94b9a",
+    "native/include/atlas/wav.hpp": "433b16bff0940dd7b134f7a87f7082b823cd73b2474572f6fe859145f638a4c7",
+    "native/src/audio.cpp": "80764a46e948685af9ac04e6e0fb8d17d2a20f7db8e8a30478e02e01c64cd0a4",
+    "native/src/audio_host_main.cpp": "f0ebc162f35d17141d62685ac246eead1476ef539b03df5c16e67dfb41b396e6",
+    "native/src/core.cpp": "9451fa0dd37ccf76d15e856b15d36a28f1d8a1340ec1e273a3f6e149738117eb",
+    "native/src/event_validation.cpp": "92496c5b4030fd98b74e06a15ff949f2b7f39e114e9a269247751c08fd694a56",
+    "native/src/event_validation.hpp": "bab21215216f5e0166ec16dfe34e49691992fd8706b4679509e9271c0bafa675",
+    "native/src/json_text.hpp": "5d02ade4aeb31aad1ccf78bfd7262d4a1251d9d338e9a71b9f8159f73430ba97",
+    "native/src/juce_output.cpp": "cce717784a547750a15f926ec4876f6bf0fa72e5a91d68087d6d893523c6e0a3",
+    "native/src/main.cpp": "9d67daa1d2d12100bec6aabe9c5e15dc1ce18f5017f4ef43566aec44b5a49462",
+    "native/src/playback.cpp": "abfccb16b39672ead600810b24b81bfa2ef32448155c85589577701cda4b4202",
+    "native/src/sha256.cpp": "2b4ee63b0eb803a6b4b920f25a96162c12920b4b994e2f51d564528fa6038975",
+    "native/src/sha256.hpp": "0b28ae813895efb324f9c6d51293a8eade15f292f69ebe9f27fba4ffe2c635ef",
+    "native/src/sqlite_statement.hpp": "8c7371d136977107b373a83c996fcf1def4ee96a27daa14060e9aa37a6255ef6",
+    "native/src/storage.cpp": "2267bba105f30970580c910e2e5af7d10e4da06e8cd5f05fd4c666827cf85c1d",
+    "native/src/ui_host.cpp": "638de8b19600f6f300ab3d8a263f1057732035deb4b55ac0c11d756ebe0d344b",
+    "native/src/voices.cpp": "2a16779a4f02feff4bcbaa8b503b5f96c2e989036cbda0e9862dfc20e8450afd",
+    "native/src/wav.cpp": "3871714b32d8395749aa1ddcbe989fed0808fce32a60aaf550117f8f7ca03f6e",
+    "native/tests/audio_bench.cpp": "b1162f49cc0f6a4f02a951d5cc96f6648981db00aa8629c1373fd8a0bd8f5e82",
+    "native/tests/audio_tests.cpp": "8f20543ae50eb60c5d6e3c47cc296010466735a1b7a313bf0cfed54937f33a09",
+    "native/tests/core_tests.cpp": "93a3ff83813d5f7003cafe03252f7e421067a0c50da35f2b0f586a1ebe61dad8",
+    "native/tests/playback_host.cpp": "e8e8bdef937e5b862bf793a039e6192e176e6e3a1f327583375509ab14d7082a",
+    "native/tests/playback_tests.cpp": "e6b044e6e651fb213c4b91711877512e1513b1e2c555668a23deadbb4daad714",
+    "native/tests/sha256_tests.cpp": "d871e1bcc07b51ce2287cffd0800c87fc695ff11eea97edf0eb5825470681a56",
+    "native/tests/studio_host.cpp": "ba7f8a4ab81b7319d5596f4f62303d42d7165a5cc6becbd87812145c33e475ab",
+    "native/tests/voice_audio_tests.cpp": "e207de3cf4b788d11af180d0f3390236832bd76f0032615db6856ca649624b86",
+    "native/tests/voice_store_tests.cpp": "efa241dfd0278e6163cb3a0fd53e4323c9808df8f79eba3e17e1ad970e0bbd46",
+    "tests/native_device_smoke.py": "ddc0b33448f7be9bc2e7f77950d6c556dac341f0a8c0415b2e3da086f1c61676",
+    "tests/native_voice_checks.py": "7fc4ee608da46ebf9d9932398dd2367bf5701c31eba92d7e58cb3099fe8e1a7e",
+    "ui/app/dev/nativeBridge.mjs": "61830e810a60fbeb0bd0bcc07d1d1f85ceddfedd4127cca736efdd05bd00d4d1",
+    "ui/app/src/app/App.tsx": "725c4ef3958ba942277b2772dfe4613aa939e0da232c28a4693f832da3a2cf6a",
+    "ui/app/src/app/Header.tsx": "e90a02b01189ce1c7d9b7633cd053c53c1428ea0bde6c6590a5d3eb6d562c507",
+    "ui/app/src/app/HostContext.tsx": "a8a13053f30bec9e468b440d467004f4fd27ebc0e621cc20f412299f2a59344a",
+    "ui/app/src/app/catalog.ts": "d006e8b75649a6758f28e358871e4bed390bb386328d36e96d7ad02f3eb3a0c5",
+    "ui/app/src/app/eventStore.ts": "5a9e48beb4c4104fb2663938e7c7a2735ac807445a57ff5750542502b9d112f5",
+    "ui/app/src/app/gestureQueue.ts": "4ff360506b4334a3f63635510d53d268005949df7ee9cf5a0e11ea439b796d8f",
+    "ui/app/src/app/store.tsx": "c7c952be362b3bb2ad2c81c6ec09d9a6171078cc0a35f35bd80e80efd0c25f1d",
+    "ui/app/src/app/time.ts": "2eb0cc82c075c0e52ce2994a125d9d4257d93caaace1db7a8f62bd39e7538c8a",
+    "ui/app/src/app/units.ts": "7ee76fe3d552ae7c8de569e44136a2d0066aa65c4fa2fa919dd147863f89b111",
+    "ui/app/src/app/useCoalescedGesture.ts": "426e69492c0683bc29777d87e5df460ca3db498cebc863687c9df6d562092f6d",
+    "ui/app/src/app/useFeeds.ts": "bbd3f79a4cfe1c1bb1bd88a8817c7f50de9d7a73dc0203a3d29687b0d3539515",
+    "ui/app/src/app/usePlayback.ts": "956882cd11f1a90cac5fa7d330fecfb35c9d7d73be7d87f055a33e94ad2f8f43",
+    "ui/app/src/components/Icon.tsx": "9f59a7abb0a83b61c242d21a717efa1da2c4a73150914a1cfb51c4cefe6137ba",
+    "ui/app/src/components/Knob.tsx": "a35dcbf384ffc4dc0c10654ae15ffb071715af6f8a593db0b163006dcdceaa43",
+    "ui/app/src/components/Notice.tsx": "673f0ff2bc2d7945591fcbd1cc5f694e23dbe1fe9e8d19fefc0a3a7a603becfa",
+    "ui/app/src/components/Popover.tsx": "c7b45bc78da86f80a268b1b3dd73840f8829856666e1cd233f05a0496c62ff1a",
+    "ui/app/src/components/SegmentedControl.tsx": "2688be885aa7d6e794409ed35f17ac447af3b4e2cfb86f6516d997231d8fab14",
+    "ui/app/src/components/Toggle.tsx": "73824070c37cc1c7a73f2e5670e75461faf6094e06599990e18202b74f06a931",
+    "ui/app/src/components/map/GlobeView.tsx": "9a8f74e8602c25318ef9bf76836ff04d77e0173d1c998bf65092a9b800b7211b",
+    "ui/app/src/components/map/Map2D.tsx": "20e8ad1ecd39f2e2951055a22224f415d19a34f2caec135951ec25b9f8f50644",
+    "ui/app/src/components/map/geo.ts": "8b23d4dafb5201f62b5907f8304a4b5c5365cc2241c98b95ce066c499a1e969c",
+    "ui/app/src/components/map/landTexture.ts": "3c61870b8ecd489ad010bff6931521e65db633bb397a1232a0205b5347b0b710",
+    "ui/app/src/host/DemoMenu.tsx": "a4f5edd5678ad87f34c72061b04e8f74b11e5cd61c61de1650a5d6e5445204b8",
+    "ui/app/src/host/client.ts": "f88d7945937809f29b89f9f8fae55c410d5aa187f68a989953f7c19dbecc4e28",
+    "ui/app/src/host/contracts.ts": "4ea3466d5c140984303d01209e1ab9821002ae866038e3e33608b50516eae77c",
+    "ui/app/src/host/mockData.ts": "8e908e545224dcc02cf203eb6618be1e761232199182fb8c43fed2f3f13d7764",
+    "ui/app/src/host/mockHost.ts": "332b3c039ba6303b80b9ca3976952a7462fe68f8d00ab0a4dabc0c531ca2642c",
+    "ui/app/src/host/nativeHost.ts": "e81dd616000f1e028a8e85cbfd9acefe1ce717510743da637e0f41f7a98980d0",
+    "ui/app/src/host/provisional.ts": "27da7f580cf231addc2d251527e643d4aff280012b913af6bc38f654be365d20",
+    "ui/app/src/main.demo.tsx": "6deaca5b6bae3c921854030f9b8379166ea49108f8998f95807f0aff0c733697",
+    "ui/app/src/main.tsx": "2c06c4ac449cfcbec16066b6f2ee9ff1e12d7a40aebd59f77f292e758bbef647",
+    "ui/app/src/screens/atlas/AtlasScreen.tsx": "33dd926c5f2d0520ce612532fa39899af80904293e441e64b4b6291400b93f77",
+    "ui/app/src/screens/atlas/LeftColumn.tsx": "8ebddfc79ab56d4543ef176348de07e66cadc705072ec8739d9dad9d32484abb",
+    "ui/app/src/screens/atlas/MapStage.tsx": "8b2ef034957cc9d816842c6a555fa7a4f58f616bf285e1a2fac2e4879238c006",
+    "ui/app/src/screens/atlas/RightColumn.tsx": "04f0aa36a454369a9d02984cf21eebc42dff610ae8f9c407ab2f462f88e01fb0",
+    "ui/app/src/screens/shared/GrainPanel.tsx": "b4c42ba9e00fc6d339fa5146b77b2803ec3aa1f55ec44ecf5967a61a5200f4db",
+    "ui/app/src/screens/shared/mapMarkers.ts": "868da92189d9558913509e086408ee4f1ef2c259c5658252a0d640d5a9e1be59",
+    "ui/app/src/screens/shared/useMaterialView.ts": "4c334c481665e9cecef1076d383b98eec4dafd0af2a8cf792e253b95097df48f",
+    "ui/app/src/screens/studio/RegionEffectsPanel.tsx": "28d6a2db59fb44e77dd6c2a9ff035b17b8a39dda112b4aac61a9c825b35ca491",
+    "ui/app/src/screens/studio/SoundStudioScreen.tsx": "1aeae93910272b0f0eaca4c7d1cea5be7eb2cee375fdd818be42ceb3281cd7df",
+    "ui/app/src/screens/studio/VoiceEditor.tsx": "96221f43462d41d543124e76ed760998e671a8f583a8b9433eab595eae3c6e95",
+    "ui/app/src/screens/studio/VoiceLibrary.tsx": "6b30607c8f4a96e11820f73e3a40446bae5cd7d150e4f1dcfc2fd0bec3776a73",
+    "ui/app/tests/native-voices-browser.mjs": "5e087c19bc9442f67e27cccdb4ef833b4ea8d8a16e386114e69ea610b22f7ee7",
+    "ui/app/tests/native-voices-integration-browser.mjs": "42cd9c15db3c6c81778a17756c844bad8a981be4be4d1f1526f72d6da58b8605",
+    "ui/app/tests/voice-gestures.test.mjs": "a2ccd841a69dd7119446b927a51518b563b2d21ec73e0d4b325dbcdbd9b8d347",
+    "ui/contracts.ts": "855eebdb78044b453603342384cb81180639a7917e96bd3acd14e441e06d3af0"
+  },
+  "build": {
+    "version": {
+      "engine": "animal-atlas-native-audio",
+      "source_sha256": "555d140da49ec003f13ea95c58e89952aab34bbee18718b0ed03945bbf28ce9c"
+    },
+    "configuration": "Release",
+    "artifact": "build/native-voices-qualified-555d140da49e/atlas-audio-host",
+    "artifactSha256": "5c1d1c626120edc1de6669723ed1614f0a177f5b6055ce09266846fd24a77d16",
+    "qualification": "experimental integration; native host voice edit/save lifecycle without device; no edited-voice hardware/listening qualification",
+    "sourceUnchangedDuringFinalSuites": true,
+    "id": "native-voices-555d140da49ec003f13ea95c58e89952aab34bbee18718b0ed03945bbf28ce9c"
+  },
+  "context": {
+    "platform": "macOS 15.6.1 arm64",
+    "configuration": "Release",
+    "fixtureRole": "Disposable synthetic wildlife and voice databases; clocked fake output for browser/audio regressions. Actual JUCE host lifecycle uses prepare-only, no device enabled.",
+    "artifactAvailability": "Exact immutable local binary under ignored build; source commit is not packaged release.",
+    "historicalEvidence": "Prior playback hardware receipts and earlier voice checkpoints retain their historical source identities. Final source-format pass was rebuilt/retested in all configurations; this record binds current files."
+  },
+  "checks": {
+    "specification": {
+      "status": "pass",
+      "note": "Implemented struck-tone controls, physical/normalized units, capacities, ownership, failure and persistence boundaries are specified.",
+      "evidence": [
+        "evidence/native-voices/qualification.md",
+        "evidence/native-voices/native-independent-review.md"
+      ]
+    },
+    "numerical": {
+      "status": "pass",
+      "note": "Independent equations, exact default recall PCM, all supported integer-rate frame boundaries, 72000 normalized settings and native PCM slot-isolation regressions pass.",
+      "evidence": [
+        "evidence/native-voices/final-debug.log",
+        "evidence/native-voices/final-release.log",
+        "evidence/native-voices/final-sanitized.log",
+        "evidence/native-voices/thread-sanitizer.json"
+      ]
+    },
+    "controls": {
+      "status": "pass",
+      "note": "Acknowledged new-note edits, strict gesture recovery, save/revert CAS/restart, UI queue flush/undo/selection/reply/recovery regressions pass.",
+      "evidence": [
+        "evidence/native-voices/final-release.log",
+        "evidence/native-voices/ui-checks.json",
+        "evidence/native-voices/ui-independent-review.md",
+        "evidence/native-voices/host-lifecycle.json"
+      ]
+    },
+    "routing_state": {
+      "status": "pass",
+      "note": "Numeric species slots retained transactionally with preparation, sounding voices capture settings; failure quiescence and separate preset sidecar tested. No regional DSP implied.",
+      "evidence": [
+        "evidence/native-voices/native-independent-review.md",
+        "evidence/native-voices/final-release.log"
+      ]
+    },
+    "headroom": {
+      "status": "pass",
+      "note": "Per-voice attenuation preserves inherited 0.8 aggregate sample bound, about 0.100715 with fixed -18dB native master; not a physical loudness measurement.",
+      "evidence": [
+        "evidence/native-voices/qualification.md",
+        "evidence/native-voices/final-release.log"
+      ]
+    },
+    "runtime_static": {
+      "status": "pass",
+      "note": "Fixed numeric bank/mailbox, worker-only math/storage, bounded callback copies, allocation probes and 20 synthetic ThreadSanitizer groups pass. JUCE/OS internals and timing are outside this proof.",
+      "evidence": [
+        "evidence/native-voices/native-independent-review.md",
+        "evidence/native-voices/thread-sanitizer.json",
+        "evidence/native-voices/final-sanitized.log"
+      ]
+    },
+    "callback_measurement": {
+      "status": "not_run",
+      "note": "No actual callback execution-time/deadline distribution or complete audio/UI CPU qualification.",
+      "evidence": []
+    },
+    "hardware": {
+      "status": "not_run",
+      "note": "Changed artifact was not enabled on physical output. Real JUCE host edit/save/lifecycle was exercised without a device.",
+      "evidence": [
+        "evidence/native-voices/host-lifecycle.json"
+      ]
+    },
+    "listening": {
+      "status": "not_run",
+      "note": "No owner listening approval or physical waveform capture for edited voices.",
+      "evidence": []
+    },
+    "delivery": {
+      "status": "not_run",
+      "note": "Local source/launcher and immutable executable only; no packaged webview, clean-machine installer or VST3/DAW qualification.",
+      "evidence": []
+    },
+    "review": {
+      "status": "pass",
+      "note": "Independent native and UI reviewers reproduced defects and verified corrections; evidence scopes and unrun gates remain explicit.",
+      "evidence": [
+        "evidence/native-voices/native-independent-review.md",
+        "evidence/native-voices/ui-independent-review.md",
+        "evidence/native-voices/qualification.md"
+      ]
+    }
+  },
+  "next_gate": "Owner listening with saved species voices; complete authored-scene recall/export and sustained callback/UI/device qualification. Keep full synthesis and regional-effects scope open."
+}

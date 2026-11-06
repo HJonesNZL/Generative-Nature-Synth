@@ -1,28 +1,28 @@
 {
   "schemaVersion": 1,
   "scope": "Hardware-free ThreadSanitizer qualification of portable voice audio and playback tests",
-  "generatedAtUtc": "2026-11-06 20:39:52 UTC",
+  "generatedAtUtc": "2026-11-06 20:48:21 UTC",
   "workingDirectory": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth",
   "branch": "beta-1",
-  "head": "748ec8fe6ede73317072d442f2910cfda8bff34f",
+  "head": "cda5ac6dc8ad9f766d0e20c9732fad07e60c1020",
   "source_sha256": {
     "native/include/atlas/core.hpp": "86c5e72c5e0723a382032574e395f6fac9492d64349b81b08a1d0da3ac767e49",
     "native/include/atlas/audio.hpp": "00dc17961e58f4459fe8e9f4aa75f4733bbac73b4bc0dc82984f6dea79b2ecc9",
     "native/include/atlas/playback.hpp": "4eea078cdedb4f0bfde4c92754beafade31de14759c5970c0320c757af703386",
-    "native/include/atlas/voices.hpp": "1b15d6b9e1044c94963a8d376ce73629cd8ff3754d4a0d1c1972fdf6328dd66a",
+    "native/include/atlas/voices.hpp": "f4227f8244fc39e47c7841faf1db91cb137129e29945821b00c0b7e46ef94b9a",
     "native/include/atlas/ui_host.hpp": "5e5b47e043224622a87371c614b33867644811f472f06e757468886fb798e1a3",
     "native/src/core.cpp": "9451fa0dd37ccf76d15e856b15d36a28f1d8a1340ec1e273a3f6e149738117eb",
     "native/src/audio.cpp": "80764a46e948685af9ac04e6e0fb8d17d2a20f7db8e8a30478e02e01c64cd0a4",
     "native/src/playback.cpp": "abfccb16b39672ead600810b24b81bfa2ef32448155c85589577701cda4b4202",
-    "native/src/voices.cpp": "b347f9601314388bfc98df4d0b57cff32235512dc4edace7760e21618c1c67b9",
+    "native/src/voices.cpp": "2a16779a4f02feff4bcbaa8b503b5f96c2e989036cbda0e9862dfc20e8450afd",
     "native/src/ui_host.cpp": "638de8b19600f6f300ab3d8a263f1057732035deb4b55ac0c11d756ebe0d344b",
     "native/src/audio_host_main.cpp": "f0ebc162f35d17141d62685ac246eead1476ef539b03df5c16e67dfb41b396e6",
     "native/tests/voice_audio_tests.cpp": "e207de3cf4b788d11af180d0f3390236832bd76f0032615db6856ca649624b86",
     "native/tests/playback_tests.cpp": "e6b044e6e651fb213c4b91711877512e1513b1e2c555668a23deadbb4daad714"
   },
   "executable_sha256": {
-    "/tmp/atlas-native-voices-tsan-tests": "a44ebc8c7ca03e031ea87fcc0f02d9e193408f1f1ca722d61612d748df1dcfcc",
-    "/tmp/atlas-native-playback-tsan-tests": "3713028cb21d34023e7c5dad9180001309e4d403fa12c5bf84b75b58fd7043f8"
+    "/tmp/atlas-native-voices-tsan-tests": "6aefe3a0ecba9742e10bffe80fedfa89775f7e2aa0d7e9254b7a5c331dd7ae8a",
+    "/tmp/atlas-native-playback-tsan-tests": "275c951777f841976f2cb5d3c26843f77981bfbeb6d9671be5e7b08907e7fd19"
   },
   "environment": {
     "compiler": "Apple clang version 17.0.0 (clang-1700.6.4.2)",
@@ -48,20 +48,22 @@
       "compile": {
         "key": "voiceCompile",
         "cmd": "clang++ -O1 -g -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Werror -fsanitize=thread -fno-omit-frame-pointer -Inative/include native/src/core.cpp native/src/audio.cpp native/src/playback.cpp native/src/voices.cpp native/tests/voice_audio_tests.cpp -lsqlite3 -o /tmp/atlas-native-voices-tsan-tests",
-        "chunk_id": "72b5ef",
-        "wall_time_seconds": 3.379935542,
+        "chunk_id": "e7a580",
+        "wall_time_seconds": 3.358503625,
         "exit_code": 0,
         "original_token_count": 0,
-        "output": ""
+        "output": "",
+        "suite": "voice_audio_tests"
       },
       "run": {
         "key": "voiceRun",
         "cmd": "TSAN_OPTIONS=halt_on_error=1 /tmp/atlas-native-voices-tsan-tests",
-        "chunk_id": "336e19",
-        "wall_time_seconds": 2.62201425,
+        "chunk_id": "e9f6a5",
+        "wall_time_seconds": 2.172508,
         "exit_code": 0,
         "original_token_count": 138,
-        "output": "PASS profile controls follow independent pitch envelope and gain equations\nPASS default profiles preserve legacy PCM and deterministic species pitches\nPASS actual store defaults and saved normalized roundtrips preserve legacy PCM\nPASS normalized endpoints adjacent values and random settings compile into bounded audio updates\nPASS edits affect new notes of one species and retain captured ringing voices\nPASS bounded bank and invalid parameter boundaries are explicit\nPASS runtime acknowledges edits without changing device preparation or transport\n"
+        "output": "PASS profile controls follow independent pitch envelope and gain equations\nPASS default profiles preserve legacy PCM and deterministic species pitches\nPASS actual store defaults and saved normalized roundtrips preserve legacy PCM\nPASS normalized endpoints adjacent values and random settings compile into bounded audio updates\nPASS edits affect new notes of one species and retain captured ringing voices\nPASS bounded bank and invalid parameter boundaries are explicit\nPASS runtime acknowledges edits without changing device preparation or transport\n",
+        "suite": "voice_audio_tests"
       },
       "status": "pass",
       "testGroups": 7
@@ -71,20 +73,22 @@
       "compile": {
         "key": "playbackCompile",
         "cmd": "clang++ -O1 -g -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Werror -fsanitize=thread -fno-omit-frame-pointer -Inative/include native/src/core.cpp native/src/audio.cpp native/src/playback.cpp native/tests/playback_tests.cpp -o /tmp/atlas-native-playback-tsan-tests",
-        "chunk_id": "7d604b",
-        "wall_time_seconds": 2.340761708,
+        "chunk_id": "cf1373",
+        "wall_time_seconds": 2.33955025,
         "exit_code": 0,
         "original_token_count": 0,
-        "output": ""
+        "output": "",
+        "suite": "playback_tests"
       },
       "run": {
         "key": "playbackRun",
         "cmd": "TSAN_OPTIONS=halt_on_error=1 /tmp/atlas-native-playback-tsan-tests",
-        "chunk_id": "1bbe50",
-        "wall_time_seconds": 1.080995917,
+        "chunk_id": "c74fd2",
+        "wall_time_seconds": 1.101796584,
         "exit_code": 0,
         "original_token_count": 203,
-        "output": "PASS preparation requires deliberate enable and never autoplays\nPASS callback output equals existing renderer across device partitions\nPASS pause freezes callback position; stop and panic advance generations\nPASS plan replacement retires off callback and invalidates old preparation\nPASS failed preparation retains identity and disables audio\nPASS partial start failure and disable are recoverable and quiescent\nPASS device fault and invalid callback produce silence\nPASS missing callbacks time out safely and can restart\nPASS callback lease expires without worker heartbeat\nPASS unsupported device and complete start failure remain observable\nPASS concurrent callback replacement establishes quiescence\nPASS coherent snapshot reader while callback progresses\nPASS callback has no C++ allocation or deallocation\n"
+        "output": "PASS preparation requires deliberate enable and never autoplays\nPASS callback output equals existing renderer across device partitions\nPASS pause freezes callback position; stop and panic advance generations\nPASS plan replacement retires off callback and invalidates old preparation\nPASS failed preparation retains identity and disables audio\nPASS partial start failure and disable are recoverable and quiescent\nPASS device fault and invalid callback produce silence\nPASS missing callbacks time out safely and can restart\nPASS callback lease expires without worker heartbeat\nPASS unsupported device and complete start failure remain observable\nPASS concurrent callback replacement establishes quiescence\nPASS coherent snapshot reader while callback progresses\nPASS callback has no C++ allocation or deallocation\n",
+        "suite": "playback_tests"
       },
       "status": "pass",
       "testGroups": 13
@@ -97,5 +101,11 @@
     "UI host and JUCE/device adapter are source-reviewed here but are not compiled into these two sanitizer executables.",
     "System SQLite and operating-system libraries are not rebuilt with instrumentation; VoiceStore runs off the callback.",
     "Only disposable test sidecars and synthetic output drivers are used. No owner database, actual audio output, hardware, DAW, physical latency or listening qualification is involved."
-  ]
+  ],
+  "sourceQualification": "Current working-tree content after final clang-format, identified by individual SHA256 hashes; Git HEAD identifies the checkout base, not a promise of a clean working tree.",
+  "refreshReason": "Reran identical ThreadSanitizer commands after formatting voices.hpp/cpp and associated store/fixture test sources; no semantic/API change was reported by the formatter owner.",
+  "previousQualification": {
+    "generatedAtUtc": "2026-11-06 20:39:52 UTC",
+    "head": "748ec8fe6ede73317072d442f2910cfda8bff34f"
+  }
 }

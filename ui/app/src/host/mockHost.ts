@@ -691,7 +691,8 @@ export class MockAtlasHost implements ExtendedHost {
     if (!v.overriddenParameterIds.includes(req.parameterId) && v.inheritsFromId) v.overriddenParameterIds = [...v.overriddenParameterIds, req.parameterId];
     v.dirty = true;
     this.changeRevision += 1n;
-    return { normalizedValue: value, changeRevision: this.changeRevision.toString() };
+    v.changeRevision = this.changeRevision.toString();
+    return { normalizedValue: value, changeRevision: v.changeRevision, dirty: v.dirty };
   }
   private saveVoice(req: AllMethods["saveVoice"]["request"]) {
     const v = this.voices.get(req.voiceId);

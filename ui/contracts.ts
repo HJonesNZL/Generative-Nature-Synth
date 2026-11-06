@@ -103,6 +103,51 @@ export interface RegionView {
   effectAssignments: Array<{ effectId: string; enabled: boolean; send: number }>;
 }
 
+export type VoiceType = "struck" | "pluck" | "air" | "resonance" | "bell";
+export type VoiceScope = "group" | "species" | "individual";
+
+export interface VoiceParameterSpec {
+  id: string;
+  label: string;
+  unit: "st" | "s" | "ratio" | "dB" | "pan" | "%";
+  min: number;
+  max: number;
+  defaultValue: number;
+  curve: "linear" | "log";
+  proposal: boolean; // true only for unimplemented design proposals
+  step?: number; // display-unit quantization, when supplied by the host
+}
+
+/** A saved voice definition (preset-like). Not a sounding synth voice. */
+export interface VoiceDefinition {
+  id: string;
+  name: string;
+  scope: VoiceScope;
+  targetId: string;              // group id, species id or individual id
+  inheritsFromId: string | null; // native species definitions are independent (null)
+  type: VoiceType;
+  values: Record<string, number>; // normalized 0..1 per parameter id
+  overriddenParameterIds: string[]; // which values differ from the parent
+  savedRevision: Int64String;
+  dirty: boolean;
+  changeRevision: Int64String;
+}
+
+export interface VoiceLibraryEntry {
+  groupId: string;
+  groupName: string;
+  groupVoiceId: string | null;   // null = no group default (species must be assigned)
+  species: Array<{
+    speciesId: string;
+    commonName: string;
+    scientificName: string;
+    voiceId: string | null;      // native species definition; null uses fallback
+    individuals: Array<{ individualId: string; label: string; voiceId: string | null }>;
+  }>;
+}
+
+export interface VoiceTypeSpec { id: VoiceType; label: string; proposal: boolean }
+
 export interface HostMethods {
   getCapabilities: { request: Record<string, never>; response: HostCapabilities };
   getSourceHealth: { request: Record<string, never>; response: SourceHealth[] };
@@ -128,9 +173,13 @@ export interface HostMethods {
   getAudioState: { request: Record<string, never>; response: AudioState };
   setAudioEnabled: { request: { enabled: boolean }; response: AudioState };
   setMasterGain: { request: { gainDb: number; gesture: "begin" | "change" | "end" }; response: { gainDb: number; changeRevision: Int64String } };
+  getVoiceLibrary: { request: Record<string, never>; response: { entries: VoiceLibraryEntry[]; parameters: VoiceParameterSpec[]; types?: VoiceTypeSpec[]; maxDefinitions?: number; editingBehavior?: "new_notes" } };
+  getVoice: { request: { voiceId: string }; response: VoiceDefinition };
+  saveVoice: { request: { voiceId: string; expectedRevision: Int64String }; response: VoiceDefinition };
+  revertVoice: { request: { voiceId: string }; response: VoiceDefinition };
   setVoiceParameter: {
     request: { voiceId: string; parameterId: string; normalizedValue: number; gesture: "begin" | "change" | "end" };
-    response: { normalizedValue: number; changeRevision: Int64String };
+    response: { normalizedValue: number; changeRevision: Int64String; dirty: boolean };
   };
   listRegions: { request: Record<string, never>; response: RegionView[] };
 }

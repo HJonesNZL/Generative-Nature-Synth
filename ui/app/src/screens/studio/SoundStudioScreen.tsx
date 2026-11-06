@@ -17,18 +17,14 @@ export function SoundStudioScreen() {
   const view = useMaterialView();
   const catalog = useCatalog();
   const state = useAppState();
-  const [libQ, refreshLib] = useHostQuery("getVoiceLibrary", {}, []);
+  const dispatch = useDispatch();
+  const catalogSpecies = catalog.data?.species.map((species) => species.id).sort().join("\n") ?? "";
+  const [libQ] = useHostQuery("getVoiceLibrary", {}, [state.mode, state.transport.preparationId, state.replay.session?.id, state.history.frozen?.id, catalogSpecies]);
   const lib = valueOf(libQ);
-  const [dirty, setDirty] = useState<Set<string>>(new Set());
-  const onDirtyChange = useCallback((voiceId: string, isDirty: boolean) => {
-    setDirty((d) => {
-      if (d.has(voiceId) === isDirty) return d;
-      const next = new Set(d);
-      if (isDirty) next.add(voiceId); else next.delete(voiceId);
-      return next;
-    });
-  }, []);
-  useEffect(() => { refreshLib(); }, [dirty.size, refreshLib]);
+  const dirty = useMemo(() => new Set(Object.entries(state.voiceDrafts).filter(([, voice]) => voice.dirty).map(([id]) => id)), [state.voiceDrafts]);
+  const onDirtyChange = useCallback((voiceId: string, isDirty: boolean, changeRevision: string, authoritative = false) => {
+    dispatch({ type: "voiceDirty", voiceId, dirty: isDirty, changeRevision, authoritative });
+  }, [dispatch]);
   const voiceName = useMemo(() => {
     const id = state.selectedVoiceId;
     if (!id || !lib) return null;
@@ -47,7 +43,7 @@ export function SoundStudioScreen() {
     <main className="screen studio" id="main" aria-label="Sound Studio">
       <ContextStrip actions={<StudioActions selectedEventId={state.selectedEventId} />} />
       <VoiceLibrary entries={lib?.entries ?? []} dirtyIds={dirty} status={libStatus} />
-      <VoiceEditor key={state.selectedVoiceId ?? "no-voice"} parameters={lib?.parameters ?? []} catalog={catalog} onDirtyChange={onDirtyChange} />
+      <VoiceEditor key={state.selectedVoiceId ?? "no-voice"} parameters={lib?.parameters ?? []} types={lib?.types} editingBehavior={lib?.editingBehavior} catalog={catalog} onDirtyChange={onDirtyChange} />
       <RegionEffectsPanel voiceName={voiceName} />
       <GrainPanel view={view} catalog={catalog} />
     </main>
@@ -58,7 +54,7 @@ function ContextStrip({ actions }: { actions: ReactNode }) {
   const { caps } = useHost();
   const state = useAppState();
   const catalog = useCatalog();
-  const text = caps?.implementation === "native" && !caps.audioAvailable ? "Data preview — sound design is not available from this host." : state.mode === "live"
+  const text = caps?.implementation === "native" && !caps.audioAvailable ? "Data preview — audio output is not available from this host." : state.mode === "live"
     ? "Editing while listening live — changes apply to new arrivals."
     : state.mode === "replay"
       ? state.replay.session ? `Editing for saved piece “${state.replay.session.name}”${state.replay.session.origin === "imported_bundle" ? " (imported)" : ""}.` : "Replay — no piece open."

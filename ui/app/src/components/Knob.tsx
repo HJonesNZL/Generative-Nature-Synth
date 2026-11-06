@@ -22,6 +22,7 @@ export interface KnobProps {
   disabled?: boolean;
   size?: number;
   overridden?: boolean;          // value differs from inherited parent
+  normalizedStep?: number;     // optional host-described discrete step
   pending?: boolean;             // awaiting host acknowledgement
 }
 
@@ -29,7 +30,7 @@ const clamp = (n: number) => Math.min(1, Math.max(0, n));
 const START = -135;
 const SWEEP = 270;
 
-export function Knob({ label, value, defaultValue, format, parse, onGesture, disabled, size = 52, overridden, pending }: KnobProps) {
+export function Knob({ label, value, defaultValue, format, parse, onGesture, disabled, size = 52, overridden, pending, normalizedStep }: KnobProps) {
   const [local, setLocal] = useState<number | null>(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
@@ -40,6 +41,13 @@ export function Knob({ label, value, defaultValue, format, parse, onGesture, dis
   const shown = local ?? value;
 
   useEffect(() => { if (editing) inputRef.current?.select(); }, [editing]);
+
+  useEffect(() => {
+    if (!disabled || !drag.current) return;
+    onGesture("end", drag.current.current);
+    drag.current = null;
+    setLocal(null);
+  }, [disabled, onGesture]);
 
   const commit = (next: number) => {
     const v = clamp(next);
@@ -56,7 +64,7 @@ export function Knob({ label, value, defaultValue, format, parse, onGesture, dis
     onGesture("begin", value);
   };
   const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
-    if (!drag.current) return;
+    if (disabled || !drag.current) return;
     const scale = e.shiftKey ? 0.1 : 1;
     const next = clamp(drag.current.startValue + ((drag.current.startY - e.clientY) / 200) * scale);
     if (next === drag.current.current) return;
@@ -73,7 +81,7 @@ export function Knob({ label, value, defaultValue, format, parse, onGesture, dis
 
   const onKeyDown = (e: KeyboardEvent) => {
     if (disabled) return;
-    const fine = e.shiftKey ? 0.001 : 0.01;
+    const fine = normalizedStep ?? (e.shiftKey ? 0.001 : 0.01);
     let next: number | null = null;
     if (e.key === "ArrowUp" || e.key === "ArrowRight") next = value + fine;
     else if (e.key === "ArrowDown" || e.key === "ArrowLeft") next = value - fine;

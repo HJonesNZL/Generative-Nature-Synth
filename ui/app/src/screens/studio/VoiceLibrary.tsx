@@ -3,10 +3,12 @@
  * Each row says where its sound comes from, so inheritance is never implicit.
  */
 import type { VoiceLibraryEntry } from "../../host/provisional";
+import { useHost } from "../../app/HostContext";
 import { useAppState, useDispatch } from "../../app/store";
 import { Notice } from "../../components/Notice";
 
 export function VoiceLibrary({ entries, dirtyIds, status }: { entries: VoiceLibraryEntry[]; dirtyIds: Set<string>; status: "loading" | "ready" | "unsupported" | "error" }) {
+  const native = useHost().client.implementation === "native";
   const { selectedVoiceId, highlightSpeciesId } = useAppState();
   const dispatch = useDispatch();
   const select = (voiceId: string | null, speciesId?: string) => {
@@ -24,7 +26,7 @@ export function VoiceLibrary({ entries, dirtyIds, status }: { entries: VoiceLibr
             <span className="voice-group__name">{group.groupName}</span>
             {group.groupVoiceId ? (
               <button type="button" className={`pill pill--quiet${selectedVoiceId === group.groupVoiceId ? " is-current" : ""}`} aria-pressed={selectedVoiceId === group.groupVoiceId} onClick={() => select(group.groupVoiceId)}>
-                Group default{dirtyIds.has(group.groupVoiceId) ? " •" : ""}
+                {native ? "Fallback voice" : "Group default"}{dirtyIds.has(group.groupVoiceId) ? " •" : ""}
               </button>
             ) : <span className="small muted">no default</span>}
           </div>
@@ -37,7 +39,7 @@ export function VoiceLibrary({ entries, dirtyIds, status }: { entries: VoiceLibr
                   <button type="button" className={`voice-row${on ? " is-on" : ""}`} aria-pressed={!!on} onClick={() => select(effective, s.speciesId)}>
                     <span className="voice-row__name">{s.commonName}</span>
                     <span className={`voice-row__source mono${effective ? "" : " is-missing"}`}>
-                      {s.voiceId ? `species voice${dirtyIds.has(s.voiceId) ? " • unsaved" : ""}` : effective ? "inherits group" : "no voice"}
+                      {s.voiceId ? `species voice${dirtyIds.has(s.voiceId) ? " • unsaved" : ""}` : effective ? native ? "uses fallback" : "inherits group" : "no voice"}
                     </span>
                   </button>
                   {s.individuals.length ? (
@@ -63,7 +65,7 @@ export function VoiceLibrary({ entries, dirtyIds, status }: { entries: VoiceLibr
         </section>
       ))}
       <button type="button" className="btn btn--outline btn--sm" disabled title="Assigning and creating voices needs host methods not in contract v1 (see INTEGRATION_GAPS.md)">+ Assign animal voice</button>
-      <p className="small muted">Individual overrides exist only where the source identifies a tagged animal. A microphone detection never identifies an individual.</p>
+      <p className="small muted">{native ? "Species voices are independent. The fallback is used only for animals without a species definition." : "Individual overrides exist only where the source identifies a tagged animal. A microphone detection never identifies an individual."}</p>
     </aside>
   );
 }

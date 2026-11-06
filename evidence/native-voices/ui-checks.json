@@ -1,0 +1,131 @@
+{
+  "date": "2026-11-07",
+  "scope": "Native voice UI; no physical audio device, owner wildlife database or owner voice library used",
+  "commands": [
+    {
+      "command": "cd ui/app && node node_modules/typescript/bin/tsc -p tsconfig.json --noEmit",
+      "result": "passed"
+    },
+    {
+      "command": "cd ui/app && node --experimental-transform-types --test tests/*.test.mjs",
+      "result": "21 tests passed; 0 failures; loopback bridge needs sandbox escalation"
+    },
+    {
+      "command": "node ui/app/tests/native-voices-browser.mjs",
+      "host": "browser-injected deferred native-shaped fixture; no native process",
+      "result": "passed; zero page errors",
+      "checks": [
+        "native metadata and four supported parameters",
+        "AD/T60 graph and independent ownership",
+        "Save/Revert/Undo drain outstanding gestures",
+        "canonical transpose quantization updates UI",
+        "late species A response cannot mutate B",
+        "rejected change restores acknowledged value",
+        "explicit Revert recovers failed gesture without dummy edit",
+        "rapid gesture Undo/Redo records accepted canonical starts and ends",
+        "rejected gestures do not enter Undo history",
+        "late old-voice acknowledgements update shared dirty badges",
+        "independent parameter response reordering cannot rewind global dirty metadata",
+        "explicit Revert resets host-local revision fences after worker restart",
+        "stale full getVoice snapshots cannot overwrite newer local acknowledgements",
+        "dirty badges survive Atlas/Studio navigation",
+        "completion of material preparation refreshes newly registered species"
+      ]
+    },
+    {
+      "command": "node ui/app/tests/native-voices-integration-browser.mjs",
+      "host": "actual C++ atlas-studio-fixture-host/UiHost/VoiceStore; temporary synthetic event library and temporary SQLite voice sidecar",
+      "result": "passed; zero page errors or rejected native replies",
+      "checks": [
+        "actual native library and four controls",
+        "canonical acknowledgements and Save",
+        "owned host process restart recalls saved transpose and discards unsaved attack",
+        "native Revert",
+        "independent fallback remains unchanged"
+      ]
+    },
+    {
+      "command": "ATLAS_READINESS_CASE=voice / voice-gesture node ui/app/tests/integration-readiness-browser.mjs",
+      "host": "existing synthetic injected fixture, updated shared DTO fields",
+      "result": "both cases passed; zero page errors and zero native bridge requests",
+      "checks": [
+        "delayed load/save/revert/type responses cannot replace newly selected voice",
+        "deferred old-voice begin receives ordered change/end after switching voices"
+      ]
+    },
+    {
+      "command": "cd ui/app && node node_modules/vite/bin/vite.js build && node node_modules/vite/bin/vite.js build --mode demo && node tests/build-checks.mjs",
+      "result": "passed; separate native/demo sources, no development HTTP in production, CSP, licenses, lazy globe"
+    }
+  ],
+  "notRun": [
+    "physical audio device",
+    "subjective owner listening",
+    "Ableton/DAW/plugin operation"
+  ],
+  "implementationNotes": [
+    "ATLAS_VOICE_LIBRARY defaults to canonical .state/voices.sqlite3 in launcher; tests explicitly isolate sidecars",
+    "no localStorage preset copy",
+    "global master remains fixed at -18 dB",
+    "shared app-state dirty metadata bounded to 513 definitions and retained across screens",
+    "editing/Save/Undo require explicit acknowledged Revert after a failed gesture; UI warns worker restart may discard drafts",
+    "full read guards use local activity and request order, not monotonic counters across worker processes"
+  ],
+  "sourceHashesAtFrozenFinalRecord": {
+    "Start Atlas UI.command": "8fefce4caf011e5d056148ddd07821b4de956c907acb82c6376f3c7a4346afdd",
+    "ui/app/dev/nativeBridge.mjs": "61830e810a60fbeb0bd0bcc07d1d1f85ceddfedd4127cca736efdd05bd00d4d1",
+    "ui/app/src/app/App.tsx": "725c4ef3958ba942277b2772dfe4613aa939e0da232c28a4693f832da3a2cf6a",
+    "ui/app/src/app/Header.tsx": "e90a02b01189ce1c7d9b7633cd053c53c1428ea0bde6c6590a5d3eb6d562c507",
+    "ui/app/src/app/HostContext.tsx": "a8a13053f30bec9e468b440d467004f4fd27ebc0e621cc20f412299f2a59344a",
+    "ui/app/src/app/catalog.ts": "d006e8b75649a6758f28e358871e4bed390bb386328d36e96d7ad02f3eb3a0c5",
+    "ui/app/src/app/eventStore.ts": "5a9e48beb4c4104fb2663938e7c7a2735ac807445a57ff5750542502b9d112f5",
+    "ui/app/src/app/gestureQueue.ts": "4ff360506b4334a3f63635510d53d268005949df7ee9cf5a0e11ea439b796d8f",
+    "ui/app/src/app/store.tsx": "c7c952be362b3bb2ad2c81c6ec09d9a6171078cc0a35f35bd80e80efd0c25f1d",
+    "ui/app/src/app/time.ts": "2eb0cc82c075c0e52ce2994a125d9d4257d93caaace1db7a8f62bd39e7538c8a",
+    "ui/app/src/app/units.ts": "7ee76fe3d552ae7c8de569e44136a2d0066aa65c4fa2fa919dd147863f89b111",
+    "ui/app/src/app/useCoalescedGesture.ts": "426e69492c0683bc29777d87e5df460ca3db498cebc863687c9df6d562092f6d",
+    "ui/app/src/app/useFeeds.ts": "bbd3f79a4cfe1c1bb1bd88a8817c7f50de9d7a73dc0203a3d29687b0d3539515",
+    "ui/app/src/app/usePlayback.ts": "956882cd11f1a90cac5fa7d330fecfb35c9d7d73be7d87f055a33e94ad2f8f43",
+    "ui/app/src/components/Icon.tsx": "9f59a7abb0a83b61c242d21a717efa1da2c4a73150914a1cfb51c4cefe6137ba",
+    "ui/app/src/components/Knob.tsx": "a35dcbf384ffc4dc0c10654ae15ffb071715af6f8a593db0b163006dcdceaa43",
+    "ui/app/src/components/Notice.tsx": "673f0ff2bc2d7945591fcbd1cc5f694e23dbe1fe9e8d19fefc0a3a7a603becfa",
+    "ui/app/src/components/Popover.tsx": "c7b45bc78da86f80a268b1b3dd73840f8829856666e1cd233f05a0496c62ff1a",
+    "ui/app/src/components/SegmentedControl.tsx": "2688be885aa7d6e794409ed35f17ac447af3b4e2cfb86f6516d997231d8fab14",
+    "ui/app/src/components/Toggle.tsx": "73824070c37cc1c7a73f2e5670e75461faf6094e06599990e18202b74f06a931",
+    "ui/app/src/components/map/GlobeView.tsx": "9a8f74e8602c25318ef9bf76836ff04d77e0173d1c998bf65092a9b800b7211b",
+    "ui/app/src/components/map/Map2D.tsx": "20e8ad1ecd39f2e2951055a22224f415d19a34f2caec135951ec25b9f8f50644",
+    "ui/app/src/components/map/geo.ts": "8b23d4dafb5201f62b5907f8304a4b5c5365cc2241c98b95ce066c499a1e969c",
+    "ui/app/src/components/map/landTexture.ts": "3c61870b8ecd489ad010bff6931521e65db633bb397a1232a0205b5347b0b710",
+    "ui/app/src/host/DemoMenu.tsx": "a4f5edd5678ad87f34c72061b04e8f74b11e5cd61c61de1650a5d6e5445204b8",
+    "ui/app/src/host/client.ts": "f88d7945937809f29b89f9f8fae55c410d5aa187f68a989953f7c19dbecc4e28",
+    "ui/app/src/host/contracts.ts": "4ea3466d5c140984303d01209e1ab9821002ae866038e3e33608b50516eae77c",
+    "ui/app/src/host/mockData.ts": "8e908e545224dcc02cf203eb6618be1e761232199182fb8c43fed2f3f13d7764",
+    "ui/app/src/host/mockHost.ts": "332b3c039ba6303b80b9ca3976952a7462fe68f8d00ab0a4dabc0c531ca2642c",
+    "ui/app/src/host/nativeHost.ts": "e81dd616000f1e028a8e85cbfd9acefe1ce717510743da637e0f41f7a98980d0",
+    "ui/app/src/host/provisional.ts": "27da7f580cf231addc2d251527e643d4aff280012b913af6bc38f654be365d20",
+    "ui/app/src/main.demo.tsx": "6deaca5b6bae3c921854030f9b8379166ea49108f8998f95807f0aff0c733697",
+    "ui/app/src/main.tsx": "2c06c4ac449cfcbec16066b6f2ee9ff1e12d7a40aebd59f77f292e758bbef647",
+    "ui/app/src/screens/atlas/AtlasScreen.tsx": "33dd926c5f2d0520ce612532fa39899af80904293e441e64b4b6291400b93f77",
+    "ui/app/src/screens/atlas/LeftColumn.tsx": "8ebddfc79ab56d4543ef176348de07e66cadc705072ec8739d9dad9d32484abb",
+    "ui/app/src/screens/atlas/MapStage.tsx": "8b2ef034957cc9d816842c6a555fa7a4f58f616bf285e1a2fac2e4879238c006",
+    "ui/app/src/screens/atlas/RightColumn.tsx": "04f0aa36a454369a9d02984cf21eebc42dff610ae8f9c407ab2f462f88e01fb0",
+    "ui/app/src/screens/shared/GrainPanel.tsx": "b4c42ba9e00fc6d339fa5146b77b2803ec3aa1f55ec44ecf5967a61a5200f4db",
+    "ui/app/src/screens/shared/mapMarkers.ts": "868da92189d9558913509e086408ee4f1ef2c259c5658252a0d640d5a9e1be59",
+    "ui/app/src/screens/shared/useMaterialView.ts": "4c334c481665e9cecef1076d383b98eec4dafd0af2a8cf792e253b95097df48f",
+    "ui/app/src/screens/studio/RegionEffectsPanel.tsx": "28d6a2db59fb44e77dd6c2a9ff035b17b8a39dda112b4aac61a9c825b35ca491",
+    "ui/app/src/screens/studio/SoundStudioScreen.tsx": "1aeae93910272b0f0eaca4c7d1cea5be7eb2cee375fdd818be42ceb3281cd7df",
+    "ui/app/src/screens/studio/VoiceEditor.tsx": "96221f43462d41d543124e76ed760998e671a8f583a8b9433eab595eae3c6e95",
+    "ui/app/src/screens/studio/VoiceLibrary.tsx": "6b30607c8f4a96e11820f73e3a40446bae5cd7d150e4f1dcfc2fd0bec3776a73",
+    "ui/app/tests/integration-readiness-browser.mjs": "bcb6bf71877353c06f212b592be41bab1670c2487e34644a07a0d164e4001ba4",
+    "ui/app/tests/native-voices-browser.mjs": "5e087c19bc9442f67e27cccdb4ef833b4ea8d8a16e386114e69ea610b22f7ee7",
+    "ui/app/tests/native-voices-integration-browser.mjs": "42cd9c15db3c6c81778a17756c844bad8a981be4be4d1f1526f72d6da58b8605",
+    "ui/app/tests/voice-gestures.test.mjs": "a2ccd841a69dd7119446b927a51518b563b2d21ec73e0d4b325dbcdbd9b8d347",
+    "ui/contracts.ts": "855eebdb78044b453603342384cb81180639a7917e96bd3acd14e441e06d3af0"
+  },
+  "nativeFixtureArtifact": {
+    "path": "build/native/atlas-studio-fixture-host",
+    "sha256": "2fc8255a1dc3eb46628deda2f5548f0090f62d0ac02fb71ebed1e016676aa6bd",
+    "physicalOutput": false
+  },
+  "nodeVersion": "v24.22.1"
+}

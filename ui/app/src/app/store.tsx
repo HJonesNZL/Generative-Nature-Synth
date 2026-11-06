@@ -50,6 +50,7 @@ export interface AppState {
   render: { job: RenderJob | null; pending: boolean };
   selectedRegionId: string;
   selectedVoiceId: string | null;
+  voiceDrafts: Record<string, { dirty: boolean; changeRevision: string }>;
   mapView: "globe" | "map2d";
   reducedMotion: boolean;
   history: { draft: HistoryQueryDraft; result: HistoryResult | null; frozen: HistoryFreezeResult | null };
@@ -70,6 +71,7 @@ export type Action =
   | { type: "renderJob"; job: RenderJob }
   | { type: "selectRegion"; regionId: string }
   | { type: "selectVoice"; voiceId: string | null }
+  | { type: "voiceDirty"; voiceId: string; dirty: boolean; changeRevision: string; authoritative: boolean }
   | { type: "mapView"; view: "globe" | "map2d" }
   | { type: "reducedMotion"; value: boolean }
   | { type: "historyDraft"; draft: Partial<HistoryQueryDraft> }
@@ -101,6 +103,7 @@ export function initialState(demo = false): AppState {
     render: { job: null, pending: false },
     selectedRegionId: demo ? "region-central-forest" : "",
     selectedVoiceId: demo ? "voice-tui" : null,
+    voiceDrafts: {},
     mapView: "globe",
     reducedMotion: prefersReducedMotion(),
     history: {
@@ -135,6 +138,13 @@ function reducer(state: AppState, action: Action): AppState {
     case "selectEvent": return { ...state, selectedEventId: action.eventId };
     case "selectRegion": return { ...state, selectedRegionId: action.regionId };
     case "selectVoice": return { ...state, selectedVoiceId: action.voiceId };
+    case "voiceDirty": {
+      const previous = state.voiceDrafts[action.voiceId];
+      if (previous && (!action.authoritative && BigInt(action.changeRevision) < BigInt(previous.changeRevision) ||
+          previous.dirty === action.dirty && previous.changeRevision === action.changeRevision)) return state;
+      if (!previous && Object.keys(state.voiceDrafts).length >= 513) return state;
+      return { ...state, voiceDrafts: { ...state.voiceDrafts, [action.voiceId]: { dirty: action.dirty, changeRevision: action.changeRevision } } };
+    }
     case "mapView": return { ...state, mapView: action.view };
     case "reducedMotion": return { ...state, reducedMotion: action.value };
     case "historyDraft": return { ...state, history: { ...state.history, draft: { ...state.history.draft, ...action.draft }, result: null, frozen: null } };

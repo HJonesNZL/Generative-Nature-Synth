@@ -7,7 +7,7 @@
  * them today. The UI checks `supportedMethods` before calling any of them, so
  * a native host that omits a method gets a disabled control, not a crash.
  */
-import type { EventView, HostMethods, Int64String, RegionView, SessionView, TimeBasis, UtcTimestamp } from "./contracts";
+import type { EventView, HostMethods, Int64String, RegionView, SessionView, TimeBasis, UtcTimestamp, VoiceType, VoiceDefinition } from "./contracts";
 
 export type MusicalOutcome =
   | { kind: "sounded"; voiceId: string; noteName: string; velocity: number; pan: number; regionSends: Array<{ regionId: string; effectId: string; send: number }> }
@@ -50,46 +50,7 @@ export interface CollectionState {
 
 export type { AudioState } from "./contracts";
 
-export type VoiceType = "pluck" | "air" | "resonance" | "bell";
-export type VoiceScope = "group" | "species" | "individual";
-
-export interface VoiceParameterSpec {
-  id: string;
-  label: string;
-  unit: "st" | "s" | "ratio" | "dB" | "pan" | "%";
-  min: number;
-  max: number;
-  defaultValue: number;
-  curve: "linear" | "log";
-  proposal: true; // all DSP ranges are proposals pending engineering review
-}
-
-/** A saved voice definition (preset-like). Not a sounding synth voice. */
-export interface VoiceDefinition {
-  id: string;
-  name: string;
-  scope: VoiceScope;
-  targetId: string;              // group id, species id or individual id
-  inheritsFromId: string | null; // parent definition when scope is species/individual
-  type: VoiceType;
-  values: Record<string, number>; // normalized 0..1 per parameter id
-  overriddenParameterIds: string[]; // which values differ from the parent
-  savedRevision: Int64String;
-  dirty: boolean;
-}
-
-export interface VoiceLibraryEntry {
-  groupId: string;
-  groupName: string;
-  groupVoiceId: string | null;   // null = no group default (species must be assigned)
-  species: Array<{
-    speciesId: string;
-    commonName: string;
-    scientificName: string;
-    voiceId: string | null;      // species-level definition, null when inheriting group
-    individuals: Array<{ individualId: string; label: string; voiceId: string | null }>;
-  }>;
-}
+export type { VoiceType, VoiceScope, VoiceParameterSpec, VoiceDefinition, VoiceLibraryEntry, VoiceTypeSpec } from "./contracts";
 
 export interface MappingRow {
   id: string;
@@ -135,11 +96,7 @@ export interface ProvisionalMethods {
   getCollectionState: { request: Record<string, never>; response: CollectionState };
   setCollection: { request: { action: "start" | "stop"; durationMinutes?: number; listening?: boolean }; response: CollectionState };
   freezeHistorySelection: { request: { selectionId: string; name: string; preserveRequestedInterval: boolean }; response: HistoryFreezeResult };
-  getVoiceLibrary: { request: Record<string, never>; response: { entries: VoiceLibraryEntry[]; parameters: VoiceParameterSpec[] } };
-  getVoice: { request: { voiceId: string }; response: VoiceDefinition };
   setVoiceType: { request: { voiceId: string; type: VoiceType }; response: VoiceDefinition };
-  saveVoice: { request: { voiceId: string; expectedRevision: Int64String }; response: VoiceDefinition };
-  revertVoice: { request: { voiceId: string }; response: VoiceDefinition };
   getMappings: { request: { voiceId: string }; response: MappingRow[] };
   setMappingEnabled: { request: { voiceId: string; mappingId: string; enabled: boolean }; response: MappingRow };
   auditionEvent: { request: { eventId: string; voiceId: string }; response: { accepted: boolean } };

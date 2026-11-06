@@ -43,6 +43,7 @@ async function open(scenario) {
             values: { tone: .5 },
             overriddenParameterIds: [],
             savedRevision: '1',
+            changeRevision: '0',
             dirty: true
         });
         const event = i => ({
@@ -218,7 +219,7 @@ async function open(scenario) {
                     if (state.deferGesture && args.voiceId === 'A' && args.gesture === 'begin') {
                         await deferred('begin-A');
                     }
-                    result = { normalizedValue: args.normalizedValue, changeRevision: '2' };
+                    result = { normalizedValue: args.normalizedValue, changeRevision: '2', dirty: true };
                 }
                 else if (method === 'startRender') {
                     await deferred('startRender');
@@ -350,7 +351,7 @@ try {
                 readiness.deferMutation = method;
             }, method);
             if (method === 'setVoiceType') {
-                await page.getByRole('radio', { name: 'Air', exact: true }).click();
+                await page.getByRole('radio', { name: 'Air (proposed)', exact: true }).click();
             }
             else {
                 await page.getByRole('button', { name: method === 'saveVoice' ? 'Save voice' : 'Revert', exact: true }).click();

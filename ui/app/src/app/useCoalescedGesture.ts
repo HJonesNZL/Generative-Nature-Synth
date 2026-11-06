@@ -1,56 +1,19 @@
-/**
- * Coalesces a begin → change* → end gesture into at most one in-flight host
- * request. While a request is pending, only the latest "change" value is kept.
- * "begin" and "end" are always delivered, in order, so the host can group the
- * edit into one undo step / automation gesture.
- *
- * Returns the last acknowledged change revision so callers can ignore their
- * own echoes in host notifications (feedback-loop guard).
- */
-import { useCallback, useRef, useState } from "react";
-import type { HostResult } from "../host/client";
-import type { Gesture } from "../components/Knob";
+/** React ownership for a serial parameter queue. Sender closures stay current;
+ * the queue identity remains stable. Call flush before Save/Revert/Undo. */
+import { useEffect, useRef, useState } from "react";
+import { GestureQueue, type GestureSender } from "./gestureQueue";
 
-type Sender = (value: number, gesture: Gesture) => Promise<HostResult<{ changeRevision?: string }>>;
-
-export function useCoalescedGesture(send: Sender) {
-  const queue = useRef<Array<{ value: number; gesture: Gesture }>>([]);
-  const inFlight = useRef(false);
-  const lastRevision = useRef<bigint>(0n);
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const pump = useCallback(async () => {
-    if (inFlight.current) return;
-    const next = queue.current.shift();
-    if (!next) { setPending(false); return; }
-    inFlight.current = true;
-    setPending(true);
-    const result = await send(next.value, next.gesture);
-    inFlight.current = false;
-    if (result.ok) {
-      setError(null);
-      const rev = result.value.changeRevision;
-      if (rev && /^\d+$/.test(rev) && BigInt(rev) > lastRevision.current) lastRevision.current = BigInt(rev);
-    } else {
-      setError(result.error.message);
-      queue.current = queue.current.filter((q) => q.gesture === "end"); // keep the closing event so the host ends the gesture
-    }
-    void pump();
-  }, [send]);
-
-  const push = useCallback((gesture: Gesture, value: number) => {
-    if (gesture === "change") {
-      const last = queue.current[queue.current.length - 1];
-      if (last && last.gesture === "change") last.value = value; // coalesce
-      else queue.current.push({ value, gesture });
-    } else {
-      queue.current.push({ value, gesture });
-    }
-    void pump();
-  }, [pump]);
-
-  const isOwnEcho = useCallback((changeRevision: string) => /^\d+$/.test(changeRevision) && BigInt(changeRevision) <= lastRevision.current, []);
-
-  return { push, pending, error, isOwnEcho };
+export function useCoalescedGesture(send: GestureSender) {
+  const sendRef = useRef(send);
+  sendRef.current = send;
+  const alive = useRef(true);
+  const [status, setStatus] = useState<{ pending: boolean; error: string | null }>({ pending: false, error: null });
+  const [queue] = useState(() => new GestureQueue((value, gesture) => sendRef.current(value, gesture), (pending, error) => {
+    if (alive.current) setStatus({ pending, error });
+  }));
+  useEffect(() => {
+    alive.current = true;
+    return () => { alive.current = false; void queue.flush(); };
+  }, [queue]);
+  return { resetError: queue.resetError.bind(queue), push: queue.push.bind(queue), flush: queue.flush.bind(queue), pending: status.pending, error: status.error, isOwnEcho: queue.isOwnEcho.bind(queue) };
 }

@@ -17,7 +17,7 @@ const origin = `http://127.0.0.1:${port}`;
 const result = { startedAtUtc: new Date().toISOString(), binary, binarySha256: await hash(binary), library, origin, commands: [], snapshots: [], audioStates: [], pageErrors: [], externalRequests: [], scope: 'Actual browser -> devbridge -> atlas-audio-host -> default physical output, synthetic saved piece, fixed native -18dB attenuation. No device/volume change, loops or subjective listening assertion.' };
 let browser, page, timer, killTimer, playingAt, quiet = false;
 const childPids = new Set();
-const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--port', String(port)], { cwd: app, env: { ...process.env, ATLAS_NATIVE_BINARY: binary, ATLAS_LIBRARY: library }, stdio: ['pipe', 'pipe', 'pipe'] });
+const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--port', String(port)], { cwd: app, env: { ...process.env, ATLAS_NATIVE_BINARY: binary, ATLAS_LIBRARY: library, ATLAS_VOICE_LIBRARY: resolve(dirname(library), 'voices.sqlite3') }, stdio: ['pipe', 'pipe', 'pipe'] });
 server.stdout.resume(); server.stderr.resume();
 const closed = new Promise(resolveExit => server.once('exit', (code, signal) => resolveExit({ code, signal })));
 const discoverChildren = () => {
