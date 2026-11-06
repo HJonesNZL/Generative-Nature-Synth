@@ -1,0 +1,68 @@
+--- a/animal_atlas/sources.py
++++ b/animal_atlas/sources.py
+@@ -114,6 +114,8 @@
+             if box:
+                 variables.update(sw={"lat": box[0], "lon": box[1]}, ne={"lat": box[2], "lon": box[3]})
+             result = self.transport.json("https://app.birdweather.com/graphql", {"query": BIRD_QUERY, "variables": variables})
++            if stop.is_set():
++                raise FetchError("cancelled")
+             if result.get("errors"):
+                 raise FetchError("graphql_error")
+             try:
+@@ -164,11 +166,17 @@
+         self.transport = transport or Transport()
+ 
+     def fetch(self, previous, stop):
++        if stop.is_set():
++            raise FetchError("cancelled")
+         bootstrap = self.transport.json("https://map.sustainableoceansociety.co.nz/public/bootstrap.json")
+         config_url = bootstrap.get("configUrl")
+         if config_url != "https://map.sustainableoceansociety.co.nz/public/configs/config.json":
+             raise FetchError("public_config_changed_review_required")
++        if stop.is_set():
++            raise FetchError("cancelled")
+         cfg = self.transport.json(config_url)
++        if stop.is_set():
++            raise FetchError("cancelled")
+         # Fail closed if public configuration points at a new installation.
+         if cfg.get("server") != "ermap-server.pamdas.org" or cfg.get("public_name") != "nzsharkman":
+             raise FetchError("public_server_changed_review_required")
+@@ -179,6 +187,8 @@
+         if stop.is_set():
+             raise FetchError("cancelled")
+         response = self.transport.json(url)
++        if stop.is_set():
++            raise FetchError("cancelled")
+         try:
+             subjects = response["data"]["data"]
+             if not isinstance(subjects, list) or len(subjects) > 1000:
+--- a/animal_atlas/collector.py
++++ b/animal_atlas/collector.py
+@@ -57,6 +57,8 @@
+         previous = self.store.source(sid)
+         try:
+             batch = self.adapters[sid].fetch(previous, self.stop)
++            if self.stop.is_set():
++                raise FetchError("cancelled")
+             result = self.store.ingest(sid, batch.records, batch.complete, batch.metadata)
+             return result, 0
+         except FetchError as exc:
+--- a/animal_atlas/store.py
++++ b/animal_atlas/store.py
+@@ -131,13 +131,14 @@
+                            (payload["event_id"], source_id, indexed_observed, cur.lastrowid))
+                 corrected += bool(previous)
+                 inserted += not bool(previous)
++            usable_complete = bool(complete) and not (metadata or {}).get("invalid_records", 0)
+             status.update(metadata or {})
+             status.update(last_success_at_utc=now, last_error=None, consecutive_errors=0,
+                           last_poll_complete=bool(complete),
+-                          baseline_complete=status.get("baseline_complete", False) or bool(complete),
++                          baseline_complete=status.get("baseline_complete", False) or usable_complete,
+                           last_poll_inserted=inserted, last_poll_corrected=corrected,
+                           last_poll_duplicates=duplicates)
+-            if complete:
++            if usable_complete:
+                 status["last_complete_at_utc"] = now
+             db.execute("INSERT OR REPLACE INTO sources VALUES (?,?)", (source_id, canonical(status)))
+             db.execute("INSERT INTO polls(source_id,completed_at,complete,details) VALUES (?,?,?,?)",

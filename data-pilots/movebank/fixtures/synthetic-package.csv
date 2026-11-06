@@ -1,0 +1,3 @@
+package-doi,study-name,license-uri,citation,coordinate-units,download-access,privacy-review
+synthetic:not-a-real-doi,"SYNTHETIC Tūī, study",synthetic:no-license-approved,"Synthetic author, ""fixture only""
+Not a published dataset",decimal-degrees-WGS84,public-download,public-exact-reviewed

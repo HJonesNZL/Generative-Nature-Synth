@@ -1,0 +1,3 @@
+event-id,timestamp,location-long,location-lat,individual-local-identifier,tag-local-identifier,sensor-type,study-name,visible,manually-marked-outlier,individual-taxon-canonical-name
+synthetic-001,2020-02-29 12:34:56.007,174.000001,-41.000002,"Tūī, ""one""",tag-synthetic-1,gps,"SYNTHETIC Tūī, study",TRUE,FALSE,
+synthetic-002,2020-02-29 12:35:56.008,174.000002,-41.000003,"Tūī, ""one""",tag-synthetic-1,gps,"SYNTHETIC Tūī, study",TRUE,FALSE,

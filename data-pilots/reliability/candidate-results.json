@@ -1,0 +1,23 @@
+{
+  "role": "proposed reference-only patch; not applied to production or proof of native reliability",
+  "source_sha256": {
+    "animal_atlas/sources.py": "0b42347edb0baabcd5e822c49226d26cc589043ffc65d83ff3f4cf8232034fe0",
+    "animal_atlas/collector.py": "1ed6e54ffd2c3840bf2fd5f591b6131afae0c1c949c6c5bb445e870b0b6f6398",
+    "animal_atlas/store.py": "a61491422b0af0c14dd213ff840314dd799e267ebc909e5694d06726c0eabe15"
+  },
+  "patch_sha256": "63a14bee6b25ee2013d5e7f30f4a29ac7f534d357d54e5cb3343102dcff9818d",
+  "before": {
+    "exit_code": 1,
+    "stdout": "",
+    "stderr": "test_cancelled_batch_cannot_enter_store (__main__.Acceptance) ... FAIL\ntest_cancelled_final_bird_response_is_not_publishable (__main__.Acceptance) ... FAIL\ntest_invalid_initial_page_keeps_baseline_until_valid_exhaustion (__main__.Acceptance) ... FAIL\ntest_pre_cancelled_shark_sends_zero_requests (__main__.Acceptance) ... FAIL\n\n======================================================================\nFAIL: test_cancelled_batch_cannot_enter_store (__main__.Acceptance)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/data-pilots/reliability/acceptance_checks.py\", line 66, in test_cancelled_batch_cannot_enter_store\n    self.assertEqual(self.store.high_water(), 0)\nAssertionError: 1 != 0\n\n======================================================================\nFAIL: test_cancelled_final_bird_response_is_not_publishable (__main__.Acceptance)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/data-pilots/reliability/acceptance_checks.py\", line 54, in test_cancelled_final_bird_response_is_not_publishable\n    BirdWeather(self.config['birdweather'], transport).fetch({}, stop)\nAssertionError: FetchError not raised\n\n======================================================================\nFAIL: test_invalid_initial_page_keeps_baseline_until_valid_exhaustion (__main__.Acceptance)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/data-pilots/reliability/acceptance_checks.py\", line 75, in test_invalid_initial_page_keeps_baseline_until_valid_exhaustion\n    self.assertFalse(status['baseline_complete'])\nAssertionError: True is not false\n\n======================================================================\nFAIL: test_pre_cancelled_shark_sends_zero_requests (__main__.Acceptance)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/data-pilots/reliability/acceptance_checks.py\", line 48, in test_pre_cancelled_shark_sends_zero_requests\n    self.assertEqual(transport.calls, 0)\nAssertionError: 2 != 0\n\n----------------------------------------------------------------------\nRan 4 tests in 0.039s\n\nFAILED (failures=4)\n"
+  },
+  "after": {
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": "test_cancelled_batch_cannot_enter_store (__main__.Acceptance) ... ok\ntest_cancelled_final_bird_response_is_not_publishable (__main__.Acceptance) ... ok\ntest_invalid_initial_page_keeps_baseline_until_valid_exhaustion (__main__.Acceptance) ... ok\ntest_pre_cancelled_shark_sends_zero_requests (__main__.Acceptance) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.045s\n\nOK\n"
+  },
+  "expected_original_failures": 4,
+  "expected_candidate_passes": 4,
+  "network": "forbidden",
+  "owner_access": false
+}

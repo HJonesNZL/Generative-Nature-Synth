@@ -1,0 +1,6 @@
+{
+  "bird": {"id":"one","timestamp":"2026-01-01T11:59:00Z","coords":{"lat":-41,"lon":174},"species":{"id":"synthetic-bird","commonName":"Synthetic bird","scientificName":"Syntheticus fixture"},"station":{"id":"synthetic-station"},"confidence":0.8},
+  "bootstrap":{"configUrl":"https://map.sustainableoceansociety.co.nz/public/configs/config.json"},
+  "shark_config":{"server":"ermap-server.pamdas.org","public_name":"nzsharkman","subject_group":"synthetic-group","subjects":{"synthetic-shark":{"animal_name":"Synthetic shark"}}},
+  "shark":{"id":"synthetic-shark","last_position":{"geometry":{"type":"Point","coordinates":[179,-45]},"properties":{"DateTime":"2026-01-01T11:50:00Z"}}}
+}
