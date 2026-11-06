@@ -27,3 +27,7 @@ The existing `Start Atlas UI.command` can launch the early preview with pinned d
 ## Not run / qualification boundaries
 
 No owner library or collector was read or changed. No live-provider requests, source-health/freshness qualification, owner listening, DAW session, native webview, screen-reader session, GPU/long-duration performance or actual owner-launcher run was performed. Existing browser evidence described in GLOBE_PREVIEW.md was inspected as a claim, not independently rerun in this review. The confirmed receiver/fix defect remains for parent-owned repair and regression verification.
+
+## Resolution checkpoint (added after the independent review)
+
+Commit `0779145` fixes the native receiver catalogue and map aggregation/selection boundaries. The retained `receiver-regression-before.log` reproduces the failure; final native UI tests include the GPS-with-station-metadata case and pass in all three native configurations. The prior `globe-checks.json` records 13 UI unit tests and nine browser groups after that repair. The original review above remains historical evidence, not a statement that the catalogue defect is still open. A later frontend audit found the same distinction was still wrong in Inspector wording; that separate repair and its browser evidence belong to the frontend readiness checkpoint.

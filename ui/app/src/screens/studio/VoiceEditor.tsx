@@ -36,19 +36,27 @@ export function VoiceEditor({ parameters, catalog, onDirtyChange }: { parameters
   const audio = valueOf(audioQ);
   const gestureStart = useRef<Record<string, number>>({});
 
-  const load = useCallback(async () => {
-    if (!voiceId) { setVoice(null); return; }
-    const r = await client.call("getVoice", { voiceId });
-    if (!r.ok) { setError(r.error.message); setVoice(null); return; }
-    setVoice(r.value);
+  const requests = useRef<AbortController | null>(null);
+  useEffect(() => {
+    const controller = new AbortController();
+    requests.current = controller;
+    setVoice(null);
+    setParent(null);
     setError(null);
-    if (r.value.inheritsFromId) {
-      const p = await client.call("getVoice", { voiceId: r.value.inheritsFromId });
-      setParent(p.ok ? p.value : null);
-    } else setParent(null);
+    setUndo([]);
+    setRedo([]);
+    if (voiceId) void (async () => {
+      const r = await client.call("getVoice", { voiceId }, { signal: controller.signal });
+      if (controller.signal.aborted) return;
+      if (!r.ok) { setError(r.error.message); return; }
+      setVoice(r.value);
+      if (r.value.inheritsFromId) {
+        const parentReply = await client.call("getVoice", { voiceId: r.value.inheritsFromId }, { signal: controller.signal });
+        if (!controller.signal.aborted) setParent(parentReply.ok ? parentReply.value : null);
+      }
+    })();
+    return () => controller.abort();
   }, [client, voiceId]);
-
-  useEffect(() => { setUndo([]); setRedo([]); void load(); }, [load]);
   useEffect(() => { if (voice) onDirtyChange(voice.id, voice.dirty); }, [voice, onDirtyChange]);
 
   const sendParam = useCallback((parameterId: string) => (value: number, gesture: Gesture) => client.call("setVoiceParameter", { voiceId: voiceId!, parameterId, normalizedValue: value, gesture }), [client, voiceId]);
@@ -75,29 +83,37 @@ export function VoiceEditor({ parameters, catalog, onDirtyChange }: { parameters
 
   const save = async () => {
     if (!voice) return;
+    const signal = requests.current?.signal;
     setBusy("save");
-    const r = await client.call("saveVoice", { voiceId: voice.id, expectedRevision: voice.savedRevision });
+    const r = await client.call("saveVoice", { voiceId: voice.id, expectedRevision: voice.savedRevision }, { signal });
+    if (signal?.aborted) return;
     setBusy(null);
     if (!r.ok) { setError(r.error.code === "stale_generation" ? "Saved elsewhere since you opened it. Revert to load the saved version, then reapply." : r.error.message); return; }
     setVoice(r.value); setUndo([]); setRedo([]); setError(null);
   };
   const revert = async () => {
     if (!voice) return;
+    const signal = requests.current?.signal;
     setBusy("revert");
-    const r = await client.call("revertVoice", { voiceId: voice.id });
+    const r = await client.call("revertVoice", { voiceId: voice.id }, { signal });
+    if (signal?.aborted) return;
     setBusy(null);
     if (!r.ok) { setError(r.error.message); return; }
     setVoice(r.value); setUndo([]); setRedo([]); setError(null);
   };
   const setType = async (type: VoiceType) => {
     if (!voice) return;
-    const r = await client.call("setVoiceType", { voiceId: voice.id, type });
+    const signal = requests.current?.signal;
+    const r = await client.call("setVoiceType", { voiceId: voice.id, type }, { signal });
+    if (signal?.aborted) return;
     if (r.ok) setVoice(r.value); else setError(r.error.message);
   };
   const toggleMapping = async (row: MappingRow, enabled: boolean) => {
     if (!voice) return;
-    const r = await client.call("setMappingEnabled", { voiceId: voice.id, mappingId: row.id, enabled });
-    if (!r.ok) setError(r.error.message);
+    const signal = requests.current?.signal;
+    const r = await client.call("setMappingEnabled", { voiceId: voice.id, mappingId: row.id, enabled }, { signal });
+    if (signal?.aborted) return;
+    if (!r.ok) { setError(r.error.message); return; }
     refreshMappings();
     setVoice((v) => (v ? { ...v, dirty: true } : v));
   };

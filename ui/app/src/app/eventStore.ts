@@ -34,7 +34,7 @@ export class EventStore {
   private pendingOutcomeIds = new Set<string>();
   private outcomeTimer: number | null = null;
   cursor: { storeId: string; nextSequence: string } = { storeId: "", nextSequence: "0" };
-  feed: { status: "idle" | "loading" | "running" | "retrying" | "unsupported"; error: string | null; lastBatchWallMs: number | null; totalRecords: number | null; displayOmitted: number } = { status: "idle", error: null, lastBatchWallMs: null, totalRecords: null, displayOmitted: 0 };
+  feed: { status: "idle" | "loading" | "running" | "retrying" | "error" | "unsupported"; error: string | null; lastBatchWallMs: number | null; totalRecords: number | null; displayOmitted: number } = { status: "idle", error: null, lastBatchWallMs: null, totalRecords: null, displayOmitted: 0 };
 
   constructor(private readonly label: string) {}
 

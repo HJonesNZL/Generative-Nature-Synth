@@ -89,6 +89,7 @@ export function MapStage({ view, catalog }: { view: MaterialView; catalog: Catal
       </div>
       {contextLost ? <Notice tone="caution" title="3D graphics stopped" action={<button type="button" className="btn btn--quiet btn--sm" onClick={() => setContextLost(false)}>Try globe again</button>}>Showing the 2D map. Event data remains available.</Notice> : null}
       {!glOk ? <Notice tone="info" title="2D map">WebGL is not available here, so the globe is replaced by a flat map.</Notice> : null}
+      {view.feed.status === "error" ? <Notice tone="problem" title="Material could not be loaded" action={<button type="button" className="btn btn--quiet btn--sm" onClick={() => dispatch({ type: "retryMaterial" })}>Retry material</button>}>{view.feed.error} Loaded records may be incomplete; retry reloads this material.</Notice> : null}
       {view.feed.status === "retrying" ? <Notice tone="caution" title="Arrivals paused" live>{view.feed.error ?? "Waiting for the host"} — retrying. Nothing is lost; the feed resumes from its cursor.</Notice> : null}
 
       <div className="map-stage__canvas">

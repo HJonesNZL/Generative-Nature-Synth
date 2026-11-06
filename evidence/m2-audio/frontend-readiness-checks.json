@@ -1,0 +1,136 @@
+{
+  "recordedUtc": "2026-11-06T18:17:22.747462+00:00",
+  "baseCheckpoint": "0779145",
+  "workingTreeHead": "99a0d036cd3b825f41ec2e2d8b0c98da89d3a891",
+  "scope": "Focused H2 frontend display/retry/request/job repairs; no native/backend or capability additions",
+  "environment": {
+    "node": "24.22.1",
+    "typescript": "5.9.3",
+    "vite": "8.3.5",
+    "browser": "156.0.8078.80",
+    "playwright": "1.62.1",
+    "platform": "macOS arm64"
+  },
+  "checks": {
+    "strictTypeScript": "pass",
+    "unitTests": {
+      "passed": 13,
+      "failed": 0
+    },
+    "nativeProductionBuild": "pass",
+    "demoProductionBuild": "pass",
+    "artifactSeparationCspLicencesLazyGlobe": "pass",
+    "existingNativeDemoBrowser": {
+      "groupsPassed": 9,
+      "fixture": "build/frontend-readiness-fixture.sqlite3",
+      "logSha256": "e07bbbee1a272818f352e958b3e3891a701b28ad8fe3802082461ef86083b5fb",
+      "sourceImpactNote": "Broad browser run preceded only identity-safe gesture completion refinement and equivalent boolean cleanup; the affected gesture/cross-job branches are independently component-tested and final builds passed."
+    },
+    "componentBrowser": {
+      "checks": [
+        "GPS with station metadata retains measured-fix semantics; acoustic receiver retains receiver semantics",
+        "material-error: explicit retry restarts pages without duplicate records and survives screen navigation",
+        "later-material-error: explicit retry restarts pages without duplicate records and survives screen navigation",
+        "Deferred A load/save/revert/type cannot replace B; parameter gestures target B",
+        "Accepted deferred A gesture receives ordered change/end after selecting B, without targeting B",
+        "Late first-job cancel acknowledgement cannot replace a newer queued job",
+        "render-poll: pending/queued gating, cancellation capability/error, polling without push and job retention",
+        "render-cancel: pending/queued gating, cancellation capability/error, polling without push and job retention"
+      ],
+      "pageErrors": [],
+      "nativeBridgeRequests": []
+    },
+    "staticBrowser": {
+      "browser": "156.0.8078.80",
+      "errors": [],
+      "failures": [],
+      "checks": [
+        "Production without native injection fails closed",
+        "Static demo globe and Studio load with CSP and local assets",
+        "All loaded scope, species search/reset, world fallback and keyboard location list",
+        "No external HTTP or development bridge requests"
+      ]
+    },
+    "oldCheckpointExpectedFailures": [
+      {
+        "case": "semantics",
+        "returncode": 1,
+        "confirmedBehavioralFailure": true
+      },
+      {
+        "case": "material-error",
+        "returncode": 1,
+        "confirmedBehavioralFailure": true
+      },
+      {
+        "case": "voice",
+        "returncode": 1,
+        "confirmedBehavioralFailure": true
+      },
+      {
+        "case": "render-poll",
+        "returncode": 1,
+        "confirmedBehavioralFailure": true
+      }
+    ],
+    "whitespaceDiffCheck": "pass"
+  },
+  "fixes": [
+    "Receiver/fix Inspector and Incoming wording follows locationKind, preserving optional station metadata separately",
+    "Saved-material errors stop truthfully and offer same-material bounded reload through Retry material",
+    "Keyed/abort-guarded voice reads/save/revert/type isolate late replies; accepted gestures complete on original voice identity",
+    "Pending/queued render gating, cancellation capability/errors, existing getRenderJob polling and shared job retention",
+    "Distinct render-start acceptance vs matching-current-job updates; terminal jobs reject stale active progress"
+  ],
+  "nativeMethodsUnchanged": [
+    "getCapabilities",
+    "getChanges",
+    "getCatalog",
+    "listSessions",
+    "prepareReplay",
+    "getMaterialEvents"
+  ],
+  "nativeAudioAvailable": false,
+  "ownerLibraryAccessed": false,
+  "ownerCollectorModified": false,
+  "providerRequestsMade": false,
+  "audioGeneratedOrPlayed": false,
+  "serversStopped": [
+    5173,
+    5174,
+    5175,
+    4173,
+    4174
+  ],
+  "unrun": [
+    "Native webview and production injection qualification",
+    "Actual native voice/render/transport APIs remain unavailable",
+    "DAW/device/callback and owner listening acceptance",
+    "Full accessibility/screen-reader and long-duration GPU qualification"
+  ],
+  "remaining": [
+    "Transport generation/preparation/reconnect contract and seek error handling",
+    "Mutation failure reconciliation, region/master/audio feedback and library empty/error states",
+    "History query/freeze stale response guards",
+    "Render epoch/job-ID reuse and conflicting terminal result ordering; polling only while Studio mounted",
+    "Durable UI/voice undo/render-job recovery across app restart"
+  ],
+  "sourceSha256": {
+    "ui/app/src/app/eventStore.ts": "5a9e48beb4c4104fb2663938e7c7a2735ac807445a57ff5750542502b9d112f5",
+    "ui/app/src/app/store.tsx": "1480be6c4494341eab12f7dc5403cd69a30a2388932a6e4b6e4ca30f2ae9e0a4",
+    "ui/app/src/app/useFeeds.ts": "bbd3f79a4cfe1c1bb1bd88a8817c7f50de9d7a73dc0203a3d29687b0d3539515",
+    "ui/app/src/screens/atlas/MapStage.tsx": "8b2ef034957cc9d816842c6a555fa7a4f58f616bf285e1a2fac2e4879238c006",
+    "ui/app/src/screens/atlas/RightColumn.tsx": "04f0aa36a454369a9d02984cf21eebc42dff610ae8f9c407ab2f462f88e01fb0",
+    "ui/app/src/screens/shared/GrainPanel.tsx": "b4c42ba9e00fc6d339fa5146b77b2803ec3aa1f55ec44ecf5967a61a5200f4db",
+    "ui/app/src/screens/studio/SoundStudioScreen.tsx": "0a421fed9e7b6158b321ee0953caab53bddd606e5a4bf90a197e1bed3e1529db",
+    "ui/app/src/screens/studio/VoiceEditor.tsx": "c1a4fec68c362e1facd6dfdab40027fde04380744c9561f90d4db141dbf867e9",
+    "ui/app/tests/integration-readiness-browser.mjs": "60f2fc1bb8dc8a00144b858316bfed2f7735a8ee2a2e0f97e6a1870f897965cd",
+    "docs/milestones/FRONTEND_INTEGRATION_READINESS.md": "4dbd63f9aa01acaa13726e2eb6f98cf2d176a009859228358433e877b967024f"
+  },
+  "bundleSha256": {
+    "ui/app/dist/assets/GlobeView-DEFNz5jP.js": "d3877737029324382b56c855c8a31e975c5fb20f0a1fe01eb4cb1505c73f70ac",
+    "ui/app/dist/assets/index-DhOo90FE.js": "d9183b46f14a844507017175d3324f82d0b039319f84eb65e2438d62ce349f15",
+    "ui/app/dist-demo/assets/GlobeView-DCR-D9FG.js": "bb93d2f89982d1c61c43f1e7846c3a423efff11449ff52a39f4fbaacec6bcb43",
+    "ui/app/dist-demo/assets/demo-DD5Gqray.js": "319499eede5afc544720accd42e6e6cf7b2f99e6c2ff455ca4327a4da3938064"
+  }
+}

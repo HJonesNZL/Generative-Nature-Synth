@@ -165,7 +165,7 @@ function EventPanel({ view, catalog }: { view: MaterialView; catalog: Catalog })
                 <li key={e.id}>
                   <button type="button" className={`incoming__row${e.id === state.selectedEventId ? " is-on" : ""}`} aria-pressed={e.id === state.selectedEventId} onClick={() => dispatch({ type: "selectEvent", eventId: e.id })}>
                     <span className="mono">{formatTime(view.timeOf(e))}</span>
-                    <span>{catalog.speciesName(e.speciesId)} · {e.stationId ? catalog.stationName(e.stationId) : e.individualId ?? "fix"}</span>
+                    <span>{catalog.speciesName(e.speciesId)} · {["station_detection", "receiver_detection"].includes(e.locationKind) && e.stationId ? catalog.stationName(e.stationId) : e.individualId ?? "fix"}</span>
                     <span className="muted">{outcomeText(view.store.outcome(e.id)).short}</span>
                   </button>
                 </li>
@@ -194,12 +194,12 @@ function Inspector({ event, outcome, catalog }: { event: EventView; outcome: Mus
   const voiceId = outcome && "voiceId" in outcome ? outcome.voiceId : lib?.entries.flatMap((g) => g.species.map((s) => ({ s, g }))).find(({ s }) => s.speciesId === event.speciesId)?.s.voiceId ?? null;
   const o = outcomeText(outcome);
   const identity = event.individualId ? `Individual ${event.individualId}${event.deploymentId ? ` (deployment ${event.deploymentId})` : ""}` : "Species only — individual unknown";
-  const location = !event.position ? "No usable position" : event.stationId ? `${catalog.stationName(event.stationId)} station position (not the bird’s position)` : `Estimated position ±${event.position.uncertaintyMetres != null ? `${(event.position.uncertaintyMetres / 1000).toFixed(1)} km` : "unknown"}`;
+  const location = !event.position ? "No usable position" : ["station_detection", "receiver_detection"].includes(event.locationKind) && event.stationId ? `${catalog.stationName(event.stationId)} receiver position (not the animal’s position)` : `Estimated position ±${event.position.uncertaintyMetres != null ? `${(event.position.uncertaintyMetres / 1000).toFixed(1)} km` : "unknown"}`;
   return (
     <div className="inspector">
       <div className="row-between">
         <span className="h2 accent">{catalog.speciesName(event.speciesId).toUpperCase()}</span>
-        <span className="label">{event.stationId ? catalog.stationName(event.stationId).toUpperCase() : event.individualId}</span>
+        <span className="label">{["station_detection", "receiver_detection"].includes(event.locationKind) && event.stationId ? catalog.stationName(event.stationId).toUpperCase() : event.individualId}</span>
       </div>
       <span className="small italic muted">{catalog.scientificName(event.speciesId)}</span>
       {event.provenance !== "live_source" ? <span className="badge badge--demo">{event.provenance === "demo" ? "Demo record" : "Imported record"}</span> : null}

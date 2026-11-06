@@ -6,7 +6,7 @@
  */
 import { createContext, useContext, useMemo, useReducer, type Dispatch, type ReactNode } from "react";
 import type { CoverageInterval, SessionView, TimeBasis } from "../host/contracts";
-import type { HistoryFreezeResult } from "../host/provisional";
+import type { HistoryFreezeResult, RenderJob } from "../host/provisional";
 import { DISPLAY_TIMEZONE } from "./time";
 
 export type Screen = "atlas" | "studio";
@@ -44,6 +44,8 @@ export interface AppState {
   timeBasis: TimeBasis;
   highlightSpeciesId: string | null;
   selectedEventId: string | null;
+  materialReload: number;
+  render: { job: RenderJob | null; pending: boolean };
   selectedRegionId: string;
   selectedVoiceId: string | null;
   mapView: "globe" | "map2d";
@@ -60,6 +62,10 @@ export type Action =
   | { type: "timeBasis"; basis: TimeBasis }
   | { type: "highlightSpecies"; speciesId: string | null }
   | { type: "selectEvent"; eventId: string | null }
+  | { type: "retryMaterial" }
+  | { type: "renderPending"; pending: boolean }
+  | { type: "renderStarted"; job: RenderJob }
+  | { type: "renderJob"; job: RenderJob }
   | { type: "selectRegion"; regionId: string }
   | { type: "selectVoice"; voiceId: string | null }
   | { type: "mapView"; view: "globe" | "map2d" }
@@ -88,6 +94,8 @@ export function initialState(demo = false): AppState {
     timeBasis: "arrival",
     highlightSpeciesId: demo ? "tui" : null,
     selectedEventId: null,
+    materialReload: 0,
+    render: { job: null, pending: false },
     selectedRegionId: demo ? "region-central-forest" : "",
     selectedVoiceId: demo ? "voice-tui" : null,
     mapView: "globe",
@@ -111,6 +119,16 @@ function reducer(state: AppState, action: Action): AppState {
       return state.mode === action.mode ? state : { ...state, mode: action.mode, selectedEventId: null, timeBasis: action.mode === "live" ? "arrival" : "observed" };
     case "timeBasis": return { ...state, timeBasis: action.basis };
     case "highlightSpecies": return { ...state, highlightSpeciesId: action.speciesId };
+    case "renderPending": return { ...state, render: { ...state.render, pending: action.pending } };
+    case "renderStarted": return { ...state, render: { ...state.render, job: action.job } };
+    case "renderJob": {
+      const previous = state.render.job;
+      if (!previous || previous.jobId !== action.job.jobId) return state;
+      const terminal = ["complete", "failed", "cancelled"].includes(previous.state);
+      if (terminal && ["queued", "rendering"].includes(action.job.state)) return state;
+      return { ...state, render: { ...state.render, job: action.job } };
+    }
+    case "retryMaterial": return { ...state, materialReload: state.materialReload + 1 };
     case "selectEvent": return { ...state, selectedEventId: action.eventId };
     case "selectRegion": return { ...state, selectedRegionId: action.regionId };
     case "selectVoice": return { ...state, selectedVoiceId: action.voiceId };

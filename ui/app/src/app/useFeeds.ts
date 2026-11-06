@@ -69,7 +69,7 @@ export function useLiveFeed() {
 
 export function useMaterialFeed() {
   const { client, caps, connection, materialStore } = useHost();
-  const { mode, replay, history } = useAppState();
+  const { mode, replay, history, materialReload } = useAppState();
   const material = mode === "replay" && replay.session
     ? { kind: "session" as const, sessionId: replay.session.id }
     : mode === "history" && history.result?.selectionId
@@ -88,17 +88,17 @@ export function useMaterialFeed() {
       for (let page = 0; page < EVENT_DISPLAY_CAPACITY / 500; page += 1) {
         const result = await client.call("getMaterialEvents", { material, offset, limit: 500 }, { signal: controller.signal });
         if (controller.signal.aborted) return;
-        if (!result.ok) { materialStore.setFeed({ status: "retrying", error: result.error.message }); return; }
+        if (!result.ok) { materialStore.setFeed({ status: "error", error: result.error.message }); return; }
         materialStore.upsert(result.value.events.map((event) => ({ event, pulse: false })));
         materialStore.requestOutcomes(client, result.value.events.map((e) => e.id));
         offset += result.value.events.length;
         materialStore.setFeed({ totalRecords: result.value.total, displayOmitted: Math.max(0, result.value.total - materialStore.size) });
         if (offset >= result.value.total) break;
-        if (!result.value.events.length) { materialStore.setFeed({ status: "retrying", error: "Incomplete material page; reopen the piece." }); return; }
+        if (!result.value.events.length) { materialStore.setFeed({ status: "error", error: "Incomplete material page. Retry loading this material." }); return; }
       }
       materialStore.setFeed({ status: "running", error: null });
     })();
     return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, caps, connection]);
+  }, [key, caps, connection, materialReload]);
 }
