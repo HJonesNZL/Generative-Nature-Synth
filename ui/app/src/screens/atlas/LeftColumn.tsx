@@ -3,7 +3,7 @@
  * Live → species (highlight) + source health; Replay → saved pieces;
  * History → query → coverage preview → freeze.
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { SourceHealth } from "../../host/contracts";
 import { useHost, useHostQuery, valueOf } from "../../app/HostContext";
 import { useAppState, useDispatch } from "../../app/store";
@@ -118,26 +118,6 @@ function SessionsPanel() {
   const dispatch = useDispatch();
   const [q, refreshSessions] = useHostQuery("listSessions", { limit: 100 }, []);
   const sessions = valueOf(q) ?? [];
-  const [error, setError] = useState<string | null>(null);
-  const [preparing, setPreparing] = useState(false);
-
-  const pending = useRef<AbortController | null>(null);
-  useEffect(() => () => pending.current?.abort(), []);
-
-  const prepare = async (sessionId: string, speed: string, basis: "observed" | "arrival") => {
-    pending.current?.abort();
-    const controller = new AbortController();
-    pending.current = controller;
-    dispatch({ type: "transport", transport: { preparationId: null, durationUs: null } });
-    setPreparing(true);
-    setError(null);
-    const r = await client.call("prepareReplay", { sessionId, basis, speedNumerator: speed, speedDenominator: "1" }, { signal: controller.signal });
-    if (controller.signal.aborted) return;
-    setPreparing(false);
-    if (!r.ok) { setError(r.error.message); dispatch({ type: "transport", transport: { preparationId: null, durationUs: null } }); return; }
-    if (r.value.session) dispatch({ type: "replaySession", session: r.value.session });
-    dispatch({ type: "transport", transport: { preparationId: r.value.preparationId, generation: r.value.generation, durationUs: r.value.durationUs, positionUs: "0", state: "stopped" } });
-  };
 
   return (
     <section className="stack-sm">
@@ -152,7 +132,7 @@ function SessionsPanel() {
           const on = state.replay.session?.id === s.id;
           return (
             <li key={s.id}>
-              <button type="button" className={`session-row${on ? " is-on" : ""}`} aria-pressed={on} onClick={() => { dispatch({ type: "replaySession", session: s }); void prepare(s.id, state.replay.speedNumerator, state.timeBasis); }}>
+              <button type="button" className={`session-row${on ? " is-on" : ""}`} aria-pressed={on} onClick={() => { dispatch({ type: "replaySession", session: s });  }}>
                 <span className="session-row__name">{s.name}</span>
                 <span className="session-row__meta">
                   {s.origin === "imported_bundle" ? <span className="badge">Imported</span> : null}
@@ -167,12 +147,12 @@ function SessionsPanel() {
       </ul>
       {state.replay.session?.captureTruncated ? <Notice tone="caution" title="Capture truncated">The piece hit a storage limit; later records were not kept.</Notice> : null}
       {state.replay.session?.state === "interrupted" ? <Notice tone="caution" title="Interrupted capture">Collection stopped unexpectedly. The piece ends at the last durable record; no coverage is assumed after it.</Notice> : null}
-      {error ? <Notice tone="problem" title="Could not open piece">{error}</Notice> : null}
+      {state.transport.error ? <Notice tone="problem" title="Playback unavailable">{state.transport.error}</Notice> : null}
       {state.replay.session ? (
         <div className="stack-sm">
-          <SegmentedControl<string> label="Replay speed" size="sm" value={state.replay.speedNumerator} onChange={(v) => { dispatch({ type: "replaySpeed", speedNumerator: v }); void prepare(state.replay.session!.id, v, state.timeBasis); }} options={[{ value: "1", label: "1×" }, { value: "10", label: "10×" }, { value: "60", label: "60×" }, { value: "240", label: "240×" }]} />
-          <SegmentedControl<"observed" | "arrival"> label="Timeline basis" size="sm" value={state.timeBasis} onChange={(b) => { dispatch({ type: "timeBasis", basis: b }); void prepare(state.replay.session!.id, state.replay.speedNumerator, b); }} options={[{ value: "observed", label: "Observed" }, { value: "arrival", label: "Arrival" }]} />
-          <span className="small muted">{preparing ? "Preparing playback…" : state.transport.preparationId ? (client.supports("setTransport") ? "Ready — use Play in the header." : "Timeline verified. Audio playback is not implemented yet.") : ""}</span>
+          <SegmentedControl<string> label="Replay speed" size="sm" value={state.replay.speedNumerator} onChange={(v) => { dispatch({ type: "replaySpeed", speedNumerator: v }); }} options={[{ value: "1", label: "1×" }, { value: "10", label: "10×" }, { value: "60", label: "60×" }, { value: "240", label: "240×" }]} />
+          <SegmentedControl<"observed" | "arrival"> label="Timeline basis" size="sm" value={state.timeBasis} onChange={(b) => { dispatch({ type: "timeBasis", basis: b }); }} options={[{ value: "observed", label: "Observed" }, { value: "arrival", label: "Arrival" }]} />
+          <span className="small muted">{state.transport.preparing ? "Preparing playback…" : state.transport.preparationId ? (client.supports("setTransport") ? "Ready — use Play in the header." : "Timeline verified. Audio playback is not implemented yet.") : ""}</span>
         </div>
       ) : null}
     </section>

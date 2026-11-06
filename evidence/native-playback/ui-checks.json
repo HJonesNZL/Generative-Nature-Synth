@@ -1,0 +1,154 @@
+{
+  "recordedAtUtc": "2026-11-06T18:47:17.170536+00:00",
+  "scope": "Frontend/devbridge saved-piece native playback. All native UI audio tests use a silent test driver; no physical device or owner listening acceptance.",
+  "workspace": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth",
+  "sourceSha256": {
+    "ui/contracts.ts": "34ce2f402fc5af8e90dc83839100538639624bca8cbf6dd00843f52355ff0a47",
+    "ui/app/src/app/usePlayback.ts": "956882cd11f1a90cac5fa7d330fecfb35c9d7d73be7d87f055a33e94ad2f8f43",
+    "ui/app/src/app/Header.tsx": "e90a02b01189ce1c7d9b7633cd053c53c1428ea0bde6c6590a5d3eb6d562c507",
+    "ui/app/src/app/store.tsx": "f0c9b23d6911fffe96bc4e6e5086dd746707a3cd46340343327dbaaf027e6a42",
+    "ui/app/src/app/App.tsx": "725c4ef3958ba942277b2772dfe4613aa939e0da232c28a4693f832da3a2cf6a",
+    "ui/app/src/host/client.ts": "88bae30fbc1b7f1724b5e985b6b7f407656f94ff433d2df44b27720de6c58be4",
+    "ui/app/src/host/mockHost.ts": "8de77910de6b0621afe8683acad2722dbe07cd28e4367be95cd38c47f7d66dcd",
+    "ui/app/src/host/provisional.ts": "b5e0fb043a39b6983d7acbeb56217cd20401654287f431eeff90f2be5efdf9af",
+    "ui/app/src/screens/atlas/LeftColumn.tsx": "8ebddfc79ab56d4543ef176348de07e66cadc705072ec8739d9dad9d32484abb",
+    "ui/app/src/screens/studio/VoiceEditor.tsx": "3d58f47a4899a3fb6f965b9a777e77b4808cc0f6ba1db2f91e9d4a63c7efcd75",
+    "ui/app/src/styles/app.css": "266ff164c430fd876c8a4dea83ab3afa7367f85b10cf02d2f8d3716923037f6b",
+    "ui/app/dev/nativeBridge.mjs": "badb2e80cdf5501c8acecf8b82a4c23be9d6f79c38314eae771a77a001c9da77",
+    "ui/app/tests/boundaries.test.mjs": "4d958694aad63154196edf8ba1b8156f6580bbc32f4365e553008b9ed7a925a9",
+    "ui/app/tests/native-bridge.test.mjs": "efe531bc222bee5b7ddd123268aa1f27f3dd932ac40ce80f1fd7a9f61a11e8e7",
+    "ui/app/tests/playback-browser.mjs": "95dcc30ab95c6f563195fb38a36afac24aed09fd2d0c3654df2eb73995a3973f",
+    "ui/app/tests/native-playback-browser.mjs": "62c725adade7372bb7ea0e17b4dd51a6ccc0c7621ddb36e20ff6f3564002f721",
+    "Start Atlas UI.command": "882e92515c56a496fadf01e0cf9d5a257a0f4417d488998f7c00323ddaefb77f",
+    "ui/app/README.md": "887d87eee0cd36092deda555786fe9170f8bf2eaf74950424cbb1341801c35dc",
+    "docs/milestones/UI_NATIVE_PLAYBACK.md": "f70e80ce0d44bc0eb3f6b8b49ae8c272c904c1b17f42b491e7565127794e4007"
+  },
+  "testedNativeFixtureHost": {
+    "path": "build/native-playback/atlas-playback-fixture-host",
+    "sha256": "fe9b935227f91db5d3806686818e75e8b6c9d349df7c50c2f8b69bda4b079eb1",
+    "sha256AfterChecks": "fe9b935227f91db5d3806686818e75e8b6c9d349df7c50c2f8b69bda4b079eb1",
+    "note": "Binary unchanged across successful final native-browser check. Later backend rebuilds are separate evidence."
+  },
+  "environment": {
+    "node": "24.22.1",
+    "browser": "installed Chrome via Playwright channel chrome, headless, software WebGL allowed",
+    "playwrightModule": "/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs"
+  },
+  "checks": [
+    {
+      "name": "strict TypeScript",
+      "command": "/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node node_modules/typescript/bin/tsc -p tsconfig.json --noEmit",
+      "cwd": "ui/app",
+      "result": "passed on final sources"
+    },
+    {
+      "name": "complete frontend unit suite",
+      "command": "/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node --experimental-transform-types --test tests/*.test.mjs",
+      "cwd": "ui/app",
+      "result": "15 passed, 0 failed; final bridge refinement subsequently rerun below"
+    },
+    {
+      "name": "final devbridge regression",
+      "command": "/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node --experimental-transform-types --test tests/native-bridge.test.mjs",
+      "cwd": "ui/app",
+      "result": "1 passed (16KiB body/origin/envelope/duplicate/16-request FIFO, cancelled actual setTransport kills worker, cancelled prepareReplay/getCatalog preserves same child and FIFO, old stdout ignored, 5-second timeout returns503, server teardown reaps child)"
+    },
+    {
+      "name": "native UI build",
+      "command": "/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node node_modules/vite/bin/vite.js build",
+      "cwd": "ui/app",
+      "result": "passed on final sources"
+    },
+    {
+      "name": "separate illustrative demo build",
+      "command": "/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node node_modules/vite/bin/vite.js build --mode demo",
+      "cwd": "ui/app",
+      "result": "passed on final sources"
+    },
+    {
+      "name": "artifact boundary checks",
+      "command": "/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node tests/build-checks.mjs",
+      "cwd": "ui/app",
+      "result": "passed: no mock in native bundle, no development HTTP in either artifact, CSP/local licences/lazy globe"
+    },
+    {
+      "name": "deferred/error playback browser",
+      "command": "PLAYWRIGHT_MODULE=/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs ATLAS_TEST_URL=http://127.0.0.1:5181 /Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node tests/playback-browser.mjs",
+      "cwd": "ui/app",
+      "result": "8 groups passed; zero page errors",
+      "groups": [
+        "explicit enable and generation-fenced play",
+        "native polled position including tail duration",
+        "pause and acknowledged return-to-start",
+        "visible seek/audio errors",
+        "speed/mode changes stop and disable",
+        "screen continuity",
+        "late play/preparation fencing",
+        "unsupported master disabled"
+      ],
+      "host": "explicit silent synthetic injected host; no native audio or WebAudio"
+    },
+    {
+      "name": "actual native end-to-end browser",
+      "command": "PLAYWRIGHT_MODULE=/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs ATLAS_TEST_URL=http://127.0.0.1:5182 /Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node tests/native-playback-browser.mjs",
+      "cwd": "ui/app",
+      "result": "6 groups passed; zero rejected native replies, cancelled reads or page errors",
+      "groups": [
+        "actual native prepare/device-enable generation refresh/play",
+        "native polling/pause/resume/stop and screen continuity",
+        "return-to-start while sounding",
+        "natural completion with tail and replay",
+        "rapid speed and piece replacement stay disabled",
+        "live selection stops/disables saved audio"
+      ],
+      "library": "/var/folders/m2/hl8x2mb154g59qtbrxb3w0b80000gp/T/atlas-native-ui-playback-ld1diba3/synthetic.sqlite3",
+      "driver": "real UiHost/PlaybackRuntime/DSP, silent native test output driver"
+    },
+    {
+      "name": "existing material/voice/render readiness browser",
+      "command": "PLAYWRIGHT_MODULE=/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs ATLAS_TEST_URL=http://127.0.0.1:5181 /Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node tests/integration-readiness-browser.mjs",
+      "cwd": "ui/app",
+      "result": "8 existing groups passed; zero page errors and zero native bridge requests",
+      "note": "Completed before final Return-to-start-only completion-race refinement; unrelated paths unchanged."
+    },
+    {
+      "name": "existing native data/demo browser",
+      "command": "PLAYWRIGHT_MODULE=/Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs ATLAS_TEST_URL=http://127.0.0.1:5183 /Users/henryjones/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node tests/browser-checks.mjs",
+      "cwd": "ui/app",
+      "result": "9 existing groups passed; zero page errors/external HTTP requests",
+      "library": "/tmp/atlas-ui-final-browser-fixture.sqlite3 (newly created by python3 -B tests/ui_fixture.py)",
+      "note": "Completed after cancelled-read bridge fix, before final audio-only completion-race refinement. Data/demo paths do not exercise native audio seek."
+    },
+    {
+      "name": "whitespace",
+      "command": "git diff --check",
+      "result": "passed"
+    }
+  ],
+  "buildArtifactSha256": {
+    "ui/app/dist/assets/GlobeView-Bi6oqPg8.js": "cd62b229d7ad5d3c7587ed3e19a9aeee8aeae75c29a2c0cfd562822fe9a683f8",
+    "ui/app/dist/assets/index-CJy23xM6.js": "b51906160a00bf71b50103fb10f22e6e3860b82d7406ac5da57f9991eb1bdb55",
+    "ui/app/dist/assets/index-DhAqU6Zq.css": "9f1fb5930f808fd4ca21dfe94ae81c57b73fd1dd1fb9cdde588c71155d22d1de",
+    "ui/app/dist/index.html": "87ec1472a4adfaaa50adcf6373f07f80fa976968b3273ab73f5de951208d4ff9",
+    "ui/app/dist-demo/assets/GlobeView-BahB-2RO.js": "8cc0cdbccea65e0961794a4a0fc06ab5c3a940a9606bfc95d8a77cfd3ba0a2b3",
+    "ui/app/dist-demo/assets/demo-D47nsrKj.js": "49281e884e829c50905573be3190630eb04b0f4701f30924f7842f4485604a92",
+    "ui/app/dist-demo/assets/demo-DhAqU6Zq.css": "9f1fb5930f808fd4ca21dfe94ae81c57b73fd1dd1fb9cdde588c71155d22d1de",
+    "ui/app/dist-demo/demo.html": "997e8041c78cf9b0234a0da685ac6af1d7107e799f5775d7c65288ed4984b05c"
+  },
+  "teardown": {
+    "ownedServerPorts": [
+      5181,
+      5182,
+      5183
+    ],
+    "result": "All three owned Vite sessions exited 0 after Control-C. lsof reports no listeners on these ports. No owner process was stopped."
+  },
+  "limitations": [
+    "One controlling UI window; native preparation and getTransport lease are shared at process level, without per-tab ownership isolation.",
+    "Background throttling/suspension may expire the five-second native lease; manual re-enable required. Background playback is unqualified.",
+    "Physical device output, callback safety, sample parity and native lease behavior require native evidence; silent UI fixture is not a physical audio test.",
+    "No owner library/provider/collector requests or edits; no DAW/native webview/subjective sound acceptance.",
+    "Static-browser artifact smoke was not rerun; build boundary checks and development native/demo browser flows passed.",
+    "Final change keeping All off enabled during pending commands was verified by TypeScript/build/artifact checks after browser qualification."
+  ]
+}

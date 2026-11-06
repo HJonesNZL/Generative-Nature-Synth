@@ -27,11 +27,28 @@ export interface ExtendedHost {
 export type HostErrorCode = "unsupported" | "invalid_request" | "unavailable" | "stale_generation" | "internal" | "timeout" | "aborted";
 export type HostResult<T> = { ok: true; value: T } | { ok: false; error: { code: HostErrorCode; message: string } };
 
+const unsignedDecimal = (value: unknown): value is string => typeof value === "string" && /^(0|[1-9][0-9]{0,18})$/.test(value) && BigInt(value) <= 9223372036854775807n;
+const identity = (value: unknown): value is string => typeof value === "string" && value.length > 0 && value.length <= 256;
+function validPlaybackReply(method: string, value: unknown): boolean {
+  if (!["getTransport", "setTransport", "prepareReplay", "getAudioState", "setAudioEnabled"].includes(method)) return true;
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  if (method === "getTransport" || method === "setTransport") return (v.preparationId === null || identity(v.preparationId)) && unsignedDecimal(v.generation) &&
+    ["playing", "paused", "stopped"].includes(v.state as string) && unsignedDecimal(v.positionUs) && unsignedDecimal(v.durationUs) && BigInt(v.positionUs) <= BigInt(v.durationUs);
+  if (method === "prepareReplay") return identity(v.preparationId) && unsignedDecimal(v.generation) && unsignedDecimal(v.durationUs) && Number.isInteger(v.eventCount) && (v.eventCount as number) >= 0 && typeof v.peakEventsPerSecond === "number" && Number.isFinite(v.peakEventsPerSecond);
+  return ["running", "disabled", "unavailable", "device_lost"].includes(v.status as string) && (v.deviceName === null || typeof v.deviceName === "string") &&
+    typeof v.masterGainDb === "number" && Number.isFinite(v.masterGainDb) && (v.peakDbfs === null || (typeof v.peakDbfs === "number" && Number.isFinite(v.peakDbfs))) &&
+    typeof v.meterIsSimulated === "boolean" && typeof v.clipping === "boolean" && (v.activeSynthVoices === null || (Number.isInteger(v.activeSynthVoices) && (v.activeSynthVoices as number) >= 0)) && Number.isInteger(v.maxSynthVoices) && (v.maxSynthVoices as number) > 0 &&
+    (v.error === undefined || v.error === null || typeof v.error === "string");
+}
+
 let requestCounter = 0;
 const nextRequestId = () => `ui-${Date.now().toString(36)}-${(requestCounter += 1)}`;
 
 export class HostClient {
   private capabilities: HostCapabilities | null = null;
+  private playbackMutation = 0;
+  get playbackRevision() { return this.playbackMutation; }
 
   constructor(private readonly host: ExtendedHost | AtlasHost) {}
 
@@ -70,6 +87,7 @@ export class HostClient {
   }
 
   call<M extends MethodName>(method: M, args: AllMethods[M]["request"], options: { signal?: AbortSignal; timeoutMs?: number } = {}) {
+    if (["prepareReplay", "setTransport", "setAudioEnabled"].includes(method)) this.playbackMutation += 1;
     return this.send(method, args, options);
   }
 
@@ -102,7 +120,7 @@ export class HostClient {
       const request = { protocolVersion: 1 as const, requestId, method, args };
       const reply = (this.host as ExtendedHost).request(request, controller.signal).then((r): HostResult<AllMethods[M]["response"]> => {
         if (!r || typeof r !== "object" || typeof r.ok !== "boolean" || r.requestId !== requestId) return { ok: false, error: { code: "internal", message: "Reply did not match request id" } };
-        if (r.ok) return "result" in r ? { ok: true, value: r.result } : { ok: false, error: { code: "internal", message: "Reply has no result" } };
+        if (r.ok) return "result" in r && validPlaybackReply(method, r.result) ? { ok: true, value: r.result } : { ok: false, error: { code: "internal", message: "Malformed host result" } };
         if (!r.error || typeof r.error.message !== "string" || !["unsupported", "invalid_request", "unavailable", "stale_generation", "internal"].includes(r.error.code))
           return { ok: false, error: { code: "internal", message: "Malformed host error" } };
         return { ok: false, error: r.error };

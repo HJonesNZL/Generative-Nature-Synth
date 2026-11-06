@@ -4,7 +4,7 @@ The supplied H2 Atlas and Sound Studio design is integrated as React/TypeScript 
 
 ## Open on this Mac
 
-Double-click **Start Atlas UI.command** in the project root, then open http://127.0.0.1:5173/. It uses the existing `.state/atlas.sqlite3` read-only and the built `build/native/atlas-native`. It neither starts nor changes collection. Keep that Terminal window open; Control-C closes only the UI preview. An already-running collector can continue recording independently. If the port is occupied, close the other UI preview first; the launcher does not kill any process.
+Double-click **Start Atlas UI.command** in the project root, then open http://127.0.0.1:5173/. It reads the existing `.state/atlas.sqlite3` without changing collection. When built, `build/native-playback/atlas-audio-host` supplies saved-piece native playback; otherwise `build/native/atlas-native` supplies the data preview. Audio starts disabled: select a saved piece, enable Listening, then press Play. Every piece, speed, basis or material-mode change stops the prior sound and requires another explicit enable. It neither starts nor changes collection. Keep that Terminal window open; Control-C closes only the UI preview. An already-running collector can continue recording independently. If the port is occupied, close the other UI preview first; the launcher does not kill any process.
 
 The launcher uses Node on PATH or this machine's existing Codex bundled Node. There is no automatic install, paid service, API key or runtime CDN. This is a development preview, not an installed JUCE standalone or VST3.
 
@@ -21,7 +21,7 @@ npm test
 ATLAS_LIBRARY=/absolute/path/to/existing/library.sqlite3 npm run dev
 ```
 
-First build the repository's C++ target. On this Mac, use the Homebrew SQLite selection in the native architecture notes; Apple's older runtime failed the existing closed-WAL tests. `ATLAS_NATIVE_BINARY` can select a different absolute path to the native executable. Neither path is accepted from the browser.
+First build the repository's C++ target. On this Mac, use the Homebrew SQLite selection in the native architecture notes; Apple's older runtime failed the existing closed-WAL tests. `ATLAS_NATIVE_BINARY` can select a different absolute executable path; `ATLAS_AUDIO_HOST_BINARY` explicitly selects an audio host and takes precedence. Neither executable path is accepted from the browser. The browser polls native playback state; a bounded native lease stops and disables output if browser heartbeats disappear. Closing the server closes its child. Background throttling can expire that lease and requires manual re-enable; background playback is not qualified. Use one controlling UI window: multiple tabs share native preparation and the process-level lease.
 
 ```sh
 npm run build
@@ -37,7 +37,9 @@ Capabilities, latest arrival/correction polling, species/station catalogue, save
 
 The globe defaults to all loaded records, with a current-window toggle; the 2D fallback covers the world. Species search includes catalogue species and species IDs present in loaded records. All available species resets emphasis. An accessible location list shares the map selection. Stations aggregate detections at receivers; only GPS/satellite fixes mark measured animal positions, with no inferred paths. The newest loaded observation timestamp, scope counts and limitations stay visible. The map displays at most 400 markers, prioritising the selected location and highlighted species; it reports displayed versus available location symbols. The former 40-fix subset is removed; fixes use the selected map scope. The event view holds 2,000 records; omitted saved records are explicitly reported and remain intact in the library. Initial live connection baselines the newest 200 revisions without pulsing, then follows new revisions every two seconds while visible. Baselines/corrections never trigger arrival pulses. The catalogue samples 2,000 records and lists up to 500 species/stations and 128 sources; saved-piece listing is the newest 100. Grain shows at most six species lanes. These are display limits, not collection or musical admission policies.
 
-Not exposed by the UI host: in-app audio/playback/rendering, voice editing, region effects/editing, history search/freezing, collection control, source-health reporting, production host notifications, durable UI settings or JUCE packaging. The native view disables unavailable controls. The original delivery's proposed parameter ranges and audio behaviours remain design references, not an implemented DSP contract.
+The optional native audio host adds generation-fenced saved-piece preparation, audio enable, Play/Pause/Stop/Return to start/All off and polled native timeline position including tails. The master slider remains disabled; fixed output attenuation is −18 dB. Output meter and active voice count are unavailable rather than fabricated. The data-only host still disables all audio controls.
+
+Not exposed by either host: live sonification, in-app rendering, voice editing, region effects/editing, history search/freezing, collection control, source-health reporting, production host notifications or durable UI settings. The native view disables unavailable controls. The original delivery's proposed parameter ranges and audio behaviours remain design references, not an implemented DSP contract.
 
 ## Verification
 
@@ -54,3 +56,6 @@ The script refuses to replace an existing file. Start Vite with that library (ab
 For static browser checks, serve `dist` with `npm run preview` and `dist-demo` with `npm run preview -- --outDir dist-demo --port 4174`, then run `node tests/static-browser-checks.mjs` with the same Playwright setup.
 
 See [integration evidence](../../docs/milestones/UI_HANDOFF_INTEGRATION.md). Original delivery docs are preserved in `HANDOFF_README.md` and `docs/`; their claims are the designer's record, not native qualification.
+
+
+Saved-piece playback contracts, safety ownership and current evidence: [UI native playback](../../docs/milestones/UI_NATIVE_PLAYBACK.md). `tests/playback-browser.mjs` checks actual React controls against an explicitly silent synthetic host with deferred/error replies. `tests/native-playback-browser.mjs` requires the native `atlas-playback-fixture-host` and a new disposable synthetic library; it exercises the real C++ boundary/runtime/DSP through a silent test output driver. Neither proves physical-device output or subjective sound quality. `tests/native-bridge.test.mjs` covers origin/envelope bounds, queue saturation, cancellation, timeout, child replacement and server teardown.

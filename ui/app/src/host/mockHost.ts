@@ -56,7 +56,7 @@ export const MOCK_SCENARIOS: Array<{ id: MockScenario; label: string }> = [
 ];
 
 const CONTRACT_METHODS: Array<keyof HostMethods> = [
-  "getCapabilities", "getSourceHealth", "getChanges", "listSessions", "prepareReplay", "queryHistory", "setTransport",
+  "getCapabilities", "getSourceHealth", "getChanges", "listSessions", "prepareReplay", "queryHistory", "setTransport", "getTransport",
   "setVoiceParameter", "listRegions",
 ];
 const PROVISIONAL_METHODS: MethodName[] = [
@@ -275,6 +275,7 @@ export class MockAtlasHost implements ExtendedHost {
       case "listSessions": return this.sessions();
       case "prepareReplay": return this.prepareReplay(args as HostMethods["prepareReplay"]["request"]);
       case "queryHistory": return this.queryHistory(args as HostMethods["queryHistory"]["request"]);
+      case "getTransport": this.syncPosition(); return this.transportSnapshot();
       case "setTransport": return this.setTransport(args as HostMethods["setTransport"]["request"]);
       case "setVoiceParameter": return this.setVoiceParameter(args as HostMethods["setVoiceParameter"]["request"]);
       case "listRegions": return structuredClone(this.regions);
@@ -417,7 +418,7 @@ export class MockAtlasHost implements ExtendedHost {
     if (req.action === "panic") {
       this.audio.activeSynthVoices = 0;
       this.emit({ type: "audioStateChanged" });
-      return { generation: this.transportGeneration.toString(), state: this.transport.state };
+      return this.transportSnapshot();
     }
     const prepared = req.preparationId ? this.prepared.get(req.preparationId) : this.transport.prepared;
     if (!prepared) throw new Error("unavailable: nothing prepared for playback");
@@ -433,7 +434,11 @@ export class MockAtlasHost implements ExtendedHost {
       this.transport.startedWallMs = Date.now();
     }
     this.emitTransport();
-    return { generation: this.transportGeneration.toString(), state: this.transport.state };
+    return this.transportSnapshot();
+  }
+  private transportSnapshot(): HostMethods["getTransport"]["response"] {
+    return { preparationId: this.transport.prepared?.id ?? null, generation: this.transportGeneration.toString(), state: this.transport.state,
+      positionUs: this.transport.positionUs.toString(), durationUs: (this.transport.prepared?.durationUs ?? 0n).toString() };
   }
   private syncPosition() {
     if (this.transport.state !== "playing") return;

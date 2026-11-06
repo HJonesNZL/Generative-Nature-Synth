@@ -9,6 +9,7 @@ import type { AtlasHost } from "../host/contracts";
 import { AtlasScreen } from "../screens/atlas/AtlasScreen";
 import { SoundStudioScreen } from "../screens/studio/SoundStudioScreen";
 import { Header } from "./Header";
+import { usePlayback } from "./usePlayback";
 import { HostProvider, useHost, useHostQuery, valueOf } from "./HostContext";
 import { AppStateProvider, useAppState } from "./store";
 import { useLiveFeed, useMaterialFeed } from "./useFeeds";
@@ -27,6 +28,7 @@ export function App({ host, demoMenu }: { host: ExtendedHost | AtlasHost; demoMe
 
 function Shell({ demoMenu }: { demoMenu?: (props: Record<string, never>) => ReactNode }) {
   const state = useAppState();
+  usePlayback();
   useLiveFeed();
   useMaterialFeed();
   useEffect(() => {
@@ -44,7 +46,7 @@ function Shell({ demoMenu }: { demoMenu?: (props: Record<string, never>) => Reac
 
 function StatusBanners() {
   const { connection, connectionError, caps, reconnect, onNotification } = useHost();
-  const [audioQ, refreshAudio] = useHostQuery("getAudioState", {}, []);
+  const [audioQ, refreshAudio] = useHostQuery("getAudioState", {}, [], { refreshMs: 1000 });
   useEffect(() => onNotification((n) => { if (n.type === "audioStateChanged") refreshAudio(); }), [onNotification, refreshAudio]);
   const audio = valueOf(audioQ);
   return (
@@ -53,6 +55,7 @@ function StatusBanners() {
       {connection === "reconnecting" ? <Notice tone="caution" title="Reconnecting to the host" live>{connectionError ?? "The bridge dropped."} Controls that change the piece are paused; nothing will be replayed when it returns.</Notice> : null}
       {connection === "failed" ? <Notice tone="problem" title="Host unavailable" action={<button type="button" className="btn btn--quiet btn--sm" onClick={reconnect}>Retry</button>}>{connectionError}</Notice> : null}
       {caps?.implementation === "native" && !caps.audioAvailable ? <Notice tone="info" title="Native data preview — audio controls unavailable">Records and saved timelines are available read-only. In-app playback, voice editing and rendering are not exposed by this UI host.</Notice> : null}
+      {caps?.implementation === "native" && caps.audioAvailable ? <Notice tone="info" title="Saved-piece native playback">Select a saved piece, enable Listening, then press Play. Live sonification, voice editing, effects and in-app rendering remain unavailable.</Notice> : null}
       {audio?.status === "unavailable" ? <Notice tone="problem" title="Audio unavailable">No output device. Collection and the map keep working; nothing will sound.</Notice> : null}
       {audio?.status === "device_lost" ? <Notice tone="problem" title="Audio device lost">Output stopped and every note was released. Reconnect a device in the host’s audio settings.</Notice> : null}
       {caps && caps.implementation === "mock" ? <span className="sr-only">Demo host: all data is illustrative and no audio is produced.</span> : null}

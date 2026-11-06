@@ -162,7 +162,7 @@ export function VoiceEditor({ parameters, catalog, onDirtyChange }: { parameters
       <div className="row-between">
         <SegmentedControl<VoiceType> label="Voice type" value={voice.type} onChange={(t) => void setType(t)} options={[{ value: "pluck", label: "Pluck" }, { value: "air", label: "Air" }, { value: "resonance", label: "Resonance" }, { value: "bell", label: "Bell" }]} disabledValues={client.supports("setVoiceType") ? [] : ["pluck", "air", "resonance", "bell"]} />
         <span className="small muted" title="Currently sounding synth voices across all definitions">
-          {audio ? `${audio.activeSynthVoices} of ${audio.maxSynthVoices} synth voices sounding${audio.meterIsSimulated ? " (simulated)" : ""}` : ""}
+          {audio ? audio.activeSynthVoices == null ? `Voice activity unavailable · capacity ${audio.maxSynthVoices}` : `${audio.activeSynthVoices} of ${audio.maxSynthVoices} synth voices sounding${audio.meterIsSimulated ? " (simulated)" : ""}` : ""}
         </span>
       </div>
 

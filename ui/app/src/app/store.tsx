@@ -36,6 +36,8 @@ export interface TransportView {
   positionUs: string;
   durationUs: string | null;
   preparationId: string | null;
+  error?: string | null;
+  preparing?: boolean;
 }
 
 export interface AppState {
@@ -51,7 +53,7 @@ export interface AppState {
   mapView: "globe" | "map2d";
   reducedMotion: boolean;
   history: { draft: HistoryQueryDraft; result: HistoryResult | null; frozen: HistoryFreezeResult | null };
-  replay: { session: SessionView | null; speedNumerator: string };
+  replay: { session: SessionView | null; speedNumerator: string; preparationRevision: number };
   transport: TransportView;
   globeOrientation: { longitude: number; latitude: number; distance: number };
 }
@@ -76,6 +78,7 @@ export type Action =
   | { type: "replaySession"; session: SessionView | null }
   | { type: "replaySpeed"; speedNumerator: string }
   | { type: "transport"; transport: Partial<TransportView> }
+  | { type: "transportAck"; preparationId: string | null; generation: string; transport: Partial<TransportView> }
   | { type: "globeOrientation"; orientation: AppState["globeOrientation"] };
 
 function prefersReducedMotion(): boolean {
@@ -105,7 +108,7 @@ export function initialState(demo = false): AppState {
       result: null,
       frozen: null,
     },
-    replay: { session: null, speedNumerator: "60" },
+    replay: { session: null, speedNumerator: "60", preparationRevision: 0 },
     transport: { generation: "0", state: "stopped", positionUs: "0", durationUs: null, preparationId: null },
     globeOrientation: { longitude: 172, latitude: -34, distance: 4.1 },
   };
@@ -116,8 +119,8 @@ function reducer(state: AppState, action: Action): AppState {
     case "screen": return { ...state, screen: action.screen };
     case "mode":
       // Changing material mode clears event selection (ids belong to different material) but keeps species/region/voice.
-      return state.mode === action.mode ? state : { ...state, mode: action.mode, selectedEventId: null, timeBasis: action.mode === "live" ? "arrival" : "observed" };
-    case "timeBasis": return { ...state, timeBasis: action.basis };
+      return state.mode === action.mode ? state : { ...state, mode: action.mode, selectedEventId: null, timeBasis: action.mode === "live" ? "arrival" : "observed", transport: { ...state.transport, preparationId: null, state: "stopped", positionUs: "0", durationUs: null } };
+    case "timeBasis": return { ...state, timeBasis: action.basis, transport: { ...state.transport, preparationId: null, state: "stopped", positionUs: "0", durationUs: null } };
     case "highlightSpecies": return { ...state, highlightSpeciesId: action.speciesId };
     case "renderPending": return { ...state, render: { ...state.render, pending: action.pending } };
     case "renderStarted": return { ...state, render: { ...state.render, job: action.job } };
@@ -137,8 +140,11 @@ function reducer(state: AppState, action: Action): AppState {
     case "historyDraft": return { ...state, history: { ...state.history, draft: { ...state.history.draft, ...action.draft }, result: null, frozen: null } };
     case "historyResult": return { ...state, history: { ...state.history, result: action.result, frozen: null } };
     case "historyFrozen": return { ...state, history: { ...state.history, frozen: action.frozen } };
-    case "replaySession": return { ...state, replay: { ...state.replay, session: action.session }, transport: { ...state.transport, preparationId: null, durationUs: null, state: "stopped", positionUs: "0" } };
-    case "replaySpeed": return { ...state, replay: { ...state.replay, speedNumerator: action.speedNumerator } };
+    case "replaySession": return { ...state, replay: { ...state.replay, session: action.session, preparationRevision: state.replay.preparationRevision + 1 }, transport: { ...state.transport, preparationId: null, durationUs: null, state: "stopped", positionUs: "0" } };
+    case "replaySpeed": return { ...state, replay: { ...state.replay, speedNumerator: action.speedNumerator }, transport: { ...state.transport, preparationId: null, state: "stopped", positionUs: "0", durationUs: null } };
+    case "transportAck":
+      if (state.transport.preparationId !== action.preparationId || state.transport.generation !== action.generation) return state;
+      return { ...state, transport: { ...state.transport, ...action.transport } };
     case "transport": return { ...state, transport: { ...state.transport, ...action.transport } };
     case "globeOrientation": return { ...state, globeOrientation: action.orientation };
     default: return state;

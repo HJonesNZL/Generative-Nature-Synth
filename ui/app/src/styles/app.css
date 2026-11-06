@@ -227,3 +227,5 @@
 
 .map-stage { overflow-y: auto; padding-bottom: var(--s-2); scrollbar-width: thin; }
 .map-stage__canvas { flex-shrink: 0; }
+
+.header-error { position: absolute; top: 100%; left: 1rem; right: 1rem; z-index: 20; padding: .5rem; background: var(--bg-panel, #fff); color: #a52b22; border: 1px solid currentColor; font-size: .8rem; }

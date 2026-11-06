@@ -18,14 +18,18 @@ export function Header({ demoMenu }: { demoMenu?: ReactNode }) {
   const state = useAppState();
   const dispatch = useDispatch();
   const { client, caps, onNotification } = useHost();
-  const [audioQ, refreshAudio] = useHostQuery("getAudioState", {}, []);
+  const [audioQ, refreshAudio] = useHostQuery("getAudioState", {}, [], { refreshMs: 1000 });
   const [collectionQ, refreshCollection] = useHostQuery("getCollectionState", {}, [], { refreshMs: 1000 });
   const audio = valueOf(audioQ);
   const collection = valueOf(collectionQ);
   const [now, setNow] = useState(() => Date.now());
   const [transportError, setTransportError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [enabledPreparation, setEnabledPreparation] = useState<string | null>(null);
   const [confirmStop, setConfirmStop] = useState(false);
 
+  const current = useRef(state.transport);
+  current.current = state.transport;
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(id);
@@ -33,24 +37,89 @@ export function Header({ demoMenu }: { demoMenu?: ReactNode }) {
   useEffect(() => onNotification((n) => {
     if (n.type === "audioStateChanged") refreshAudio();
     if (n.type === "collectionChanged") refreshCollection();
-    if (n.type === "transportChanged") dispatch({ type: "transport", transport: { generation: n.generation, state: n.state, positionUs: n.positionUs } });
-  }), [onNotification, refreshAudio, refreshCollection, dispatch]);
+    if (n.type === "transportChanged" && !client.supports("getTransport")) dispatch({ type: "transportAck", preparationId: current.current.preparationId, generation: n.generation, transport: { state: n.state, positionUs: n.positionUs } });
+  }), [onNotification, refreshAudio, refreshCollection, dispatch, client]);
 
   const live = state.mode === "live";
-  const canTransport = !live && !!state.transport.preparationId && client.supports("setTransport");
-  const transport = async (action: "play" | "pause" | "stop" | "panic") => {
+  const canTransport = !live && !!state.transport.preparationId && !state.transport.preparing && !busy && client.supports("setTransport");
+  const transport = async (action: "play" | "pause" | "stop" | "panic" | "seek") => {
     setTransportError(null);
-    const result = await client.call("setTransport", action === "panic" ? { action } : { action, preparationId: state.transport.preparationId ?? undefined });
-    if (result.ok) dispatch({ type: "transport", transport: { generation: result.value.generation, state: result.value.state } });
-    else setTransportError(result.error.code === "stale_generation" ? "Playback was re-prepared elsewhere. Prepare again." : result.error.message);
+    setBusy(true);
+    const expected = state.transport;
+    // Seeking while sounding is a native two-step transition. End-of-piece
+    // replay likewise resets before play; each accepted response supplies the fence.
+    let identity = expected;
+    if (action === "seek" && client.supports("getTransport")) {
+      const status = await client.call("getTransport", {});
+      if (!status.ok) { setBusy(false); setTransportError(status.error.message); return; }
+      if (current.current.preparationId !== expected.preparationId || status.value.preparationId !== expected.preparationId) { setBusy(false); return; }
+      identity = { ...expected, ...status.value };
+    }
+    if ((action === "seek" && identity.state === "playing") ||
+        (action === "play" && identity.state === "stopped" && identity.durationUs && BigInt(identity.positionUs) >= BigInt(identity.durationUs))) {
+      const reset = await client.call("setTransport", action === "seek" ? { action: "pause", preparationId: identity.preparationId!, generation: identity.generation } : { action: "stop" });
+      if (!reset.ok) {
+        // Natural completion may race the pause between the query and command.
+        const status = action === "seek" && client.supports("getTransport") ? await client.call("getTransport", {}) : null;
+        if (!status?.ok || status.value.preparationId !== expected.preparationId || status.value.state !== "stopped" || status.value.positionUs !== status.value.durationUs) {
+          setBusy(false); setTransportError(reset.error.message); return;
+        }
+        identity = { ...expected, ...status.value };
+      } else identity = { ...expected, ...reset.value };
+      if (current.current.preparationId !== expected.preparationId) { setBusy(false); return; }
+      if (action === "seek" && client.supports("getTransport")) {
+        // Pause acceptance precedes the bounded native fade. Seek only after
+        // the callback has published paused, with a finite wait and visible failure.
+        for (let attempt = 0; identity.state === "playing" && attempt < 25; attempt += 1) {
+          await new Promise(resolve => window.setTimeout(resolve, 20));
+          if (current.current.preparationId !== expected.preparationId) { setBusy(false); return; }
+          const status = await client.call("getTransport", {}, { timeoutMs: 1000 });
+          if (!status.ok) { setBusy(false); setTransportError(status.error.message); return; }
+          if (status.value.preparationId !== expected.preparationId) { setBusy(false); return; }
+          identity = { ...expected, ...status.value };
+        }
+        if (identity.state !== "paused" && !(identity.state === "stopped" && identity.positionUs === identity.durationUs)) { setBusy(false); setTransportError("Playback has not paused yet. Try Return to start again."); return; }
+      }
+    }
+    const request = action === "panic" || action === "stop" ? { action } : {
+      action, preparationId: identity.preparationId!, generation: identity.generation,
+      ...(action === "seek" ? { positionUs: "0" } : {}),
+    };
+    const result = await client.call("setTransport", request);
+    setBusy(false);
+    if (current.current.preparationId !== expected.preparationId) return;
+    if (result.ok && BigInt(result.value.generation) >= BigInt(current.current.generation)) dispatch({ type: "transportAck", preparationId: current.current.preparationId, generation: current.current.generation, transport: result.value });
+    else if (!result.ok) setTransportError(result.error.code === "stale_generation" ? "Playback was re-prepared elsewhere. Select the saved piece again." : result.error.message);
+    refreshAudio();
+  };
+  const setAudio = async (enabled: boolean) => {
+    setTransportError(null);
+    setBusy(true);
+    const expected = state.transport;
+    const result = await client.call("setAudioEnabled", { enabled });
+    if (result.ok && current.current.preparationId === expected.preparationId) setEnabledPreparation(enabled ? expected.preparationId : null);
+    if (result.ok && client.supports("getTransport")) {
+      // Device enable/disable may reset native transport generation. Synchronise
+      // before another Play can carry the old generation into the host.
+      const status = await client.call("getTransport", {});
+      if (current.current.preparationId === expected.preparationId) {
+        if (status.ok && status.value.preparationId === expected.preparationId && BigInt(status.value.generation) >= BigInt(current.current.generation)) {
+          dispatch({ type: "transportAck", preparationId: current.current.preparationId, generation: current.current.generation, transport: status.value });
+        } else if (!status.ok) setTransportError(status.error.message);
+      }
+    }
+    setBusy(false);
+    if (current.current.preparationId === expected.preparationId && !result.ok) setTransportError(result.error.message);
+    refreshAudio();
   };
 
   const gain = useCoalescedGesture((value, gesture) => client.call("setMasterGain", { gainDb: value, gesture }));
   const [gainLocal, setGainLocal] = useState<number | null>(null);
-  const gainShown = gainLocal ?? audio?.masterGainDb ?? -6;
+  const gainShown = gainLocal ?? audio?.masterGainDb ?? -18;
   const dragging = useRef(false);
 
-  const audioUsable = audio?.status === "running" || audio?.status === "disabled";
+  const audioOn = audio?.status === "running" && (caps?.implementation !== "native" || (!!state.transport.preparationId && enabledPreparation === state.transport.preparationId));
+  const audioUsable = !!caps && (caps.implementation === "mock" || caps.audioAvailable) && (audio?.status === "running" || audio?.status === "disabled" || audio?.status === "device_lost");
   const collecting = collection?.state === "collecting";
   const elapsedMinutes = collection ? Number(BigInt(collection.elapsedUs) / 60_000_000n) : 0;
 
@@ -81,13 +150,13 @@ export function Header({ demoMenu }: { demoMenu?: ReactNode }) {
       />
 
       <div className="header-group" role="group" aria-label="Transport">
-        <button type="button" className="icon-btn" aria-label="Return to start" disabled={!canTransport} onClick={() => void client.call("setTransport", { action: "seek", preparationId: state.transport.preparationId ?? undefined, positionUs: "0" })}>
+        <button type="button" className="icon-btn" aria-label="Return to start" disabled={!canTransport} onClick={() => void transport("seek")}>
           <Icon name="to-start" size={13} />
         </button>
         {state.transport.state === "playing" ? (
           <button type="button" className="icon-btn icon-btn--primary" aria-label="Pause playback" disabled={!canTransport} onClick={() => void transport("pause")}><Icon name="pause" size={13} /></button>
         ) : (
-          <button type="button" className="icon-btn icon-btn--primary" aria-label={live ? "Play (not available for live arrivals)" : "Play"} disabled={!canTransport} onClick={() => void transport("play")}><Icon name="play" size={13} /></button>
+          <button type="button" className="icon-btn icon-btn--primary" aria-label={live ? "Play (not available for live arrivals)" : "Play"} disabled={!canTransport || (caps?.implementation === "native" && !audioOn)} onClick={() => void transport("play")}><Icon name="play" size={13} /></button>
         )}
         <button type="button" className="icon-btn" aria-label="Stop playback" disabled={!canTransport} onClick={() => void transport("stop")}><Icon name="stop" size={11} /></button>
         <button type="button" className="btn btn--outline btn--sm" onClick={() => void transport("panic")} disabled={!client.supports("setTransport")} title="Release every sounding note and effect tail now">
@@ -120,10 +189,10 @@ export function Header({ demoMenu }: { demoMenu?: ReactNode }) {
 
       <div className="header-group master" role="group" aria-label="Output">
         <Toggle
-          label={audio?.status === "running" ? "Listening (audio on)" : "Listening (audio off)"}
-          checked={audio?.status === "running"}
-          disabled={!audioUsable || !client.supports("setAudioEnabled")}
-          onChange={(enabled) => void client.call("setAudioEnabled", { enabled }).then(refreshAudio)}
+          label={audioOn ? "Listening (audio on)" : "Listening (audio off)"}
+          checked={audioOn}
+          disabled={!audioUsable || !client.supports("setAudioEnabled") || busy || (caps?.implementation === "native" && (!state.transport.preparationId || live))}
+          onChange={(enabled) => void setAudio(enabled)}
           showState={false}
         />
         <label className="sr-only" htmlFor="master-gain">Master level</label>
@@ -131,7 +200,7 @@ export function Header({ demoMenu }: { demoMenu?: ReactNode }) {
           id="master-gain"
           type="range"
           min={-60}
-          max={6}
+          max={0}
           step={0.5}
           value={gainShown}
           disabled={!client.supports("setMasterGain")}
@@ -153,7 +222,7 @@ export function Header({ demoMenu }: { demoMenu?: ReactNode }) {
       </div>
 
       {demoMenu}
-      {transportError ? <span className="sr-only" role="alert">{transportError}</span> : null}
+      {transportError || state.transport.error || audio?.error || (audioQ.status === "error" ? audioQ.error.message : null) || gain.error ? <span className="header-error" role="alert">{transportError ?? state.transport.error ?? audio?.error ?? (audioQ.status === "error" ? audioQ.error.message : null) ?? gain.error}</span> : null}
     </header>
   );
 }

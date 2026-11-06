@@ -48,16 +48,7 @@ export interface CollectionState {
   storageWarning: "none" | "near_limit" | "truncated";
 }
 
-export interface AudioState {
-  status: "running" | "disabled" | "unavailable" | "device_lost";
-  deviceName: string | null;
-  masterGainDb: number;
-  peakDbfs: number | null;       // null when no measurement is available
-  meterIsSimulated: boolean;     // true for the mock — never implies real audio
-  clipping: boolean;
-  activeSynthVoices: number;     // currently sounding synth voices, not definitions
-  maxSynthVoices: number;
-}
+export type { AudioState } from "./contracts";
 
 export type VoiceType = "pluck" | "air" | "resonance" | "bell";
 export type VoiceScope = "group" | "species" | "individual";
@@ -143,9 +134,6 @@ export interface ProvisionalMethods {
   setSpeciesMix: { request: { speciesId: string; muted?: boolean; soloed?: boolean }; response: { speciesId: string; muted: boolean; soloed: boolean; changeRevision: Int64String } };
   getCollectionState: { request: Record<string, never>; response: CollectionState };
   setCollection: { request: { action: "start" | "stop"; durationMinutes?: number; listening?: boolean }; response: CollectionState };
-  getAudioState: { request: Record<string, never>; response: AudioState };
-  setAudioEnabled: { request: { enabled: boolean }; response: AudioState };
-  setMasterGain: { request: { gainDb: number; gesture: "begin" | "change" | "end" }; response: { gainDb: number; changeRevision: Int64String } };
   freezeHistorySelection: { request: { selectionId: string; name: string; preserveRequestedInterval: boolean }; response: HistoryFreezeResult };
   getVoiceLibrary: { request: Record<string, never>; response: { entries: VoiceLibraryEntry[]; parameters: VoiceParameterSpec[] } };
   getVoice: { request: { voiceId: string }; response: VoiceDefinition };

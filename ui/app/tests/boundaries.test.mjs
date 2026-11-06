@@ -75,3 +75,25 @@ test('late musical outcomes cannot cross a material reset', async () => {
   await new Promise((resolve) => setTimeout(resolve, 0));
   assert.equal(store.outcome('one'), undefined); store.dispose();
 });
+
+
+test('playback payload validation rejects malformed native timelines and audio states', async () => {
+  const methods = ['getCapabilities', 'getTransport', 'setTransport', 'getAudioState', 'prepareReplay'];
+  let payload;
+  const client = new HostClient({ request: async request => ok(request, request.method === 'getCapabilities' ? { ...caps, supportedMethods: methods } : payload) });
+  await client.connect();
+  const timeline = { preparationId: 'prep', generation: '1', state: 'stopped', positionUs: '0', durationUs: '1000000' };
+  for (const invalid of [{ ...timeline, positionUs: '-1' }, { ...timeline, durationUs: 'NaN' }, { ...timeline, positionUs: '1000001' }, { ...timeline, generation: '9223372036854775808' }, { ...timeline, state: 'fake' }]) {
+    payload = invalid;
+    assert.equal((await client.call('getTransport', {})).error.code, 'internal');
+  }
+  payload = timeline;
+  assert.equal((await client.call('getTransport', {})).ok, true);
+  const before = client.playbackRevision;
+  await client.call('setTransport', { action: 'panic' });
+  assert.equal(client.playbackRevision, before + 1);
+  payload = { status: 'disabled', deviceName: null, masterGainDb: -18, peakDbfs: null, meterIsSimulated: false, clipping: false, activeSynthVoices: null, maxSynthVoices: 8 };
+  assert.equal((await client.call('getAudioState', {})).ok, true);
+  payload = { ...payload, masterGainDb: NaN };
+  assert.equal((await client.call('getAudioState', {})).error.code, 'internal');
+});

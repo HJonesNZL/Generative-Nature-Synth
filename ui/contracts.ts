@@ -1,7 +1,7 @@
 /**
- * PROPOSED host boundary for React/JUCE integration, version 1.
- * These are presentation DTOs, not an existing RPC implementation.
- * A labelled mock adapter can implement this shape; production must check capabilities.
+ * Shared host boundary for React/native integration, version 1.
+ * These presentation DTOs include implemented and proposed methods.
+ * Every consumer must check the host capability list before sending a method.
  * No provider credentials, SQL, raw filesystem access, or audio sample arrays cross it.
  */
 export type UtcTimestamp = string;
@@ -16,6 +16,28 @@ export interface HostCapabilities {
   audioAvailable: boolean;
   maxEventBatch: number;
   maxVisibleMarkers: number;
+}
+
+export interface TransportState {
+  preparationId: string | null;
+  generation: Int64String;
+  state: "playing" | "paused" | "stopped";
+  positionUs: Int64String;
+  /** Native playback timeline, including bounded voice/effect tails. */
+  durationUs: Int64String;
+}
+
+export interface AudioState {
+  status: "running" | "disabled" | "unavailable" | "device_lost";
+  deviceName: string | null;
+  masterGainDb: number;
+  peakDbfs: number | null;
+  meterIsSimulated: boolean;
+  clipping: boolean;
+  activeSynthVoices: number | null;
+  maxSynthVoices: number;
+  sampleRate?: number | null;
+  error?: string | null;
 }
 
 export interface EventView {
@@ -97,10 +119,15 @@ export interface HostMethods {
     request: { speciesIds: string[]; regionId: string; fromUtc: UtcTimestamp; toUtc: UtcTimestamp; displayTimezone: string };
     response: { selectionId: string; eventCount: number | null; coverage: CoverageInterval[]; status: "ready" | "partial" | "unavailable" | "unknown" };
   };
+  getTransport: { request: Record<string, never>; response: TransportState };
   setTransport: {
-    request: { action: "play" | "pause" | "stop" | "seek" | "panic"; preparationId?: string; positionUs?: Int64String };
-    response: { generation: Int64String; state: "playing" | "paused" | "stopped" };
+    request: { action: "play" | "pause" | "seek"; preparationId: string; generation: Int64String; positionUs?: Int64String }
+      | { action: "stop" | "panic"; preparationId?: string; generation?: Int64String };
+    response: TransportState;
   };
+  getAudioState: { request: Record<string, never>; response: AudioState };
+  setAudioEnabled: { request: { enabled: boolean }; response: AudioState };
+  setMasterGain: { request: { gainDb: number; gesture: "begin" | "change" | "end" }; response: { gainDb: number; changeRevision: Int64String } };
   setVoiceParameter: {
     request: { voiceId: string; parameterId: string; normalizedValue: number; gesture: "begin" | "change" | "end" };
     response: { normalizedValue: number; changeRevision: Int64String };
