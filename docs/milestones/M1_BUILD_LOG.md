@@ -21,3 +21,12 @@ The edge corpus uncovered an existing signed 32-bit intermediate in native day-t
 Bounded observation queries now preserve requested half-open intervals, including gaps and empty selections; explicit trim remains available through CLI/API. The window/version/bounds are sealed. Arrival bounds remain separate. UTC indexing preserves original offset timestamps, invalid boundaries and out-of-window bundles fail before persistence, and replay carries completeness/metadata integrity. Native validation rejects malformed interpretation options even when hashes are recomputed. Prototype/native versions align at 0.3.0; rational/int64 timing capacities agree.
 
 Final qualification: 70 Python tests on both 3.9.6/SQLite 3.43.2 and 3.12.13/SQLite 3.53.3. Native Debug, Release and ASan/UBSan pass all three suites: 18 core cases, SHA-256 known answers and 18 native storage tests including the 69-case shared corpus. Final storage additions were rerun in each configuration. No provider requests or owner library access; owner design ZIP untouched. Source hashes and environment/limitations are in evidence/m1-verified-piece.json. M1 is complete in this qualified macOS environment; M2 audio, UI, native writer, platform packaging and DAW gates remain.
+
+## Commit index
+
+- f21a082 — completion contract and checkpoint policy.
+- 04f754d — schema 3 metadata seals, legacy migration and provenance-preserving bundle v2.
+- 1059336 — independent full event semantics, shared corpus and native calendar overflow fix.
+- d856424417f792793eb73dc07328b1bd11437ad8 — historical windows and final M1 qualification; source/evidence checkpoint.
+
+Each implementation commit contains rationale, validation and remaining limitations in its full commit body. All checkpoints are pushed to origin/beta-1; main remains the preserved baseline.
