@@ -181,11 +181,23 @@ def run(source, prepare_only=False):
             require(prepared['session']['metadataIntegrity'] == 'sha256-envelope-v1-verified',
                     'synthetic saved session was not verified')
             require(prepared['eventCount'] == 3, 'synthetic event count changed')
-            require(int(prepared['durationUs']) == 3000000, 'requested synthetic window changed')
+            require(int(prepared['durationUs']) == 3720000, 'editable maximum note tail was not reserved')
+            bounds = prepared['session']['observedBoundsUs']
+            require(int(bounds[1]) - int(bounds[0]) == 3000000, 'requested synthetic window changed')
             if prepare_only:
                 current = host.success('getTransport')
                 require(current['state'] == 'stopped' and current['positionUs'] == '0', 'prepare auto-played')
                 require(host.success('setAudioEnabled', dict(enabled=False))['status'] == 'disabled', 'disable failed')
+                library = host.success('getVoiceLibrary')
+                require([p['id'] for p in library['parameters']] == ['tuning', 'attack', 'decay', 'gain'], 'native voice controls differ')
+                voice_id = 'species:device-smoke:species'
+                initial_voice = host.success('getVoice', dict(voiceId=voice_id))
+                for phase, value in [('begin', initial_voice['values']['tuning']), ('change', .75), ('end', .75)]:
+                    host.success('setVoiceParameter', dict(voiceId=voice_id, parameterId='tuning', normalizedValue=value, gesture=phase))
+                saved_voice = host.success('saveVoice', dict(voiceId=voice_id, expectedRevision=initial_voice['savedRevision']))
+                require(saved_voice['savedRevision'] == '1' and not saved_voice['dirty'] and saved_voice['values']['tuning'] == .75, 'native host voice save failed')
+                require((database.parent / 'voices.sqlite3').is_file(), 'disposable voice sidecar not created')
+                evidence['checks']['realHostVoiceEditingAndSaveWithoutDevice'] = True
                 evidence['checks']['realHostPrepareAndQuiescentLifecycle'] = True
                 evidence['status'] = 'passed_host_lifecycle_smoke'
                 return evidence

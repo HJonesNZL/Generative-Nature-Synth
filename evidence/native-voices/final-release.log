@@ -1,0 +1,44 @@
+[  4%] Built target atlas_core
+[  9%] Built target atlas-core-tests
+[ 16%] Built target atlas_audio
+[ 30%] Built target atlas-audio-bench
+[ 30%] Built target atlas_playback
+[ 30%] Built target atlas-audio-tests
+[ 35%] Built target atlas-playback-tests
+[ 50%] Built target atlas_storage
+[ 54%] Built target atlas-sha256-tests
+[ 59%] Built target atlas-voice-audio-tests
+[ 64%] Built target atlas-native
+[ 69%] Built target atlas-voice-store-tests
+[ 78%] Built target atlas-playback-fixture-host
+[ 78%] Built target atlas-studio-fixture-host
+[100%] Built target atlas-audio-host
+Test project /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native-playback
+      Start  1: atlas-core
+ 1/12 Test  #1: atlas-core .......................   Passed    0.00 sec
+      Start  2: atlas-sha256
+ 2/12 Test  #2: atlas-sha256 .....................   Passed    0.01 sec
+      Start  3: atlas-audio
+ 3/12 Test  #3: atlas-audio ......................   Passed    0.09 sec
+      Start  4: atlas-voice-audio
+ 4/12 Test  #4: atlas-voice-audio ................   Passed    0.23 sec
+      Start  5: atlas-voice-store
+ 5/12 Test  #5: atlas-voice-store ................   Passed    0.30 sec
+      Start  6: atlas-playback
+ 6/12 Test  #6: atlas-playback ...................   Passed    0.56 sec
+      Start  7: atlas-voice-ui
+ 7/12 Test  #7: atlas-voice-ui ...................   Passed    0.81 sec
+      Start  8: atlas-playback-ui
+ 8/12 Test  #8: atlas-playback-ui ................   Passed    0.64 sec
+      Start  9: atlas-audio-host-lifecycle
+ 9/12 Test  #9: atlas-audio-host-lifecycle .......   Passed    0.13 sec
+      Start 10: atlas-storage
+10/12 Test #10: atlas-storage ....................   Passed    0.64 sec
+      Start 11: atlas-ui-host
+11/12 Test #11: atlas-ui-host ....................   Passed    0.13 sec
+      Start 12: atlas-wav
+12/12 Test #12: atlas-wav ........................   Passed    1.49 sec
+
+100% tests passed, 0 tests failed out of 12
+
+Total Test time (real) =   5.02 sec

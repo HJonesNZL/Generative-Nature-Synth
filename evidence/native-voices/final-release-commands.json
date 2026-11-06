@@ -1,0 +1,53 @@
+{
+  "commands": [
+    {
+      "command": [
+        "cmake",
+        "--build",
+        "build/native-playback",
+        "-j",
+        "4"
+      ],
+      "exitCode": 0,
+      "elapsedSeconds": 0.357
+    },
+    {
+      "command": [
+        "ctest",
+        "--test-dir",
+        "build/native-playback",
+        "--output-on-failure"
+      ],
+      "exitCode": 0,
+      "elapsedSeconds": 5.026
+    }
+  ],
+  "productionSources": {
+    "CMakeLists.txt": "b2b84dc161d3cddda1380391fe264aa082b751570d3085da7b91f7248d3dbbf0",
+    "native/src/audio.cpp": "80764a46e948685af9ac04e6e0fb8d17d2a20f7db8e8a30478e02e01c64cd0a4",
+    "native/src/audio_host_main.cpp": "f0ebc162f35d17141d62685ac246eead1476ef539b03df5c16e67dfb41b396e6",
+    "native/src/core.cpp": "9451fa0dd37ccf76d15e856b15d36a28f1d8a1340ec1e273a3f6e149738117eb",
+    "native/src/event_validation.cpp": "92496c5b4030fd98b74e06a15ff949f2b7f39e114e9a269247751c08fd694a56",
+    "native/src/juce_output.cpp": "cce717784a547750a15f926ec4876f6bf0fa72e5a91d68087d6d893523c6e0a3",
+    "native/src/main.cpp": "9d67daa1d2d12100bec6aabe9c5e15dc1ce18f5017f4ef43566aec44b5a49462",
+    "native/src/playback.cpp": "abfccb16b39672ead600810b24b81bfa2ef32448155c85589577701cda4b4202",
+    "native/src/sha256.cpp": "2b4ee63b0eb803a6b4b920f25a96162c12920b4b994e2f51d564528fa6038975",
+    "native/src/storage.cpp": "2267bba105f30970580c910e2e5af7d10e4da06e8cd5f05fd4c666827cf85c1d",
+    "native/src/ui_host.cpp": "638de8b19600f6f300ab3d8a263f1057732035deb4b55ac0c11d756ebe0d344b",
+    "native/src/voices.cpp": "b347f9601314388bfc98df4d0b57cff32235512dc4edace7760e21618c1c67b9",
+    "native/src/wav.cpp": "3871714b32d8395749aa1ddcbe989fed0808fce32a60aaf550117f8f7ca03f6e",
+    "native/src/event_validation.hpp": "bab21215216f5e0166ec16dfe34e49691992fd8706b4679509e9271c0bafa675",
+    "native/src/json_text.hpp": "5d02ade4aeb31aad1ccf78bfd7262d4a1251d9d338e9a71b9f8159f73430ba97",
+    "native/src/sha256.hpp": "0b28ae813895efb324f9c6d51293a8eade15f292f69ebe9f27fba4ffe2c635ef",
+    "native/src/sqlite_statement.hpp": "8c7371d136977107b373a83c996fcf1def4ee96a27daa14060e9aa37a6255ef6",
+    "native/include/atlas/audio.hpp": "00dc17961e58f4459fe8e9f4aa75f4733bbac73b4bc0dc82984f6dea79b2ecc9",
+    "native/include/atlas/core.hpp": "86c5e72c5e0723a382032574e395f6fac9492d64349b81b08a1d0da3ac767e49",
+    "native/include/atlas/playback.hpp": "4eea078cdedb4f0bfde4c92754beafade31de14759c5970c0320c757af703386",
+    "native/include/atlas/storage.hpp": "d0fcb14739ecafa966a62b7a70b73839f0eb65515c683697ec59f6f26943bf5a",
+    "native/include/atlas/ui_host.hpp": "5e5b47e043224622a87371c614b33867644811f472f06e757468886fb798e1a3",
+    "native/include/atlas/voices.hpp": "1b15d6b9e1044c94963a8d376ce73629cd8ff3754d4a0d1c1972fdf6328dd66a",
+    "native/include/atlas/wav.hpp": "433b16bff0940dd7b134f7a87f7082b823cd73b2474572f6fe859145f638a4c7",
+    "native/cmake/build_identity.hpp.in": "5e74f4abbea2ea8dac7d55244693c1448a1e771e3e9447b2729995eeec626b12"
+  },
+  "sourceUnchanged": true
+}

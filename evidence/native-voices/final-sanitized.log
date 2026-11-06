@@ -1,0 +1,75 @@
+-- GLOB mismatch!
+The following files were added:
+  +/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/native/include/atlas/voices.hpp
+-- GLOB mismatch!
+The following files were added:
+  +/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/native/src/voices.cpp
+-- Configuring done (0.2s)
+-- Generating done (0.0s)
+-- Build files have been written to: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native-sanitized
+[  6%] Built target atlas_core
+[ 12%] Built target atlas-core-tests
+[ 15%] Building CXX object CMakeFiles/atlas_audio.dir/native/src/audio.cpp.o
+[ 18%] Building CXX object CMakeFiles/atlas_audio.dir/native/src/wav.cpp.o
+[ 21%] Linking CXX static library libatlas_audio.a
+[ 21%] Built target atlas_audio
+[ 30%] Building CXX object CMakeFiles/atlas-audio-tests.dir/native/tests/audio_tests.cpp.o
+[ 30%] Building CXX object CMakeFiles/atlas-audio-bench.dir/native/tests/audio_bench.cpp.o
+[ 30%] Building CXX object CMakeFiles/atlas_playback.dir/native/src/playback.cpp.o
+[ 33%] Linking CXX executable atlas-audio-bench
+[ 33%] Built target atlas-audio-bench
+[ 36%] Linking CXX static library libatlas_playback.a
+[ 36%] Built target atlas_playback
+[ 39%] Linking CXX executable atlas-audio-tests
+[ 42%] Building CXX object CMakeFiles/atlas-playback-tests.dir/native/tests/playback_tests.cpp.o
+[ 45%] Building CXX object CMakeFiles/atlas_storage.dir/native/src/ui_host.cpp.o
+[ 48%] Building CXX object CMakeFiles/atlas_storage.dir/native/src/voices.cpp.o
+[ 48%] Built target atlas-audio-tests
+[ 51%] Linking CXX executable atlas-playback-tests
+[ 51%] Built target atlas-playback-tests
+[ 54%] Linking CXX static library libatlas_storage.a
+[ 63%] Built target atlas_storage
+[ 69%] Building CXX object CMakeFiles/atlas-voice-audio-tests.dir/native/tests/voice_audio_tests.cpp.o
+[ 69%] Building CXX object CMakeFiles/atlas-voice-store-tests.dir/native/tests/voice_store_tests.cpp.o
+[ 75%] Building CXX object CMakeFiles/atlas-native.dir/native/src/main.cpp.o
+[ 75%] Linking CXX executable atlas-sha256-tests
+[ 78%] Built target atlas-sha256-tests
+[ 81%] Building CXX object CMakeFiles/atlas-playback-fixture-host.dir/native/tests/playback_host.cpp.o
+[ 84%] Linking CXX executable atlas-voice-store-tests
+[ 87%] Linking CXX executable atlas-native
+[ 90%] Linking CXX executable atlas-playback-fixture-host
+[ 90%] Built target atlas-voice-store-tests
+[ 93%] Building CXX object CMakeFiles/atlas-studio-fixture-host.dir/native/tests/studio_host.cpp.o
+[ 93%] Built target atlas-native
+[ 93%] Built target atlas-playback-fixture-host
+[ 96%] Linking CXX executable atlas-voice-audio-tests
+[ 96%] Built target atlas-voice-audio-tests
+[100%] Linking CXX executable atlas-studio-fixture-host
+[100%] Built target atlas-studio-fixture-host
+Test project /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native-sanitized
+      Start  1: atlas-core
+ 1/11 Test  #1: atlas-core .......................   Passed    0.06 sec
+      Start  2: atlas-sha256
+ 2/11 Test  #2: atlas-sha256 .....................   Passed    0.55 sec
+      Start  3: atlas-audio
+ 3/11 Test  #3: atlas-audio ......................   Passed    0.92 sec
+      Start  4: atlas-voice-audio
+ 4/11 Test  #4: atlas-voice-audio ................   Passed    2.16 sec
+      Start  5: atlas-voice-store
+ 5/11 Test  #5: atlas-voice-store ................   Passed    0.67 sec
+      Start  6: atlas-playback
+ 6/11 Test  #6: atlas-playback ...................   Passed    1.00 sec
+      Start  7: atlas-voice-ui
+ 7/11 Test  #7: atlas-voice-ui ...................   Passed    1.41 sec
+      Start  8: atlas-playback-ui
+ 8/11 Test  #8: atlas-playback-ui ................   Passed    1.23 sec
+      Start  9: atlas-storage
+ 9/11 Test  #9: atlas-storage ....................   Passed    5.21 sec
+      Start 10: atlas-ui-host
+10/11 Test #10: atlas-ui-host ....................   Passed    0.43 sec
+      Start 11: atlas-wav
+11/11 Test #11: atlas-wav ........................   Passed    3.78 sec
+
+100% tests passed, 0 tests failed out of 11
+
+Total Test time (real) =  17.42 sec

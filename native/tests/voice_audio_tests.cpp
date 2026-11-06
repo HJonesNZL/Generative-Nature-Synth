@@ -307,10 +307,13 @@ int main() {
             }
             atlas::VoiceStore reopened(temporary.path(), species);
             const auto defaults = reopened.getVoice("default").settings;
-        for (const auto& voice : reopened.voices())
-            check(voice.settings.tuningSemitones == 0 && voice.settings.attackSeconds == .008 &&
-                  voice.settings.decaySeconds == .650 && voice.settings.gainDb == 0,
-                  "normalized default did not retain exact physical identity");
+            for (const auto &voice : reopened.voices())
+                check(voice.settings.tuningSemitones == 0 &&
+                          voice.settings.attackSeconds == .008 &&
+                          voice.settings.decaySeconds == .650 &&
+                          voice.settings.gainDb == 0,
+                      "normalized default did not retain exact physical "
+                      "identity");
             // Cover every supported integer rate: a one-ulp inversion error
             // must not add or remove a frame at an otherwise exact sample
             // boundary.

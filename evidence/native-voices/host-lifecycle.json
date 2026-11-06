@@ -1,0 +1,482 @@
+{
+  "schema": "animal-atlas-native-device-smoke-v1",
+  "startedAtUtc": "2026-11-06T20:39:10.595767+00:00",
+  "platform": "macOS-15.6.1-arm64-arm-64bit",
+  "status": "passed_host_lifecycle_smoke",
+  "protocol": [
+    {
+      "elapsedSeconds": 0.001444,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-1",
+        "method": "getCapabilities",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-1",
+        "ok": true,
+        "result": {
+          "protocolVersion": 1,
+          "implementation": "native",
+          "supportedMethods": [
+            "getCapabilities",
+            "getChanges",
+            "getCatalog",
+            "listSessions",
+            "prepareReplay",
+            "getMaterialEvents",
+            "getTransport",
+            "setTransport",
+            "getAudioState",
+            "setAudioEnabled",
+            "getVoiceLibrary",
+            "getVoice",
+            "setVoiceParameter",
+            "saveVoice",
+            "revertVoice"
+          ],
+          "audioAvailable": true,
+          "maxEventBatch": 500,
+          "maxVisibleMarkers": 500
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 0.043239,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-2",
+        "method": "getAudioState",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-2",
+        "ok": true,
+        "result": {
+          "status": "disabled",
+          "deviceName": null,
+          "masterGainDb": -18.0,
+          "peakDbfs": null,
+          "meterIsSimulated": false,
+          "clipping": false,
+          "activeSynthVoices": null,
+          "maxSynthVoices": 8,
+          "sampleRate": null,
+          "error": null
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 0.043335,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-3",
+        "method": "prepareReplay",
+        "args": {
+          "sessionId": "648ed483-1af4-4dd8-b185-390f6fdc83c8",
+          "basis": "observed",
+          "speedNumerator": "1",
+          "speedDenominator": "1"
+        }
+      },
+      "reply": {
+        "requestId": "device-smoke-3",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "1",
+          "durationUs": "3720000",
+          "eventCount": 3,
+          "peakEventsPerSecond": 3,
+          "session": {
+            "id": "648ed483-1af4-4dd8-b185-390f6fdc83c8",
+            "name": "Disposable synthetic device smoke",
+            "state": "frozen",
+            "origin": "archive_snapshot",
+            "eventCount": 3,
+            "captureTruncated": false,
+            "metadataIntegrity": "sha256-envelope-v1-verified",
+            "observedWindowPolicy": "preserve_requested",
+            "observedBoundsUs": [
+              "1767225600000000",
+              "1767225603000000"
+            ],
+            "arrivalBoundsUs": [
+              "1793997550617434",
+              "1793997550617434"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 0.049865,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-4",
+        "method": "getTransport",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-4",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "1",
+          "state": "stopped",
+          "positionUs": "0",
+          "durationUs": "3720000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 0.049925,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-5",
+        "method": "setAudioEnabled",
+        "args": {
+          "enabled": false
+        }
+      },
+      "reply": {
+        "requestId": "device-smoke-5",
+        "ok": true,
+        "result": {
+          "status": "disabled",
+          "deviceName": null,
+          "masterGainDb": -18.0,
+          "peakDbfs": null,
+          "meterIsSimulated": false,
+          "clipping": false,
+          "activeSynthVoices": null,
+          "maxSynthVoices": 8,
+          "sampleRate": 48000,
+          "error": null
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 0.049978,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-6",
+        "method": "getVoiceLibrary",
+        "args": {}
+      },
+      "reply": {
+        "requestId": "device-smoke-6",
+        "ok": true,
+        "result": {
+          "entries": [
+            {
+              "groupId": "native",
+              "groupName": "Species voices",
+              "groupVoiceId": "default",
+              "species": [
+                {
+                  "speciesId": "device-smoke:species",
+                  "commonName": "device-smoke:species",
+                  "scientificName": "",
+                  "voiceId": "species:device-smoke:species",
+                  "individuals": []
+                }
+              ]
+            }
+          ],
+          "parameters": [
+            {
+              "id": "tuning",
+              "label": "Transpose",
+              "unit": "st",
+              "curve": "linear",
+              "min": -12,
+              "max": 12,
+              "defaultValue": 0,
+              "proposal": false,
+              "step": 1
+            },
+            {
+              "id": "attack",
+              "label": "Attack",
+              "unit": "s",
+              "curve": "log",
+              "min": 0.002,
+              "max": 0.1,
+              "defaultValue": 0.008,
+              "proposal": false
+            },
+            {
+              "id": "decay",
+              "label": "Decay (T60)",
+              "unit": "s",
+              "curve": "log",
+              "min": 0.1,
+              "max": 3,
+              "defaultValue": 0.65,
+              "proposal": false
+            },
+            {
+              "id": "gain",
+              "label": "Voice gain",
+              "unit": "dB",
+              "curve": "linear",
+              "min": -60,
+              "max": 0,
+              "defaultValue": 0,
+              "proposal": false
+            }
+          ],
+          "types": [
+            {
+              "id": "struck",
+              "label": "Struck tone",
+              "proposal": false
+            }
+          ],
+          "maxDefinitions": 513,
+          "editingBehavior": "new_notes"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 0.050342,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-7",
+        "method": "getVoice",
+        "args": {
+          "voiceId": "species:device-smoke:species"
+        }
+      },
+      "reply": {
+        "requestId": "device-smoke-7",
+        "ok": true,
+        "result": {
+          "id": "species:device-smoke:species",
+          "name": "device-smoke:species",
+          "scope": "species",
+          "targetId": "device-smoke:species",
+          "inheritsFromId": null,
+          "type": "struck",
+          "values": {
+            "tuning": 0.5,
+            "attack": 0.35436764027111584,
+            "decay": 0.5503362395236371,
+            "gain": 1
+          },
+          "overriddenParameterIds": [],
+          "savedRevision": "0",
+          "changeRevision": "0",
+          "dirty": false
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 0.050382,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-8",
+        "method": "setVoiceParameter",
+        "args": {
+          "voiceId": "species:device-smoke:species",
+          "parameterId": "tuning",
+          "normalizedValue": 0.5,
+          "gesture": "begin"
+        }
+      },
+      "reply": {
+        "requestId": "device-smoke-8",
+        "ok": true,
+        "result": {
+          "normalizedValue": 0.5,
+          "changeRevision": "1",
+          "dirty": false
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 0.050421,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-9",
+        "method": "setVoiceParameter",
+        "args": {
+          "voiceId": "species:device-smoke:species",
+          "parameterId": "tuning",
+          "normalizedValue": 0.75,
+          "gesture": "change"
+        }
+      },
+      "reply": {
+        "requestId": "device-smoke-9",
+        "ok": true,
+        "result": {
+          "normalizedValue": 0.75,
+          "changeRevision": "2",
+          "dirty": true
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 0.050452,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-10",
+        "method": "setVoiceParameter",
+        "args": {
+          "voiceId": "species:device-smoke:species",
+          "parameterId": "tuning",
+          "normalizedValue": 0.75,
+          "gesture": "end"
+        }
+      },
+      "reply": {
+        "requestId": "device-smoke-10",
+        "ok": true,
+        "result": {
+          "normalizedValue": 0.75,
+          "changeRevision": "3",
+          "dirty": true
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 0.050479,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-11",
+        "method": "saveVoice",
+        "args": {
+          "voiceId": "species:device-smoke:species",
+          "expectedRevision": "0"
+        }
+      },
+      "reply": {
+        "requestId": "device-smoke-11",
+        "ok": true,
+        "result": {
+          "id": "species:device-smoke:species",
+          "name": "device-smoke:species",
+          "scope": "species",
+          "targetId": "device-smoke:species",
+          "inheritsFromId": null,
+          "type": "struck",
+          "values": {
+            "tuning": 0.75,
+            "attack": 0.35436764027111584,
+            "decay": 0.5503362395236371,
+            "gain": 1
+          },
+          "overriddenParameterIds": [],
+          "savedRevision": "1",
+          "changeRevision": "4",
+          "dirty": false
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 0.050942,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-12",
+        "method": "setTransport",
+        "args": {
+          "action": "panic"
+        }
+      },
+      "reply": {
+        "requestId": "device-smoke-12",
+        "ok": true,
+        "result": {
+          "preparationId": "audio-1",
+          "generation": "3",
+          "state": "stopped",
+          "positionUs": "0",
+          "durationUs": "3720000"
+        }
+      }
+    },
+    {
+      "elapsedSeconds": 0.050975,
+      "request": {
+        "protocolVersion": 1,
+        "requestId": "device-smoke-13",
+        "method": "setAudioEnabled",
+        "args": {
+          "enabled": false
+        }
+      },
+      "reply": {
+        "requestId": "device-smoke-13",
+        "ok": true,
+        "result": {
+          "status": "disabled",
+          "deviceName": null,
+          "masterGainDb": -18.0,
+          "peakDbfs": null,
+          "meterIsSimulated": false,
+          "clipping": false,
+          "activeSynthVoices": null,
+          "maxSynthVoices": 8,
+          "sampleRate": 48000,
+          "error": null
+        }
+      }
+    }
+  ],
+  "checks": {
+    "realHostVoiceEditingAndSaveWithoutDevice": true,
+    "realHostPrepareAndQuiescentLifecycle": true,
+    "temporaryDatabaseUnchanged": true
+  },
+  "cleanup": {
+    "forcedKill": false,
+    "setTransport": true,
+    "setAudioEnabled": true,
+    "stdinEofSent": true,
+    "exitCode": 0,
+    "stderr": ""
+  },
+  "limits": {
+    "syntheticOnly": true,
+    "ownerLibraryAccess": false,
+    "providerRequests": false,
+    "notesSeconds": [
+      0,
+      0.3,
+      0.6
+    ],
+    "requestedDurationSeconds": 3,
+    "masterGainDb": -18,
+    "prepareOnly": true,
+    "deviceSelection": "current default output only; no fallback/retry",
+    "physicalSpeakerOrHeardAudioVerified": false,
+    "microphoneUsed": false,
+    "latencyQualified": false,
+    "cpuQualified": false,
+    "dawQualified": false,
+    "sustainedDeviceQualified": false
+  },
+  "artifact": {
+    "source": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native-playback/atlas-audio-host",
+    "immutableCopy": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native-playback-smoke-f10b4abfb5c95764/atlas-audio-host",
+    "sha256": "f10b4abfb5c9576400a95e0b84faaa02357bdc7949113f4ac135fc670b031e97",
+    "version": {
+      "engine": "animal-atlas-native-audio",
+      "source_sha256": "19e53af802d932c05805b4ca783b3a2f45a999a9d240c977d3f884e56137e898"
+    },
+    "versionStderr": ""
+  },
+  "fixture": {
+    "eventCount": 3,
+    "sessionId": "648ed483-1af4-4dd8-b185-390f6fdc83c8",
+    "provenance": "demo",
+    "databaseFileName": "synthetic device smoke.sqlite3",
+    "databasePathContainsSpaces": true,
+    "databaseSha256Before": "db07636e10ac98db0d23247a5a9f2e3fbbb591173da178b0069475e2db09e230",
+    "temporaryDatabaseDeletedOnExit": true,
+    "databaseSha256After": "db07636e10ac98db0d23247a5a9f2e3fbbb591173da178b0069475e2db09e230"
+  },
+  "elapsedSeconds": 0.068732
+}

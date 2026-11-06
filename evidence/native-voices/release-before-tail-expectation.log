@@ -1,0 +1,87 @@
+-- GLOB mismatch!
+The following files were added:
+  +/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/native/include/atlas/voices.hpp
+-- GLOB mismatch!
+The following files were added:
+  +/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/native/src/voices.cpp
+-- Configuring done (0.3s)
+-- Generating done (0.0s)
+-- Build files have been written to: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native-playback
+[  4%] Built target atlas_core
+[  9%] Built target atlas-core-tests
+[ 14%] Building CXX object CMakeFiles/atlas_audio.dir/native/src/wav.cpp.o
+[ 14%] Building CXX object CMakeFiles/atlas_audio.dir/native/src/audio.cpp.o
+[ 16%] Linking CXX static library libatlas_audio.a
+[ 16%] Built target atlas_audio
+[ 23%] Building CXX object CMakeFiles/atlas-audio-bench.dir/native/tests/audio_bench.cpp.o
+[ 23%] Building CXX object CMakeFiles/atlas_playback.dir/native/src/playback.cpp.o
+[ 23%] Building CXX object CMakeFiles/atlas-audio-tests.dir/native/tests/audio_tests.cpp.o
+[ 26%] Linking CXX static library libatlas_playback.a
+[ 28%] Linking CXX executable atlas-audio-bench
+[ 28%] Built target atlas_playback
+[ 30%] Building CXX object CMakeFiles/atlas-playback-tests.dir/native/tests/playback_tests.cpp.o
+[ 30%] Built target atlas-audio-bench
+[ 35%] Building CXX object CMakeFiles/atlas_storage.dir/native/src/voices.cpp.o
+[ 35%] Building CXX object CMakeFiles/atlas_storage.dir/native/src/ui_host.cpp.o
+[ 38%] Linking CXX executable atlas-audio-tests
+[ 38%] Built target atlas-audio-tests
+[ 40%] Linking CXX executable atlas-playback-tests
+[ 40%] Built target atlas-playback-tests
+[ 42%] Linking CXX static library libatlas_storage.a
+[ 50%] Built target atlas_storage
+[ 52%] Building CXX object CMakeFiles/atlas-voice-audio-tests.dir/native/tests/voice_audio_tests.cpp.o
+[ 57%] Linking CXX executable atlas-sha256-tests
+[ 57%] Building CXX object CMakeFiles/atlas-native.dir/native/src/main.cpp.o
+[ 59%] Built target atlas-sha256-tests
+[ 61%] Building CXX object CMakeFiles/atlas-voice-store-tests.dir/native/tests/voice_store_tests.cpp.o
+[ 64%] Building CXX object CMakeFiles/atlas-audio-host.dir/native/src/audio_host_main.cpp.o
+[ 66%] Linking CXX executable atlas-native
+[ 66%] Built target atlas-native
+[ 71%] Building CXX object CMakeFiles/atlas-playback-fixture-host.dir/native/tests/playback_host.cpp.o
+[ 71%] Linking CXX executable atlas-voice-store-tests
+[ 71%] Built target atlas-voice-store-tests
+[ 73%] Building CXX object CMakeFiles/atlas-audio-host.dir/native/src/juce_output.cpp.o
+[ 76%] Building CXX object CMakeFiles/atlas-studio-fixture-host.dir/native/tests/studio_host.cpp.o
+[ 78%] Linking CXX executable atlas-voice-audio-tests
+[ 78%] Built target atlas-voice-audio-tests
+[ 80%] Linking CXX executable atlas-playback-fixture-host
+[ 80%] Built target atlas-playback-fixture-host
+[ 83%] Linking CXX executable atlas-studio-fixture-host
+[ 83%] Built target atlas-studio-fixture-host
+[ 85%] Linking CXX executable atlas-audio-host
+[100%] Built target atlas-audio-host
+Test project /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native-playback
+      Start  1: atlas-core
+ 1/12 Test  #1: atlas-core .......................   Passed    0.01 sec
+      Start  2: atlas-sha256
+ 2/12 Test  #2: atlas-sha256 .....................   Passed    0.39 sec
+      Start  3: atlas-audio
+ 3/12 Test  #3: atlas-audio ......................   Passed    0.34 sec
+      Start  4: atlas-voice-audio
+ 4/12 Test  #4: atlas-voice-audio ................   Passed    0.68 sec
+      Start  5: atlas-voice-store
+ 5/12 Test  #5: atlas-voice-store ................   Passed    0.54 sec
+      Start  6: atlas-playback
+ 6/12 Test  #6: atlas-playback ...................   Passed    0.90 sec
+      Start  7: atlas-voice-ui
+ 7/12 Test  #7: atlas-voice-ui ...................   Passed    1.18 sec
+      Start  8: atlas-playback-ui
+ 8/12 Test  #8: atlas-playback-ui ................   Passed    0.87 sec
+      Start  9: atlas-audio-host-lifecycle
+ 9/12 Test  #9: atlas-audio-host-lifecycle .......***Failed    0.39 sec
+{"status": "failed", "elapsedSeconds": 0.342399, "artifactSha256": "f10b4abfb5c9576400a95e0b84faaa02357bdc7949113f4ac135fc670b031e97", "evidence": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native-playback/audio-host-lifecycle.json"}
+
+      Start 10: atlas-storage
+10/12 Test #10: atlas-storage ....................   Passed    0.99 sec
+      Start 11: atlas-ui-host
+11/12 Test #11: atlas-ui-host ....................   Passed    0.13 sec
+      Start 12: atlas-wav
+12/12 Test #12: atlas-wav ........................   Passed    1.53 sec
+
+92% tests passed, 1 tests failed out of 12
+
+Total Test time (real) =   7.96 sec
+
+The following tests FAILED:
+	  9 - atlas-audio-host-lifecycle (Failed)
+Errors while running CTest

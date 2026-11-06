@@ -1,0 +1,43 @@
+[  6%] Built target atlas_core
+[ 12%] Built target atlas-core-tests
+[ 21%] Built target atlas_audio
+[ 39%] Built target atlas_playback
+[ 39%] Built target atlas-audio-bench
+[ 39%] Built target atlas-audio-tests
+[ 45%] Built target atlas-playback-tests
+[ 63%] Built target atlas_storage
+[ 69%] Built target atlas-sha256-tests
+[ 84%] Built target atlas-voice-store-tests
+[ 84%] Built target atlas-native
+[ 84%] Building CXX object CMakeFiles/atlas-voice-audio-tests.dir/native/tests/voice_audio_tests.cpp.o
+[ 90%] Built target atlas-playback-fixture-host
+[ 96%] Built target atlas-studio-fixture-host
+[100%] Linking CXX executable atlas-voice-audio-tests
+[100%] Built target atlas-voice-audio-tests
+Test project /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native
+      Start  1: atlas-core
+ 1/11 Test  #1: atlas-core .......................   Passed    0.01 sec
+      Start  2: atlas-sha256
+ 2/11 Test  #2: atlas-sha256 .....................   Passed    0.08 sec
+      Start  3: atlas-audio
+ 3/11 Test  #3: atlas-audio ......................   Passed    0.26 sec
+      Start  4: atlas-voice-audio
+ 4/11 Test  #4: atlas-voice-audio ................   Passed    1.05 sec
+      Start  5: atlas-voice-store
+ 5/11 Test  #5: atlas-voice-store ................   Passed    0.30 sec
+      Start  6: atlas-playback
+ 6/11 Test  #6: atlas-playback ...................   Passed    0.58 sec
+      Start  7: atlas-voice-ui
+ 7/11 Test  #7: atlas-voice-ui ...................   Passed    0.77 sec
+      Start  8: atlas-playback-ui
+ 8/11 Test  #8: atlas-playback-ui ................   Passed    0.60 sec
+      Start  9: atlas-storage
+ 9/11 Test  #9: atlas-storage ....................   Passed    0.75 sec
+      Start 10: atlas-ui-host
+10/11 Test #10: atlas-ui-host ....................   Passed    0.14 sec
+      Start 11: atlas-wav
+11/11 Test #11: atlas-wav ........................   Passed    1.66 sec
+
+100% tests passed, 0 tests failed out of 11
+
+Total Test time (real) =   6.19 sec
