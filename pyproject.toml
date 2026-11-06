@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "animal-atlas-backend"
+version = "0.2.0"
+description = "Local, zero-service-cost wildlife event collector"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+animal-atlas = "animal_atlas.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["animal_atlas*"]

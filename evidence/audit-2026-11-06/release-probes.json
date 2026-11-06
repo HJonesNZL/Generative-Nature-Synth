@@ -1,0 +1,22 @@
+{
+  "client_cross_authority_redirect": {
+    "redirect_handler": "HTTPRedirectHandler",
+    "authorization_forwarded": true,
+    "network_requests": 0
+  },
+  "empty_token_method_probe": {
+    "accepted": true,
+    "replies": []
+  },
+  "session_library_capacity": {
+    "created": 101,
+    "listed": 100,
+    "first_present_in_list": false,
+    "first_still_readable_by_id": true
+  },
+  "registry": {
+    "entries": 30,
+    "implemented": 2,
+    "licence_null": 30
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "feature": "Historical species soundscapes",
+  "requested_local_date": "2026-11-06",
+  "status": "accepted requirement; UI exploration; end-to-end archive discovery not implemented",
+  "user_intent": "Create musical soundscapes for selected species at selected historical dates/times where genuine data is available.",
+  "selection": {
+    "species": "one or more species; namespaced IDs; optional individual/deployment where evidenced",
+    "region": "published point/uncertainty geometry; preserve redaction",
+    "time": "point or bounded observation-time interval with timezone; UTC stored internally",
+    "sources": "only permitted zero-charge archives, local recordings or authorised imports"
+  },
+  "availability": {
+    "required": [
+      "show accessible interval and source resolution",
+      "distinguish missing records from animal inactivity",
+      "show requested versus actually available interval",
+      "never imply arbitrary historical dates are supported",
+      "never synthesize fake animal events to fill archive gaps"
+    ],
+    "unknown": "unknown, not zero"
+  },
+  "composition": {
+    "required": [
+      "freeze selected event revisions and provenance",
+      "save query, timezone, source precision, coverage and gap metadata",
+      "choose observed-time versus arrival-time replay explicitly",
+      "preserve deterministic event ordering and seed",
+      "per-species voice design and region-specific effect routing",
+      "speed changes affect event spacing without implicitly shifting pitch"
+    ]
+  },
+  "cost_policy": "Zero paid services/data/dependencies. A paid or inaccessible archive remains unavailable; no billing fallback.",
+  "implementation_baseline": {
+    "already_present": [
+      "local persisted event revisions",
+      "observation-range archive snapshots",
+      "frozen sessions and portable local bundles",
+      "observation/arrival event replay plans"
+    ],
+    "remaining": [
+      "species-aware archive selection",
+      "historical provider capabilities/discovery and permitted archive imports",
+      "coverage/resolution ledger and gap UI",
+      "sound synthesis and geographic effects",
+      "rendered musical output"
+    ]
+  },
+  "references": [
+    "original concept 02 Field Notes",
+    "IMG_7377.JPG",
+    "IMG_7375.JPG",
+    "7154C614-6488-4351-88BF-0FC159F030A4.GIF"
+  ]
+}

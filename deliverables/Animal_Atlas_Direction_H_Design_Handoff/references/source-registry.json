@@ -1,0 +1,632 @@
+{
+  "schema_version": 1,
+  "updated_local_date": "2026-11-06",
+  "entries": [
+    {
+      "source_id": "birdweather",
+      "organisation": "BirdWeather",
+      "url": "https://app.birdweather.com/api/index.html",
+      "contribution": "NZ acoustic bird detections",
+      "technical_status": "endpoint_tested",
+      "permission_status": "unresolved_commercial_reuse",
+      "cost_status": "zero_charge_public_route_tested",
+      "implemented": true,
+      "authentication": "none",
+      "latest_test_evidence": "../evidence/live-smoke.json",
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Commercial integration/export permission",
+        "Service/request limits"
+      ]
+    },
+    {
+      "source_id": "nzsharks",
+      "organisation": "Sustainable Oceans Society / Great White App",
+      "url": "https://map.sustainableoceansociety.co.nz/",
+      "contribution": "NZ individual location snapshots",
+      "technical_status": "endpoint_tested",
+      "permission_status": "unresolved_public_client_route",
+      "cost_status": "zero_charge_public_route_tested",
+      "implemented": true,
+      "authentication": "none",
+      "latest_test_evidence": "../evidence/live-smoke.json",
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Commercial integration/export permission",
+        "Service/request limits"
+      ]
+    },
+    {
+      "source_id": "movebank",
+      "organisation": "Movebank",
+      "url": "https://www.movebank.org/cms/movebank-content/movebank-api",
+      "contribution": "Individual movement; study-specific access",
+      "technical_status": "research_lead",
+      "permission_status": "unknown",
+      "cost_status": "unverified_no_paid_integration_allowed",
+      "implemented": false,
+      "authentication": null,
+      "latest_test_evidence": null,
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Free machine access",
+        "Freshness",
+        "Reuse permission",
+        "Upstream duplication"
+      ]
+    },
+    {
+      "source_id": "nsw_sharksmart",
+      "organisation": "NSW SharkSmart",
+      "url": "https://www.sharksmart.nsw.gov.au/shark-activity",
+      "contribution": "Acoustic receiver detections",
+      "technical_status": "research_lead",
+      "permission_status": "unknown",
+      "cost_status": "unverified_no_paid_integration_allowed",
+      "implemented": false,
+      "authentication": null,
+      "latest_test_evidence": null,
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Free machine access",
+        "Freshness",
+        "Reuse permission",
+        "Upstream duplication"
+      ]
+    },
+    {
+      "source_id": "wa_sharksmart",
+      "organisation": "WA SharkSmart",
+      "url": "https://www.sharksmart.com.au/",
+      "contribution": "Receiver detections and sightings",
+      "technical_status": "research_lead",
+      "permission_status": "unknown",
+      "cost_status": "unverified_no_paid_integration_allowed",
+      "implemented": false,
+      "authentication": null,
+      "latest_test_evidence": null,
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Free machine access",
+        "Freshness",
+        "Reuse permission",
+        "Upstream duplication"
+      ]
+    },
+    {
+      "source_id": "robots4whales",
+      "organisation": "WHOI / Robots4Whales",
+      "url": "https://robots4whales.whoi.edu/",
+      "contribution": "Acoustic species detections",
+      "technical_status": "research_lead",
+      "permission_status": "unknown",
+      "cost_status": "unverified_no_paid_integration_allowed",
+      "implemented": false,
+      "authentication": null,
+      "latest_test_evidence": null,
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Free machine access",
+        "Freshness",
+        "Reuse permission",
+        "Upstream duplication"
+      ]
+    },
+    {
+      "source_id": "ocearch",
+      "organisation": "OCEARCH",
+      "url": "https://www.ocearch.org/research/track-sharks-with-us/",
+      "contribution": "Marine tracks",
+      "technical_status": "research_lead",
+      "permission_status": "unknown",
+      "cost_status": "unverified_no_paid_integration_allowed",
+      "implemented": false,
+      "authentication": null,
+      "latest_test_evidence": null,
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Free machine access",
+        "Freshness",
+        "Reuse permission",
+        "Upstream duplication"
+      ]
+    },
+    {
+      "source_id": "sharktivity",
+      "organisation": "Atlantic White Shark Conservancy",
+      "url": "https://www.atlanticwhiteshark.org/sharktivity-app/",
+      "contribution": "Shark detections and sightings",
+      "technical_status": "research_lead",
+      "permission_status": "unknown",
+      "cost_status": "unverified_no_paid_integration_allowed",
+      "implemented": false,
+      "authentication": null,
+      "latest_test_evidence": null,
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Free machine access",
+        "Freshness",
+        "Reuse permission",
+        "Upstream duplication"
+      ]
+    },
+    {
+      "source_id": "shark_research_foundation",
+      "organisation": "Shark Research Foundation",
+      "url": "https://sharkresearch.org/shark-tracking/",
+      "contribution": "Satellite shark tracks",
+      "technical_status": "research_lead",
+      "permission_status": "unknown",
+      "cost_status": "unverified_no_paid_integration_allowed",
+      "implemented": false,
+      "authentication": null,
+      "latest_test_evidence": null,
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Free machine access",
+        "Freshness",
+        "Reuse permission",
+        "Upstream duplication"
+      ]
+    },
+    {
+      "source_id": "dorsal",
+      "organisation": "Dorsal",
+      "url": "https://www.dorsalwatch.com/faq/",
+      "contribution": "Reports; possible upstream duplicates",
+      "technical_status": "research_lead",
+      "permission_status": "unknown",
+      "cost_status": "unverified_no_paid_integration_allowed",
+      "implemented": false,
+      "authentication": null,
+      "latest_test_evidence": null,
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Free machine access",
+        "Freshness",
+        "Reuse permission",
+        "Upstream duplication"
+      ]
+    },
+    {
+      "source_id": "nz_albatross",
+      "organisation": "DOC / Fisheries NZ albatross tracker",
+      "url": "https://docnewzealand.shinyapps.io/albatrosstracker/",
+      "contribution": "NZ seabird tracks",
+      "technical_status": "research_lead",
+      "permission_status": "unknown",
+      "cost_status": "unverified_no_paid_integration_allowed",
+      "implemented": false,
+      "authentication": null,
+      "latest_test_evidence": null,
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Free machine access",
+        "Freshness",
+        "Reuse permission",
+        "Upstream duplication"
+      ]
+    },
+    {
+      "source_id": "muriwai_gannets",
+      "organisation": "DOC Muriwai gannets",
+      "url": "https://www.doc.govt.nz/news/media-releases/2026-media-releases/muriwai-gannets-reveal-flight-paths-for-the-first-time/",
+      "contribution": "Current deployments unverified",
+      "technical_status": "research_lead",
+      "permission_status": "unknown",
+      "cost_status": "unverified_no_paid_integration_allowed",
+      "implemented": false,
+      "authentication": null,
+      "latest_test_evidence": null,
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Free machine access",
+        "Freshness",
+        "Reuse permission",
+        "Upstream duplication"
+      ]
+    },
+    {
+      "source_id": "black_petrels",
+      "organisation": "Black petrel fledgling project",
+      "url": "https://acap.aq/latest-news/what-happens-to-black-petrels-in-their-first-year-at-sea-a-tracking-study-aims-to-find-out",
+      "contribution": "NZ birds",
+      "technical_status": "research_lead",
+      "permission_status": "unknown",
+      "cost_status": "unverified_no_paid_integration_allowed",
+      "implemented": false,
+      "authentication": null,
+      "latest_test_evidence": null,
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Free machine access",
+        "Freshness",
+        "Reuse permission",
+        "Upstream duplication"
+      ]
+    },
+    {
+      "source_id": "team_turtle",
+      "organisation": "Team Turtle",
+      "url": "https://www.doc.govt.nz/news/media-releases/2026-media-releases/satellite-tagged-turtles-reveal-epic-journeys/",
+      "contribution": "NZ turtles",
+      "technical_status": "research_lead",
+      "permission_status": "unknown",
+      "cost_status": "unverified_no_paid_integration_allowed",
+      "implemented": false,
+      "authentication": null,
+      "latest_test_evidence": null,
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Free machine access",
+        "Freshness",
+        "Reuse permission",
+        "Upstream duplication"
+      ]
+    },
+    {
+      "source_id": "kaikoura",
+      "organisation": "Whale Watch Kaikoura",
+      "url": "https://whalewatch.co.nz/our-nature/latest-sightings/live-map/",
+      "contribution": "Verify boat versus animal positions",
+      "technical_status": "research_lead",
+      "permission_status": "unknown",
+      "cost_status": "unverified_no_paid_integration_allowed",
+      "implemented": false,
+      "authentication": null,
+      "latest_test_evidence": null,
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Free machine access",
+        "Freshness",
+        "Reuse permission",
+        "Upstream duplication"
+      ]
+    },
+    {
+      "source_id": "seaturtle",
+      "organisation": "SEATURTLE.ORG",
+      "url": "https://www.seaturtle.org/tracking/",
+      "contribution": "Study-specific turtle tracks",
+      "technical_status": "research_lead",
+      "permission_status": "unknown",
+      "cost_status": "unverified_no_paid_integration_allowed",
+      "implemented": false,
+      "authentication": null,
+      "latest_test_evidence": null,
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Free machine access",
+        "Freshness",
+        "Reuse permission",
+        "Upstream duplication"
+      ]
+    },
+    {
+      "source_id": "oceanic_society",
+      "organisation": "Oceanic Society",
+      "url": "https://www.oceanicsociety.org/",
+      "contribution": "Leatherbacks",
+      "technical_status": "research_lead",
+      "permission_status": "unknown",
+      "cost_status": "unverified_no_paid_integration_allowed",
+      "implemented": false,
+      "authentication": null,
+      "latest_test_evidence": null,
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Free machine access",
+        "Freshness",
+        "Reuse permission",
+        "Upstream duplication"
+      ]
+    },
+    {
+      "source_id": "sea_turtle_conservancy",
+      "organisation": "Sea Turtle Conservancy",
+      "url": "https://conserveturtles.org/tracking-status/active/",
+      "contribution": "Turtles",
+      "technical_status": "research_lead",
+      "permission_status": "unknown",
+      "cost_status": "unverified_no_paid_integration_allowed",
+      "implemented": false,
+      "authentication": null,
+      "latest_test_evidence": null,
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Free machine access",
+        "Freshness",
+        "Reuse permission",
+        "Upstream duplication"
+      ]
+    },
+    {
+      "source_id": "loggerhead",
+      "organisation": "Loggerhead Marinelife Center",
+      "url": "https://marinelife.org/rehabilitation/rehabilitation-tracking/",
+      "contribution": "Turtles",
+      "technical_status": "research_lead",
+      "permission_status": "unknown",
+      "cost_status": "unverified_no_paid_integration_allowed",
+      "implemented": false,
+      "authentication": null,
+      "latest_test_evidence": null,
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Free machine access",
+        "Freshness",
+        "Reuse permission",
+        "Upstream duplication"
+      ]
+    },
+    {
+      "source_id": "stretch",
+      "organisation": "STRETCH",
+      "url": "https://www.loggerheadstretch.org/",
+      "contribution": "Pacific loggerheads; delay unknown",
+      "technical_status": "research_lead",
+      "permission_status": "unknown",
+      "cost_status": "unverified_no_paid_integration_allowed",
+      "implemented": false,
+      "authentication": null,
+      "latest_test_evidence": null,
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Free machine access",
+        "Freshness",
+        "Reuse permission",
+        "Upstream duplication"
+      ]
+    },
+    {
+      "source_id": "monterey",
+      "organisation": "Monterey Bay White Sharks",
+      "url": "https://www.montereybaywhitesharks.org/",
+      "contribution": "Shark tracks/detections",
+      "technical_status": "research_lead",
+      "permission_status": "unknown",
+      "cost_status": "unverified_no_paid_integration_allowed",
+      "implemented": false,
+      "authentication": null,
+      "latest_test_evidence": null,
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Free machine access",
+        "Freshness",
+        "Reuse permission",
+        "Upstream duplication"
+      ]
+    },
+    {
+      "source_id": "pacific_whale",
+      "organisation": "Pacific Whale Foundation",
+      "url": "https://pacificwhale.org/",
+      "contribution": "Whale/dolphin sightings",
+      "technical_status": "research_lead",
+      "permission_status": "unknown",
+      "cost_status": "unverified_no_paid_integration_allowed",
+      "implemented": false,
+      "authentication": null,
+      "latest_test_evidence": null,
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Free machine access",
+        "Freshness",
+        "Reuse permission",
+        "Upstream duplication"
+      ]
+    },
+    {
+      "source_id": "elephants",
+      "organisation": "Save the Elephants / WildTracks partners",
+      "url": "https://savetheelephants.org/our-work/science/movement/tracking/",
+      "contribution": "Partnership access",
+      "technical_status": "research_lead",
+      "permission_status": "unknown",
+      "cost_status": "unverified_no_paid_integration_allowed",
+      "implemented": false,
+      "authentication": null,
+      "latest_test_evidence": null,
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Free machine access",
+        "Freshness",
+        "Reuse permission",
+        "Upstream duplication"
+      ]
+    },
+    {
+      "source_id": "inaturalist",
+      "organisation": "iNaturalist",
+      "url": "https://api.inaturalist.org/",
+      "contribution": "Human observations; obscured coordinates",
+      "technical_status": "research_lead",
+      "permission_status": "unknown",
+      "cost_status": "unverified_no_paid_integration_allowed",
+      "implemented": false,
+      "authentication": null,
+      "latest_test_evidence": null,
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Free machine access",
+        "Freshness",
+        "Reuse permission",
+        "Upstream duplication"
+      ]
+    },
+    {
+      "source_id": "ebird",
+      "organisation": "eBird",
+      "url": "https://science.ebird.org/en/use-ebird-data/download-ebird-data-products",
+      "contribution": "Bird observations",
+      "technical_status": "research_lead",
+      "permission_status": "unknown",
+      "cost_status": "unverified_no_paid_integration_allowed",
+      "implemented": false,
+      "authentication": null,
+      "latest_test_evidence": null,
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Free machine access",
+        "Freshness",
+        "Reuse permission",
+        "Upstream duplication"
+      ]
+    },
+    {
+      "source_id": "motus",
+      "organisation": "Motus",
+      "url": "https://motus.org/",
+      "contribution": "Receiver detections; backlog unverified",
+      "technical_status": "research_lead",
+      "permission_status": "unknown",
+      "cost_status": "unverified_no_paid_integration_allowed",
+      "implemented": false,
+      "authentication": null,
+      "latest_test_evidence": null,
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Free machine access",
+        "Freshness",
+        "Reuse permission",
+        "Upstream duplication"
+      ]
+    },
+    {
+      "source_id": "polar_bears",
+      "organisation": "Polar Bears International",
+      "url": "https://polarbearsinternational.org/",
+      "contribution": "Likely delayed/archive; not verified",
+      "technical_status": "research_lead",
+      "permission_status": "unknown",
+      "cost_status": "unverified_no_paid_integration_allowed",
+      "implemented": false,
+      "authentication": null,
+      "latest_test_evidence": null,
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Free machine access",
+        "Freshness",
+        "Reuse permission",
+        "Upstream duplication"
+      ]
+    },
+    {
+      "source_id": "birdlife",
+      "organisation": "BirdLife Seabird Tracking Database",
+      "url": "https://www.seabirdtracking.org/",
+      "contribution": "Archive candidate",
+      "technical_status": "research_lead",
+      "permission_status": "unknown",
+      "cost_status": "unverified_no_paid_integration_allowed",
+      "implemented": false,
+      "authentication": null,
+      "latest_test_evidence": null,
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Free machine access",
+        "Freshness",
+        "Reuse permission",
+        "Upstream duplication"
+      ]
+    },
+    {
+      "source_id": "otn",
+      "organisation": "Ocean Tracking Network",
+      "url": "https://oceantrackingnetwork.org/",
+      "contribution": "Archive/discovery candidate",
+      "technical_status": "research_lead",
+      "permission_status": "unknown",
+      "cost_status": "unverified_no_paid_integration_allowed",
+      "implemented": false,
+      "authentication": null,
+      "latest_test_evidence": null,
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Free machine access",
+        "Freshness",
+        "Reuse permission",
+        "Upstream duplication"
+      ]
+    },
+    {
+      "source_id": "obis",
+      "organisation": "OBIS",
+      "url": "https://obis.org/",
+      "contribution": "Archive/discovery candidate",
+      "technical_status": "research_lead",
+      "permission_status": "unknown",
+      "cost_status": "unverified_no_paid_integration_allowed",
+      "implemented": false,
+      "authentication": null,
+      "latest_test_evidence": null,
+      "licence": null,
+      "documented_request_limit": null,
+      "sensitive_location_policy": "preserve_provider_coordinates_and_redaction; never infer hidden locations",
+      "unresolved": [
+        "Free machine access",
+        "Freshness",
+        "Reuse permission",
+        "Upstream duplication"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+partition=32 accepted=1,2,3,4, omitted=0
+partition=64 accepted=1,2,4, omitted=1
+50000_events run=0 construct_allocations=1 elapsed_ms=7.46617
+50000_events run=1 construct_allocations=1 elapsed_ms=6.45217
+50000_events run=2 construct_allocations=1 elapsed_ms=6.20492

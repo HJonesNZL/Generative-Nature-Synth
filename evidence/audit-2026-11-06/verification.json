@@ -1,0 +1,33 @@
+{
+  "date_utc": "2026-11-06",
+  "purpose": "verified narrow repairs and active rules",
+  "owner_state_access": "none",
+  "provider_requests": 0,
+  "checks": {
+    "python_tests": 50,
+    "native_cases_per_build": 17,
+    "native_configurations": [
+      "Debug",
+      "Release",
+      "Debug ASan+UBSan"
+    ],
+    "warnings_as_errors": true,
+    "audio_or_DAW_tests": false,
+    "new_real_library_parity": false,
+    "clang_format_run": false,
+    "typescript_check_run": false
+  },
+  "regressions_failed_before_fix": [
+    "collect-once recovers before acquisition",
+    "no per-comparison ID allocation"
+  ],
+  "sha256": {
+    "AGENTS.md": "fa9e45cf82a763b1ddb2145c964709013accb5a98526043bcf0778f1a6778596",
+    ".clang-format": "0fb4206ab06c4c57341593fb89b4f06fbf3ec6725129e0dafef07507fffdf42d",
+    "CMakeLists.txt": "ce263800f1d413765ab27db433f86f6af20e74f2a29828efebe6103c94385538",
+    "animal_atlas/__main__.py": "bdb37b1e50fd934c56b1a5f9193c77e08987680893dad121034a02c50459ef14",
+    "native/src/core.cpp": "dcded19471d20dfa2a6aca987c3e73fa95efabc4bc553a5d2e32511fc95169c6",
+    "native/tests/core_tests.cpp": "677a432312651fadfe6c295a78a678f4d6312f9e1bec2717ce1383280d5c04ea",
+    "tests/test_cli_lifecycle.py": "6ecfd3567aa513969998868599be67f7c5f79e6d9277704a7822bbbe1e6e1167"
+  }
+}

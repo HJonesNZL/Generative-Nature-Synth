@@ -1,0 +1,26 @@
+{
+  "validated_at_utc": "2026-11-06T05:15:08.693706Z",
+  "software_version": "0.2.0",
+  "automated_tests": {
+    "command": "python3 -B -m unittest discover -s tests -v",
+    "passed": 49,
+    "failed": 0,
+    "external_network": false,
+    "loopback_sockets": true
+  },
+  "live_integration_evidence": [
+    "live-smoke.json",
+    "session-milestone.json"
+  ],
+  "offline_cli_replay": "passed; latest snapshot at 60x",
+  "launcher_checks": "shell syntax, executable bits and app manifest valid; Finder UI not exercised",
+  "runtime_dependencies": "Python standard library and bundled SQLite; no paid dependencies",
+  "collector_left_running": false,
+  "not_run": [
+    "48-72 hour soak",
+    "audio callback integration",
+    "GUI/DAW tests",
+    "Finder launcher activation",
+    "production runtime packaging"
+  ]
+}

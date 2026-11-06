@@ -1,0 +1,104 @@
+{
+  "tested_at_utc": "2026-11-06T05:12:13.411897Z",
+  "live_recording": {
+    "id": "a73d57f8-0c1b-49ac-bf32-b0027e91c0ac",
+    "name": "NZ live arrivals \u2014 milestone recording",
+    "state": "frozen",
+    "created_at": "2026-11-06T05:10:42.041630Z",
+    "ended_at": "2026-11-06T05:12:02.123934Z",
+    "start_seq": 794,
+    "end_seq": 1598,
+    "intended_end_at": "2026-11-06T05:12:02.041630Z",
+    "origin": "collection",
+    "event_count": 804,
+    "content_hash": "e28d145e7965904ed9ff85875cbbde12b9f19f58ccb0e60e66b4905dcc41dea1",
+    "options": {
+      "capture_truncated": false,
+      "event_schema_version": 1,
+      "permissions": "local_archive_only",
+      "seed": 0,
+      "selection_policy": "new_live_eligible_revisions",
+      "software_version": "0.2.0",
+      "sources": null,
+      "timeline_bounds": {
+        "arrival": [
+          "2026-11-06T05:10:42.041630Z",
+          "2026-11-06T05:12:02.107378Z"
+        ],
+        "observed": [
+          "2026-11-06T05:00:51.000000Z",
+          "2026-11-06T05:11:41.000000Z"
+        ]
+      }
+    }
+  },
+  "cached_snapshot": {
+    "id": "78cbfa51-5b96-4dd0-a6d9-f2477e8f1425",
+    "name": "NZ birds \u2014 saved real activity",
+    "state": "frozen",
+    "created_at": "2026-11-06T05:12:12.906646Z",
+    "ended_at": "2026-11-06T05:12:13.072895Z",
+    "start_seq": 0,
+    "end_seq": 1598,
+    "intended_end_at": null,
+    "origin": "archive_snapshot",
+    "event_count": 1570,
+    "content_hash": "340ad46883de436be221d32c6bc0e6f0a43beee93dea01d5a1c4158b12095fce",
+    "options": {
+      "capture_truncated": false,
+      "event_schema_version": 1,
+      "observed_from": null,
+      "observed_to": null,
+      "permissions": "local_archive_only",
+      "seed": 42,
+      "selection_policy": "latest_event_revisions_at_snapshot",
+      "software_version": "0.2.0",
+      "sources": [
+        "birdweather"
+      ],
+      "timeline_bounds": {
+        "arrival": [
+          "2026-11-06T04:01:30.151821Z",
+          "2026-11-06T05:12:01.603433Z"
+        ],
+        "observed": [
+          "2026-11-06T03:51:30.000000Z",
+          "2026-11-06T05:11:41.000000Z"
+        ]
+      }
+    }
+  },
+  "observed_replay_60x": {
+    "mode": "observed",
+    "speed": "60",
+    "event_count": 1570,
+    "duration_us": 80183334,
+    "fingerprint": "6d2fd9e58661fec8cf2e9fc3e6fbce90cadf9ba5c3f05c0e65cea9165b975fa9",
+    "peak_events_in_one_second": 123,
+    "duration_policy": "scale event spacing only; no audio pitch/duration processing",
+    "ordering_policy": "timeline timestamp, original revision sequence, event ID",
+    "seek_policy": "new generation; caller clears prior scheduled actions",
+    "loop_policy": "caller resets generation and voice/effect state"
+  },
+  "arrival_replay_60x": {
+    "mode": "arrival",
+    "speed": "60",
+    "event_count": 1570,
+    "duration_us": 70524194,
+    "fingerprint": "114edc744f53d9559d55753cdbab65ad27714310f57d2ef823f2abbbc3fec917",
+    "peak_events_in_one_second": 725,
+    "duration_policy": "scale event spacing only; no audio pitch/duration processing",
+    "ordering_policy": "timeline timestamp, original revision sequence, event ID",
+    "seek_policy": "new generation; caller clears prior scheduled actions",
+    "loop_policy": "caller resets generation and voice/effect state"
+  },
+  "bundle_path": "Sessions/78cbfa51-5b96-4dd0-a6d9-f2477e8f1425.atlas.json",
+  "offline_roundtrip_verified": true,
+  "imported_session_created_no_live_events": true,
+  "collector_stopped": true,
+  "limitations": [
+    "data replay only; no synthesis",
+    "short test; not a soak",
+    "local archive; redistribution rights unresolved"
+  ]
+}

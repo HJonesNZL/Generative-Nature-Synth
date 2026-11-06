@@ -1,0 +1,3 @@
+#!/bin/zsh
+project_dir="${0:A:h:h:h:h}"
+exec /usr/bin/open -a Terminal "$project_dir/Start Animal Atlas.command"

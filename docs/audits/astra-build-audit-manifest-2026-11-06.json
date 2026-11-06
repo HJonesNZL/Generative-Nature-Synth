@@ -1,0 +1,40 @@
+{
+  "audit_date": "2026-11-06",
+  "role": "baseline source hashes captured before parent repairs; audit did not modify product source",
+  "owner_state_access": "none",
+  "provider_requests": 0,
+  "sha256": {
+    "CMakeLists.txt": "f0258766965b46bb6eac3a5b91a6f7c34a82a90bbf12df89c317fe08741d65e3",
+    "animal_atlas/__init__.py": "4afe9cdfe8e082f8bbdae257dc7cc4d52625cda5bc40dbf375ee02eca9ae8a82",
+    "animal_atlas/__main__.py": "468b11f587f4b98b847a7a79667dabe4e072b690b39b74dc68ed26a6ebc7671c",
+    "animal_atlas/api.py": "4f95f93bfd30c62ee6761bbc8926aa7618c02cd76a1b96bb25b5472ffa4279c6",
+    "animal_atlas/client.py": "44e0f97c8be6b136d2ef2f8e67d506616cf115e9e574a11381aab5ba12d94b35",
+    "animal_atlas/collector.py": "1ed6e54ffd2c3840bf2fd5f591b6131afae0c1c949c6c5bb445e870b0b6f6398",
+    "animal_atlas/model.py": "5c7e7eea0578e452c17830d2cfe0f679f098ae934387eeb04b73a52483c00fd9",
+    "animal_atlas/replay.py": "03a10142cee9097fbd8f5720f3603dd21409f885b9560bc077ac0829487bac99",
+    "animal_atlas/sessions.py": "eff7eeda41279b02d99f3b1558bfc21a60e6f2c95939228cdd65a50a744a6641",
+    "animal_atlas/sources.py": "0b42347edb0baabcd5e822c49226d26cc589043ffc65d83ff3f4cf8232034fe0",
+    "animal_atlas/store.py": "6aeab4658bbe421ddeee7243c04cd9d4ed9a64609ca5f843f1eb76ea450ad793",
+    "native/include/atlas/core.hpp": "86c5e72c5e0723a382032574e395f6fac9492d64349b81b08a1d0da3ac767e49",
+    "native/include/atlas/storage.hpp": "1188085cc4d40b77a3257fe963d739dc1c81119eec34a14d5dd98e34edbc6c02",
+    "native/src/core.cpp": "adba7ec5568da23c41592d751fd4dad887113117ac0d0042939de25495e87637",
+    "native/src/main.cpp": "25702661ebf947f944aab81e9efce649927fe57118274b1b0cae3386226f73b8",
+    "native/src/storage.cpp": "7f0d09e3d105d0416189bbb87aeec33299e33933fc30a1822e754d00d6f547c4",
+    "native/tests/core_tests.cpp": "aeb9cebf59b502562532431dc7fd67157fea85be74f6c29aa1a79c621264ae29",
+    "ui/contracts.ts": "42b44920c469249291e99bd63a3d8349f2d83d7db3cf851f13d8da7b57a888f7"
+  },
+  "checks": {
+    "python_unittest_passed": 49,
+    "native_release_cases_passed": 16,
+    "native_ctest_targets_passed": 1,
+    "external_network_runtime_test": false,
+    "audio_test": false,
+    "new_real_data_parity_test": false
+  },
+  "audit_artifacts": {
+    "isolated_probes": "/private/tmp/atlas-astra-audit-reproduce.py",
+    "scheduler_benchmark": "/private/tmp/atlas-astra-scheduler-bench.cpp",
+    "release_build": "/private/tmp/animal-atlas-astra-audit-build"
+  },
+  "remediations_by_parent": "collect-once recovery and native comparator copies pending parent verification at audit handoff"
+}

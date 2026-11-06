@@ -1,0 +1,35 @@
+{
+  "A1_recovery": {
+    "state_after_collect_once": "interrupted",
+    "recovered_event_ids": [
+      "before-crash"
+    ]
+  },
+  "A3_query": {
+    "observed_from": {
+      "before": "2026-01-01T00:00:00.000000Z",
+      "after": null
+    },
+    "observed_to": {
+      "before": "2026-01-01T04:00:00.000000Z",
+      "after": null
+    },
+    "selection_policy": {
+      "before": "latest_event_revisions_at_snapshot",
+      "after": "imported_frozen_timeline"
+    }
+  },
+  "A4_semantics": {
+    "python_replay_count": 1,
+    "native_exit": 1,
+    "native_error": "Animal Atlas native: station species detection must not invent individual identity"
+  },
+  "A2_content_integrity": {
+    "python": "session integrity failure",
+    "native_exit": 0,
+    "native_changed_latitude": -42
+  },
+  "A5_metadata_integrity": {
+    "accepted_due_us_after_metadata_change": 7200000000
+  }
+}

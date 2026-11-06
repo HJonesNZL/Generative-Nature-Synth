@@ -1,0 +1,12 @@
+{
+  "selected_direction": "H — Biosphere Console",
+  "selected_local_date": "2026-11-06",
+  "decision_status": "current direction, open to refinement",
+  "atlas_reference": "history-ui-concepts/h-biosphere-console-01-atlas-history.png",
+  "studio_reference": "history-ui-concepts/h-biosphere-console-02-sound-studio.png",
+  "required_pages": ["Atlas with live and historical modes", "Sound Studio with animal voices and regional effects"],
+  "historical_feature_requirement": "historical-soundscape-requirement.json",
+  "visual_language": ["large spatial Earth view", "dark slate panels", "turquoise and orange accents", "geographic event labels", "readable source and historical coverage information"],
+  "cost_requirement": "No paid software dependencies, data services or hosting",
+  "implementation_status": "Design selected; graphical interface and audible synthesis not yet implemented. Backend v0.2 supports collection, saved event sessions and replay plans."
+}

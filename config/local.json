@@ -1,0 +1,14 @@
+{
+  "birdweather": {
+    "enabled": true,
+    "poll_seconds": 60,
+    "lookback_minutes": 10,
+    "page_size": 100,
+    "max_pages": 10,
+    "bbox": [-48, 166, -34, 179.9]
+  },
+  "nzsharks": {
+    "enabled": true,
+    "poll_seconds": 900
+  }
+}

@@ -1,0 +1,12 @@
+.state/
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+Sessions/
+build/
+
+.DS_Store
+.env
+.env.*
+evidence/private/

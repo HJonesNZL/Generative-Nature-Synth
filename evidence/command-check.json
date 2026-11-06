@@ -1,0 +1,23 @@
+{
+  "checked_at_utc": "2026-11-06T10:05:56.781063Z",
+  "test": "Independent bounded CLI watcher attached to owner running collector",
+  "duration_seconds": 81.2,
+  "watch_exit_code": 0,
+  "watch_delivered_events": 19,
+  "all_deliveries_live_eligible": true,
+  "unique_revision_sequences": true,
+  "before_event_count": 1820,
+  "after_event_count": 1839,
+  "latest_observation_at_utc": "2026-11-06T10:05:31.000000Z",
+  "source_errors": {
+    "birdweather": null,
+    "nzsharks": null
+  },
+  "owner_collector_stopped": false,
+  "owner_watcher_stopped": false,
+  "stderr_present": false,
+  "limitations": [
+    "One-hour recording is still in progress; automatic completion not observed in this check",
+    "Existing owner watcher process confirmed separately; delivery measured with a second CLI watcher"
+  ]
+}

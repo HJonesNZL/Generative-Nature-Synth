@@ -1,0 +1,13 @@
+{
+  "updated_local_date": "2026-11-06",
+  "production_core": "Portable C++20; framework-independent event, session, mapping, regional processing and DSP libraries",
+  "native_shell_candidate": "JUCE standalone and VST3 wrappers, subject to a zero-cost-compatible licence/distribution choice",
+  "frontend_recommendation": "React and TypeScript with Three.js rendered in JUCE WebBrowserComponent",
+  "frontend_decision_status": "Recommended integration architecture; owner permits React or WebUI; renderer and shell proof still to build",
+  "webui_alternative": "WebUI library can host the same React UI for standalone, but is not required for the proposed JUCE embedded UI",
+  "current_migration": "C++ event/replay core and read-only SQLite session compatibility implemented; Python collector remains temporary and operational",
+  "cost_requirement": "No paid data APIs, hosting, required subscriptions or paid runtime dependencies",
+  "design_reference": "H — Biosphere Console, Atlas and Sound Studio pages",
+  "integration_notes": "../docs/native-react-architecture.md",
+  "proposed_typescript_contract": "../ui/contracts.ts"
+}

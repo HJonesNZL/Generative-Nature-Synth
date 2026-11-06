@@ -1,0 +1,22 @@
+{
+  "date_local": "2026-11-07",
+  "from": "/Users/henryjones/Documents/Other 2/AnimalAtlas",
+  "to": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth",
+  "moved_file_count": 403,
+  "all_moved_file_hashes_matched_before_path_updates": true,
+  "preexisting_files_preserved": 26,
+  "original_handoff_sha256": "823a74a4f5f1132ea63a7e493f83675cafb2785d1c047b81a0bd9e919397cbca",
+  "path_updated_files": [
+    "README.md",
+    "docs/audits/astra-build-audit-2026-11-06.md",
+    "docs/audits/astra-audio-cpu-audit-2026-11-06.md",
+    "design/ui-variations/variations.json",
+    "design/history-ui-concepts/concepts.json"
+  ],
+  "old_build_archive": "build/pre-relocation-2026-11-07",
+  "post_move_checks": {
+    "native_debug_cases_passed": 17,
+    "python_tests_passed": 50,
+    "launcher_shell_syntax": "pass"
+  }
+}
