@@ -1,6 +1,8 @@
 # Animal Atlas
 
-The [live library milestone](docs/milestones/NEXT_LIBRARY_BROWSING.md) adds native in-app collection for NZ bird activity and shark location snapshots, source freshness, paginated saved-piece browsing and revision-aware preparation. Use **Releases/Live Library/Animal Atlas.app** and choose **Collect → Start live updates**. Sources start paused on every launch. Bird receivers and shark source subjects retain separate meanings; continuous identified-animal tracking and live sonification are not implied. See the [qualification record](evidence/library-live/qualification.md).
+Open **Releases/Latest Detections/Animal Atlas.app** and choose **Collect → Start live updates** to collect NZ bird detections and shark position reports. The Atlas opens a list of recent observations with persistent rings on the map. Choose a row to locate the observation. Collection starts paused on launch. [Standalone guide](docs/STANDALONE.md) · [Worldwide source expansion plan](docs/milestones/GLOBAL_WILDLIFE_SOURCES.md)
+
+The [live library milestone](docs/milestones/NEXT_LIBRARY_BROWSING.md) added source freshness, paginated saved-piece browsing and revision-aware preparation. [Qualification record](evidence/library-live/qualification.md)
 
 The [project recovery milestone](evidence/project-recovery/qualification.md) adds draggable NZ detail, portable scene export, verified project backup/restore and WAV history that survives restarts. Its earlier package remains under **Releases/Project Recovery/**; see the [quick start](docs/STANDALONE.md). All project operations remain local and free of paid services.
 
@@ -38,7 +40,7 @@ Version 0.3 adds sealed metadata, provenance-preserving bundles and full histori
 
 ## Open without entering commands
 
-For the older data-collection menu, open the root-level **Animal Atlas.app** or double-click **Start Animal Atlas.command** in this folder. The current graphical app is under **Releases/Live Library/**. It opens a numbered Terminal menu for recording, saved sessions, replay previews and export. This is a local launcher using the installed Python, not the finished graphical application. Shell syntax/app manifest are verified; Finder launching has not been manually exercised.
+For the older data-collection menu, open the root-level **Animal Atlas.app** or double-click **Start Animal Atlas.command** in this folder. The current graphical app is under **Releases/Latest Detections/**. It opens a numbered Terminal menu for recording, saved sessions, replay previews and export. This is a local launcher using the installed Python, not the finished graphical application. Shell syntax/app manifest are verified; Finder launching has not been manually exercised.
 
 A real recorded session and a saved NZ bird snapshot are available in the local library, with a private portable bundle in `Sessions/`. See `evidence/session-milestone.json` and [recording/replay instructions](docs/sessions-and-replay.md). Those are historical milestone results; they do not describe the current state of an owner-started collector.
 
