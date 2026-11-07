@@ -1,6 +1,7 @@
 #include "atlas_build_identity.hpp"
 #include "json_text.hpp"
 #include "juce_collection.hpp"
+#include "piece_workflow_smoke.hpp"
 #include "standalone_bridge.hpp"
 #include "standalone_support.hpp"
 #include <algorithm>
@@ -26,7 +27,8 @@ struct Launch {
     fs::path state, library, smokeReceipt, smokeScene, smokeExport,
         smokeSceneExport, smokeBackup, smokeRestore;
     int smokeSeconds{3};
-    bool libraryOverride{}, stateOverride{}, smokeLive{}, smokeWorld{};
+    bool libraryOverride{}, stateOverride{}, smokeLive{}, smokeWorld{},
+        smokePieces{}, smokeWholePiece{};
 };
 Launch parse(const juce::StringArray &arguments) {
     Launch launch;
@@ -63,6 +65,12 @@ Launch parse(const juce::StringArray &arguments) {
                     "Live smoke requires explicit value 1 or world.");
             launch.smokeLive = true;
             launch.smokeWorld = value == "world";
+        } else if (option == "--smoke-pieces") {
+            if (value != "1" && value != "whole")
+                throw std::invalid_argument(
+                    "Piece smoke requires explicit value 1 or whole.");
+            launch.smokePieces = true;
+            launch.smokeWholePiece = value == "whole";
         } else if (option == "--smoke-seconds") {
             if (!value.containsOnly("0123456789") || value.isEmpty())
                 throw std::invalid_argument(
@@ -89,7 +97,7 @@ Launch parse(const juce::StringArray &arguments) {
         launch.smokeReceipt.empty())
         throw std::invalid_argument(
             "Smoke scene/export requires --smoke-test.");
-    if (launch.smokeLive &&
+    if ((launch.smokeLive || launch.smokePieces) &&
         (!launch.stateOverride || launch.smokeReceipt.empty()))
         throw std::invalid_argument(
             "Live smoke requires explicit state and receipt paths.");
@@ -291,6 +299,11 @@ class Shell final : public juce::Component, private juce::Timer {
     }
     void showFileMenu() {
         juce::PopupMenu menu;
+        const auto managed = launch_.state / "live.sqlite3";
+        std::error_code statusError;
+        menu.addItem(
+            9, "Open collected wildlife library",
+            fs::is_regular_file(fs::symlink_status(managed, statusError)));
         menu.addItem(1, "Choose wildlife library…");
         const auto historicalLibrary =
             juce::File::getSpecialLocation(juce::File::currentApplicationFile)
@@ -309,11 +322,13 @@ class Shell final : public juce::Component, private juce::Timer {
         auto safe = juce::Component::SafePointer<Shell>(this);
         menu.showMenuAsync(
             juce::PopupMenu::Options().withTargetComponent(&fileMenu_),
-            [safe, historicalLibrary](int action) {
+            [safe, historicalLibrary, managed](int action) {
                 if (!safe || !safe->ready_)
                     return;
                 if (action == 1)
                     safe->chooseFile(false);
+                else if (action == 9)
+                    safe->submitControl({Work::library, 0, {}, managed});
                 else if (action == 8)
                     safe->submitControl(
                         {Work::library, 0, {},
@@ -524,7 +539,7 @@ class Shell final : public juce::Component, private juce::Timer {
         event->setProperty("json", juce::String(json));
         browser_->emitEventIfBrowserIsVisible("atlasReply", event.get());
     }
-    void createBrowser() {
+    void createBrowser(const juce::var &pendingPiece = {}) {
         if (closing_.load(std::memory_order_acquire))
             return;
         browser_.reset();
@@ -532,6 +547,10 @@ class Shell final : public juce::Component, private juce::Timer {
         const auto options =
             Browser::Options()
                 .withNativeIntegrationEnabled()
+                .withInitialisationData("atlasPendingReplayPiece", pendingPiece)
+                .withUserScript("window.atlasPendingReplayPiece = "
+                                "window.__JUCE__.initialisationData."
+                                "atlasPendingReplayPiece?.[0];")
                 .withUserScript(juce::String::fromUTF8(
                     atlas::standalone::bridgeScript.data(),
                     static_cast<int>(atlas::standalone::bridgeScript.size())))
@@ -595,7 +614,8 @@ class Shell final : public juce::Component, private juce::Timer {
         resized();
         browser_->goToURL(Browser::getResourceProviderRoot());
     }
-    void updateStatus(const std::string &message, bool reload) {
+    void updateStatus(const std::string &message, bool reload,
+                      const juce::var &pendingPiece = {}) {
         if (closing_.load(std::memory_order_acquire))
             return;
         ready_ = true;
@@ -604,7 +624,7 @@ class Shell final : public juce::Component, private juce::Timer {
                         juce::dontSendNotification);
         status_.setTooltip(juce::String(message + stateNotice_));
         if (reload)
-            createBrowser();
+            createBrowser(pendingPiece);
     }
     void run(juce::Component::SafePointer<Shell> safe) {
         const auto post = [safe](auto callback) {
@@ -655,9 +675,10 @@ class Shell final : public juce::Component, private juce::Timer {
             atlas::PlaybackRuntime playback(atlas::makeJuceOutputDriver(),
                                             configuration(settings.output));
             atlas::VoiceStore voices(state / "voices.sqlite3");
-            atlas::UiHostStorage storage{state / "soundscapes",
-                                         state / "exports",
-                                         atlas::nativeSourceSha256};
+            atlas::UiHostStorage storage{
+                state / "soundscapes", state / "exports",
+                atlas::nativeSourceSha256,
+                collection ? collection->databasePath() : fs::path{}};
             const auto makeHost = [&](const fs::path &library) {
                 if (!library.empty() &&
                     !fs::is_regular_file(fs::symlink_status(library)))
@@ -782,34 +803,8 @@ class Shell final : public juce::Component, private juce::Timer {
                                     host->setLibrary(
                                         collection->databasePath());
                                     playback.enable(false);
-                                    settings.library =
-                                        collection->databasePath();
                                     libraryChanged = true;
                                     reloadLibrary = true;
-                                    post([file =
-                                              settings.library](Shell &shell) {
-                                        shell.libraryStatus_ =
-                                            "Managed live library: " +
-                                            file.string();
-                                        shell.updateStatus(
-                                            "Live library selected · choose "
-                                            "Listening separately",
-                                            false);
-                                    });
-                                    if (settingsWritable) {
-                                        try {
-                                            atlas::standalone::saveSettings(
-                                                state, settings);
-                                        } catch (const std::exception &) {
-                                            post([](Shell &shell) {
-                                                shell.updateStatus(
-                                                    "Live library selected; "
-                                                    "preference could not be "
-                                                    "saved",
-                                                    false);
-                                            });
-                                        }
-                                    }
                                 }
                                 collection->configure(selected);
                             }
@@ -817,7 +812,9 @@ class Shell final : public juce::Component, private juce::Timer {
                                 juce::String(collection->stateJson()));
                             result.getDynamicObject()->setProperty(
                                 "libraryActive",
-                                settings.library == collection->databasePath());
+                                libraryChanged ||
+                                    settings.library ==
+                                        collection->databasePath());
                             result.getDynamicObject()->setProperty(
                                 "libraryChanged", libraryChanged);
                             juce::DynamicObject::Ptr envelope =
@@ -845,6 +842,30 @@ class Shell final : public juce::Component, private juce::Timer {
                         }
                         reply = juce::JSON::parse(juce::String(response));
                     }
+                    reloadLibrary =
+                        reloadLibrary ||
+                        (collection && method == "openManagedPiece" &&
+                         static_cast<bool>(reply["ok"]) &&
+                         static_cast<bool>(reply["result"]["libraryChanged"]));
+                    if (reloadLibrary) {
+                        settings.library = collection->databasePath();
+                        post([file = settings.library](Shell &shell) {
+                            shell.libraryStatus_ =
+                                "Managed wildlife library: " + file.string();
+                        });
+                        if (settingsWritable) {
+                            try {
+                                atlas::standalone::saveSettings(state,
+                                                                settings);
+                            } catch (const std::exception &) {
+                                post([](Shell &shell) {
+                                    shell.updateStatus(
+                                        "Library selection could not be saved",
+                                        false);
+                                });
+                            }
+                        }
+                    }
                     if (request["method"].toString() == "setAudioDevice" &&
                         static_cast<bool>(reply["ok"])) {
                         settings.output =
@@ -868,14 +889,17 @@ class Shell final : public juce::Component, private juce::Timer {
                         ++expectedPageEpoch;
                     post([token = work->token, epoch = work->epoch,
                           response = std::move(response),
+                          pendingPiece = method == "openManagedPiece"
+                                             ? reply["result"]["session"]
+                                             : juce::var{},
                           reloadLibrary](Shell &shell) {
                         if (epoch != shell.browserEpoch_)
                             return;
                         shell.reply(token, response);
                         if (reloadLibrary)
-                            shell.updateStatus("Live library selected · choose "
-                                               "Listening separately",
-                                               true);
+                            shell.updateStatus(
+                                "Managed wildlife library selected", true,
+                                pendingPiece);
                     });
                     continue;
                 }
@@ -1193,6 +1217,7 @@ class Shell final : public juce::Component, private juce::Timer {
 )JS")
                                                 : juce::String()) +
                                         juce::String(R"JS(
+   PIECE_WORKFLOW_SMOKE
    const until = Date.now() + SMOKE_DURATION_MS;
    while (Date.now() < until) {
      const audio = await call('getAudioState');
@@ -1209,6 +1234,13 @@ class Shell final : public juce::Component, private juce::Timer {
 )JS");
             browser_->evaluateJavascript(
                 script
+                    .replace("PIECE_WORKFLOW_SMOKE",
+                             launch_.smokePieces
+                                 ? juce::String(
+                                       atlas::standalone::pieceWorkflowSmoke)
+                                 : juce::String())
+                    .replace("WHOLE_INTERVAL_ONLY",
+                             launch_.smokeWholePiece ? "true" : "false")
                     .replace("SMOKE_DURATION_MS",
                              juce::String(launch_.smokeSeconds * 1000))
                     .replace("LIVE_COLLECTION_SMOKE", launch_.smokeLive
@@ -1275,7 +1307,8 @@ class Shell final : public juce::Component, private juce::Timer {
    }
 )JS")
                                                           : juce::String())
-                    .replace("WORLD_SCOPE", launch_.smokeWorld ? "true" : "false")
+                    .replace("WORLD_SCOPE",
+                             launch_.smokeWorld ? "true" : "false")
                     .replace("SCENE_EXPORT_SMOKE",
                              launch_.smokeSceneExport.empty()
                                  ? juce::String()
@@ -1355,7 +1388,7 @@ class Window final : public juce::DocumentWindow {
 class Application final : public juce::JUCEApplication {
   public:
     const juce::String getApplicationName() override { return "Animal Atlas"; }
-    const juce::String getApplicationVersion() override { return "0.5.0"; }
+    const juce::String getApplicationVersion() override { return "0.6.0"; }
     bool moreThanOneInstanceAllowed() override { return true; }
     void initialise(const juce::String &) override {
         try {

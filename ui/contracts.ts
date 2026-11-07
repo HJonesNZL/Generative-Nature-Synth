@@ -135,6 +135,17 @@ export interface SessionView {
   arrivalBoundsUs?: [Int64String, Int64String] | null;
 }
 
+export interface PieceJob {
+  id: string;
+  operation: "freeze" | "import";
+  status: "running" | "completed" | "cancelled" | "failed";
+  processed: number;
+  stage?: string;
+  total: number | null;
+  piece: SessionView | null;
+  error: string | null;
+}
+
 export interface CoverageInterval {
   fromUtc: UtcTimestamp;
   toUtc: UtcTimestamp;
@@ -312,6 +323,11 @@ export interface HostMethods {
     request: { storeId: string; afterSequence: Int64String; limit: number };
     response: { storeId: string; nextSequence: Int64String; baselineTotal?: number; events: Array<{ event: EventView; liveEligible: boolean; change: "baseline" | "new" | "corrected" }> };
   };
+  startPieceFreeze: { request: { name: string; startUtc: string; endUtc: string; sourceId?: string; speciesId?: string; requestId: string }; response: PieceJob };
+  startPieceImport: { request: { sessionId: string }; response: PieceJob };
+  getPieceJob: { request: { jobId?: string }; response: PieceJob | null };
+  cancelPieceJob: { request: { jobId: string }; response: PieceJob };
+  openManagedPiece: { request: { sessionId: string }; response: { session: SessionView; libraryChanged: boolean } };
   listSessionsPage: { request: { limit: number; cursor: string | null }; response: { items: SessionView[]; nextCursor: string | null; sourceId: string; revision: string } };
   listSessions: { request: { limit: number }; response: SessionView[] };
   prepareReplay: {

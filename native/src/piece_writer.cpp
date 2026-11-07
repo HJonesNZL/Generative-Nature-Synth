@@ -465,9 +465,9 @@ SavedSession freezeObservedPiece(const std::filesystem::path &path,
         r.seed < 0)
         throw std::invalid_argument(
             "freeze requires an increasing window of at most 366 days");
-    for (const auto *filter : {&r.sourceId, &r.speciesId})
-        if (*filter && ((*filter)->empty() || (*filter)->size() > 128))
-            throw std::invalid_argument("invalid freeze filter");
+    if ((r.sourceId && (r.sourceId->empty() || r.sourceId->size() > 128)) ||
+        (r.speciesId && (r.speciesId->empty() || r.speciesId->size() > 512)))
+        throw std::invalid_argument("invalid freeze filter");
     Db db(path);
     managed(db.value);
     if (const auto existing = existingFreeze(db.value, path, r, lower, upper)) {

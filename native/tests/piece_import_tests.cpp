@@ -3,6 +3,7 @@
 #include <atlas/storage.hpp>
 #include <chrono>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <sqlite3.h>
 #include <stdexcept>
@@ -21,6 +22,17 @@ template <class F> void rejects(F &&action, const char *message) {
         failed = true;
     }
     check(failed, message);
+}
+template <class F> void rejectsOriginalMetadata(F &&action) {
+    try {
+        action();
+    } catch (const std::exception &error) {
+        check(std::string(error.what()).find("verified original metadata") !=
+                  std::string::npos,
+              "Legacy import rejection did not explain metadata verification");
+        return;
+    }
+    throw std::runtime_error("Import signed unverifiable original metadata");
 }
 struct Directory {
     std::filesystem::path path =
@@ -81,6 +93,42 @@ int main(int argc, char **argv) {
                 "Same-library import accepted");
         rejects([&] { importSavedPiece(source, destination, "latest"); },
                 "Implicit latest accepted");
+        const auto checkpoint = std::filesystem::path(
+            destination.string() + ".atlas-import-stage.sqlite3");
+        for (const bool schemaTwo : {true, false}) {
+            const auto legacy =
+                temporary.path /
+                (schemaTwo ? "legacy-v2.sqlite3" : "unsealed-v3.sqlite3");
+            std::filesystem::copy_file(bundled, legacy);
+            rows(legacy,
+                 "UPDATE sessions SET "
+                 "envelope_version=0,envelope_json=NULL,envelope_hash=NULL");
+            if (schemaTwo)
+                rows(legacy, "PRAGMA user_version=2");
+            {
+                ReadOnlyLibrary legacyReplay(legacy);
+                check(legacyReplay.load(id, TimeBasis::observed)
+                              .events()
+                              .size() == 224,
+                      "Legacy read-only replay was broken");
+            }
+            rejectsOriginalMetadata(
+                [&] { importSavedPiece(legacy, destination, id); });
+            check(rows(destination, "SELECT id FROM sessions").empty(),
+                  "Legacy import created a saved piece");
+            check(!std::filesystem::exists(checkpoint),
+                  "Legacy import created staging");
+        }
+        const auto absentTarget = temporary.path / "must-not-create.sqlite3";
+        std::filesystem::create_symlink(absentTarget, checkpoint);
+        rejects([&] { importSavedPiece(source, destination, id); },
+                "Dangling stage symlink accepted");
+        check(!std::filesystem::exists(absentTarget),
+              "Stage import followed dangling symlink and created target");
+        check(std::filesystem::is_symlink(
+                  std::filesystem::symlink_status(checkpoint)),
+              "Stage import replaced unrelated symlink");
+        std::filesystem::remove(checkpoint);
         for (const std::string stage :
              {"verifying", "reading", "saving", "writing", "committing"}) {
             rejects(
@@ -94,8 +142,6 @@ int main(int argc, char **argv) {
             check(rows(destination, "SELECT id FROM sessions").empty(),
                   "Cancellation exposed a partial piece");
         }
-        const auto checkpoint = std::filesystem::path(
-            destination.string() + ".atlas-import-stage.sqlite3");
         check(std::filesystem::exists(checkpoint),
               "Cancellation lost durable checkpoint");
         check(rows(checkpoint, "SELECT count(*) FROM import_rows") ==
@@ -159,6 +205,35 @@ int main(int argc, char **argv) {
                 "Tampered event attribution accepted");
         check(rows(destination, "SELECT id FROM sessions").size() == 1,
               "Failed import changed destination");
+        bool cleanupWarning{};
+        const auto retained = temporary.path / "retained-checkpoint.sqlite3";
+        const std::string secondId = "980d87e8-27f1-454d-b4df-5a3a7c13388d";
+        const auto completed = importSavedPiece(
+            source, destination, secondId,
+            [&](std::string_view stage, std::size_t, std::size_t) {
+                if (stage == "committing") {
+                    std::filesystem::rename(checkpoint, retained);
+                    std::filesystem::create_directory(checkpoint);
+                    std::ofstream preserve(checkpoint / "unrelated-file");
+                    preserve << "Preserve during cleanup";
+                }
+                if (stage == "saved_checkpoint_retained") {
+                    cleanupWarning = true;
+                    return false;
+                }
+                return true;
+            });
+        check(completed.eventCount == 5 && cleanupWarning,
+              "Cleanup failure misreported a committed save");
+        check(std::filesystem::exists(checkpoint / "unrelated-file"),
+              "Cleanup removed unrelated contents");
+        {
+            ReadOnlyLibrary confirmed(destination);
+            check(
+                confirmed.load(secondId, TimeBasis::observed).events().size() ==
+                    5,
+                "Cleanup warning concealed failed publication");
+        }
         std::cout << "piece import tests passed\n";
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';

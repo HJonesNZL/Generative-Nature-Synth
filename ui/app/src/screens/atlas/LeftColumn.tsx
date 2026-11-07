@@ -128,6 +128,12 @@ function SessionsPanel() {
   const state = useAppState();
   const dispatch = useDispatch();
 
+  const bounds = state.timeBasis === "observed" ? state.replay.session?.observedBoundsUs : state.replay.session?.arrivalBoundsUs;
+  const spanUs = bounds ? BigInt(bounds[1]) - BigInt(bounds[0]) : 0n;
+  // Offer a faster setting when the four fixed speeds cannot fit the native preview.
+  const fitSpeed = spanUs >= 240n * 1_800_000_000n
+    ? Math.min(10000, Number((spanUs + 899_999_999n) / 900_000_000n)) : 0;
+
   return (
     <section className="stack-sm">
       <span className="label">SAVED PIECES</span>
@@ -138,7 +144,9 @@ function SessionsPanel() {
       {state.transport.error ? <Notice tone="problem" title="Playback unavailable">{state.transport.error}</Notice> : null}
       {state.replay.session ? (
         <div className="stack-sm">
-          <SegmentedControl<string> label="Replay speed" size="sm" value={state.replay.speedDenominator === "1" && ["1", "10", "60", "240"].includes(state.replay.speedNumerator) ? state.replay.speedNumerator : "saved-speed"} onChange={(v) => { if (v !== "saved-speed") dispatch({ type: "replaySpeed", speedNumerator: v }); }} options={[{ value: "1", label: "1×" }, { value: "10", label: "10×" }, { value: "60", label: "60×" }, { value: "240", label: "240×" }, ...(state.replay.speedDenominator !== "1" || !["1", "10", "60", "240"].includes(state.replay.speedNumerator) ? [{ value: "saved-speed", label: `${state.replay.speedNumerator}${state.replay.speedDenominator !== "1" ? `/${state.replay.speedDenominator}` : ""}× saved` }] : [])]} />
+          <SegmentedControl<string> label="Replay speed" size="sm" value={state.replay.speedDenominator === "1" && ["1", "10", "60", "240"].includes(state.replay.speedNumerator) ? state.replay.speedNumerator : "saved-speed"} onChange={(v) => { if (v !== "saved-speed") dispatch({ type: "replaySpeed", speedNumerator: v }); }} options={[{ value: "1", label: "1×" }, { value: "10", label: "10×" }, { value: "60", label: "60×" }, { value: "240", label: "240×" }, ...(state.replay.speedDenominator !== "1" || !["1", "10", "60", "240"].includes(state.replay.speedNumerator) ? [{ value: "saved-speed", label: `${state.replay.speedNumerator}${state.replay.speedDenominator !== "1" ? `/${state.replay.speedDenominator}` : ""}×` }] : [])]} />
+          {fitSpeed > 0 && spanUs <= 10000n * 1_800_000_000n && <button type="button" className="btn btn--quiet btn--sm" disabled={state.replay.speedNumerator === String(fitSpeed) && state.replay.speedDenominator === "1"} onClick={() => dispatch({ type: "replaySpeed", speedNumerator: String(fitSpeed) })}>Fit full interval · {fitSpeed}×</button>}
+          {spanUs > 10000n * 1_800_000_000n && <span className="small muted">This interval exceeds the 30-minute preview at maximum speed. Choose a shorter interval or switch timeline basis.</span>}
           <SegmentedControl<"observed" | "arrival"> label="Timeline basis" size="sm" value={state.timeBasis} onChange={(b) => { dispatch({ type: "timeBasis", basis: b }); }} options={[{ value: "observed", label: "Observed" }, { value: "arrival", label: "Arrival" }]} />
           <span className="small muted">{state.transport.preparing ? "Preparing playback…" : state.transport.preparationId ? (client.supports("setTransport") ? "Ready — use Play in the header." : "Timeline verified. Audio playback is not implemented yet.") : ""}</span>
         </div>

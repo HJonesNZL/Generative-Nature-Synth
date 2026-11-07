@@ -8,6 +8,7 @@ namespace atlas {
 struct UiHostStorage {
     std::filesystem::path soundscapes, exports;
     std::string engineSourceSha256;
+    std::filesystem::path managedLibrary{};
 };
 class PlaybackRuntime;
 class VoiceStore;

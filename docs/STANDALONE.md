@@ -1,6 +1,6 @@
 # Standalone beta quick start
 
-The graphical instrument is **Releases/Worldwide Wildlife/Animal Atlas.app**. It is distinct from the older root-level Animal Atlas.app that opens the Python collection menu. This local beta supports Apple Silicon on macOS 15 or later. It includes its interface, fonts, map assets, native engine and SQLite; running it needs no Terminal, Node, Vite, hosted service or subscription.
+The graphical instrument is **Releases/Saved Wildlife Pieces/Animal Atlas.app**. It is distinct from the older root-level Animal Atlas.app that opens the Python collection menu. This local beta supports Apple Silicon on macOS 15 or later. It includes its interface, fonts, map assets, native engine and SQLite; running it needs no Terminal, Node, Vite, hosted service or subscription.
 
 ## Open and play
 
@@ -11,6 +11,15 @@ The graphical instrument is **Releases/Worldwide Wildlife/Animal Atlas.app**. It
 5. Edit voices/composition/regions in Sound Studio. In **Project**, **Save soundscape** creates an immutable complete recipe. **Export saved WAV** renders that saved recipe; its download link opens the native Save dialog. Choose a new destination: existing files are not overwritten.
 
 If an output disconnects, refresh the devices, apply an available choice, then explicitly enable Listening and Play again. A missing explicit device is retained in preferences and never silently replaced. Device identities use JUCE's type and name; renamed hardware needs reselection.
+
+## Save a wildlife piece
+
+- To freeze previously collected observations offline, choose **File / Project → Open collected wildlife library**, then **Project → Saved pieces → Freeze collected interval**. Enter a name and UTC start and end. Optionally choose a source or species. The end time is exclusive. A quiet window can be saved with zero records. It records what the collector had stored when you froze it. Wildlife coverage remains unknown.
+- To import, choose **File / Project → Open historical spotted seal library** or attach your own compatible wildlife library. In **Replay**, select a saved piece. Choose **Project → Import selected piece to managed library**. To resume an interrupted import, attach the same library, select the same piece and import again. The app verifies the source again and reuses the latest matching checkpoint. Starting a different import replaces that checkpoint.
+- Choose **Open saved piece** when the job finishes. Replay preserves the observed timestamps and gaps. For the bundled five-fix excerpt, choose **240×** to hear its two days of observations within the preview limit. For the full seal deployment, choose **Fit full interval**. **Arrival** follows when the records entered the source library. Enable **Listening** and press **Play** to hear the result.
+- Use **Sound Studio** to edit voices, then **Project → Save soundscape → Export saved WAV**. Each saved soundscape contains its events and settings and can be included in a project backup. The project backup excludes the managed wildlife library itself.
+
+A freeze accepts up to 366 days, 50,000 events and 64 MiB of event payload. Capacity errors leave the existing library intact. For observation windows too long for the 30-minute preview at maximum speed, shorten the interval.
 
 ## Collect current wildlife activity
 

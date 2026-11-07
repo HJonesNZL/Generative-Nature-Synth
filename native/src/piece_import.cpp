@@ -109,12 +109,16 @@ class Stage {
     std::size_t count{};
     Stage(const std::filesystem::path &destination,
           const std::filesystem::path &source, const VerifiedPiece &piece)
-        : path(destination.string() + ".atlas-import-stage.sqlite3") {
-        checkBudget(destination, path, 0);
-        const bool exists = std::filesystem::exists(path);
+        : path(std::filesystem::weakly_canonical(destination).string() +
+               ".atlas-import-stage.sqlite3") {
+        std::error_code statusError;
+        const auto status = std::filesystem::symlink_status(path, statusError);
+        if (statusError &&
+            status.type() != std::filesystem::file_type::not_found)
+            throw std::runtime_error("Cannot inspect import staging path.");
+        const bool exists = std::filesystem::exists(status);
         if (exists) {
-            if (!std::filesystem::is_regular_file(
-                    std::filesystem::symlink_status(path)))
+            if (!std::filesystem::is_regular_file(status))
                 throw std::runtime_error(
                     "Import staging path is not a regular file.");
             Connection check(path);
@@ -125,8 +129,9 @@ class Stage {
                 throw std::runtime_error(
                     "Refusing unrelated import staging file.");
         }
+        checkBudget(destination, path, 0);
         if (sqlite3_open_v2(path.string().c_str(), &db,
-                            SQLITE_OPEN_READWRITE |
+                            SQLITE_OPEN_READWRITE | SQLITE_OPEN_NOFOLLOW |
                                 (exists ? 0 : SQLITE_OPEN_CREATE),
                             nullptr) != SQLITE_OK) {
             if (db)
@@ -206,15 +211,15 @@ class Stage {
         execute(db, "COMMIT; BEGIN IMMEDIATE");
         count = completed;
     }
-    void finish() {
-        execute(db, "ROLLBACK");
-        sqlite3_close(db);
+    bool finish() noexcept {
+        const bool rolledBack = sqlite3_exec(db, "ROLLBACK", nullptr, nullptr,
+                                             nullptr) == SQLITE_OK;
+        if (sqlite3_close(db) != SQLITE_OK)
+            return false;
         db = nullptr;
         std::error_code error;
         std::filesystem::remove(path, error);
-        if (error)
-            throw std::runtime_error(
-                "Piece imported but checkpoint cleanup failed.");
+        return rolledBack && !error;
     }
 };
 } // namespace
@@ -235,26 +240,36 @@ SavedSession importSavedPiece(const std::filesystem::path &source,
     requireManaged(destination);
     report(progress, "verifying", 0, 1);
     ReadOnlyLibrary reader(source);
-    if (reader.session(sessionId).eventCount > 50000)
+    const auto preview = reader.session(sessionId);
+    const auto requireOriginalSeal = [](const SavedSession &session) {
+        if (session.metadataIntegrity != "sha256-envelope-v1-verified")
+            throw std::runtime_error(
+                "Import requires verified original metadata (v1 seal). Legacy "
+                "pieces remain available for read-only replay.");
+    };
+    requireOriginalSeal(preview);
+    if (preview.eventCount > 50000)
         throw std::runtime_error("Import piece exceeds native event capacity.");
     SavedSession verified;
     reader.load(sessionId, TimeBasis::observed, {}, &verified);
+    requireOriginalSeal(verified);
     Connection connection(source);
     auto *db = connection.db;
     detail::Statement version(db, "PRAGMA user_version");
     if (!version.next())
         throw std::runtime_error("Import schema unavailable.");
-    const bool sealedSchema = version.integer(0) == 3;
+    if (version.integer(0) != 3)
+        throw std::runtime_error(
+            "Import requires verified original metadata (v1 seal). Legacy "
+            "pieces remain available for read-only replay.");
     const std::string columns =
         "SELECT "
         "id,name,state,created_at,ended_at,start_seq,end_seq,intended_end_at,"
         "origin,options_json,event_count,content_hash";
     detail::Statement metadata(
-        db,
-        (columns +
-         (sealedSchema ? ",envelope_version,envelope_json,envelope_hash" : "") +
-         " FROM sessions WHERE id=?")
-            .c_str());
+        db, (columns + ",envelope_version,envelope_json,envelope_hash FROM "
+                       "sessions WHERE id=?")
+                .c_str());
     metadata.bind(sessionId);
     if (!metadata.next())
         throw std::runtime_error("Import piece no longer exists.");
@@ -279,11 +294,16 @@ SavedSession importSavedPiece(const std::filesystem::path &source,
         piece.state != verified.state)
         throw std::runtime_error(
             "Import source changed; choose the piece again.");
-    if (sealedSchema) {
-        piece.envelopeVersion = static_cast<int>(metadata.integer(12));
-        piece.envelopeJson = metadata.optionalText(13).value_or("");
-        piece.envelopeHash = metadata.optionalText(14).value_or("");
-    }
+    if (metadata.integer(12) != 1 || metadata.null(13) || metadata.null(14))
+        throw std::runtime_error(
+            "Import requires verified original metadata (v1 seal). Legacy "
+            "pieces remain available for read-only replay.");
+    piece.envelopeVersion = 1;
+    piece.envelopeJson = metadata.text(13);
+    piece.envelopeHash = metadata.text(14);
+    if (piece.envelopeJson.empty() || piece.envelopeHash.empty())
+        throw std::runtime_error(
+            "Import requires a complete original metadata seal.");
     Stage stage(destination, source, piece);
     if (stage.count > static_cast<std::size_t>(count))
         throw std::runtime_error("Import checkpoint exceeds piece length.");
@@ -322,7 +342,16 @@ SavedSession importSavedPiece(const std::filesystem::path &source,
     // Writer independently verifies this complete snapshot, preserves its seal,
     // validates managed ownership, and commits atomically with exact-ID retry.
     const auto saved = saveVerifiedPiece(destination, piece, progress);
-    stage.finish();
+    if (!stage.finish() && progress) {
+        // Publication has committed. Cleanup cannot convert a completed save
+        // into failure or cancellation; retained staging can be retried safely.
+        try {
+            (void)progress("saved_checkpoint_retained", piece.events.size(),
+                           piece.events.size());
+        } catch (
+            ...) { /* A notification cannot undo the completed publication. */
+        }
+    }
     return saved;
 }
 } // namespace atlas

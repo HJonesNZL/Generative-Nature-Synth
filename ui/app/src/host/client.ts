@@ -240,6 +240,35 @@ function validSoundscapeReply(method: string, value: unknown, args: unknown): bo
     (result.state !== "complete" || result.soundscapeId === undefined || opaqueId(result.artifactId));
 }
 
+function validPieceSession(value: unknown): boolean {
+  if (!validSceneSession(value)) return false;
+  const session = value as Record<string, unknown>;
+  return (session.id as string).length <= 128 && (session.eventCount as number) <= 50000 &&
+    [session.metadataIntegrity, session.observedWindowPolicy].every(v => v === undefined || typeof v === "string" && v.length <= 128);
+}
+function validPieceReply(method: string, value: unknown, args: unknown): boolean {
+  if (!["startPieceFreeze", "startPieceImport", "getPieceJob", "cancelPieceJob", "openManagedPiece"].includes(method)) return true;
+  const request = args as { jobId?: string; sessionId?: string };
+  if (value === null) return method === "getPieceJob";
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const reply = value as Record<string, unknown>;
+  if (method === "openManagedPiece") return validPieceSession(reply.session) &&
+    (reply.session as Record<string, unknown>).id === request.sessionId && typeof reply.libraryChanged === "boolean";
+  if (!opaqueId(reply.id) || !["freeze", "import"].includes(reply.operation as string) ||
+      !["running", "completed", "cancelled", "failed"].includes(reply.status as string) ||
+      reply.stage !== undefined && (typeof reply.stage !== "string" || !/^[a-z_]{1,64}$/.test(reply.stage)) ||
+      !Number.isInteger(reply.processed) || (reply.processed as number) < 0 || (reply.processed as number) > 50000 ||
+      !(reply.total === null || Number.isInteger(reply.total) && (reply.total as number) >= (reply.processed as number) && (reply.total as number) <= 50000) ||
+      !(reply.error === null || typeof reply.error === "string" && reply.error.length > 0 && reply.error.length <= 4096) ||
+      (reply.status === "failed" ? reply.error === null : reply.error !== null) ||
+      request.jobId !== undefined && reply.id !== request.jobId ||
+      method === "startPieceFreeze" && reply.operation !== "freeze" || method === "startPieceImport" && reply.operation !== "import") return false;
+  if (reply.status !== "completed") return reply.piece === null;
+  return validPieceSession(reply.piece) && reply.total === reply.processed &&
+    (reply.piece as Record<string, unknown>).eventCount === reply.processed &&
+    (method !== "startPieceImport" || (reply.piece as Record<string, unknown>).id === request.sessionId);
+}
+
 let requestCounter = 0;
 const nextRequestId = () => `ui-${Date.now().toString(36)}-${(requestCounter += 1)}`;
 
@@ -287,7 +316,7 @@ export class HostClient {
   }
 
   call<M extends MethodName>(method: M, args: AllMethods[M]["request"], options: { signal?: AbortSignal; timeoutMs?: number } = {}) {
-    if (["prepareReplay", "setTransport", "setAudioEnabled", "recallSoundscape", "setComposition", "setSpatial", "setAudioDevice"].includes(method)) this.playbackMutation += 1;
+    if (["prepareReplay", "setTransport", "setAudioEnabled", "recallSoundscape", "setComposition", "setSpatial", "setAudioDevice", "openManagedPiece"].includes(method)) this.playbackMutation += 1;
     const request = this.send(method, args, options);
     return ["setVoiceParameter", "setVoiceType", "setMasterGain", "saveVoice", "revertVoice", "applyVoicePreset", "setComposition", "setSpatial"].includes(method)
       ? this.edits.track(request) : request;
@@ -322,7 +351,7 @@ export class HostClient {
       const request = { protocolVersion: 1 as const, requestId, method, args };
       const reply = (this.host as ExtendedHost).request(request, controller.signal).then((r): HostResult<AllMethods[M]["response"]> => {
         if (!r || typeof r !== "object" || typeof r.ok !== "boolean" || r.requestId !== requestId) return { ok: false, error: { code: "internal", message: "Reply did not match request id" } };
-        if (r.ok) return "result" in r && validBaselineTotal(method, r.result) && validPlaybackReply(method, r.result) && validVoiceReply(method, r.result, args) && validSoundscapeReply(method, r.result, args) && validCompositionReply(method, r.result) && validSpatialReply(method, r.result) && (method !== "listSessionsPage" || validSessionPage(r.result, args)) && (!["getLiveSources", "setLiveSources"].includes(method) || validLiveSources(r.result, method, args)) && (!["getAudioDevices", "setAudioDevice"].includes(method) || validAudioDeviceCatalog(r.result)) ? { ok: true, value: r.result } : { ok: false, error: { code: "internal", message: "Malformed host result" } };
+        if (r.ok) return "result" in r && validBaselineTotal(method, r.result) && validPlaybackReply(method, r.result) && validVoiceReply(method, r.result, args) && validSoundscapeReply(method, r.result, args) && validCompositionReply(method, r.result) && validSpatialReply(method, r.result) && validPieceReply(method, r.result, args) && (method !== "listSessionsPage" || validSessionPage(r.result, args)) && (!["getLiveSources", "setLiveSources"].includes(method) || validLiveSources(r.result, method, args)) && (!["getAudioDevices", "setAudioDevice"].includes(method) || validAudioDeviceCatalog(r.result)) ? { ok: true, value: r.result } : { ok: false, error: { code: "internal", message: "Malformed host result" } };
         if (!r.error || typeof r.error.message !== "string" || !["unsupported", "invalid_request", "unavailable", "stale_generation", "internal"].includes(r.error.code))
           return { ok: false, error: { code: "internal", message: "Malformed host error" } };
         return { ok: false, error: r.error };

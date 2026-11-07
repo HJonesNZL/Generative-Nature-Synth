@@ -1,6 +1,8 @@
 # Animal Atlas
 
-Open **Releases/Worldwide Wildlife/Animal Atlas.app**, choose **Collect**, and select **Start live updates**. Worldwide bird detections and NZ shark reports are selected initially. Enable **Worldwide reported sightings** to add public iNaturalist animal reports. Choose **NZ bird detections** for deeper local coverage. **Latest detections** locates a report on the globe. [Standalone guide](docs/STANDALONE.md) · [Worldwide qualification](evidence/worldwide/README.md) · [Identified spotted seal archive](deliverables/ATN-spotted-seal-2018/README.md)
+Open **Releases/Saved Wildlife Pieces/Animal Atlas.app**, choose **Collect**, and select **Start live updates**. Worldwide bird detections and NZ shark reports are selected initially. Enable **Worldwide reported sightings** to add public iNaturalist animal reports. Choose **NZ bird detections** for deeper local coverage. **Latest detections** locates a report on the globe. [Standalone guide](docs/STANDALONE.md) · [Worldwide qualification](evidence/worldwide/README.md) · [Identified spotted seal archive](deliverables/ATN-spotted-seal-2018/README.md)
+
+In **Project → Saved pieces**, freeze a UTC window from collected records or import a sealed piece from an attached archive. Open the result in Replay, edit its voices in Sound Studio, then save the soundscape and export a WAV. The bundled seal archive works offline. [Saved pieces and replay](docs/STANDALONE.md#save-a-wildlife-piece)
 
 The [live library milestone](docs/milestones/NEXT_LIBRARY_BROWSING.md) added source freshness, paginated saved-piece browsing and revision-aware preparation. [Qualification record](evidence/library-live/qualification.md)
 
@@ -20,7 +22,7 @@ Playback requires explicit Listening enable. Eight native voice controls and six
 
 ## Production direction and C++ migration
 
-The production codebase is moving to portable C++20, with thin JUCE standalone/VST3 adapters. The current UI is React/TypeScript with a Three.js globe; JUCE's embedded browser is the local macOS product container. React and the webview are complementary. The C++ event/replay core, numeric action compiler, bounded voice renderer, WAV writer, playback runtime and read-only native session CLI now build; the packaged app now collects into its separate managed native live library. Saved-session capture/writes remain in the operational Python prototype below; the native collector does not modify that recording database. Existing terminal commands and ongoing recordings are unchanged.
+The production codebase is moving to portable C++20, with thin JUCE standalone/VST3 adapters. The current UI is React/TypeScript with a Three.js globe; JUCE's embedded browser is the local macOS product container. React and the webview are complementary. The C++ event/replay core, numeric action compiler, bounded voice renderer, WAV writer, playback runtime and read-only native session CLI now build; the packaged app now collects into its separate managed native live library. The native app freezes and imports saved pieces into its managed database. The operational Python prototype below retains its own recording database. Existing terminal commands and ongoing recordings are unchanged.
 
 ```sh
 cmake -S . -B build/native -DCMAKE_BUILD_TYPE=Debug

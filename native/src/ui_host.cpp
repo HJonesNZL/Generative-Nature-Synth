@@ -1,8 +1,10 @@
 #include "event_validation.hpp"
 #include "json_text.hpp"
+#include "piece_jobs.hpp"
 #include "sqlite_statement.hpp"
 #include <algorithm>
 #include <atlas/exports.hpp>
+#include <atlas/piece_import.hpp>
 #include <atlas/playback.hpp>
 #include <atlas/presets.hpp>
 #include <atlas/render_jobs.hpp>
@@ -11,6 +13,7 @@
 #include <atlas/ui_host.hpp>
 #include <atlas/voices.hpp>
 #include <charconv>
+#include <chrono>
 #include <cmath>
 #include <limits>
 #include <map>
@@ -508,11 +511,26 @@ std::string sessionView(const SavedSession &s) {
            ",\"observedBoundsUs\":" + boundsJson(s.observedBounds) +
            ",\"arrivalBoundsUs\":" + boundsJson(s.arrivalBounds) + "}";
 }
+std::string jobView(const std::optional<PieceJob> &job) {
+    if (!job)
+        return "null";
+    return "{\"id\":" + quoteJson(job->id) +
+           ",\"operation\":" + quoteJson(job->operation) +
+           ",\"status\":" + quoteJson(job->status) +
+           ",\"stage\":" + quoteJson(job->stage) +
+           ",\"processed\":" + std::to_string(job->processed) +
+           ",\"total\":" + (job->total ? std::to_string(*job->total) : "null") +
+           ",\"piece\":" + (job->piece ? sessionView(*job->piece) : "null") +
+           ",\"error\":" +
+           (job->error.empty() ? "null" : quoteJson(job->error)) + "}";
+}
 } // namespace
 
 struct UiHost::Impl {
     std::unique_ptr<ReadOnlyLibrary> library;
     Database db;
+    std::filesystem::path attachedPath;
+    std::unique_ptr<PieceJobs> pieces;
     std::optional<Timeline> prepared;
     SavedSession saved;
     std::optional<Timeline> material;
@@ -531,7 +549,10 @@ struct UiHost::Impl {
         : db(open(!std::filesystem::exists(path) && !config.soundscapes.empty()
                       ? std::filesystem::path(":memory:")
                       : path)),
-          playback(output), voices(presets), storage(std::move(config)) {
+          attachedPath(path), playback(output), voices(presets),
+          storage(std::move(config)) {
+        if (!storage.managedLibrary.empty())
+            pieces = std::make_unique<PieceJobs>();
         if (std::filesystem::exists(path))
             library = std::make_unique<ReadOnlyLibrary>(path);
         if (!storage.soundscapes.empty()) {
@@ -1091,6 +1112,7 @@ void UiHost::setLibrary(const std::filesystem::path &library) {
         throw std::invalid_argument("library must be an existing regular file");
     auto next = std::make_unique<Impl>(library, impl_->playback, impl_->voices,
                                        impl_->storage);
+    next->pieces = std::move(impl_->pieces);
     next->renders = std::move(impl_->renders);
     next->renderScenes = std::move(impl_->renderScenes);
     impl_.swap(next);
@@ -1120,6 +1142,9 @@ std::string UiHost::request(std::string_view envelope) {
                 throw std::invalid_argument("unexpected arguments");
             result =
                 R"({"protocolVersion":1,"implementation":"native","supportedMethods":["getCapabilities","getChanges","getCatalog","listSessions","listSessionsPage","prepareReplay","getMaterialEvents")";
+            if (impl_->pieces)
+                result +=
+                    R"(,"startPieceFreeze","startPieceImport","getPieceJob","cancelPieceJob","openManagedPiece")";
             if (impl_->playback)
                 result +=
                     R"(,"getTransport","setTransport","getAudioState","setAudioEnabled","getAudioDevices","setAudioDevice")";
@@ -1598,6 +1623,77 @@ std::string UiHost::request(std::string_view envelope) {
         } else if (method == "getCatalog") {
             result = impl_->catalog(
                 Object(impl_->db.get(), arguments, {"material"}));
+        } else if (impl_->pieces && method == "startPieceFreeze") {
+            Object args(impl_->db.get(), arguments,
+                        {"requestId", "name", "startUtc", "endUtc", "sourceId",
+                         "speciesId"});
+            const auto id = args.text("requestId", 32);
+            if (!Impl::opaqueId(id))
+                throw std::invalid_argument("Invalid saved piece request ID.");
+            const auto filter =
+                [&](std::string_view field) -> std::optional<std::string> {
+                if (args.null(field))
+                    return {};
+                return args.text(field, field == "sourceId" ? 128 : 512);
+            };
+            const auto now =
+                std::chrono::duration_cast<std::chrono::microseconds>(
+                    std::chrono::system_clock::now().time_since_epoch())
+                    .count();
+            FreezePieceRequest capture{id,
+                                       args.text("name", 128),
+                                       formatUtc(now),
+                                       args.text("startUtc", 64),
+                                       args.text("endUtc", 64),
+                                       filter("sourceId"),
+                                       filter("speciesId"),
+                                       0};
+            result = jobView(impl_->pieces->start(
+                impl_->newId(), "freeze", arguments,
+                [path = impl_->storage.managedLibrary,
+                 capture = std::move(capture)](const PieceProgress &progress) {
+                    return freezeObservedPiece(path, capture, progress);
+                }));
+        } else if (impl_->pieces && method == "startPieceImport") {
+            Object args(impl_->db.get(), arguments, {"sessionId"});
+            const auto id = args.text("sessionId", 128);
+            if (!impl_->library ||
+                std::filesystem::equivalent(impl_->attachedPath,
+                                            impl_->storage.managedLibrary))
+                throw std::invalid_argument(
+                    "Attach a different wildlife library to import a piece.");
+            result = jobView(impl_->pieces->start(
+                impl_->newId(), "import",
+                impl_->attachedPath.string() + '\0' + id,
+                [source = impl_->attachedPath,
+                 path = impl_->storage.managedLibrary,
+                 id](const PieceProgress &progress) {
+                    return importSavedPiece(source, path, id, progress);
+                }));
+        } else if (impl_->pieces && method == "getPieceJob") {
+            Object args(impl_->db.get(), arguments, {"jobId"});
+            result = jobView(impl_->pieces->get(args.optionalText("jobId")));
+        } else if (impl_->pieces && method == "cancelPieceJob") {
+            Object args(impl_->db.get(), arguments, {"jobId"});
+            result = jobView(impl_->pieces->cancel(args.text("jobId", 32)));
+        } else if (impl_->pieces && method == "openManagedPiece") {
+            Object args(impl_->db.get(), arguments, {"sessionId"});
+            const auto id = args.text("sessionId", 128);
+            if (id.empty() || id == "latest")
+                throw std::invalid_argument("Choose a specific saved piece.");
+            const auto managed = impl_->storage.managedLibrary;
+            const bool changed =
+                !impl_->library ||
+                !std::filesystem::equivalent(impl_->attachedPath, managed);
+            const auto saved = changed ? ReadOnlyLibrary(managed).session(id)
+                                       : impl_->library->session(id);
+            if (changed) {
+                setLibrary(managed);
+                if (impl_->playback)
+                    impl_->playback->enable(false);
+            }
+            result = "{\"session\":" + sessionView(saved) +
+                     ",\"libraryChanged\":" + (changed ? "true}" : "false}");
         } else if (method == "listSessionsPage") {
             Object args(impl_->db.get(), arguments, {"limit", "cursor"});
             if (!impl_->library)
