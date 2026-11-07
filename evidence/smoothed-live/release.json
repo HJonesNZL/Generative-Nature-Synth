@@ -1,0 +1,82 @@
+{
+  "version": "0.9.0",
+  "architecture": "arm64",
+  "codeCommit": "6a89d2492707753e13993dfe93e97601b63e958c",
+  "zipSha256": "9901fa9880271bc97e5fff5501952858460bc0d8b5c00ce373736ac2199aaba2",
+  "nativeReleaseSuites": 41,
+  "sanitizedSuites": 7,
+  "frontendTests": 79,
+  "packages": {
+    "installed": {
+      "signatureVerified": true,
+      "mode": "smoothed",
+      "sourceEvents": 503,
+      "denseObservations": 500,
+      "received": 501,
+      "admitted": 501,
+      "callbackConfirmedStarts": "501",
+      "grouped": 0,
+      "dropped": 0,
+      "skippedRevisions": 0,
+      "pendingAtEnd": 0,
+      "pendingDuringBurst": {
+        "received": 132,
+        "admitted": 4,
+        "pending": 128,
+        "catchingUp": true
+      },
+      "peakDbfs": -33.73349093501552,
+      "device": "ZoomAudioDevice",
+      "mapObserved": true,
+      "headerErrorFree": true,
+      "muteMeterCleared": true,
+      "shutdownComplete": true
+    },
+    "archive": {
+      "signatureVerified": true,
+      "mode": "smoothed",
+      "sourceEvents": 503,
+      "denseObservations": 500,
+      "received": 501,
+      "admitted": 501,
+      "callbackConfirmedStarts": "501",
+      "grouped": 0,
+      "dropped": 0,
+      "skippedRevisions": 0,
+      "pendingAtEnd": 0,
+      "pendingDuringBurst": {
+        "received": 131,
+        "admitted": 3,
+        "pending": 128,
+        "catchingUp": true
+      },
+      "peakDbfs": -33.73349093501552,
+      "device": "ZoomAudioDevice",
+      "mapObserved": true,
+      "headerErrorFree": true,
+      "muteMeterCleared": true,
+      "shutdownComplete": true
+    },
+    "musical": {
+      "signatureVerified": true,
+      "mode": "musical",
+      "sourceEvents": 503,
+      "denseObservations": 500,
+      "received": 501,
+      "admitted": 5,
+      "callbackConfirmedStarts": "0",
+      "grouped": 244,
+      "dropped": 252,
+      "skippedRevisions": 0,
+      "pendingAtEnd": 0,
+      "pendingDuringBurst": null,
+      "peakDbfs": -45.82992584684199,
+      "device": "ZoomAudioDevice",
+      "mapObserved": true,
+      "headerErrorFree": true,
+      "muteMeterCleared": true,
+      "shutdownComplete": true
+    }
+  },
+  "scope": "Disposable collector, packaged WebKit interface, actual JUCE callbacks on a virtual output. No external provider requests or physical listening."
+}
