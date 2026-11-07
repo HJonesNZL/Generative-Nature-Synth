@@ -7,7 +7,7 @@ declare global { interface Window { atlasPendingReplayPiece?: SessionView } }
 const utcInput = (milliseconds: number) => new Date(milliseconds).toISOString().slice(0, 19);
 
 /** Mounted with Project: UTC drafts persist closed; one bounded host job, serial polling, explicit open. */
-export function PieceTools({ onStatus }: { onStatus: (status: string | null) => void }) {
+export function PieceTools({ open: isOpen, onStatus }: { open: boolean; onStatus: (status: string | null) => void }) {
   const { client, connection, caps } = useHost();
   const state = useAppState(), dispatch = useDispatch();
   const [name, setName] = useState("");
@@ -20,8 +20,14 @@ export function PieceTools({ onStatus }: { onStatus: (status: string | null) => 
   const [busy, setBusy] = useState(false);
   const operation = useRef(false);
   const retry = useRef<{ signature: string; requestId: string } | null>(null);
-  const [catalog] = useHostQuery("getCatalog", client.supports("startPieceFreeze") ? {} : null, []);
-  const [sources] = useHostQuery("getLiveSources", client.supports("getLiveSources") ? {} : null, [], { refreshMs: 1000 });
+  const [catalog] = useHostQuery("getCatalog", isOpen && client.supports("startPieceFreeze") ? {} : null, []);
+  const [sources] = useHostQuery("getLiveSources", isOpen && client.supports("getLiveSources") ? {} : null, [], { refreshMs: 1000 });
+  const catalogueSnapshot = useRef(valueOf(catalog));
+  const sourcesSnapshot = useRef(valueOf(sources));
+  if (valueOf(catalog)) catalogueSnapshot.current = valueOf(catalog);
+  if (valueOf(sources)) sourcesSnapshot.current = valueOf(sources);
+  const catalogData = catalogueSnapshot.current;
+  const sourceData = sourcesSnapshot.current;
   const active = job?.status === "running";
   const supported = client.supports("getPieceJob");
   useEffect(() => {
@@ -92,19 +98,19 @@ export function PieceTools({ onStatus }: { onStatus: (status: string | null) => 
     } else setError(result.error.message);
     setBusy(false);
   };
-  const external = caps?.libraryAvailable !== false && valueOf(sources)?.libraryActive === false;
+  const external = caps?.libraryAvailable !== false && sourceData?.libraryActive === false;
   return <section className="soundscape-panel stack-sm" aria-label="Saved piece tools">
     <span className="label">SAVED PIECES</span>
-    {valueOf(sources)?.libraryActive ? <details className="panel-details"><summary>Freeze collected interval</summary>
+    {sourceData?.libraryActive ? <details className="panel-details"><summary>Freeze collected interval</summary>
       <div className="stack-sm">
         <p className="small muted">Save managed collected records by observation time. UTC; the end is excluded. Empty intervals retain the requested time bounds. Stored records do not establish wildlife coverage.</p>
         <label>Piece name<input className="input" maxLength={128} value={name} disabled={disabled} onChange={e => setName(e.target.value)} /></label>
         <label>Start (UTC)<input className="input" type="datetime-local" step="1" value={start} disabled={disabled} onChange={e => setStart(e.target.value)} /></label>
         <label>End (UTC)<input className="input" type="datetime-local" step="1" value={end} disabled={disabled} onChange={e => setEnd(e.target.value)} /></label>
         <button className="btn btn--quiet btn--sm" disabled={disabled} onClick={() => { const now = Date.now(); setStart(utcInput(now - 3600000)); setEnd(utcInput(now)); }}>Last hour</button>
-        <label>Source<select aria-label="Source" value={sourceId} disabled={disabled} onChange={e => setSourceId(e.target.value)}><option value="">All sources</option>{sourceId && !valueOf(catalog)?.sources.some(s => s.id === sourceId) ? <option value={sourceId}>{sourceId}</option> : null}{(valueOf(catalog)?.sources ?? []).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
-        <label>Species<select aria-label="Species" value={speciesId} disabled={disabled} onChange={e => setSpeciesId(e.target.value)}><option value="">All species</option>{speciesId && !valueOf(catalog)?.species.some(s => s.id === speciesId) ? <option value={speciesId}>{speciesId}</option> : null}{(valueOf(catalog)?.species ?? []).map(s => <option key={s.id} value={s.id}>{s.commonName}</option>)}</select></label>
-        {valueOf(catalog)?.limited || !valueOf(catalog)?.sources.length || !valueOf(catalog)?.species.length ? <details className="panel-details"><summary>Missing source or species</summary>
+        <label>Source<select aria-label="Source" value={sourceId} disabled={disabled} onChange={e => setSourceId(e.target.value)}><option value="">All sources</option>{sourceId && !catalogData?.sources.some(s => s.id === sourceId) ? <option value={sourceId}>{sourceId}</option> : null}{(catalogData?.sources ?? []).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
+        <label>Species<select aria-label="Species" value={speciesId} disabled={disabled} onChange={e => setSpeciesId(e.target.value)}><option value="">All species</option>{speciesId && !catalogData?.species.some(s => s.id === speciesId) ? <option value={speciesId}>{speciesId}</option> : null}{(catalogData?.species ?? []).map(s => <option key={s.id} value={s.id}>{s.commonName}</option>)}</select></label>
+        {catalogData?.limited || !catalogData?.sources.length || !catalogData?.species.length ? <details className="panel-details"><summary>Missing source or species</summary>
           <label>Exact source ID<input className="input" value={sourceId} maxLength={128} disabled={disabled} onChange={e => setSourceId(e.target.value)} /></label>
           <label>Exact species ID<input className="input" value={speciesId} maxLength={512} disabled={disabled} onChange={e => setSpeciesId(e.target.value)} /></label>
         </details> : null}

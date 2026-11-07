@@ -29,7 +29,12 @@ await page.addInitScript(()=>{
 });
 try{
  await page.goto(process.env.ATLAS_TEST_URL||'http://127.0.0.1:5186');
- await page.getByLabel('Project',{exact:true}).click();await page.getByText('Freeze collected interval',{exact:true}).click();
+ await page.waitForFunction(()=>pieceFixture.calls.some(c=>c.method==='getPieceJob'));
+ const initialCatalogCalls=await page.evaluate(()=>pieceFixture.calls.filter(c=>c.method==='getCatalog').length);
+ assert.equal(initialCatalogCalls,1,'closed Project defers its own catalogue request');
+ await page.getByLabel('Project',{exact:true}).click();
+ await page.waitForFunction(()=>pieceFixture.calls.filter(c=>c.method==='getCatalog').length===2);
+ await page.getByText('Freeze collected interval',{exact:true}).click();
  await page.getByRole('button',{name:'Freeze interval',exact:true}).click();await page.getByRole('alert').filter({hasText:'Enter a piece name'}).waitFor();
  await page.getByLabel('Piece name',{exact:true}).fill('Synthetic interval');
  await page.getByText('Missing source or species',{exact:true}).click();

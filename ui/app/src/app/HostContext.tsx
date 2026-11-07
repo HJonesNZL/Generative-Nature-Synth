@@ -112,13 +112,14 @@ export function useHostQuery<M extends MethodName>(
   method: M,
   args: AllMethods[M]["request"] | null,
   deps: unknown[],
-  options: { refreshMs?: number } = {},
+  options: { refreshMs?: number; pollWhenHidden?: boolean } = {},
 ): [QueryState<AllMethods[M]["response"]>, () => void] {
   const { client, caps, connection } = useHost();
   const [state, setState] = useState<QueryState<AllMethods[M]["response"]>>({ status: "loading", previous: null });
   const [tick, setTick] = useState(0);
   const lastValue = useRef<AllMethods[M]["response"] | null>(null);
   const lastKey = useRef("");
+  const queryPending = useRef(false);
   const queryKey = JSON.stringify([method, args]);
   const supported = caps ? client.supports(method) : true;
 
@@ -131,22 +132,26 @@ export function useHostQuery<M extends MethodName>(
     if (!caps || connection !== "connected" || args === null) return;
     if (!supported) { setState({ status: "unsupported" }); return; }
     const controller = new AbortController();
+    queryPending.current = true;
     setState((s) => (s.status === "ready" ? s : { status: "loading", previous: lastValue.current }));
     void client.call(method, args, { signal: controller.signal }).then((result: HostResult<AllMethods[M]["response"]>) => {
       if (controller.signal.aborted) return;
+      queryPending.current = false;
       if (result.ok) { lastValue.current = result.value; setState({ status: "ready", value: result.value }); }
       else if (result.error.code === "unsupported") setState({ status: "unsupported" });
       else setState({ status: "error", error: result.error, previous: lastValue.current });
     });
-    return () => controller.abort();
+    return () => { controller.abort(); queryPending.current = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [caps, connection, supported, tick, queryKey, ...deps]);
 
   useEffect(() => {
-    if (!options.refreshMs) return;
-    const id = window.setInterval(() => { if (!document.hidden) setTick((t) => t + 1); }, options.refreshMs);
+    if (!options.refreshMs || args === null || !caps || !supported || connection !== "connected") return;
+    const id = window.setInterval(() => {
+      if (!queryPending.current && (options.pollWhenHidden || !document.hidden)) setTick((t) => t + 1);
+    }, options.refreshMs);
     return () => window.clearInterval(id);
-  }, [options.refreshMs]);
+  }, [options.refreshMs, options.pollWhenHidden, queryKey, caps, supported, connection]);
 
   const refresh = useCallback(() => setTick((t) => t + 1), []);
   return [state, refresh];

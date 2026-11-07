@@ -16,7 +16,7 @@ export function SoundscapePanel({ onAttention }: { onAttention?: () => void }) {
   const operation = useRef(false);
   const job = state.render.job;
   const active = job?.state === "queued" || job?.state === "rendering";
-  const [jobQuery] = useHostQuery("getRenderJob", active && job ? { jobId: job.jobId } : null, [job?.jobId], { refreshMs: 500 });
+  const [jobQuery] = useHostQuery("getRenderJob", active && job ? { jobId: job.jobId } : null, [job?.jobId], { refreshMs: 500, pollWhenHidden: true });
   const polled = valueOf(jobQuery);
   useEffect(() => { if (polled && polled.jobId === job?.jobId) dispatch({ type: "renderJob", job: polled }); }, [polled, job?.jobId, dispatch]);
   useEffect(() => onNotification(notification => {

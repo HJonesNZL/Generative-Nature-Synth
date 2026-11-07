@@ -19,9 +19,9 @@ await context.addInitScript(() => {
   const key = 'atlas-export-recovery-cancelled';
   const mock = new URL(location.href).searchParams.get('fixture') === 'mock';
   const sceneId = 'a'.repeat(32), jobId = 'b'.repeat(32);
-  const fixture = window.exportRecoveryFixture = { calls: [], histories: [], mock };
+  const fixture = window.exportRecoveryFixture = { calls: [], histories: [], mock, completed: false };
   const cancelled = () => sessionStorage.getItem(key) === 'true';
-  const job = () => ({ jobId, soundscapeId: sceneId, state: cancelled() ? 'cancelled' : 'rendering', progress: .5, message: null });
+  const job = () => ({ jobId, soundscapeId: sceneId, state: fixture.completed ? 'complete' : cancelled() ? 'cancelled' : 'rendering', progress: fixture.completed ? 1 : .5, message: null, ...(fixture.completed ? {artifactId:'d'.repeat(32)} : {}) });
   const scene = { id: sceneId, name: 'Synthetic saved scene', valid: true, contentVerified: true, error: null, contentHash: 'c'.repeat(64), sourceSessionId: 'synthetic-source', eventCount: 0, durationUs: '1000000', basis: 'observed', speedNumerator: '1', speedDenominator: '1' };
   const methods = ['getCapabilities', 'listExports', 'listSoundscapes', 'getRenderJob', 'cancelRender'];
   window.atlasHost = { request: async request => {
@@ -30,7 +30,7 @@ await context.addInitScript(() => {
     if (request.method === 'getCapabilities') result = { protocolVersion: 1, implementation: mock ? 'mock' : 'native', supportedMethods: methods, audioAvailable: false, libraryAvailable: false, maxEventBatch: 500, maxVisibleMarkers: 400 };
     else if (request.method === 'listSoundscapes') result = { items: [scene], limited: false, unmanagedFiles: 0 };
     else if (request.method === 'listExports') {
-      result = { items: [], limited: false, unavailableFiles: 0, incompleteRenders: mock || cancelled() ? 0 : 1, activeRender: mock || cancelled() ? null : job() };
+      result = { items: [], limited: false, unavailableFiles: 0, incompleteRenders: mock || cancelled() || fixture.completed ? 0 : 1, activeRender: mock || cancelled() || fixture.completed ? null : job() };
       fixture.histories.push(structuredClone(result));
     } else if (request.method === 'getRenderJob') {
       if (request.args.jobId !== jobId) throw Error('Unexpected synthetic render identity');
@@ -105,6 +105,21 @@ try {
   await assertNoCompletion(page);
   await page.screenshot({ path: resolve(output, 'reloaded-without-active-export.png') });
   checks.push('Session-persisted cancellation survives reload; empty completed history and null activeRender do not resurrect polling, progress or download controls');
+
+  const backgroundPage = await context.newPage(); backgroundPage.setDefaultTimeout(10000);
+  await backgroundPage.addInitScript(() => Object.defineProperty(document, 'hidden', { configurable: true, get: () => true }));
+  await backgroundPage.goto(origin);
+  await exporting(backgroundPage).waitFor();
+  await backgroundPage.waitForFunction(() => exportRecoveryFixture.calls.filter(call => call.method === 'getRenderJob').length >= 1);
+  await backgroundPage.evaluate(() => { exportRecoveryFixture.completed = true; });
+  await backgroundPage.getByText('WAV ready', {exact:true}).waitFor();
+  assert.equal(await backgroundPage.evaluate(() => document.hidden), true);
+  const completedPolls = await backgroundPage.evaluate(() => exportRecoveryFixture.calls.filter(call => call.method === 'getRenderJob').length);
+  await backgroundPage.waitForTimeout(1100);
+  assert.equal(await backgroundPage.evaluate(() => exportRecoveryFixture.calls.filter(call => call.method === 'getRenderJob').length), completedPolls, 'terminal export disables its polling timer');
+  assert.equal(await backgroundPage.locator('details.project-tools').evaluate(element => element.open), false);
+  checks.push('Active explicit export polls while document.hidden and Project closed, reaches WAV ready, then stops polling');
+  await backgroundPage.close();
 
   const mockPage = await context.newPage(); mockPage.setDefaultTimeout(10000);
   await mockPage.goto(`${origin}/?fixture=mock`);
