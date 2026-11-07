@@ -1,6 +1,7 @@
 /* Base element styles, focus, and shared primitives. */
 *, *::before, *::after { box-sizing: border-box; }
-html, body, #root { height: 100%; }
+html, body, #root { height: 100%; overflow: clip; }
+html, body { overscroll-behavior: none; }
 body {
   margin: 0;
   background-color: var(--c-ground);
@@ -179,11 +180,11 @@ table { border-collapse: collapse; width: 100%; }
 .popover { position: relative; }
 .popover__trigger { background: none; border: 0; padding: 0; }
 .popover__panel {
-  position: absolute; top: calc(100% + 8px); z-index: 40; min-width: 240px;
+  position: fixed; z-index: 40; width: max-content; min-width: min(240px, calc(100vw - 16px));
+  max-width: min(400px, calc(100vw - 16px)); overflow: auto; overscroll-behavior: contain;
   background: var(--c-ground-raised); border: 1px solid var(--c-accent); border-radius: 12px; box-shadow: var(--shadow-pop); padding: var(--s-5);
 }
-.popover__panel--end { right: 0; }
-.popover__panel--start { left: 0; }
+
 .menu { display: flex; flex-direction: column; gap: var(--s-3); }
 .menu--wide { min-width: 300px; }
 .menu__title { font-family: var(--font-display); font-weight: 500; color: var(--c-accent); }
