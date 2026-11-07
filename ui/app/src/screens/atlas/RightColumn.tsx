@@ -10,13 +10,18 @@ import { useAppState, useDispatch } from "../../app/store";
 import { useCatalog, type Catalog } from "../../app/catalog";
 import { formatDateTime, formatTime, zoneAbbreviation } from "../../app/time";
 import { EmptyState, Notice } from "../../components/Notice";
-import type { MaterialView } from "../shared/useMaterialView";
+import { markerKeyForEvent, type MaterialView } from "../shared/useMaterialView";
 
-export function RightColumn({ view, catalog }: { view: MaterialView; catalog: Catalog }) {
+type Props = { view: MaterialView; catalog: Catalog; latest: readonly EventView[]; onLocate: (event: EventView) => void };
+
+export function RightColumn({ view, catalog, latest, onLocate }: Props) {
+  const { mode } = useAppState();
+  const { client } = useHost();
+  const eventPanel = <EventPanel view={view} catalog={catalog} latest={latest} onLocate={onLocate} />;
+  const regions = mode !== "live" || client.supports("getRegionActivity") ? <RegionMixPanel /> : null;
   return (
     <aside className="atlas__right" aria-label="Region mix and selected event">
-      <RegionMixPanel />
-      <EventPanel view={view} catalog={catalog} />
+      {mode === "live" ? <>{eventPanel}{regions}</> : <>{regions}{eventPanel}</>}
     </aside>
   );
 }
@@ -134,15 +139,15 @@ function outcomeText(o: MusicalOutcome | undefined): { short: string; long: stri
   }
 }
 
-function EventPanel({ view, catalog }: { view: MaterialView; catalog: Catalog }) {
+function EventPanel({ view, catalog, latest, onLocate }: Props) {
   const state = useAppState();
   const dispatch = useDispatch();
   const { client } = useHost();
-  const [tab, setTab] = useState<"selected" | "incoming">("selected");
+  const [tab, setTab] = useState<"selected" | "incoming">(() => state.mode === "live" && !state.selectedEventId ? "incoming" : "selected");
   const selected = view.store.get(state.selectedEventId);
   useEffect(() => { if (selected) setTab("selected"); }, [selected?.id]);
   useEffect(() => { if (selected) view.store.requestOutcomes(client, [selected.id]); }, [selected, client, view.store]);
-  const incoming = useMemo(() => [...view.events].sort((a, b) => view.timeOf(b) - view.timeOf(a)).slice(0, 40), [view]);
+  const incoming = useMemo(() => state.mode === "live" ? latest : [...view.events].sort((a, b) => view.timeOf(b) - view.timeOf(a)).slice(0, 40), [view, latest, state.mode]);
   useEffect(() => { view.store.requestOutcomes(client, incoming.map((e) => e.id)); }, [incoming, client, view.store]);
 
   return (
@@ -150,20 +155,29 @@ function EventPanel({ view, catalog }: { view: MaterialView; catalog: Catalog })
       <div className="tabs" role="tablist" aria-label="Event views">
         <button type="button" role="tab" id="tab-selected" aria-selected={tab === "selected"} aria-controls="panel-selected" tabIndex={tab === "selected" ? 0 : -1} className="tab" onClick={() => setTab("selected")} onKeyDown={(e) => { if (e.key === "ArrowRight") { setTab("incoming"); (document.getElementById("tab-incoming") as HTMLElement | null)?.focus(); } }}>Selected</button>
         <button type="button" role="tab" id="tab-incoming" aria-selected={tab === "incoming"} aria-controls="panel-incoming" tabIndex={tab === "incoming" ? 0 : -1} className="tab" onClick={() => setTab("incoming")} onKeyDown={(e) => { if (e.key === "ArrowLeft") { setTab("selected"); (document.getElementById("tab-selected") as HTMLElement | null)?.focus(); } }}>
-          {state.mode === "live" ? "Incoming" : "Events"} <span className="mono">{view.events.length}</span>
+          {state.mode === "live" ? "Latest detections" : <>Events <span className="mono">{view.events.length}</span></>}
         </button>
       </div>
       {tab === "selected" ? (
         <div role="tabpanel" id="panel-selected" aria-labelledby="tab-selected" className="event-panel__body">
-          {selected ? <Inspector event={selected} outcome={view.store.outcome(selected.id)} catalog={catalog} /> : <EmptyState title="No event selected">Pick a station on the map, a line in Grain, or an item under {state.mode === "live" ? "Incoming" : "Events"}.</EmptyState>}
+          {selected ? <Inspector event={selected} outcome={view.store.outcome(selected.id)} catalog={catalog} /> : <EmptyState title="No event selected">Pick a station on the map, a line in Grain, or an item under {state.mode === "live" ? "Latest detections" : "Events"}.</EmptyState>}
         </div>
       ) : (
         <div role="tabpanel" id="panel-incoming" aria-labelledby="tab-incoming" className="event-panel__body">
-          {incoming.length === 0 ? <EmptyState title="Nothing here yet">{state.mode === "live" ? "New arrivals appear as the host receives them." : "No events in this material."}</EmptyState> : (
-            <ul className="incoming" role="list">
-              {incoming.map((e) => (
+          {incoming.length === 0 ? <EmptyState title="Nothing here yet">{state.mode === "live" ? "Collected detections appear here, ordered by observation time." : "No events in this material."}</EmptyState> : (
+            <ul className={state.mode === "live" ? "incoming latest-detections" : "incoming"} aria-label={state.mode === "live" ? "Latest detections by observation time" : "Events"}>
+              {incoming.map((e, index) => state.mode === "live" ? (
+                <li key={e.id} className={`${index === 0 ? "latest-detections__lead" : ""}${index < 8 ? " latest-detections__highlighted" : ""}`}>
+                  <button type="button" className={`latest-detections__row${e.id === state.selectedEventId ? " is-on" : ""}`} aria-pressed={e.id === state.selectedEventId} aria-label={`${e.position && markerKeyForEvent(e) ? "Show" : "Inspect"} ${e.commonName || catalog.speciesName(e.speciesId)}${e.position && markerKeyForEvent(e) ? " on map" : ""}`} onClick={() => { setTab("selected"); onLocate(e); }}>
+                    <span className="latest-detections__name">{e.commonName || catalog.speciesName(e.speciesId)}</span>
+                    <time className="mono latest-detections__time" dateTime={e.observedAtUtc}>Observed {formatDateTime(e.observedAtUtc)}</time>
+                    <span className="muted latest-detections__context">{catalog.sourceName(e.sourceId)} · {e.locationKind.replaceAll("_", " ")}</span>
+                    {!e.position || !markerKeyForEvent(e) ? <span className="small muted">No map location</span> : null}
+                  </button>
+                </li>
+              ) : (
                 <li key={e.id}>
-                  <button type="button" className={`incoming__row${e.id === state.selectedEventId ? " is-on" : ""}`} aria-pressed={e.id === state.selectedEventId} onClick={() => dispatch({ type: "selectEvent", eventId: e.id })}>
+                  <button type="button" className={`incoming__row${e.id === state.selectedEventId ? " is-on" : ""}`} aria-pressed={e.id === state.selectedEventId} onClick={() => { setTab("selected"); dispatch({ type: "selectEvent", eventId: e.id }); }}>
                     <span className="mono">{formatTime(view.timeOf(e))}</span>
                     <span>{catalog.speciesName(e.speciesId)} · {["station_detection", "receiver_detection"].includes(e.locationKind) && e.stationId ? catalog.stationName(e.stationId) : e.individualId ?? "fix"}</span>
                     <span className="muted">{outcomeText(view.store.outcome(e.id)).short}</span>

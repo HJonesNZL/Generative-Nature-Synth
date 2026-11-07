@@ -315,3 +315,14 @@
 .live-source-status .source-row { gap: 2px; overflow-wrap: anywhere; }
 .live-source-status .panel-details { font-family: var(--font-text); }
 .live-source-status > .source-row + .source-row { border-top: var(--rule-hair); padding-top: var(--s-3); }
+
+/* Latest observed detections; first eight correspond to map highlights. */
+.latest-detections { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.latest-detections__row { width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-1); padding: var(--s-3); text-align: left; color: var(--c-ink); background: transparent; border: 0; border-bottom: var(--rule-hair); border-left: 2px solid transparent; }
+.latest-detections__highlighted .latest-detections__row { border-left-color: var(--c-accent); }
+.latest-detections__lead .latest-detections__row { background: var(--c-ground-sunk); padding-block: var(--s-4); }
+.latest-detections__name { font-size: var(--fs-small); font-weight: 600; }
+.latest-detections__lead .latest-detections__name { color: var(--c-accent); font-size: var(--fs-ui); }
+.latest-detections__time, .latest-detections__context { font-size: var(--fs-label); line-height: 1.5; overflow-wrap: anywhere; }
+.latest-detections__row:hover, .latest-detections__row.is-on { background: var(--c-ground-sunk); }
+.latest-detections__row:focus-visible { outline: 2px solid var(--c-accent); outline-offset: -2px; }

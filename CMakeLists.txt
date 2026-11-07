@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(AnimalAtlas VERSION 0.4.0 LANGUAGES CXX)
+project(AnimalAtlas VERSION 0.4.1 LANGUAGES CXX)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(ATLAS_BUILD_TESTS "Build portable core tests" ON)

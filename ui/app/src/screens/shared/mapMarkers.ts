@@ -4,15 +4,34 @@ import type { EventView } from "../../host/contracts";
 import type { MapMarker } from "../../components/map/geo";
 
 /** Display ordering retains timezone offsets and the source's microsecond precision. */
+function observedMicroseconds(event: EventView): bigint | null {
+  const ms = Date.parse(event.observedAtUtc);
+  if (!Number.isFinite(ms)) return null;
+  const fraction = event.observedAtUtc.match(/\.(\d{1,6})(?:Z|[+-]\d{2}:\d{2})$/)?.[1] ?? "";
+  return BigInt(ms) * 1000n + BigInt(fraction.padEnd(6, "0").slice(3));
+}
+
 export function newestObservation(events: readonly EventView[]): EventView | null {
   let newest: EventView | null = null;
   let newestUs: bigint | null = null;
   for (const event of events) {
-    const fraction = event.observedAtUtc.match(/\.(\d{1,6})(?:Z|[+-]\d{2}:\d{2})$/)?.[1] ?? "";
-    const us = BigInt(Date.parse(event.observedAtUtc)) * 1000n + BigInt(fraction.padEnd(6, "0").slice(3));
-    if (newestUs === null || us > newestUs) { newest = event; newestUs = us; }
+    const us = observedMicroseconds(event);
+    if (us !== null && (newestUs === null || us > newestUs)) { newest = event; newestUs = us; }
   }
   return newest;
+}
+
+export function latestObservations(events: readonly EventView[]): EventView[] {
+  const ordered = events.flatMap(event => {
+    const time = observedMicroseconds(event);
+    return time === null ? [] : [{ event, time, sequence: BigInt(event.revisionSequence) }];
+  });
+  ordered.sort((a, b) => {
+    if (a.time !== b.time) return a.time > b.time ? -1 : 1;
+    if (a.sequence !== b.sequence) return a.sequence > b.sequence ? -1 : 1;
+    return 0;
+  });
+  return ordered.slice(0, 40).map(row => row.event);
 }
 
 export function isReceiverDetection(event: EventView): boolean {
@@ -52,7 +71,7 @@ export function buildMarkers(view: MaterialView, catalog: Catalog, highlightSpec
   return markers;
 }
 
-export function boundMarkers(markers: MapMarker[], capacity: number, selectedKey: string | null): MapMarker[] {
-  const rank = (marker: MapMarker) => marker.key === selectedKey ? 0 : marker.emphasis === "highlight" ? 1 : marker.emphasis === "normal" ? 2 : 3;
+export function boundMarkers(markers: MapMarker[], capacity: number, selectedKey: string | null, recent?: ReadonlySet<string>, latest?: string | null): MapMarker[] {
+  const rank = (marker: MapMarker) => marker.key === selectedKey ? 0 : marker.key === latest ? 1 : recent?.has(marker.key) ? 2 : marker.emphasis === "highlight" ? 3 : marker.emphasis === "normal" ? 4 : 5;
   return [...markers].sort((a, b) => rank(a) - rank(b)).slice(0, capacity);
 }

@@ -35,3 +35,5 @@ export const BOUNDS_SW_PACIFIC: Bounds = { west: 140, east: 200, south: -52, nor
 export function unwrapLongitude(longitude: number, bounds: Bounds): number {
   return bounds.east > 180 && longitude < 0 ? longitude + 360 : longitude;
 }
+
+export interface MapLocateRequest { key: string; latitude: number; longitude: number; seq: number }

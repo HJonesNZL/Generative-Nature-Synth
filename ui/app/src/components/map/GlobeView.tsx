@@ -13,7 +13,7 @@ import { useEffect, useRef, type KeyboardEvent } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { paintLandTexture } from "./landTexture";
-import type { MapMarker, MapRegion } from "./geo";
+import type { MapLocateRequest, MapMarker, MapRegion } from "./geo";
 import type { Pulse } from "../../app/eventStore";
 
 const MAX_MARKERS = 400;
@@ -43,6 +43,9 @@ function vectorToLatLon(v: THREE.Vector3): { latitude: number; longitude: number
 }
 
 export interface GlobeProps {
+  latestMarkerKey?: string | null;
+  recentMarkerKeys?: ReadonlySet<string>;
+  locateRequest?: MapLocateRequest | null;
   markers: MapMarker[];
   regions: MapRegion[];
   selectedKey: string | null;
@@ -65,6 +68,8 @@ interface GlobeRuntime {
   rings: THREE.InstancedMesh;
   fixes: THREE.InstancedMesh;
   selection: THREE.Mesh;
+  latest: THREE.Mesh;
+  recent: THREE.InstancedMesh;
   pulses: THREE.Mesh[];
   regionGroup: THREE.Group;
   globe: THREE.Mesh;
@@ -76,6 +81,8 @@ interface GlobeRuntime {
 export function GlobeView(props: GlobeProps) {
   const host = useRef<HTMLDivElement>(null);
   const runtime = useRef<GlobeRuntime | null>(null);
+  const locatedSequence = useRef<number | null>(null);
+  const latestMarkerLabel = props.markers.find((marker) => marker.key === props.latestMarkerKey)?.label;
   const propsRef = useRef(props);
   propsRef.current = props;
 
@@ -130,6 +137,15 @@ export function GlobeView(props: GlobeProps) {
     const selection = new THREE.Mesh(new THREE.RingGeometry(0.8, 1, 40), new THREE.MeshBasicMaterial({ color: COLORS.accent, side: THREE.DoubleSide }));
     selection.visible = false;
     scene.add(selection);
+
+    const latest = new THREE.Mesh(new THREE.RingGeometry(0.86, 1, 48), new THREE.MeshBasicMaterial({ color: "#bd6538", side: THREE.DoubleSide }));
+    latest.visible = false;
+    scene.add(latest);
+
+    const recent = new THREE.InstancedMesh(new THREE.RingGeometry(0.9, 1, 32), new THREE.MeshBasicMaterial({ color: "#bd6538", side: THREE.DoubleSide }), 8);
+    recent.count = 0;
+    recent.frustumCulled = false;
+    scene.add(recent);
 
     const pulseGeometry = new THREE.RingGeometry(0.86, 1, 40);
     const pulses: THREE.Mesh[] = [];
@@ -250,9 +266,9 @@ export function GlobeView(props: GlobeProps) {
     const onVisibility = () => { if (!document.hidden) requestRender(); };
     document.addEventListener("visibilitychange", onVisibility);
 
-    const disposables: Array<{ dispose: () => void }> = [texture, globeGeometry, globeMaterial, rimGeometry, rimMaterial, discGeometry, ringGeometry, fixGeometry, markerMaterial, ringMaterial, pulseGeometry, selection.geometry, selection.material as THREE.Material, ...pulses.map((p) => p.material as THREE.Material), controls];
+    const disposables: Array<{ dispose: () => void }> = [texture, globeGeometry, globeMaterial, rimGeometry, rimMaterial, discGeometry, ringGeometry, fixGeometry, markerMaterial, ringMaterial, pulseGeometry, selection.geometry, selection.material as THREE.Material, latest.geometry, latest.material as THREE.Material, recent.geometry, recent.material as THREE.Material, ...pulses.map((p) => p.material as THREE.Material), controls];
     runtime.current = {
-      renderer, scene, camera, controls, discs, rings, fixes, selection, pulses, regionGroup, globe,
+      renderer, scene, camera, controls, discs, rings, fixes, selection, latest, recent, pulses, regionGroup, globe,
       markerKeys: { discs: [], fixes: [] },
       requestRender,
       dispose: () => {
@@ -266,7 +282,7 @@ export function GlobeView(props: GlobeProps) {
         document.removeEventListener("visibilitychange", onVisibility);
         for (const child of regionGroup.children) { const line = child as THREE.Line; line.geometry.dispose(); (line.material as THREE.Material).dispose(); }
         for (const d of disposables) d.dispose();
-        discs.dispose(); rings.dispose(); fixes.dispose();
+        discs.dispose(); rings.dispose(); fixes.dispose(); recent.dispose();
         label.remove();
         renderer.dispose();
         canvas.remove();
@@ -315,6 +331,26 @@ export function GlobeView(props: GlobeProps) {
         if (label) label.textContent = m.label.split(",")[0] ?? "";
       }
     }
+    const latestMarker = props.markers.find((m) => m.key === props.latestMarkerKey);
+    rt.latest.visible = Boolean(latestMarker);
+    if (latestMarker) {
+      const position = latLonToVector(latestMarker.latitude, latestMarker.longitude, 1.008);
+      rt.latest.position.copy(position);
+      rt.latest.quaternion.setFromUnitVectors(up, position.clone().normalize());
+      rt.latest.scale.setScalar(0.045);
+    }
+    let recentCount = 0;
+    for (const marker of props.markers) {
+      if (recentCount === 8) break;
+      if (marker.key === props.latestMarkerKey || !props.recentMarkerKeys?.has(marker.key)) continue;
+      const position = latLonToVector(marker.latitude, marker.longitude, 1.007);
+      quaternion.setFromUnitVectors(up, position.clone().normalize());
+      scale.setScalar((marker.emphasis === "highlight" ? 0.016 : 0.011) * 1.6);
+      matrix.compose(position, quaternion, scale);
+      rt.recent.setMatrixAt(recentCount++, matrix);
+    }
+    rt.recent.count = recentCount;
+    rt.recent.instanceMatrix.needsUpdate = true;
     rt.discs.count = d;
     rt.rings.count = d;
     rt.fixes.count = f;
@@ -324,7 +360,7 @@ export function GlobeView(props: GlobeProps) {
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     }
     rt.requestRender();
-  }, [props.markers, props.selectedKey]);
+  }, [props.markers, props.selectedKey, props.latestMarkerKey, props.recentMarkerKeys]);
 
   // Region outlines.
   useEffect(() => {
@@ -370,6 +406,19 @@ export function GlobeView(props: GlobeProps) {
     propsRef.current.onOrientationChange({ latitude, longitude, distance: rt.camera.position.length() });
   }, [props.zoomCommand]);
 
+  useEffect(() => {
+    const rt = runtime.current;
+    const request = props.locateRequest;
+    if (!rt || !request || locatedSequence.current === request.seq || !Number.isFinite(request.latitude) || !Number.isFinite(request.longitude)) return;
+    locatedSequence.current = request.seq;
+    const distance = rt.camera.position.length();
+    rt.camera.position.copy(latLonToVector(request.latitude, request.longitude, distance));
+    rt.camera.lookAt(0, 0, 0);
+    rt.controls.update();
+    rt.requestRender();
+    propsRef.current.onOrientationChange({ latitude: request.latitude, longitude: request.longitude, distance });
+  }, [props.locateRequest]);
+
   // Keyboard rotation on the focused globe (no global key handlers).
   const onKeyDown = (e: KeyboardEvent) => {
     const rt = runtime.current;
@@ -392,7 +441,7 @@ export function GlobeView(props: GlobeProps) {
   };
 
   return (
-    <div ref={host} className="globe" tabIndex={0} role="application" aria-roledescription="globe" aria-label="Globe. Drag or use arrow keys to rotate; use the station list or 2D map to select by keyboard." onKeyDown={onKeyDown}>
+    <div ref={host} className="globe" tabIndex={0} role="application" aria-roledescription="globe" aria-label={`Globe. Drag or use arrow keys to rotate; use the station list or 2D map to select by keyboard.${latestMarkerLabel ? ` Latest detection: ${latestMarkerLabel}.` : ""}`} onKeyDown={onKeyDown}>
     </div>
   );
 }

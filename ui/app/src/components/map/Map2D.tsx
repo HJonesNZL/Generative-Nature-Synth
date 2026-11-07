@@ -8,6 +8,8 @@ import { MAP_WIDTH as WIDTH, mapProjection, type MapViewport } from "./loupeGeom
 import { BOUNDS_NZ, LAND_110M, NZ_50M, unwrapLongitude, type Bounds, type MapMarker, type MapRegion, type Ring } from "./geo";
 
 interface Props {
+  latestMarkerKey?: string | null;
+  recentMarkerKeys?: ReadonlySet<string>;
   bounds: Bounds;
   markers: MapMarker[];
   regions: MapRegion[];
@@ -57,7 +59,7 @@ const Land = memo(function Land({ bounds }: { bounds: Bounds }) {
   return <path d={d} className="map2d__land" />;
 });
 
-export function Map2D({ bounds, markers, regions, selectedKey, onPick, title, showLabels = false, interactiveMarkers = true, viewport }: Props) {
+export function Map2D({ bounds, markers, regions, selectedKey, latestMarkerKey, recentMarkerKeys, onPick, title, showLabels = false, interactiveMarkers = true, viewport }: Props) {
   const { project, projectPoint, height, metresToUnits } = useProjection(bounds);
   const scale = bounds === BOUNDS_NZ ? 1 : 0.7;
   const graticule = useMemo(() => {
@@ -88,6 +90,8 @@ export function Map2D({ bounds, markers, regions, selectedKey, onPick, title, sh
       {markers.map((m) => {
         const [x, y] = projectPoint(m.longitude, m.latitude);
         const selected = m.key === selectedKey;
+        const latest = m.key === latestMarkerKey;
+        const recent = !latest && recentMarkerKeys?.has(m.key);
         const r = (m.emphasis === "highlight" ? 13 : 10) * scale;
         const symbol = m.kind === "fix"
           ? <path d={`M${x} ${y - r}L${x + r} ${y}L${x} ${y + r}L${x - r} ${y}Z`} className={`map2d__fix is-${m.emphasis}`} />
@@ -95,16 +99,19 @@ export function Map2D({ bounds, markers, regions, selectedKey, onPick, title, sh
         return (
           <g
             key={m.key}
-            className={`map2d__marker${selected ? " is-selected" : ""}`}
+            className={`map2d__marker${selected ? " is-selected" : ""}${latest ? " is-latest" : recent ? " is-recent" : ""}`}
             role={interactiveMarkers ? "button" : undefined}
             tabIndex={interactiveMarkers ? 0 : undefined}
-            aria-label={interactiveMarkers ? m.label : undefined}
+            aria-label={interactiveMarkers ? `${m.label}${latest ? ", Latest detection" : recent ? ", Recent detection" : ""}` : undefined}
             aria-pressed={interactiveMarkers ? selected : undefined}
             onClick={interactiveMarkers ? () => onPick(m.key) : undefined}
             onKeyDown={interactiveMarkers ? (e) => onKey(e, m.key) : undefined}
           >
             {m.uncertaintyMetres ? <circle cx={x} cy={y} r={Math.max(r * 1.6, metresToUnits(m.uncertaintyMetres))} className="map2d__uncertainty" /> : null}
             {symbol}
+            {recent ? <circle cx={x} cy={y} r={r * 1.9} fill="none" stroke="#bd6538" strokeWidth={2 * scale} aria-hidden="true" /> : null}
+            {latest ? <circle cx={x} cy={y} r={r * 3.2} fill="none" stroke="#bd6538" strokeWidth={3.5 * scale} aria-hidden="true" /> : null}
+            {latest ? <title>{m.label}, Latest detection</title> : null}
             {selected ? <circle cx={x} cy={y} r={r * 2.4} className="map2d__selection" /> : null}
             {showLabels && (selected || m.emphasis === "highlight") ? <text x={x + r * 1.6} y={y + 4} className="map2d__label">{m.label.split(",")[0]}</text> : null}
           </g>

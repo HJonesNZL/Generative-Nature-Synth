@@ -3,8 +3,9 @@
  * full SVG map when WebGL is unavailable/lost or the user prefers 2D.
  * Selecting a station picks its most recent (highlighted-species-first) event.
  */
-import { lazy, Suspense, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useHost, useHostQuery, valueOf } from "../../app/HostContext";
+import type { EventView } from "../../host/contracts";
 import { useEventStore } from "../../app/eventStore";
 import { useAppState, useDispatch } from "../../app/store";
 import type { Catalog } from "../../app/catalog";
@@ -16,7 +17,7 @@ import { SegmentedControl } from "../../components/SegmentedControl";
 const GlobeView = lazy(() => import("../../components/map/GlobeView").then((m) => ({ default: m.GlobeView })));
 import { Map2D } from "../../components/map/Map2D";
 import { NZLoupe } from "../../components/map/NZLoupe";
-import { BOUNDS_WORLD, type MapRegion, type Ring } from "../../components/map/geo";
+import { BOUNDS_WORLD, type MapRegion, type MapLocateRequest, type Ring } from "../../components/map/geo";
 import { markerKeyForEvent, type MaterialView } from "../shared/useMaterialView";
 import { buildMarkers, boundMarkers, newestObservation, isReceiverDetection } from "../shared/mapMarkers";
 import "../../styles/map-stage.css";
@@ -32,7 +33,7 @@ function webglAvailable(): boolean {
   }
 }
 
-export function MapStage({ view, catalog }: { view: MaterialView; catalog: Catalog }) {
+export function MapStage({ view, catalog, latest, locateRequest }: { view: MaterialView; catalog: Catalog; latest: readonly EventView[]; locateRequest: MapLocateRequest | null }) {
   const state = useAppState();
   const dispatch = useDispatch();
   const { liveStore, caps } = useHost();
@@ -46,11 +47,21 @@ export function MapStage({ view, catalog }: { view: MaterialView; catalog: Catal
   })), [regionsQ, state.selectedRegionId]);
 
   const [scope, setScope] = useState<"loaded" | "window">("loaded");
+  useEffect(() => { if (locateRequest) setScope("loaded"); }, [locateRequest]);
+  const latestMarkerKey = latest[0]?.position ? markerKeyForEvent(latest[0]) : null;
+  const recentMarkerKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const event of latest.slice(0, 8)) {
+      const key = markerKeyForEvent(event);
+      if (key && event.position) keys.add(key);
+    }
+    return keys;
+  }, [latest]);
   const mapEvents = scope === "loaded" ? view.allEvents : view.events;
   const allMarkers = useMemo(() => buildMarkers(view, catalog, state.highlightSpeciesId, scope === "loaded"), [view, catalog, state.highlightSpeciesId, scope]);
   const selected = view.store.get(state.selectedEventId);
   const selectedKey = markerKeyForEvent(selected);
-  const markers = useMemo(() => boundMarkers(allMarkers, Math.min(400, caps?.maxVisibleMarkers ?? 400), selectedKey), [allMarkers, caps, selectedKey]);
+  const markers = useMemo(() => boundMarkers(allMarkers, Math.min(400, caps?.maxVisibleMarkers ?? 400), selectedKey, recentMarkerKeys, latestMarkerKey), [allMarkers, caps, selectedKey, recentMarkerKeys, latestMarkerKey]);
   const newest = newestObservation(mapEvents)?.observedAtUtc;
 
   const pick = (key: string) => {
@@ -100,14 +111,14 @@ export function MapStage({ view, catalog }: { view: MaterialView; catalog: Catal
 
       <div className="map-stage__canvas">
         {use2D ? (
-          <Map2D bounds={BOUNDS_WORLD} markers={markers} regions={regions} selectedKey={selectedKey} onPick={pick} title="World map" showLabels />
+          <Map2D bounds={BOUNDS_WORLD} markers={markers} regions={regions} selectedKey={selectedKey} latestMarkerKey={latestMarkerKey} recentMarkerKeys={recentMarkerKeys} onPick={pick} title="World map" showLabels />
         ) : (
           <>
             <Suspense fallback={<p className="small muted">Loading globe…</p>}>
             <GlobeView
               markers={markers}
               regions={regions}
-              selectedKey={selectedKey}
+              selectedKey={selectedKey} latestMarkerKey={latestMarkerKey} recentMarkerKeys={recentMarkerKeys} locateRequest={locateRequest}
               orientation={state.globeOrientation}
               reducedMotion={state.reducedMotion}
               getPulses={(age) => (live ? liveStore.activePulses(age) : [])}
@@ -118,7 +129,7 @@ export function MapStage({ view, catalog }: { view: MaterialView; catalog: Catal
               zoomCommand={zoom}
             />
             </Suspense>
-            <NZLoupe markers={markers} regions={regions} selectedKey={selectedKey} onPick={pick}
+            <NZLoupe markers={markers} regions={regions} selectedKey={selectedKey} latestMarkerKey={latestMarkerKey} recentMarkerKeys={recentMarkerKeys} locateRequest={locateRequest} onPick={pick}
               pan={state.nzLoupePan} onPanChange={(pan) => dispatch({ type: "nzLoupePan", pan })} />
           </>
         )}
@@ -126,6 +137,7 @@ export function MapStage({ view, catalog }: { view: MaterialView; catalog: Catal
 
       <div className="map-stage__footer">
         <div className="map-legend small" aria-label="Legend">
+          {live && recentMarkerKeys.size > 0 ? <span title="Locations of the eight most recent observations. The larger ring marks the newest."><span className="latest-ring-key" aria-hidden="true" /> Latest detections</span> : null}
           <span><Icon name="station" size={12} /> Receiver</span>
           <span className="legend-filled"><span className="dot" aria-hidden="true" /> Highlighted species</span>
           <span><Icon name="satellite-fix" size={10} /> Measured fix</span>

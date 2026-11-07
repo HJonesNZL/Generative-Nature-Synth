@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildMarkers, boundMarkers, newestObservation } from '../src/screens/shared/mapMarkers.ts';
+import { buildMarkers, boundMarkers, latestObservations, newestObservation } from '../src/screens/shared/mapMarkers.ts';
 const catalog = { data: { stations: [{ id: 'receiver', name: 'Receiver', latitude: 51, longitude: -1 }] }, speciesName: (id) => id };
 const detection = { id: 'detection', stationId: 'receiver', speciesId: 'bird', eventKind: 'acoustic_species_detection', locationKind: 'station_detection', position: { latitude: 51, longitude: -1 } };
 const fix = (id) => ({ id, stationId: null, speciesId: 'shark', individualId: 'tag1', eventKind: 'gps_fix', position: { latitude: 40, longitude: -70, uncertaintyMetres: 50 }, observedAtUtc: '2020-01-01T00:00:00Z' });
@@ -46,4 +46,23 @@ test('individual fix station metadata never counts as a receiver detection', () 
   assert.equal(markers.filter(marker => marker.kind === 'fix').length, 1);
   const withoutCatalogue = buildMarkers({ events: [], allEvents: [gps] }, { ...catalog, data: { stations: [] } }, null, true);
   assert.equal(withoutCatalogue.filter(marker => marker.kind === 'station').length, 0);
+});
+
+test('a crowded map retains the selected, latest and recent locations ahead of species emphasis', () => {
+  const markers = ['highlighted', 'recent', 'latest', 'selected'].map(key => ({
+    key, emphasis: key === 'highlighted' ? 'highlight' : 'normal',
+  }));
+  assert.deepEqual(boundMarkers(markers, 3, 'selected', new Set(['recent', 'latest']), 'latest')
+    .map(marker => marker.key), ['selected', 'latest', 'recent']);
+});
+
+test('latest rows use observed microseconds, revision ties and a forty-row limit', () => {
+  const rows = Array.from({length: 42}, (_, i) => ({
+    revisionSequence: String(i + 1), observedAtUtc: '2026-01-01T23:00:00.000001+13:00',
+  }));
+  const newest = {revisionSequence: '0', observedAtUtc: '2026-01-01T10:00:00.000002Z'};
+  const result = latestObservations([...rows, newest, {revisionSequence: '99', observedAtUtc: ''}]);
+  assert.equal(result.length, 40);
+  assert.deepEqual(result.slice(0, 3), [newest, rows[41], rows[40]]);
+  assert.equal(result.at(-1), rows[3]);
 });

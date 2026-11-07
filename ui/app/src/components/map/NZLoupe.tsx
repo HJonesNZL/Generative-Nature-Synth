@@ -1,10 +1,13 @@
-import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { Icon } from "../Icon";
 import { Map2D } from "./Map2D";
-import { BOUNDS_NZ, unwrapLongitude, type MapMarker, type MapRegion } from "./geo";
+import { BOUNDS_NZ, unwrapLongitude, type MapLocateRequest, type MapMarker, type MapRegion } from "./geo";
 import { clampLoupePan, dragLoupePan, loupeViewport, mapProjection, LOUPE_DRAG_THRESHOLD_PX, type LoupePan } from "./loupeGeometry";
 
 interface Props {
+  latestMarkerKey?: string | null;
+  recentMarkerKeys?: ReadonlySet<string>;
+  locateRequest?: MapLocateRequest | null;
   markers: MapMarker[];
   regions: MapRegion[];
   selectedKey: string | null;
@@ -23,8 +26,9 @@ interface Drag {
   moved: boolean;
 }
 
-export function NZLoupe({ markers, regions, selectedKey, onPick, pan, onPanChange }: Props) {
+export function NZLoupe({ markers, regions, selectedKey, latestMarkerKey, recentMarkerKeys, locateRequest, onPick, pan, onPanChange }: Props) {
   const drag = useRef<Drag | null>(null);
+  const locatedSequence = useRef<number | null>(null);
   const suppressClick = useRef(false);
   const [dragging, setDragging] = useState(false);
   const viewport = loupeViewport(BOUNDS_NZ, pan);
@@ -33,6 +37,16 @@ export function NZLoupe({ markers, regions, selectedKey, onPick, pan, onPanChang
     const [x, y] = projection.project(unwrapLongitude(marker.longitude, BOUNDS_NZ), marker.latitude);
     return Math.hypot(x - viewport.x - viewport.width / 2, y - viewport.y - viewport.height / 2) <= viewport.width / 2 - 20;
   });
+  useEffect(() => {
+    if (!locateRequest || locatedSequence.current === locateRequest.seq) return;
+    locatedSequence.current = locateRequest.seq;
+    const { latitude, longitude } = locateRequest;
+    const lon = unwrapLongitude(longitude, BOUNDS_NZ);
+    if (!Number.isFinite(latitude) || !Number.isFinite(lon) || latitude < BOUNDS_NZ.south || latitude > BOUNDS_NZ.north || lon < BOUNDS_NZ.west || lon > BOUNDS_NZ.east) return;
+    const projection = mapProjection(BOUNDS_NZ);
+    const [x, y] = projection.project(lon, latitude);
+    onPanChange(clampLoupePan({ x: 500 - x, y: projection.height * 0.34 - y }));
+  }, [locateRequest, onPanChange]);
   const reset = () => onPanChange({ x: 0, y: 0 });
 
   const start = (event: PointerEvent<HTMLDivElement>) => {
@@ -95,7 +109,7 @@ export function NZLoupe({ markers, regions, selectedKey, onPick, pan, onPanChang
         onKeyDown={onKey} onClickCapture={(event) => {
           if (suppressClick.current && event.detail !== 0) { event.preventDefault(); event.stopPropagation(); }
         }}>
-        <Map2D bounds={BOUNDS_NZ} viewport={viewport} markers={visibleMarkers} regions={regions} selectedKey={selectedKey}
+        <Map2D bounds={BOUNDS_NZ} viewport={viewport} markers={visibleMarkers} regions={regions} selectedKey={selectedKey} latestMarkerKey={latestMarkerKey} recentMarkerKeys={recentMarkerKeys}
           onPick={onPick} title="New Zealand detail map. Locations are buttons." />
       </div>
       <button type="button" className="loupe__reset pill pill--quiet" onClick={reset} aria-label="Reset New Zealand view">
