@@ -28,6 +28,7 @@ struct Launch {
     fs::path state, library, smokeReceipt, smokeScene, smokeExport,
         smokeSceneExport, smokeBackup, smokeRestore;
     int smokeSeconds{3};
+    std::string smokeSonificationMode{"musical"};
     bool libraryOverride{}, stateOverride{}, smokeLive{}, smokeWorld{},
         smokePieces{}, smokeWholePiece{}, smokeSonification{};
 };
@@ -70,6 +71,11 @@ Launch parse(const juce::StringArray &arguments) {
             if (value != "ZoomAudioDevice")
                 throw std::invalid_argument("Sonification smoke requires the explicit virtual output.");
             launch.smokeSonification = true;
+        } else if (option == "--smoke-sonification-mode") {
+            if (value != "musical" && value != "smoothed")
+                throw std::invalid_argument(
+                    "Sonification mode must be musical or smoothed.");
+            launch.smokeSonificationMode = value.toStdString();
         } else if (option == "--smoke-pieces") {
             if (value != "1" && value != "whole")
                 throw std::invalid_argument(
@@ -1167,8 +1173,9 @@ class Shell final : public juce::Component, private juce::Timer {
             return;
         }
         if (Clock::now() - smokeStarted_ >
-            std::chrono::seconds(launch_.smokeSeconds +
-                                 (launch_.smokeLive ? 120 : 60))) {
+            std::chrono::seconds(
+                launch_.smokeSeconds +
+                (launch_.smokeLive || launch_.smokeSonification ? 120 : 60))) {
             close();
             return;
         }
@@ -1255,7 +1262,13 @@ class Shell final : public juce::Component, private juce::Timer {
                                  ? juce::String(
                                        atlas::standalone::pieceWorkflowSmoke)
                                  : juce::String())
-                    .replace("LIVE_SONIFICATION_SMOKE", launch_.smokeSonification ? juce::String(atlas::standalone::liveSonificationSmoke) : juce::String())
+                    .replace("LIVE_SONIFICATION_SMOKE",
+                             launch_.smokeSonification
+                                 ? juce::String(
+                                       atlas::standalone::liveSonificationSmoke)
+                                 : juce::String())
+                    .replace("SONIFICATION_MODE",
+                             juce::String(launch_.smokeSonificationMode))
                     .replace("WHOLE_INTERVAL_ONLY",
                              launch_.smokeWholePiece ? "true" : "false")
                     .replace("SMOKE_DURATION_MS",
@@ -1412,7 +1425,7 @@ class Window final : public juce::DocumentWindow {
 class Application final : public juce::JUCEApplication {
   public:
     const juce::String getApplicationName() override { return "Animal Atlas"; }
-    const juce::String getApplicationVersion() override { return "0.8.0"; }
+    const juce::String getApplicationVersion() override { return "0.9.0"; }
     bool moreThanOneInstanceAllowed() override { return true; }
     void initialise(const juce::String &) override {
         try {

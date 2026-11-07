@@ -113,6 +113,7 @@ def main():
     parser.add_argument('--binary', required=True, type=Path)
     parser.add_argument('--fixture', required=True, type=Path)
     parser.add_argument('--device', default='ZoomAudioDevice')
+    parser.add_argument('--mode', choices=('musical', 'smoothed'), default='musical')
     parser.add_argument('--evidence', type=Path)
     args = parser.parse_args()
     require(args.device == 'ZoomAudioDevice', 'Smoke is restricted to the named virtual ZoomAudioDevice')
@@ -126,7 +127,8 @@ def main():
             baseline = fixture.reply('ready')
             command = [str(args.binary.resolve()), '--library', str(state / 'live.sqlite3'),
                        '--state-dir', str(state), '--smoke-test', str(receipt),
-                       '--smoke-sonification', args.device, '--smoke-seconds', '1']
+                       '--smoke-sonification', args.device, '--smoke-sonification-mode', args.mode,
+                       '--smoke-seconds', '1']
             with (folder / 'app.stdout').open('w+') as stdout, (folder / 'app.stderr').open('w+') as stderr:
                 app = subprocess.Popen(command, env=environment, stdout=stdout, stderr=stderr)
                 wait_marker(Path(str(receipt) + '.armed'), app)
@@ -136,7 +138,7 @@ def main():
                 wait_marker(Path(str(receipt) + '.dense-ready'), app)
                 dense = fixture.command('dense')
                 try:
-                    result = app.wait(timeout=90)
+                    result = app.wait(timeout=150)
                 except subprocess.TimeoutExpired as failure:
                     raise AssertionError('Packaged sonification smoke did not finish') from failure
                 stderr.seek(0)
@@ -148,17 +150,31 @@ def main():
             listening, off = sonification['listening'], sonification['off']
             require(listening['enabled'] is True and listening['received'] == 1 and
                     listening['admitted'] == 1, 'Current insertion was not admitted exactly once')
-            require(listening.get('mode') == 'musical' and listening.get('density') == 4,
-                    'React did not select musical mode/density')
+            require(listening.get('mode') == args.mode and
+                    (args.mode == 'smoothed' or listening.get('density') == 4),
+                    'React did not select requested live mode/settings')
             outcome = sonification.get('selectedOutcome', {})
             require(outcome.get('status') == 'sounded' and
                     outcome.get('speciesId') == 'birdweather:species:424242' and outcome.get('voiceCharacter') == 'struck',
                     'Selected React observation did not report its sounded species outcome')
             dense_state = sonification.get('dense', {})
-            require(dense_state.get('received') == 501 and 2 <= dense_state.get('admitted', 0) <= 5 and
-                    dense_state.get('grouped', 0) > 0 and dense_state.get('dropped', 0) > 0 and
-                    dense_state['admitted'] + dense_state['grouped'] + dense_state['dropped'] == 501,
-                    'Dense phrase did not complete with bounded, conserved musical accounting')
+            if args.mode == 'smoothed':
+                require(dense_state.get('received') == 501 and dense_state.get('admitted') == 501 and
+                        dense_state.get('pending') == 0 and dense_state.get('catchingUp') is False and
+                        all(dense_state.get(key) == 0 for key in ('grouped', 'dropped', 'skippedRevisions')),
+                        'Smoothed dense notes did not drain exactly once without grouping or loss')
+                pending = sonification.get('pendingObserved') or {}
+                require(pending.get('pending', 0) > 0 and pending.get('admitted', 501) < 501,
+                        'No pending-to-sounded transition was observed')
+                require(sonification.get('liveTriggeredNotes') == '501',
+                        'Audio callback did not confirm exactly 501 triggered notes')
+                require(sonification.get('denseMapObserved') is True,
+                        'Dense map arrivals were not observed')
+            else:
+                require(dense_state.get('received') == 501 and 2 <= dense_state.get('admitted', 0) <= 5 and
+                        dense_state.get('grouped', 0) > 0 and dense_state.get('dropped', 0) > 0 and
+                        dense_state['admitted'] + dense_state['grouped'] + dense_state['dropped'] == 501,
+                        'Dense phrase did not complete with bounded, conserved musical accounting')
             require(sonification.get('outputPeakDbfs', -96) > -96,
                     'Actual output signal was not observed by React polling')
             require(off['enabled'] is False, 'Live sonification did not turn off')
@@ -177,7 +193,7 @@ def main():
                     'Missing actual React selected-outcome polling')
             require(int(sonification['denseCallbackFrames']) > int(frames), 'Dense output callbacks did not advance')
             evidence = dict(schema='animal-atlas-live-sonification-package-v2', status='passed',
-                binary=str(args.binary.resolve()), fixture=str(args.fixture.resolve()),
+                mode=args.mode, binary=str(args.binary.resolve()), fixture=str(args.fixture.resolve()),
                 fixturePhases=[baseline, inserted, duplicates, dense], database=provenance(state / 'live.sqlite3'),
                 sonification=sonification, shutdownComplete=True,
                 limits=dict(disposableOnly=True, providerRequests=False, ownerStateAccess=False,

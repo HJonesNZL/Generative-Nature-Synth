@@ -14,8 +14,10 @@ inline constexpr auto liveSonificationSmoke = R"JS(
      throw Error('Could not select the isolated virtual output.');
    const before = await call('getChanges',{storeId:'', afterSequence:'0', limit:16});
    const live = () => call('getLiveState');
-   const until = async (read, accepts, description) => {
-     const end = Date.now()+18000;
+   const selectedMode = 'SONIFICATION_MODE';
+   const smoothed = selectedMode === 'smoothed';
+   const until = async (read, accepts, description, timeoutMs=18000) => {
+     const end = Date.now()+timeoutMs;
      do {
        const value = await read();
        if (accepts(value)) return value;
@@ -30,13 +32,17 @@ inline constexpr auto liveSonificationSmoke = R"JS(
    const mode = () => document.querySelector('select[aria-label="Live mode"]');
    const density = () => document.querySelector('select[aria-label="Live density"]');
    await waitFor(()=>mode() && !mode().disabled && !mode().closest('fieldset')?.disabled,
-     'musical mode control');
-   mode().value='musical'; mode().dispatchEvent(new Event('change',{bubbles:true}));
-   await until(live,s=>s.mode==='musical','React musical mode selection');
-   await waitFor(()=>density() && !density().disabled && !density().closest('fieldset')?.disabled,
-     'musical density control');
-   density().value='4'; density().dispatchEvent(new Event('change',{bubbles:true}));
-   await until(live,s=>s.mode==='musical' && s.density===4,'React musical density selection');
+     'live mode control');
+   if (![...mode().options].some(option=>option.value===selectedMode))
+     throw Error('Requested live mode is unavailable in React.');
+   mode().value=selectedMode; mode().dispatchEvent(new Event('change',{bubbles:true}));
+   await until(live,s=>s.mode===selectedMode,'React live mode selection');
+   if (!smoothed) {
+     await waitFor(()=>density() && !density().disabled && !density().closest('fieldset')?.disabled,
+       'musical density control');
+     density().value='4'; density().dispatchEvent(new Event('change',{bubbles:true}));
+     await until(live,s=>s.mode==='musical' && s.density===4,'React musical density selection');
+   } else if (density()) throw Error('Smoothed mode exposed musical density.');
    statusButton.click();
    const toggle = () => document.querySelector('[role="switch"][aria-label^="Live listening ("]');
    await waitFor(()=>toggle() && !toggle().disabled,'Live listening switch');
@@ -49,10 +55,16 @@ inline constexpr auto liveSonificationSmoke = R"JS(
    const renderedOutcomes = new Map();
    const originalRequest = window.atlasHost.request;
    let pollError = '', observing = false;
+   const retiredPolls=[];
    window.atlasHost.request = async function(request, ...args) {
      const track = observing && !request.requestId.startsWith('shell-smoke-') && Object.hasOwn(polls,request.method);
      const reply = await originalRequest.call(this,request,...args);
      if (track) {
+       // Changing the visible outcome retires its old React query by design.
+       if (args[0]?.aborted && reply.error?.code==='aborted') {
+         retiredPolls.push({method:request.method,code:reply.error.code,message:reply.error.message});
+         return reply;
+       }
        ++polls[request.method];
        if (request.method==='getAudioState' && reply.ok) {
          if (reply.result.meterIsSimulated===false && Number.isFinite(reply.result.peakDbfs))
@@ -61,7 +73,7 @@ inline constexpr auto liveSonificationSmoke = R"JS(
        if (request.method==='getLiveOutcome' && reply.ok && reply.result?.outcome)
          renderedOutcomes.set(reply.result.outcome.eventId,reply.result.outcome);
        if (!reply.ok || !reply.result || (request.method === 'getAudioState' && reply.result.status !== 'running'))
-         pollError = request.method+' failed during live playback';
+         pollError = request.method+' failed during live playback: '+JSON.stringify(reply);
      }
      return reply;
    };
@@ -116,9 +128,19 @@ inline constexpr auto liveSonificationSmoke = R"JS(
    if (outputPeakDbfs<=-96)
      throw Error('React audio polls never observed actual PCM output.');
    result.feedStage='dense-ready';
-   const dense=await until(live,s=>s.received===501 &&
-     s.admitted+s.grouped+s.dropped===s.received,'settled dense phrase accounting');
-   if (dense.mode!=='musical' || dense.density!==4 || dense.admitted<2 ||
+   const densePolls = {...polls};
+   let pendingObserved=null;
+   const dense=await until(live,s=>{
+     if (smoothed && s.pending>0 && s.admitted<501 && !pendingObserved)
+       pendingObserved={received:s.received,admitted:s.admitted,pending:s.pending,catchingUp:s.catchingUp};
+     return s.received===501 && (smoothed ? s.admitted===501 && s.pending===0 && !s.catchingUp :
+       s.admitted+s.grouped+s.dropped===s.received);
+   },'settled dense note accounting',smoothed ? 65000 : 18000);
+   if (smoothed) {
+     if (dense.mode!=='smoothed' || !pendingObserved || dense.grouped!==0 ||
+         dense.dropped!==0 || dense.skippedRevisions!==0)
+       throw Error('Dense smoothed notes did not drain exactly once without grouping or loss.');
+   } else if (dense.mode!=='musical' || dense.density!==4 || dense.admitted<2 ||
        dense.admitted>5 || dense.grouped<=0 || dense.dropped<=0)
      throw Error('Dense phrase did not stay within its musical grouping budget.');
    await new Promise(resolve=>setTimeout(resolve,1800));
@@ -129,14 +151,34 @@ inline constexpr auto liveSonificationSmoke = R"JS(
    const denseAudio=await call('getAudioState');
    if (denseAudio.status!=='running' || BigInt(denseAudio.callbackFrames)<=BigInt(audio.callbackFrames))
      throw Error('Output did not continue through dense phrase playback.');
+   if (smoothed && denseAudio.liveTriggeredNotes!=='501')
+     throw Error('Audio callback did not confirm exactly 501 triggered notes.');
+   const densePage=await call('getChanges',{storeId:before.storeId,afterSequence:arrived.nextSequence,limit:8});
+   const denseEvent=densePage.events.find(row=>row.event.id.includes('fixture-dense-'))?.event;
+   if (!denseEvent) throw Error('Dense observations are missing from changes.');
+   if (polls.getAudioState<=densePolls.getAudioState || polls.getLiveOutcome<=densePolls.getLiveOutcome)
+     throw Error('React audio or selected-outcome polling stopped during dense playback.');
+   // Selecting the sparse event opened Selected and unmounted the latest list.
+   // Use the real tab before locating a fresh dense observation on the map.
+   const latestTab=document.querySelector('[role="tab"][aria-controls="panel-incoming"]');
+   if (!latestTab) throw Error('Latest detections tab is missing.');
+   latestTab.click();
+   const denseRow=()=>[...document.querySelectorAll('#panel-incoming .latest-detections__row')]
+     .find(button=>button.getAttribute('aria-label')==='Show Fixture live bird on map' &&
+       button.querySelector('time')?.dateTime===denseEvent.observedAtUtc);
+   await waitFor(()=>!!denseRow(),'dense observation in Latest detections');
+   denseRow().click();
+   await waitFor(()=>selectedDisclosure() && [...renderedOutcomes.values()].some(outcome=>
+     outcome.eventId.includes('fixture-dense-') && (smoothed ? outcome.status==='sounded' : true)),
+     'React selected dense observation outcome');
    checkHeader();
-   if (pollError) throw Error('Live musical header: '+pollError);
+   if (pollError) throw Error('Live playback header: '+pollError);
    statusButton.click();
    await waitFor(()=>[...document.querySelectorAll('.menu__note')].some(note=>
-     note.textContent.includes('501 received') && note.textContent.includes(settled.grouped+' grouped')),
+     note.textContent.includes('501 received') && (smoothed ? note.textContent.includes('501 sounded') && note.textContent.includes('0 pending') : note.textContent.includes(settled.grouped+' grouped'))),
      'React dense received and grouped counters');
-   if (mode()?.value!=='musical' || density()?.value!=='4')
-     throw Error('React lost musical settings during dense playback.');
+   if (mode()?.value!==selectedMode || (smoothed ? density()!==null : density()?.value!=='4'))
+     throw Error('React lost live settings during dense playback.');
    statusButton.click();
    observing = false;
    observer.disconnect();
@@ -145,7 +187,7 @@ inline constexpr auto liveSonificationSmoke = R"JS(
    const off=await until(live,s=>!s.enabled,'explicit mute');
    const offAudio=await call('getAudioState');
    if (offAudio.status!=='disabled' || offAudio.peakDbfs!==null) throw Error('Output remained enabled or meter did not clear.');
-   result.sonification={device:device.name,listening,off,callbackFrames:audio.callbackFrames,mapObserved:true,duplicatesQuiet:true,polls,headerErrorFree:true,selectedOutcome,dense:settled,
+   result.sonification={retiredPolls,mode:selectedMode,pendingObserved,denseMapObserved:true,liveTriggeredNotes:denseAudio.liveTriggeredNotes,device:device.name,listening,off,callbackFrames:audio.callbackFrames,mapObserved:true,duplicatesQuiet:true,polls,headerErrorFree:true,selectedOutcome,dense:settled,
      outputPeakDbfs,denseCallbackFrames:denseAudio.callbackFrames,denseCountersRendered:true,muteMeterCleared:true};
  }
 )JS";
