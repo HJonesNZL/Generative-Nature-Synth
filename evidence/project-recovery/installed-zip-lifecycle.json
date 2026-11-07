@@ -1,0 +1,1208 @@
+{
+  "missing-selection": {
+    "ok": true,
+    "webview": {
+      "finished": true,
+      "ok": true,
+      "rounds": 10,
+      "capabilities": {
+        "protocolVersion": 1,
+        "implementation": "native",
+        "supportedMethods": [
+          "getCapabilities",
+          "getChanges",
+          "getCatalog",
+          "listSessions",
+          "prepareReplay",
+          "getMaterialEvents",
+          "getTransport",
+          "setTransport",
+          "getAudioState",
+          "setAudioEnabled",
+          "getAudioDevices",
+          "setAudioDevice",
+          "getVoiceLibrary",
+          "getVoice",
+          "setVoiceParameter",
+          "saveVoice",
+          "revertVoice",
+          "getComposition",
+          "setComposition",
+          "getSpatial",
+          "setSpatial",
+          "listSoundscapes",
+          "saveSoundscape",
+          "recallSoundscape",
+          "startSoundscapeRender",
+          "getRenderJob",
+          "cancelRender",
+          "listExports",
+          "listVoicePresets",
+          "applyVoicePreset"
+        ],
+        "audioAvailable": true,
+        "libraryAvailable": false,
+        "maxEventBatch": 500,
+        "maxVisibleMarkers": 500
+      },
+      "audio": {
+        "status": "disabled",
+        "deviceName": null,
+        "masterGainDb": -18,
+        "peakDbfs": null,
+        "meterIsSimulated": false,
+        "clipping": false,
+        "activeSynthVoices": null,
+        "maxSynthVoices": 8,
+        "sampleRate": null,
+        "bufferFrames": null,
+        "outputChannels": null,
+        "callbackCount": "0",
+        "callbackFrames": "0",
+        "faultCount": "0",
+        "error": null
+      },
+      "audioDevices": {
+        "available": true,
+        "devices": [
+          {
+            "id": "juce-a577d05d19707751",
+            "name": "MacBook Pro Speakers",
+            "type": "CoreAudio",
+            "isDefault": true,
+            "outputChannels": 2,
+            "sampleRates": [
+              44100,
+              48000,
+              88200,
+              96000
+            ],
+            "bufferFrames": [
+              16,
+              32,
+              64,
+              128,
+              256,
+              512,
+              1024,
+              2048,
+              4096
+            ],
+            "defaultBufferFrames": 512
+          },
+          {
+            "id": "juce-30da844212d84383",
+            "name": "Inject IO",
+            "type": "CoreAudio",
+            "isDefault": false,
+            "outputChannels": 2,
+            "sampleRates": [
+              44100,
+              48000,
+              88200,
+              96000,
+              176400,
+              192000
+            ],
+            "bufferFrames": [
+              16,
+              32,
+              64,
+              128,
+              256,
+              512,
+              1024,
+              2048,
+              4096
+            ],
+            "defaultBufferFrames": 512
+          },
+          {
+            "id": "juce-8b5c0a98023c3d15",
+            "name": "ZoomAudioDevice",
+            "type": "CoreAudio",
+            "isDefault": false,
+            "outputChannels": 2,
+            "sampleRates": [
+              44100,
+              48000,
+              88200,
+              96000,
+              176400,
+              192000
+            ],
+            "bufferFrames": [
+              16,
+              32,
+              64,
+              128,
+              256,
+              512
+            ],
+            "defaultBufferFrames": 512
+          }
+        ],
+        "configuration": {
+          "mode": "explicitDevice",
+          "deviceId": "juce-0000000000000000",
+          "bufferFrames": 256
+        },
+        "active": null,
+        "controlRevision": "1",
+        "error": null,
+        "preparationId": null,
+        "generation": "0"
+      },
+      "deviceUI": {
+        "visible": true,
+        "text": "Audio output\nOutput off\nOutput device\nBuffer size\nApplying stops playback and releases sounding notes. Listening stays off. After a device disconnects, refresh, apply an available output, then enable Listening and press Play.\nRefresh devices\nApply output\n",
+        "outputs": [
+          "System default",
+          "Selected device unavailable",
+          "MacBook Pro Speakers (CoreAudio) \u00b7 default",
+          "Inject IO (CoreAudio)",
+          "ZoomAudioDevice (CoreAudio)"
+        ],
+        "buffers": [
+          "Device default",
+          "256 frames (unavailable)"
+        ]
+      },
+      "afterDiscoveryAudio": {
+        "status": "disabled",
+        "deviceName": null,
+        "masterGainDb": -18,
+        "peakDbfs": null,
+        "meterIsSimulated": false,
+        "clipping": false,
+        "activeSynthVoices": null,
+        "maxSynthVoices": 8,
+        "sampleRate": null,
+        "bufferFrames": null,
+        "outputChannels": null,
+        "callbackCount": "0",
+        "callbackFrames": "0",
+        "faultCount": "0",
+        "error": null
+      },
+      "scenes": {
+        "items": [],
+        "limited": false,
+        "unmanagedFiles": 0
+      },
+      "dom": {
+        "title": "Animal Atlas",
+        "text": "Skip to content\nANIMAL ATLAS\n\nAtlas\n\nSound Studio\nProject\n\u2304\nLive\nReplay\nHistory\n\n\n\n\nAll off\n\nCollect\n13:27:18\nNZDT \u00b7 ARRIVAL\n\nMaster level\n-18.0 dB\n\nAudio\nSPECIES \u00b7 0 AVAILABLE\nFind speciesAll available species\nLIVE \u00b7 ARRIVAL TIME\nMap details\nGlobe\n2D map\n\n\n\n\nReset view\nReceiver\nHighlighted species\nMeasured fix\nEffect region\n0 locations\nREGION MIX \u00b7 60 MIN\nRegionChange region\nRegion\nRegion mix unavailable\nThis host does not report per-region activity.\nSelected\nIncoming 0\nNo event selected\nPick a station on the map, a line in Grain, or an item under Incoming.\nGRAIN \u00b7 LAST 60 MIN\nEvery detection in view, one line each\nArrival time \u00b7 details\nNo records in this window \u00b7 coverage may be incomplete.\n12:27\n12:42\n12:57\n13:12\nnow\nNZDT",
+        "buttons": [
+          "\n Atlas",
+          "\n Sound Studio",
+          "Save soundscape",
+          "Open soundscape",
+          "Export saved WAV",
+          "Refresh exports",
+          "Apply composition",
+          "Live",
+          "Replay",
+          "History",
+          "\n",
+          "\n",
+          "\n",
+          "\n All off",
+          "\nCollect",
+          "",
+          "Audio",
+          "All available species",
+          "Map details\n",
+          "Globe",
+          "2D map",
+          "\n",
+          "\n",
+          "\n",
+          "\nReset view",
+          "Selected",
+          "Incoming 0"
+        ]
+      }
+    },
+    "nativeStatus": "Wildlife library is unavailable; saved path retained. Scene only is available.",
+    "nativeRequests": 40,
+    "rejectedRequests": 0,
+    "audioEnabled": false,
+    "shutdownComplete": true,
+    "sceneExported": false,
+    "projectRestored": false,
+    "elapsedSeconds": 1.791405042
+  },
+  "restart": {
+    "ok": true,
+    "webview": {
+      "finished": true,
+      "ok": true,
+      "rounds": 10,
+      "capabilities": {
+        "protocolVersion": 1,
+        "implementation": "native",
+        "supportedMethods": [
+          "getCapabilities",
+          "getChanges",
+          "getCatalog",
+          "listSessions",
+          "prepareReplay",
+          "getMaterialEvents",
+          "getTransport",
+          "setTransport",
+          "getAudioState",
+          "setAudioEnabled",
+          "getAudioDevices",
+          "setAudioDevice",
+          "getVoiceLibrary",
+          "getVoice",
+          "setVoiceParameter",
+          "saveVoice",
+          "revertVoice",
+          "getComposition",
+          "setComposition",
+          "getSpatial",
+          "setSpatial",
+          "listSoundscapes",
+          "saveSoundscape",
+          "recallSoundscape",
+          "startSoundscapeRender",
+          "getRenderJob",
+          "cancelRender",
+          "listExports",
+          "listVoicePresets",
+          "applyVoicePreset"
+        ],
+        "audioAvailable": true,
+        "libraryAvailable": false,
+        "maxEventBatch": 500,
+        "maxVisibleMarkers": 500
+      },
+      "audio": {
+        "status": "disabled",
+        "deviceName": null,
+        "masterGainDb": -18,
+        "peakDbfs": null,
+        "meterIsSimulated": false,
+        "clipping": false,
+        "activeSynthVoices": null,
+        "maxSynthVoices": 8,
+        "sampleRate": null,
+        "bufferFrames": null,
+        "outputChannels": null,
+        "callbackCount": "0",
+        "callbackFrames": "0",
+        "faultCount": "0",
+        "error": null
+      },
+      "audioDevices": {
+        "available": true,
+        "devices": [
+          {
+            "id": "juce-a577d05d19707751",
+            "name": "MacBook Pro Speakers",
+            "type": "CoreAudio",
+            "isDefault": true,
+            "outputChannels": 2,
+            "sampleRates": [
+              44100,
+              48000,
+              88200,
+              96000
+            ],
+            "bufferFrames": [
+              16,
+              32,
+              64,
+              128,
+              256,
+              512,
+              1024,
+              2048,
+              4096
+            ],
+            "defaultBufferFrames": 512
+          },
+          {
+            "id": "juce-30da844212d84383",
+            "name": "Inject IO",
+            "type": "CoreAudio",
+            "isDefault": false,
+            "outputChannels": 2,
+            "sampleRates": [
+              44100,
+              48000,
+              88200,
+              96000,
+              176400,
+              192000
+            ],
+            "bufferFrames": [
+              16,
+              32,
+              64,
+              128,
+              256,
+              512,
+              1024,
+              2048,
+              4096
+            ],
+            "defaultBufferFrames": 512
+          },
+          {
+            "id": "juce-8b5c0a98023c3d15",
+            "name": "ZoomAudioDevice",
+            "type": "CoreAudio",
+            "isDefault": false,
+            "outputChannels": 2,
+            "sampleRates": [
+              44100,
+              48000,
+              88200,
+              96000,
+              176400,
+              192000
+            ],
+            "bufferFrames": [
+              16,
+              32,
+              64,
+              128,
+              256,
+              512
+            ],
+            "defaultBufferFrames": 512
+          }
+        ],
+        "configuration": {
+          "mode": "explicitDevice",
+          "deviceId": "juce-0000000000000000",
+          "bufferFrames": 256
+        },
+        "active": null,
+        "controlRevision": "1",
+        "error": null,
+        "preparationId": null,
+        "generation": "0"
+      },
+      "deviceUI": {
+        "visible": true,
+        "text": "Audio output\nOutput off\nOutput device\nBuffer size\nApplying stops playback and releases sounding notes. Listening stays off. After a device disconnects, refresh, apply an available output, then enable Listening and press Play.\nRefresh devices\nApply output\n",
+        "outputs": [
+          "System default",
+          "Selected device unavailable",
+          "MacBook Pro Speakers (CoreAudio) \u00b7 default",
+          "Inject IO (CoreAudio)",
+          "ZoomAudioDevice (CoreAudio)"
+        ],
+        "buffers": [
+          "Device default",
+          "256 frames (unavailable)"
+        ]
+      },
+      "afterDiscoveryAudio": {
+        "status": "disabled",
+        "deviceName": null,
+        "masterGainDb": -18,
+        "peakDbfs": null,
+        "meterIsSimulated": false,
+        "clipping": false,
+        "activeSynthVoices": null,
+        "maxSynthVoices": 8,
+        "sampleRate": null,
+        "bufferFrames": null,
+        "outputChannels": null,
+        "callbackCount": "0",
+        "callbackFrames": "0",
+        "faultCount": "0",
+        "error": null
+      },
+      "scenes": {
+        "items": [],
+        "limited": false,
+        "unmanagedFiles": 0
+      },
+      "dom": {
+        "title": "Animal Atlas",
+        "text": "Skip to content\nANIMAL ATLAS\n\nAtlas\n\nSound Studio\nProject\n\u2304\nLive\nReplay\nHistory\n\n\n\n\nAll off\n\nCollect\n13:27:20\nNZDT \u00b7 ARRIVAL\n\nMaster level\n-18.0 dB\n\nAudio\nSPECIES \u00b7 0 AVAILABLE\nFind speciesAll available species\nLIVE \u00b7 ARRIVAL TIME\nMap details\nGlobe\n2D map\n\n\n\n\nReset view\nReceiver\nHighlighted species\nMeasured fix\nEffect region\n0 locations\nREGION MIX \u00b7 60 MIN\nRegionChange region\nRegion\nRegion mix unavailable\nThis host does not report per-region activity.\nSelected\nIncoming 0\nNo event selected\nPick a station on the map, a line in Grain, or an item under Incoming.\nGRAIN \u00b7 LAST 60 MIN\nEvery detection in view, one line each\nArrival time \u00b7 details\nNo records in this window \u00b7 coverage may be incomplete.\n12:27\n12:42\n12:57\n13:12\nnow\nNZDT",
+        "buttons": [
+          "\n Atlas",
+          "\n Sound Studio",
+          "Save soundscape",
+          "Open soundscape",
+          "Export saved WAV",
+          "Refresh exports",
+          "Apply composition",
+          "Live",
+          "Replay",
+          "History",
+          "\n",
+          "\n",
+          "\n",
+          "\n All off",
+          "\nCollect",
+          "",
+          "Audio",
+          "All available species",
+          "Map details\n",
+          "Globe",
+          "2D map",
+          "\n",
+          "\n",
+          "\n",
+          "\nReset view",
+          "Selected",
+          "Incoming 0"
+        ]
+      }
+    },
+    "nativeStatus": "Wildlife library is unavailable; saved path retained. Scene only is available.",
+    "nativeRequests": 38,
+    "rejectedRequests": 0,
+    "audioEnabled": false,
+    "shutdownComplete": true,
+    "sceneExported": false,
+    "projectRestored": false,
+    "elapsedSeconds": 1.77184725
+  },
+  "invalid-state": {
+    "ok": true,
+    "webview": {
+      "finished": true,
+      "ok": true,
+      "rounds": 10,
+      "capabilities": {
+        "protocolVersion": 1,
+        "implementation": "native",
+        "supportedMethods": [
+          "getCapabilities",
+          "getChanges",
+          "getCatalog",
+          "listSessions",
+          "prepareReplay",
+          "getMaterialEvents",
+          "getTransport",
+          "setTransport",
+          "getAudioState",
+          "setAudioEnabled",
+          "getAudioDevices",
+          "setAudioDevice",
+          "getVoiceLibrary",
+          "getVoice",
+          "setVoiceParameter",
+          "saveVoice",
+          "revertVoice",
+          "getComposition",
+          "setComposition",
+          "getSpatial",
+          "setSpatial",
+          "listSoundscapes",
+          "saveSoundscape",
+          "recallSoundscape",
+          "startSoundscapeRender",
+          "getRenderJob",
+          "cancelRender",
+          "listExports",
+          "listVoicePresets",
+          "applyVoicePreset"
+        ],
+        "audioAvailable": true,
+        "libraryAvailable": false,
+        "maxEventBatch": 500,
+        "maxVisibleMarkers": 500
+      },
+      "audio": {
+        "status": "disabled",
+        "deviceName": null,
+        "masterGainDb": -18,
+        "peakDbfs": null,
+        "meterIsSimulated": false,
+        "clipping": false,
+        "activeSynthVoices": null,
+        "maxSynthVoices": 8,
+        "sampleRate": null,
+        "bufferFrames": null,
+        "outputChannels": null,
+        "callbackCount": "0",
+        "callbackFrames": "0",
+        "faultCount": "0",
+        "error": null
+      },
+      "audioDevices": {
+        "available": true,
+        "devices": [
+          {
+            "id": "juce-a577d05d19707751",
+            "name": "MacBook Pro Speakers",
+            "type": "CoreAudio",
+            "isDefault": true,
+            "outputChannels": 2,
+            "sampleRates": [
+              44100,
+              48000,
+              88200,
+              96000
+            ],
+            "bufferFrames": [
+              16,
+              32,
+              64,
+              128,
+              256,
+              512,
+              1024,
+              2048,
+              4096
+            ],
+            "defaultBufferFrames": 512
+          },
+          {
+            "id": "juce-30da844212d84383",
+            "name": "Inject IO",
+            "type": "CoreAudio",
+            "isDefault": false,
+            "outputChannels": 2,
+            "sampleRates": [
+              44100,
+              48000,
+              88200,
+              96000,
+              176400,
+              192000
+            ],
+            "bufferFrames": [
+              16,
+              32,
+              64,
+              128,
+              256,
+              512,
+              1024,
+              2048,
+              4096
+            ],
+            "defaultBufferFrames": 512
+          },
+          {
+            "id": "juce-8b5c0a98023c3d15",
+            "name": "ZoomAudioDevice",
+            "type": "CoreAudio",
+            "isDefault": false,
+            "outputChannels": 2,
+            "sampleRates": [
+              44100,
+              48000,
+              88200,
+              96000,
+              176400,
+              192000
+            ],
+            "bufferFrames": [
+              16,
+              32,
+              64,
+              128,
+              256,
+              512
+            ],
+            "defaultBufferFrames": 512
+          }
+        ],
+        "configuration": {
+          "mode": "systemDefault",
+          "deviceId": null,
+          "bufferFrames": 0
+        },
+        "active": null,
+        "controlRevision": "1",
+        "error": null,
+        "preparationId": null,
+        "generation": "0"
+      },
+      "deviceUI": {
+        "visible": true,
+        "text": "Audio output\nOutput off\nOutput device\nBuffer size\nApplying stops playback and releases sounding notes. Listening stays off. After a device disconnects, refresh, apply an available output, then enable Listening and press Play.\nRefresh devices\nApply output\n",
+        "outputs": [
+          "System default",
+          "MacBook Pro Speakers (CoreAudio) \u00b7 default",
+          "Inject IO (CoreAudio)",
+          "ZoomAudioDevice (CoreAudio)"
+        ],
+        "buffers": [
+          "Device default (512 frames)",
+          "16 frames",
+          "32 frames",
+          "64 frames",
+          "128 frames",
+          "256 frames",
+          "512 frames",
+          "1024 frames",
+          "2048 frames",
+          "4096 frames"
+        ]
+      },
+      "afterDiscoveryAudio": {
+        "status": "disabled",
+        "deviceName": null,
+        "masterGainDb": -18,
+        "peakDbfs": null,
+        "meterIsSimulated": false,
+        "clipping": false,
+        "activeSynthVoices": null,
+        "maxSynthVoices": 8,
+        "sampleRate": null,
+        "bufferFrames": null,
+        "outputChannels": null,
+        "callbackCount": "0",
+        "callbackFrames": "0",
+        "faultCount": "0",
+        "error": null
+      },
+      "scenes": {
+        "items": [],
+        "limited": false,
+        "unmanagedFiles": 0
+      },
+      "dom": {
+        "title": "Animal Atlas",
+        "text": "Skip to content\nANIMAL ATLAS\n\nAtlas\n\nSound Studio\nProject\n\u2304\nLive\nReplay\nHistory\n\n\n\n\nAll off\n\nCollect\n13:27:22\nNZDT \u00b7 ARRIVAL\n\nMaster level\n-18.0 dB\n\nAudio\nSPECIES \u00b7 0 AVAILABLE\nFind speciesAll available species\nLIVE \u00b7 ARRIVAL TIME\nMap details\nGlobe\n2D map\n\n\n\n\nReset view\nReceiver\nHighlighted species\nMeasured fix\nEffect region\n0 locations\nREGION MIX \u00b7 60 MIN\nRegionChange region\nRegion\nRegion mix unavailable\nThis host does not report per-region activity.\nSelected\nIncoming 0\nNo event selected\nPick a station on the map, a line in Grain, or an item under Incoming.\nGRAIN \u00b7 LAST 60 MIN\nEvery detection in view, one line each\nArrival time \u00b7 details\nNo records in this window \u00b7 coverage may be incomplete.\n12:27\n12:42\n12:57\n13:12\nnow\nNZDT",
+        "buttons": [
+          "\n Atlas",
+          "\n Sound Studio",
+          "Save soundscape",
+          "Open soundscape",
+          "Export saved WAV",
+          "Refresh exports",
+          "Apply composition",
+          "Live",
+          "Replay",
+          "History",
+          "\n",
+          "\n",
+          "\n",
+          "\n All off",
+          "\nCollect",
+          "",
+          "Audio",
+          "All available species",
+          "Map details\n",
+          "Globe",
+          "2D map",
+          "\n",
+          "\n",
+          "\n",
+          "\nReset view",
+          "Selected",
+          "Incoming 0"
+        ]
+      }
+    },
+    "nativeStatus": "Scene only \u00b7 import a soundscape to begin Saved application settings contain duplicate fields; the file was retained.",
+    "nativeRequests": 40,
+    "rejectedRequests": 0,
+    "audioEnabled": false,
+    "shutdownComplete": true,
+    "sceneExported": false,
+    "projectRestored": false,
+    "elapsedSeconds": 1.778614542
+  },
+  "same-state-rejected": {
+    "ok": false,
+    "webview": {
+      "ok": false,
+      "error": "This application data directory is already open in another Animal Atlas process."
+    },
+    "nativeStatus": "Instrument unavailable: This application data directory is already open in another Animal Atlas process.",
+    "nativeRequests": 0,
+    "rejectedRequests": 0,
+    "audioEnabled": false,
+    "shutdownComplete": true,
+    "sceneExported": false,
+    "projectRestored": false,
+    "elapsedSeconds": 0.060806667
+  },
+  "lock-owner": {
+    "ok": true,
+    "webview": {
+      "finished": true,
+      "ok": true,
+      "rounds": 59,
+      "capabilities": {
+        "protocolVersion": 1,
+        "implementation": "native",
+        "supportedMethods": [
+          "getCapabilities",
+          "getChanges",
+          "getCatalog",
+          "listSessions",
+          "prepareReplay",
+          "getMaterialEvents",
+          "getTransport",
+          "setTransport",
+          "getAudioState",
+          "setAudioEnabled",
+          "getAudioDevices",
+          "setAudioDevice",
+          "getVoiceLibrary",
+          "getVoice",
+          "setVoiceParameter",
+          "saveVoice",
+          "revertVoice",
+          "getComposition",
+          "setComposition",
+          "getSpatial",
+          "setSpatial",
+          "listSoundscapes",
+          "saveSoundscape",
+          "recallSoundscape",
+          "startSoundscapeRender",
+          "getRenderJob",
+          "cancelRender",
+          "listExports",
+          "listVoicePresets",
+          "applyVoicePreset"
+        ],
+        "audioAvailable": true,
+        "libraryAvailable": false,
+        "maxEventBatch": 500,
+        "maxVisibleMarkers": 500
+      },
+      "audio": {
+        "status": "disabled",
+        "deviceName": null,
+        "masterGainDb": -18,
+        "peakDbfs": null,
+        "meterIsSimulated": false,
+        "clipping": false,
+        "activeSynthVoices": null,
+        "maxSynthVoices": 8,
+        "sampleRate": null,
+        "bufferFrames": null,
+        "outputChannels": null,
+        "callbackCount": "0",
+        "callbackFrames": "0",
+        "faultCount": "0",
+        "error": null
+      },
+      "audioDevices": {
+        "available": true,
+        "devices": [
+          {
+            "id": "juce-a577d05d19707751",
+            "name": "MacBook Pro Speakers",
+            "type": "CoreAudio",
+            "isDefault": true,
+            "outputChannels": 2,
+            "sampleRates": [
+              44100,
+              48000,
+              88200,
+              96000
+            ],
+            "bufferFrames": [
+              16,
+              32,
+              64,
+              128,
+              256,
+              512,
+              1024,
+              2048,
+              4096
+            ],
+            "defaultBufferFrames": 512
+          },
+          {
+            "id": "juce-30da844212d84383",
+            "name": "Inject IO",
+            "type": "CoreAudio",
+            "isDefault": false,
+            "outputChannels": 2,
+            "sampleRates": [
+              44100,
+              48000,
+              88200,
+              96000,
+              176400,
+              192000
+            ],
+            "bufferFrames": [
+              16,
+              32,
+              64,
+              128,
+              256,
+              512,
+              1024,
+              2048,
+              4096
+            ],
+            "defaultBufferFrames": 512
+          },
+          {
+            "id": "juce-8b5c0a98023c3d15",
+            "name": "ZoomAudioDevice",
+            "type": "CoreAudio",
+            "isDefault": false,
+            "outputChannels": 2,
+            "sampleRates": [
+              44100,
+              48000,
+              88200,
+              96000,
+              176400,
+              192000
+            ],
+            "bufferFrames": [
+              16,
+              32,
+              64,
+              128,
+              256,
+              512
+            ],
+            "defaultBufferFrames": 512
+          }
+        ],
+        "configuration": {
+          "mode": "systemDefault",
+          "deviceId": null,
+          "bufferFrames": 0
+        },
+        "active": null,
+        "controlRevision": "1",
+        "error": null,
+        "preparationId": null,
+        "generation": "0"
+      },
+      "deviceUI": {
+        "visible": true,
+        "text": "Audio output\nOutput off\nOutput device\nBuffer size\nApplying stops playback and releases sounding notes. Listening stays off. After a device disconnects, refresh, apply an available output, then enable Listening and press Play.\nRefresh devices\nApply output\n",
+        "outputs": [
+          "System default",
+          "MacBook Pro Speakers (CoreAudio) \u00b7 default",
+          "Inject IO (CoreAudio)",
+          "ZoomAudioDevice (CoreAudio)"
+        ],
+        "buffers": [
+          "Device default (512 frames)",
+          "16 frames",
+          "32 frames",
+          "64 frames",
+          "128 frames",
+          "256 frames",
+          "512 frames",
+          "1024 frames",
+          "2048 frames",
+          "4096 frames"
+        ]
+      },
+      "afterDiscoveryAudio": {
+        "status": "disabled",
+        "deviceName": null,
+        "masterGainDb": -18,
+        "peakDbfs": null,
+        "meterIsSimulated": false,
+        "clipping": false,
+        "activeSynthVoices": null,
+        "maxSynthVoices": 8,
+        "sampleRate": null,
+        "bufferFrames": null,
+        "outputChannels": null,
+        "callbackCount": "0",
+        "callbackFrames": "0",
+        "faultCount": "0",
+        "error": null
+      },
+      "scenes": {
+        "items": [],
+        "limited": false,
+        "unmanagedFiles": 0
+      },
+      "dom": {
+        "title": "Animal Atlas",
+        "text": "Skip to content\nANIMAL ATLAS\n\nAtlas\n\nSound Studio\nProject\n\u2304\nLive\nReplay\nHistory\n\n\n\n\nAll off\n\nCollect\n13:27:24\nNZDT \u00b7 ARRIVAL\n\nMaster level\n-18.0 dB\n\nAudio\nSPECIES \u00b7 0 AVAILABLE\nFind speciesAll available species\nLIVE \u00b7 ARRIVAL TIME\nMap details\nGlobe\n2D map\n\n\n\n\nReset view\nReceiver\nHighlighted species\nMeasured fix\nEffect region\n0 locations\nREGION MIX \u00b7 60 MIN\nRegionChange region\nRegion\nRegion mix unavailable\nThis host does not report per-region activity.\nSelected\nIncoming 0\nNo event selected\nPick a station on the map, a line in Grain, or an item under Incoming.\nGRAIN \u00b7 LAST 60 MIN\nEvery detection in view, one line each\nArrival time \u00b7 details\nNo records in this window \u00b7 coverage may be incomplete.\n12:27\n12:42\n12:57\n13:12\nnow\nNZDT",
+        "buttons": [
+          "\n Atlas",
+          "\n Sound Studio",
+          "Save soundscape",
+          "Open soundscape",
+          "Export saved WAV",
+          "Refresh exports",
+          "Apply composition",
+          "Live",
+          "Replay",
+          "History",
+          "\n",
+          "\n",
+          "\n",
+          "\n All off",
+          "\nCollect",
+          "",
+          "Audio",
+          "All available species",
+          "Map details\n",
+          "Globe",
+          "2D map",
+          "\n",
+          "\n",
+          "\n",
+          "\nReset view",
+          "Selected",
+          "Incoming 0"
+        ]
+      }
+    },
+    "nativeStatus": "Scene only \u00b7 import a soundscape to begin",
+    "nativeRequests": 146,
+    "rejectedRequests": 0,
+    "audioEnabled": false,
+    "shutdownComplete": true,
+    "sceneExported": false,
+    "projectRestored": false,
+    "elapsedSeconds": 6.906257708
+  },
+  "after-lock-release": {
+    "ok": true,
+    "webview": {
+      "finished": true,
+      "ok": true,
+      "rounds": 10,
+      "capabilities": {
+        "protocolVersion": 1,
+        "implementation": "native",
+        "supportedMethods": [
+          "getCapabilities",
+          "getChanges",
+          "getCatalog",
+          "listSessions",
+          "prepareReplay",
+          "getMaterialEvents",
+          "getTransport",
+          "setTransport",
+          "getAudioState",
+          "setAudioEnabled",
+          "getAudioDevices",
+          "setAudioDevice",
+          "getVoiceLibrary",
+          "getVoice",
+          "setVoiceParameter",
+          "saveVoice",
+          "revertVoice",
+          "getComposition",
+          "setComposition",
+          "getSpatial",
+          "setSpatial",
+          "listSoundscapes",
+          "saveSoundscape",
+          "recallSoundscape",
+          "startSoundscapeRender",
+          "getRenderJob",
+          "cancelRender",
+          "listExports",
+          "listVoicePresets",
+          "applyVoicePreset"
+        ],
+        "audioAvailable": true,
+        "libraryAvailable": false,
+        "maxEventBatch": 500,
+        "maxVisibleMarkers": 500
+      },
+      "audio": {
+        "status": "disabled",
+        "deviceName": null,
+        "masterGainDb": -18,
+        "peakDbfs": null,
+        "meterIsSimulated": false,
+        "clipping": false,
+        "activeSynthVoices": null,
+        "maxSynthVoices": 8,
+        "sampleRate": null,
+        "bufferFrames": null,
+        "outputChannels": null,
+        "callbackCount": "0",
+        "callbackFrames": "0",
+        "faultCount": "0",
+        "error": null
+      },
+      "audioDevices": {
+        "available": true,
+        "devices": [
+          {
+            "id": "juce-a577d05d19707751",
+            "name": "MacBook Pro Speakers",
+            "type": "CoreAudio",
+            "isDefault": true,
+            "outputChannels": 2,
+            "sampleRates": [
+              44100,
+              48000,
+              88200,
+              96000
+            ],
+            "bufferFrames": [
+              16,
+              32,
+              64,
+              128,
+              256,
+              512,
+              1024,
+              2048,
+              4096
+            ],
+            "defaultBufferFrames": 512
+          },
+          {
+            "id": "juce-30da844212d84383",
+            "name": "Inject IO",
+            "type": "CoreAudio",
+            "isDefault": false,
+            "outputChannels": 2,
+            "sampleRates": [
+              44100,
+              48000,
+              88200,
+              96000,
+              176400,
+              192000
+            ],
+            "bufferFrames": [
+              16,
+              32,
+              64,
+              128,
+              256,
+              512,
+              1024,
+              2048,
+              4096
+            ],
+            "defaultBufferFrames": 512
+          },
+          {
+            "id": "juce-8b5c0a98023c3d15",
+            "name": "ZoomAudioDevice",
+            "type": "CoreAudio",
+            "isDefault": false,
+            "outputChannels": 2,
+            "sampleRates": [
+              44100,
+              48000,
+              88200,
+              96000,
+              176400,
+              192000
+            ],
+            "bufferFrames": [
+              16,
+              32,
+              64,
+              128,
+              256,
+              512
+            ],
+            "defaultBufferFrames": 512
+          }
+        ],
+        "configuration": {
+          "mode": "systemDefault",
+          "deviceId": null,
+          "bufferFrames": 0
+        },
+        "active": null,
+        "controlRevision": "1",
+        "error": null,
+        "preparationId": null,
+        "generation": "0"
+      },
+      "deviceUI": {
+        "visible": true,
+        "text": "Audio output\nOutput off\nOutput device\nBuffer size\nApplying stops playback and releases sounding notes. Listening stays off. After a device disconnects, refresh, apply an available output, then enable Listening and press Play.\nRefresh devices\nApply output\n",
+        "outputs": [
+          "System default",
+          "MacBook Pro Speakers (CoreAudio) \u00b7 default",
+          "Inject IO (CoreAudio)",
+          "ZoomAudioDevice (CoreAudio)"
+        ],
+        "buffers": [
+          "Device default (512 frames)",
+          "16 frames",
+          "32 frames",
+          "64 frames",
+          "128 frames",
+          "256 frames",
+          "512 frames",
+          "1024 frames",
+          "2048 frames",
+          "4096 frames"
+        ]
+      },
+      "afterDiscoveryAudio": {
+        "status": "disabled",
+        "deviceName": null,
+        "masterGainDb": -18,
+        "peakDbfs": null,
+        "meterIsSimulated": false,
+        "clipping": false,
+        "activeSynthVoices": null,
+        "maxSynthVoices": 8,
+        "sampleRate": null,
+        "bufferFrames": null,
+        "outputChannels": null,
+        "callbackCount": "0",
+        "callbackFrames": "0",
+        "faultCount": "0",
+        "error": null
+      },
+      "scenes": {
+        "items": [],
+        "limited": false,
+        "unmanagedFiles": 0
+      },
+      "dom": {
+        "title": "Animal Atlas",
+        "text": "Skip to content\nANIMAL ATLAS\n\nAtlas\n\nSound Studio\nProject\n\u2304\nLive\nReplay\nHistory\n\n\n\n\nAll off\n\nCollect\n13:27:31\nNZDT \u00b7 ARRIVAL\n\nMaster level\n-18.0 dB\n\nAudio\nSPECIES \u00b7 0 AVAILABLE\nFind speciesAll available species\nLIVE \u00b7 ARRIVAL TIME\nMap details\nGlobe\n2D map\n\n\n\n\nReset view\nReceiver\nHighlighted species\nMeasured fix\nEffect region\n0 locations\nREGION MIX \u00b7 60 MIN\nRegionChange region\nRegion\nRegion mix unavailable\nThis host does not report per-region activity.\nSelected\nIncoming 0\nNo event selected\nPick a station on the map, a line in Grain, or an item under Incoming.\nGRAIN \u00b7 LAST 60 MIN\nEvery detection in view, one line each\nArrival time \u00b7 details\nNo records in this window \u00b7 coverage may be incomplete.\n12:27\n12:42\n12:57\n13:12\nnow\nNZDT",
+        "buttons": [
+          "\n Atlas",
+          "\n Sound Studio",
+          "Save soundscape",
+          "Open soundscape",
+          "Export saved WAV",
+          "Refresh exports",
+          "Apply composition",
+          "Live",
+          "Replay",
+          "History",
+          "\n",
+          "\n",
+          "\n",
+          "\n All off",
+          "\nCollect",
+          "",
+          "Audio",
+          "All available species",
+          "Map details\n",
+          "Globe",
+          "2D map",
+          "\n",
+          "\n",
+          "\n",
+          "\nReset view",
+          "Selected",
+          "Incoming 0"
+        ]
+      }
+    },
+    "nativeStatus": "Scene only \u00b7 import a soundscape to begin",
+    "nativeRequests": 40,
+    "rejectedRequests": 0,
+    "audioEnabled": false,
+    "shutdownComplete": true,
+    "sceneExported": false,
+    "projectRestored": false,
+    "elapsedSeconds": 1.788527334
+  }
+}

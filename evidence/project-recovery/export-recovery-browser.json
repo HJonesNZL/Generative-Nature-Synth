@@ -1,0 +1,14 @@
+{
+  "fixture": "Injected synthetic scene-only host; sessionStorage-persisted cancellation; no audio/data/filesystem bridge access",
+  "browser": "156.0.8078.80",
+  "checks": [
+    "Existing rendering job is recovered from listExports while Project stays collapsed; opening reveals actual progress and cancellation",
+    "Cancellation sends the recovered native job identity once and displays terminal cancellation without fabricating a WAV completion",
+    "Session-persisted cancellation survives reload; empty completed history and null activeRender do not resurrect polling, progress or download controls",
+    "Mock capabilities with a valid selected scene hide unsupported filesystem scene export"
+  ],
+  "errors": [],
+  "external": [],
+  "bridgeRequests": [],
+  "failedResponses": []
+}

@@ -1,0 +1,552 @@
+Start testing: Nov 07 13:23 NZDT
+----------------------------------------------------------
+8/25 Testing: atlas-projects
+8/25 Test: atlas-projects
+Command: "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/atlas-project-tests"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone
+"atlas-projects" start time: Nov 07 13:23 NZDT
+Output:
+----------------------------------------------------------
+Project archive tests passed
+<end of output>
+Test time =   0.34 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-projects" end time: Nov 07 13:23 NZDT
+"atlas-projects" time elapsed: 00:00:00
+----------------------------------------------------------
+
+25/25 Testing: atlas-wav
+25/25 Test: atlas-wav
+Command: "/opt/homebrew/Frameworks/Python.framework/Versions/3.12/bin/python3.12" "-B" "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/tests/native_audio_checks.py" "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/atlas-native"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone
+"atlas-wav" start time: Nov 07 13:23 NZDT
+Output:
+----------------------------------------------------------
+.............
+----------------------------------------------------------------------
+Ran 13 tests in 1.871s
+
+OK
+<end of output>
+Test time =   1.96 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-wav" end time: Nov 07 13:23 NZDT
+"atlas-wav" time elapsed: 00:00:01
+----------------------------------------------------------
+
+14/25 Testing: atlas-voice-characters
+14/25 Test: atlas-voice-characters
+Command: "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/atlas-voice-character-tests"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone
+"atlas-voice-characters" start time: Nov 07 13:23 NZDT
+Output:
+----------------------------------------------------------
+PASS independent closed-form oscillator, modal decay and gesture oracle
+PASS exact neutral legacy dispatch and independent legacy equation
+PASS same-register spectra differ without changing old envelope controls
+PASS every macro changes observable behaviour and zero gestures remain neutral
+PASS stable event identity and revision seeds, replay and partition invariance
+PASS coefficient frequency admission and all-rate endpoint numerical bounds
+PASS prepared updates captured only at the next onset
+PASS invalid new settings and hostile POD updates retain valid bank
+PASS transposed note bounds and root-specific POD pitch rejection
+PASS all-character dense stealing allocates nothing and obeys shared peak bound
+<end of output>
+Test time =   2.32 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-voice-characters" end time: Nov 07 13:23 NZDT
+"atlas-voice-characters" time elapsed: 00:00:02
+----------------------------------------------------------
+
+7/25 Testing: atlas-ui-projects
+7/25 Test: atlas-ui-projects
+Command: "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/atlas-ui-project-tests"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone
+"atlas-ui-projects" start time: Nov 07 13:23 NZDT
+Output:
+----------------------------------------------------------
+UI project lifecycle checks passed
+<end of output>
+Test time =   0.30 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-ui-projects" end time: Nov 07 13:23 NZDT
+"atlas-ui-projects" time elapsed: 00:00:00
+----------------------------------------------------------
+
+6/25 Testing: atlas-exports
+6/25 Test: atlas-exports
+Command: "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/atlas-export-tests"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone
+"atlas-exports" start time: Nov 07 13:23 NZDT
+Output:
+----------------------------------------------------------
+Export inventory tests passed
+<end of output>
+Test time =   0.68 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-exports" end time: Nov 07 13:23 NZDT
+"atlas-exports" time elapsed: 00:00:00
+----------------------------------------------------------
+
+12/25 Testing: atlas-alias-probe
+12/25 Test: atlas-alias-probe
+Command: "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/atlas-alias-tests"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone
+"atlas-alias-probe" start time: Nov 07 13:23 NZDT
+Output:
+----------------------------------------------------------
+PASS rate=22050 character=0 sweep=-12.00 partials=3 residual_dBr=-90.43 convergence_dBr=-131.09 padding_dBr=-134.99 integer_error=1.76e-09
+PASS rate=22050 character=0 sweep=0.00 partials=3 residual_dBr=-89.39 convergence_dBr=-130.02 padding_dBr=-134.36 integer_error=1.34e-09
+PASS rate=22050 character=0 sweep=12.00 partials=3 residual_dBr=-88.28 convergence_dBr=-128.91 padding_dBr=-133.58 integer_error=1.74e-09
+PASS rate=22050 character=1 sweep=-12.00 partials=3 residual_dBr=-86.40 convergence_dBr=-127.13 padding_dBr=-132.44 integer_error=1.57e-09
+PASS rate=22050 character=1 sweep=0.00 partials=3 residual_dBr=-85.62 convergence_dBr=-126.34 padding_dBr=-131.68 integer_error=1.85e-09
+PASS rate=22050 character=1 sweep=12.00 partials=3 residual_dBr=-84.96 convergence_dBr=-125.66 padding_dBr=-131.01 integer_error=1.83e-09
+PASS rate=22050 character=2 sweep=-12.00 partials=4 residual_dBr=-75.25 convergence_dBr=-132.24 padding_dBr=-106.57 integer_error=9.06e-10
+PASS rate=22050 character=2 sweep=0.00 partials=4 residual_dBr=-74.86 convergence_dBr=-132.42 padding_dBr=-107.71 integer_error=8.53e-10
+PASS rate=22050 character=2 sweep=12.00 partials=2 residual_dBr=-96.68 convergence_dBr=-141.08 padding_dBr=-139.90 integer_error=1.25e-09
+PASS rate=22050 character=3 sweep=-12.00 partials=6 residual_dBr=-81.13 convergence_dBr=-132.12 padding_dBr=-128.00 integer_error=7.56e-10
+PASS rate=22050 character=3 sweep=0.00 partials=6 residual_dBr=-81.06 convergence_dBr=-129.21 padding_dBr=-124.37 integer_error=8.88e-10
+PASS rate=22050 character=3 sweep=12.00 partials=3 residual_dBr=-87.97 convergence_dBr=-129.77 padding_dBr=-138.53 integer_error=8.83e-10
+PASS rate=22050 character=4 sweep=-12.00 partials=7 residual_dBr=-77.19 convergence_dBr=-123.74 padding_dBr=-113.51 integer_error=8.34e-10
+PASS rate=22050 character=4 sweep=0.00 partials=7 residual_dBr=-76.47 convergence_dBr=-123.10 padding_dBr=-111.54 integer_error=8.80e-10
+PASS rate=22050 character=4 sweep=12.00 partials=5 residual_dBr=-89.44 convergence_dBr=-147.35 padding_dBr=-130.32 integer_error=1.73e-09
+PASS rate=22050 character=5 sweep=-12.00 partials=7 residual_dBr=-82.51 convergence_dBr=-140.17 padding_dBr=-113.42 integer_error=1.60e-09
+PASS rate=22050 character=5 sweep=0.00 partials=7 residual_dBr=-81.87 convergence_dBr=-141.22 padding_dBr=-114.93 integer_error=1.15e-09
+PASS rate=22050 character=5 sweep=12.00 partials=3 residual_dBr=-92.33 convergence_dBr=-134.15 padding_dBr=-137.14 integer_error=1.29e-09
+PASS rate=48000 character=0 sweep=-12.00 partials=3 residual_dBr=-103.85 convergence_dBr=-144.33 padding_dBr=-156.45 integer_error=9.47e-10
+PASS rate=48000 character=0 sweep=0.00 partials=3 residual_dBr=-102.81 convergence_dBr=-143.27 padding_dBr=-155.24 integer_error=1.68e-09
+PASS rate=48000 character=0 sweep=12.00 partials=3 residual_dBr=-101.80 convergence_dBr=-142.24 padding_dBr=-154.11 integer_error=1.82e-09
+PASS rate=48000 character=1 sweep=-12.00 partials=3 residual_dBr=-99.91 convergence_dBr=-140.40 padding_dBr=-151.70 integer_error=1.81e-09
+PASS rate=48000 character=1 sweep=0.00 partials=3 residual_dBr=-98.72 convergence_dBr=-139.20 padding_dBr=-150.35 integer_error=1.85e-09
+PASS rate=48000 character=1 sweep=12.00 partials=3 residual_dBr=-97.68 convergence_dBr=-138.15 padding_dBr=-149.19 integer_error=1.86e-09
+PASS rate=48000 character=2 sweep=-12.00 partials=8 residual_dBr=-99.37 convergence_dBr=-140.26 padding_dBr=-138.76 integer_error=8.72e-10
+PASS rate=48000 character=2 sweep=0.00 partials=8 residual_dBr=-98.07 convergence_dBr=-141.78 padding_dBr=-145.24 integer_error=9.19e-10
+PASS rate=48000 character=2 sweep=12.00 partials=4 residual_dBr=-102.79 convergence_dBr=-143.46 padding_dBr=-162.02 integer_error=8.97e-10
+PASS rate=48000 character=3 sweep=-12.00 partials=8 residual_dBr=-102.37 convergence_dBr=-142.88 padding_dBr=-160.66 integer_error=8.82e-10
+PASS rate=48000 character=3 sweep=0.00 partials=8 residual_dBr=-105.62 convergence_dBr=-147.67 padding_dBr=-161.14 integer_error=9.28e-10
+PASS rate=48000 character=3 sweep=12.00 partials=6 residual_dBr=-106.66 convergence_dBr=-150.58 padding_dBr=-154.49 integer_error=8.61e-10
+PASS rate=48000 character=4 sweep=-12.00 partials=8 residual_dBr=-109.84 convergence_dBr=-179.69 padding_dBr=-151.65 integer_error=8.07e-10
+PASS rate=48000 character=4 sweep=0.00 partials=8 residual_dBr=-107.80 convergence_dBr=-152.00 padding_dBr=-148.69 integer_error=8.98e-10
+PASS rate=48000 character=4 sweep=12.00 partials=7 residual_dBr=-95.76 convergence_dBr=-137.05 padding_dBr=-148.12 integer_error=9.08e-10
+PASS rate=48000 character=5 sweep=-12.00 partials=8 residual_dBr=-115.41 convergence_dBr=-158.87 padding_dBr=-162.38 integer_error=1.84e-09
+PASS rate=48000 character=5 sweep=0.00 partials=8 residual_dBr=-111.60 convergence_dBr=-154.43 padding_dBr=-156.79 integer_error=1.74e-09
+PASS rate=48000 character=5 sweep=12.00 partials=8 residual_dBr=-113.79 convergence_dBr=-158.26 padding_dBr=-155.97 integer_error=1.83e-09
+<end of output>
+Test time =   3.37 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-alias-probe" end time: Nov 07 13:23 NZDT
+"atlas-alias-probe" time elapsed: 00:00:03
+----------------------------------------------------------
+
+17/25 Testing: atlas-playback
+17/25 Test: atlas-playback
+Command: "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/atlas-playback-tests"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone
+"atlas-playback" start time: Nov 07 13:23 NZDT
+Output:
+----------------------------------------------------------
+PASS preparation requires deliberate enable and never autoplays
+PASS callback output equals existing renderer across device partitions
+PASS pause freezes callback position; stop and panic advance generations
+PASS plan replacement retires off callback and invalidates old preparation
+PASS failed preparation retains identity and disables audio
+PASS partial start failure and disable are recoverable and quiescent
+PASS device fault and invalid callback produce silence
+PASS missing callbacks time out safely and can restart
+PASS callback lease expires without worker heartbeat
+PASS unsupported device and complete start failure remain observable
+PASS concurrent callback replacement establishes quiescence
+PASS wet regional renderer replacement retires buffers off callback
+PASS coherent snapshot reader while callback progresses
+PASS optional output catalog is unavailable without opening hardware
+PASS guarded device selection stops quietly and requires deliberate restart
+PASS device discovery and configuration failures remain observable
+PASS catalog changes invalidate revisions and disconnected selections never fall back
+SUSTAINED synthetic_frames=51782400 callbacks=38400 recovery_epochs=24
+PASS sustained synthetic callbacks remain finite through fault and quiet recovery epochs
+PASS callback has no C++ allocation or deallocation
+<end of output>
+Test time =   3.57 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-playback" end time: Nov 07 13:23 NZDT
+"atlas-playback" time elapsed: 00:00:03
+----------------------------------------------------------
+
+23/25 Testing: atlas-storage
+23/25 Test: atlas-storage
+Command: "/opt/homebrew/Frameworks/Python.framework/Versions/3.12/bin/python3.12" "-B" "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/tests/native_storage_checks.py" "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/atlas-native"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone
+"atlas-storage" start time: Nov 07 13:23 NZDT
+Output:
+----------------------------------------------------------
+..................
+----------------------------------------------------------------------
+Ran 18 tests in 0.727s
+
+OK
+<end of output>
+Test time =   0.78 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-storage" end time: Nov 07 13:23 NZDT
+"atlas-storage" time elapsed: 00:00:00
+----------------------------------------------------------
+
+18/25 Testing: atlas-soundscape-ui
+18/25 Test: atlas-soundscape-ui
+Command: "/opt/homebrew/Frameworks/Python.framework/Versions/3.12/bin/python3.12" "-B" "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/tests/native_soundscape_checks.py" "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/atlas-studio-fixture-host"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone
+"atlas-soundscape-ui" start time: Nov 07 13:23 NZDT
+Output:
+----------------------------------------------------------
+......
+----------------------------------------------------------------------
+Ran 6 tests in 1.054s
+
+OK
+<end of output>
+Test time =   1.11 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-soundscape-ui" end time: Nov 07 13:23 NZDT
+"atlas-soundscape-ui" time elapsed: 00:00:01
+----------------------------------------------------------
+
+13/25 Testing: atlas-presets
+13/25 Test: atlas-presets
+Command: "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/atlas-preset-tests"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone
+"atlas-presets" start time: Nov 07 13:23 NZDT
+Output:
+----------------------------------------------------------
+PASS immutable catalog metadata, exact IDs and unique valid settings
+PASS exact species coverage includes explicit legacy and unresolved taxonomy
+PASS related families share cores and substantial gestures remain distinct
+PASS every candidate compiles across rate boundaries and renders finite
+<end of output>
+Test time =   1.93 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-presets" end time: Nov 07 13:23 NZDT
+"atlas-presets" time elapsed: 00:00:01
+----------------------------------------------------------
+
+15/25 Testing: atlas-render-jobs
+15/25 Test: atlas-render-jobs
+Command: "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/atlas-render-job-tests"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone
+"atlas-render-jobs" start time: Nov 07 13:23 NZDT
+Output:
+----------------------------------------------------------
+Offline jobs: exact frozen scene PCM/rate/tails, bounded async control/history, cancellation/shutdown, no overwrite, failures and recipe traceability passed
+<end of output>
+Test time =   1.71 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-render-jobs" end time: Nov 07 13:23 NZDT
+"atlas-render-jobs" time elapsed: 00:00:01
+----------------------------------------------------------
+
+20/25 Testing: atlas-voice-ui
+20/25 Test: atlas-voice-ui
+Command: "/opt/homebrew/Frameworks/Python.framework/Versions/3.12/bin/python3.12" "-B" "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/tests/native_voice_checks.py" "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/atlas-studio-fixture-host"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone
+"atlas-voice-ui" start time: Nov 07 13:23 NZDT
+Output:
+----------------------------------------------------------
+.......
+----------------------------------------------------------------------
+Ran 7 tests in 0.708s
+
+OK
+<end of output>
+Test time =   0.76 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-voice-ui" end time: Nov 07 13:23 NZDT
+"atlas-voice-ui" time elapsed: 00:00:00
+----------------------------------------------------------
+
+5/25 Testing: atlas-voice-audio
+5/25 Test: atlas-voice-audio
+Command: "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/atlas-voice-audio-tests"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone
+"atlas-voice-audio" start time: Nov 07 13:23 NZDT
+Output:
+----------------------------------------------------------
+PASS profile controls follow independent pitch envelope and gain equations
+PASS default profiles preserve legacy PCM and deterministic species pitches
+PASS actual store defaults and saved normalized roundtrips preserve legacy PCM
+PASS normalized endpoints adjacent values and random settings compile into bounded audio updates
+PASS edits affect new notes of one species and retain captured ringing voices
+PASS bounded bank and invalid parameter boundaries are explicit
+PASS runtime acknowledges edits without changing device preparation or transport
+<end of output>
+Test time =   0.71 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-voice-audio" end time: Nov 07 13:23 NZDT
+"atlas-voice-audio" time elapsed: 00:00:00
+----------------------------------------------------------
+
+21/25 Testing: atlas-playback-ui
+21/25 Test: atlas-playback-ui
+Command: "/opt/homebrew/Frameworks/Python.framework/Versions/3.12/bin/python3.12" "-B" "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/tests/native_playback_checks.py" "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/atlas-playback-fixture-host"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone
+"atlas-playback-ui" start time: Nov 07 13:23 NZDT
+Output:
+----------------------------------------------------------
+.........
+----------------------------------------------------------------------
+Ran 9 tests in 1.034s
+
+OK
+<end of output>
+Test time =   1.08 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-playback-ui" end time: Nov 07 13:23 NZDT
+"atlas-playback-ui" time elapsed: 00:00:01
+----------------------------------------------------------
+
+9/25 Testing: atlas-soundscapes
+9/25 Test: atlas-soundscapes
+Command: "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/atlas-soundscape-tests"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone
+"atlas-soundscapes" start time: Nov 07 13:23 NZDT
+Output:
+----------------------------------------------------------
+Exact platform PCM artifact comparison not requested; set ATLAS_VERIFY_LEGACY_PCM_BASELINE=1 on its recorded platform
+Soundscape atomic save, strict schema, provenance, complete profiles, independent recall/PCM, corrupt input and bounded listing passed
+<end of output>
+Test time =   0.92 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-soundscapes" end time: Nov 07 13:23 NZDT
+"atlas-soundscapes" time elapsed: 00:00:00
+----------------------------------------------------------
+
+16/25 Testing: atlas-voice-store
+16/25 Test: atlas-voice-store
+Command: "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/atlas-voice-store-tests"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone
+"atlas-voice-store" start time: Nov 07 13:23 NZDT
+Output:
+----------------------------------------------------------
+Voice drafts, normalized values, durable CAS, rollback, read-only, corruption and capacity passed
+<end of output>
+Test time =   0.72 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-voice-store" end time: Nov 07 13:23 NZDT
+"atlas-voice-store" time elapsed: 00:00:00
+----------------------------------------------------------
+
+22/25 Testing: atlas-audio-host-lifecycle
+22/25 Test: atlas-audio-host-lifecycle
+Command: "/opt/homebrew/Frameworks/Python.framework/Versions/3.12/bin/python3.12" "-B" "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/tests/native_device_smoke.py" "--prepare-only" "--binary" "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/atlas-audio-host" "--evidence" "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/audio-host-lifecycle.json"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone
+"atlas-audio-host-lifecycle" start time: Nov 07 13:23 NZDT
+Output:
+----------------------------------------------------------
+{"status": "passed_host_lifecycle_smoke", "elapsedSeconds": 0.54802, "artifactSha256": "edad5c692401b507ae6398b2f45e268d014d0315791150923a943934122aff34", "evidence": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/audio-host-lifecycle.json"}
+<end of output>
+Test time =   0.60 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-audio-host-lifecycle" end time: Nov 07 13:23 NZDT
+"atlas-audio-host-lifecycle" time elapsed: 00:00:00
+----------------------------------------------------------
+
+11/25 Testing: atlas-spatial
+11/25 Test: atlas-spatial
+Command: "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/atlas-spatial-tests"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone
+"atlas-spatial" start time: Nov 07 13:23 NZDT
+Output:
+----------------------------------------------------------
+PASS geographic boundaries dateline priority and actual position semantics
+PASS strict settings and UTF8 validation including disabled drafts
+PASS echo impulse has absolute delay stereo spacing and geometric decay
+PASS damped-comb impulse agrees with independent transfer-function expansion
+PASS enabled dry panning gain mono and delayed engine output have absolute oracles
+PASS voice retirement retains onset route after later region arrivals
+PASS historical multi-region energy normalized and fixed memory bounded
+PASS logical reset nonfinite recovery and tiny-state policy
+PASS all plan paths reserve effects after possible voice lifetime and enforce total limit
+PASS block parity pause seek stop panic and exact natural final zero
+PASS nonzero late ambience follows the independently specified final linear fade
+PASS maximum-region callback and transport allocate and destroy nothing
+PASS spatial disabled retains legacy and composition PCM exactly
+<end of output>
+Test time =   0.32 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-spatial" end time: Nov 07 13:23 NZDT
+"atlas-spatial" time elapsed: 00:00:00
+----------------------------------------------------------
+
+19/25 Testing: atlas-audio-devices
+19/25 Test: atlas-audio-devices
+Command: "/opt/homebrew/Frameworks/Python.framework/Versions/3.12/bin/python3.12" "-B" "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/tests/native_audio_device_checks.py" "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/atlas-studio-fixture-host"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone
+"atlas-audio-devices" start time: Nov 07 13:23 NZDT
+Output:
+----------------------------------------------------------
+....
+----------------------------------------------------------------------
+Ran 4 tests in 0.191s
+
+OK
+<end of output>
+Test time =   0.24 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-audio-devices" end time: Nov 07 13:23 NZDT
+"atlas-audio-devices" time elapsed: 00:00:00
+----------------------------------------------------------
+
+10/25 Testing: atlas-composition
+10/25 Test: atlas-composition
+Command: "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/atlas-composition-tests"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone
+"atlas-composition" start time: Nov 07 13:23 NZDT
+Output:
+----------------------------------------------------------
+PASS scale membership safely normalizes signed note and rejects malformed controls
+PASS absolute phrase oracle, event provenance and independent gated PCM
+PASS tempo, quantization and density have absolute musical effects
+PASS all exact candidates have distinct bounded motifs and honest fallback
+PASS every scale/tonic keeps default and edited voices in key
+PASS seeds ordering and block partitions are reproducible
+PASS bounded dense callback, onset snapshots and malformed coefficient defence
+PASS full source capacity, overload decisions, tails and settings boundaries
+PASS disabled composition settings preserve legacy PCM exactly
+<end of output>
+Test time =   0.54 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-composition" end time: Nov 07 13:23 NZDT
+"atlas-composition" time elapsed: 00:00:00
+----------------------------------------------------------
+
+24/25 Testing: atlas-ui-host
+24/25 Test: atlas-ui-host
+Command: "/opt/homebrew/Frameworks/Python.framework/Versions/3.12/bin/python3.12" "-B" "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/tests/native_ui_checks.py" "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/atlas-native"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone
+"atlas-ui-host" start time: Nov 07 13:23 NZDT
+Output:
+----------------------------------------------------------
+........
+----------------------------------------------------------------------
+Ran 8 tests in 0.088s
+
+OK
+<end of output>
+Test time =   0.14 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-ui-host" end time: Nov 07 13:23 NZDT
+"atlas-ui-host" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/25 Testing: atlas-core
+2/25 Test: atlas-core
+Command: "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/atlas-core-tests"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone
+"atlas-core" start time: Nov 07 13:23 NZDT
+Output:
+----------------------------------------------------------
+PASS explicit UTC and timezone equivalence
+PASS fractional and pre-epoch timestamps
+PASS historical and future dates avoid 32-bit day multiplication
+PASS invalid calendar and timezone rejection
+PASS station identity and position validation
+PASS bounded rational speeds
+PASS four hours into four minutes
+PASS late upload changes observation versus arrival ordering
+PASS simultaneous stable order and bounded omission
+PASS sample positions invariant across partitions
+PASS seek and half-open block boundary
+PASS recording bounds retain leading and trailing silence
+PASS empty timeline and zero-output capacity
+PASS invalid/overflow block inputs fail without throwing
+PASS duration overflow is explicit
+PASS sliding one-second density
+PASS timeline sorting avoids per-comparison ID allocations
+PASS prepared block lookup performs no C++ allocations
+18 passed, 0 failed
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-core" end time: Nov 07 13:23 NZDT
+"atlas-core" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/25 Testing: atlas-sha256
+3/25 Test: atlas-sha256
+Command: "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/atlas-sha256-tests"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone
+"atlas-sha256" start time: Nov 07 13:23 NZDT
+Output:
+----------------------------------------------------------
+SHA-256 known answers, chunking and nonmutating digest passed
+<end of output>
+Test time =   0.49 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-sha256" end time: Nov 07 13:23 NZDT
+"atlas-sha256" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/25 Testing: atlas-audio
+4/25 Test: atlas-audio
+Command: "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/atlas-audio-tests"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone
+"atlas-audio" start time: Nov 07 13:23 NZDT
+Output:
+----------------------------------------------------------
+PASS direct equation normal and parameter/rate extremes
+PASS absolute admission and upward timing
+PASS overload partition invariance and retiring capacity
+PASS oldest steals with eight simultaneous retiring states
+PASS pause resume stop panic seek and stale controls
+PASS normal-level analytical transport ramps and repeated retarget
+PASS dense stealing callback allocates and destroys nothing
+PASS near-end stop regression
+PASS zero invalid buffers and no callback allocation or destruction
+PASS empty windows and seek clear prior voices
+PASS invalid settings rejected
+<end of output>
+Test time =   0.15 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-audio" end time: Nov 07 13:23 NZDT
+"atlas-audio" time elapsed: 00:00:00
+----------------------------------------------------------
+
+1/25 Testing: atlas-standalone-support
+1/25 Test: atlas-standalone-support
+Command: "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/atlas-standalone-support-tests"
+Directory: /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone
+"atlas-standalone-support" start time: Nov 07 13:23 NZDT
+Output:
+----------------------------------------------------------
+standalone support checks passed
+<end of output>
+Test time =   0.68 sec
+----------------------------------------------------------
+Test Passed.
+"atlas-standalone-support" end time: Nov 07 13:23 NZDT
+"atlas-standalone-support" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Nov 07 13:23 NZDT
