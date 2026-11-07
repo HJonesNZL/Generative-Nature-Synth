@@ -1438,7 +1438,7 @@ class Window final : public juce::DocumentWindow {
 class Application final : public juce::JUCEApplication {
   public:
     const juce::String getApplicationName() override { return "Animal Atlas"; }
-    const juce::String getApplicationVersion() override { return "0.10.0"; }
+    const juce::String getApplicationVersion() override { return "0.11.0"; }
     bool moreThanOneInstanceAllowed() override { return true; }
     void initialise(const juce::String &) override {
         try {
@@ -1447,6 +1447,9 @@ class Application final : public juce::JUCEApplication {
             window_ = std::make_unique<Window>(
                 std::move(launch), [] { juce::JUCEApplicationBase::quit(); });
             if (liveSmoke) {
+                // WebKit suspends visible-interface polling when another window covers
+                // the disposable qualification app. Keep its actual page visible.
+                window_->setAlwaysOnTop(true);
                 juce::Process::makeForegroundProcess();
                 window_->toFront(true);
             }

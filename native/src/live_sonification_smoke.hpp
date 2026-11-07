@@ -113,6 +113,32 @@ inline constexpr auto liveSonificationSmoke = R"JS(
    checkHeader();
    if (armed.admitted !== 0) throw Error('Startup backlog sounded.');
    if ((await call('getAudioDevices')).active?.deviceId !== device.id) throw Error('Unexpected output route.');
+   const flat=[...document.querySelectorAll('[role="radio"]')].find(b=>b.textContent==='2D map');
+   if (!flat) throw Error('2D map control missing.');
+   if (flat.getAttribute('aria-checked')!=='true') flat.click();
+   const ribbonTab=document.getElementById('activity-tab-playback');
+   if (!ribbonTab) throw Error('Playback ribbon tab missing.');
+   ribbonTab.click();
+   await waitFor(()=>document.querySelector('.time-ribbon'),'visible time ribbon');
+   if (document.querySelector('.time-ribbon__note, .map2d__sounding-origin'))
+     throw Error('Idle collection falsely shows playback.');
+   // A short voice may finish before a later WebKit query. Observe actual
+   // rendered transitions from before the injected observation arrives.
+   let activeToken='', fadingSeen=false;
+   const inspectRibbon=()=>{
+     const note=document.querySelector('.time-ribbon__note[data-event-id="birdweather:fixture-current"]');
+     if(!note) return;
+     const token=note.dataset.activityToken;
+     for(const point of document.querySelectorAll('.map2d__sounding-origin')){
+       if(!point.dataset.tokens?.split(' ').includes(token)) continue;
+       if(Number(point.dataset.activeVoices)>0 && document.querySelector('.time-ribbon__voice'))
+         activeToken=token;
+       if(activeToken===token && point.dataset.activeVoices==='0' && Number(point.getAttribute('opacity'))<1)
+         fadingSeen=true;
+     }
+   };
+   const activityObserver=new MutationObserver(inspectRibbon);
+   activityObserver.observe(document.querySelector('.app-workspace'),{subtree:true,attributes:true,childList:true});
    result.feedStage='armed';
    const listening = await until(live,s=>s.admitted===1,'new detection onset');
    const arrived = await call('getChanges',{storeId:before.storeId,afterSequence:before.nextSequence,limit:16});
@@ -131,6 +157,17 @@ inline constexpr auto liveSonificationSmoke = R"JS(
    if (selectedOutcome.speciesId!==fresh.speciesId ||
        !selectedDisclosure().textContent.includes('Fixture live bird'))
      throw Error('Selected event outcome lost species provenance.');
+   await waitFor(()=>activeToken && fadingSeen,'confirmed onset and fading origin');
+   await waitFor(()=>![...document.querySelectorAll('.map2d__sounding-origin')].some(
+     node=>node.dataset.tokens?.split(' ').includes(activeToken)),'finished sound origin cleared');
+   const recentNote=[...document.querySelectorAll('.time-ribbon__note')].find(n=>n.dataset.activityToken===activeToken);
+   if (!recentNote || recentNote.dataset.speciesName!=='Fixture live bird' ||
+       !recentNote.dataset.voiceName.toLowerCase().includes('struck') ||
+       !recentNote.dataset.locationLabel.toLowerCase().includes('receiver'))
+     throw Error('Ribbon lost its species, voice or location after the point faded.');
+   const ribbon={token:activeToken,eventId:recentNote.dataset.eventId,species:recentNote.dataset.speciesName,
+     voice:recentNote.dataset.voiceName,origin:recentNote.dataset.locationLabel,fadingSeen,cleared:true};
+   activityObserver.disconnect();
    result.feedStage='admitted';
    await until(()=>call('getChanges',{storeId:before.storeId,afterSequence:before.nextSequence,limit:16}),
      page=>page.events.some(r=>r.change==='corrected') && page.events.some(r=>r.event.id.endsWith('fixture-backfill')),
@@ -175,6 +212,9 @@ inline constexpr auto liveSonificationSmoke = R"JS(
        counts.some((value,i)=>i>0 && value>counts[i-1]) ||
        ranking.species.some(row=>row.speciesId.endsWith(':818181')))
      throw Error('Historical or incomplete species ranking.');
+   const rankingTab=document.getElementById('activity-tab-species');
+   if (!rankingTab) throw Error('Species ranking tab missing.');
+   rankingTab.click();
    await waitFor(()=>[...document.querySelectorAll('.grain__scroll .grain__count')]
      .map(span=>Number(span.textContent)).join(',')===counts.join(','),'live species ranking on screen');
    window.scrollTo(0,document.documentElement.scrollHeight);
@@ -222,7 +262,7 @@ inline constexpr auto liveSonificationSmoke = R"JS(
    const off=await until(live,s=>!s.enabled,'explicit mute');
    const offAudio=await call('getAudioState');
    if (offAudio.status!=='disabled' || offAudio.peakDbfs!==null) throw Error('Output remained enabled or meter did not clear.');
-   result.sonification={sessionFiltered:true,rankedCounts:counts,retiredPolls,mode:selectedMode,pendingObserved,denseMapObserved:true,liveTriggeredNotes:denseAudio.liveTriggeredNotes,device:device.name,listening,off,callbackFrames:audio.callbackFrames,mapObserved:true,duplicatesQuiet:true,polls,headerErrorFree:true,selectedOutcome,dense:settled,
+   result.sonification={ribbon,sessionFiltered:true,rankedCounts:counts,retiredPolls,mode:selectedMode,pendingObserved,denseMapObserved:true,liveTriggeredNotes:denseAudio.liveTriggeredNotes,device:device.name,listening,off,callbackFrames:audio.callbackFrames,mapObserved:true,duplicatesQuiet:true,polls,headerErrorFree:true,selectedOutcome,dense:settled,
      outputPeakDbfs,denseCallbackFrames:denseAudio.callbackFrames,denseCountersRendered:true,muteMeterCleared:true};
  }
 )JS";
