@@ -33,6 +33,11 @@ with tempfile.TemporaryDirectory(prefix='atlas-atn-check-') as temp:
     output = Path(temp)/'archive'
     subprocess.run(['python3','-B',str(HERE/'prepare_archive.py'),'--output',str(output)], check=True, stdout=subprocess.DEVNULL)
     library = output/'ATN spotted seal 2018.sqlite3'
+    expected={'ATN spotted seal 2018.sqlite3','README.md','manifest.json','source-metadata.json','source-locations.json'}
+    assert {p.name for p in output.iterdir()} == expected
+    import hashlib
+    manifest=json.loads((output/'manifest.json').read_text())
+    assert all(hashlib.sha256((output/name).read_bytes()).hexdigest()==value for name,value in manifest['files_sha256'].items())
     with sqlite3.connect(library) as db:
         assert db.execute('SELECT count(*),sum(live_eligible) FROM revisions').fetchone() == (224,0)
         assert sorted(row[0] for row in db.execute('SELECT event_count FROM sessions')) == [5,224]

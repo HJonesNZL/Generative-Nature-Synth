@@ -43,7 +43,9 @@ class Collector {
     ~Collector();
     Collector(const Collector &) = delete;
     Collector &operator=(const Collector &) = delete;
-    // Fixed source IDs: birdweather / nzsharks. Fetch must honor cancellation,
+    // Source IDs: birdweather (NZ), birdweather_world (four regional
+    // requests per minute), nzsharks, and inaturalist. World event provenance remains
+    // birdweather; per-region checkpoints are persisted independently. Fetch must honor cancellation,
     // finite timeouts, redirect rejection and the 4 MiB response limit.
     // Fetch/schema failures persist redacted source state then throw.
     CollectionResult collect(std::string_view sourceId, std::string_view nowUtc,

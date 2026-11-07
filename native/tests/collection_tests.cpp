@@ -102,6 +102,52 @@ int main() {
              std::chrono::steady_clock::now().time_since_epoch().count()));
     try {
         std::filesystem::create_directory(root);
+        // World collection uses disposable state, never the owner's library.
+        const auto worldPath = root / "world.sqlite3";
+        {
+            atlas::Collector world(worldPath);
+            Query query(worldPath);
+            unsigned calls{};
+            bool westSplit{}, eastSplit{};
+            auto regional = [&](const atlas::CollectionRequest &request) {
+                ++calls;
+                westSplit = westSplit || request.body.find("\"lon\":180") != std::string::npos;
+                eastSplit = eastSplit || (request.body.find("\"lon\":-180") != std::string::npos &&
+                    request.body.find("\"lat\":-60") != std::string::npos);
+                require(request.body.find("\"first\":250") != std::string::npos,
+                        "world requests retain finite page size");
+                return page(bird("shared"), true, "capped");
+            };
+            const auto first = world.collect("birdweather_world", now, regional);
+            require(calls == 4 && first.inserted == 1 && first.duplicates == 3 &&
+                        !first.complete,
+                    "four distinct regions share dedupe and report saturation");
+            rejects([&] { world.collect("birdweather_world", now, regional); },
+                    "world provider minute budget enforced");
+            require(calls == 4, "quota rejection makes no request");
+            world.collect("birdweather_world", "2026-11-07T01:06:00Z", regional);
+            require(westSplit && eastSplit, "Oceania queries split at antimeridian");
+            require(calls == 8 && query.text(
+                "SELECT count(*) FROM sources WHERE id LIKE 'birdweather:%'") == "8",
+                "sparse and saturated regions each receive a turn");
+            require(query.text("SELECT count(*) FROM revisions WHERE live_eligible=1") == "0",
+                    "first regional baselines never replay as live");
+            require(query.text("SELECT source_id FROM events") == "birdweather",
+                    "world preserves genuine provider event namespace");
+        }
+        {
+            atlas::Collector reopened(worldPath);
+            Query query(worldPath);
+            unsigned calls{};
+            reopened.collect("birdweather_world", "2026-11-07T01:07:00Z",
+                [&](const atlas::CollectionRequest &) {
+                    ++calls;
+                    return page(bird("arrival", "174", "2026-11-07T01:06:30Z"));
+                });
+            require(calls == 4 && query.text(
+                "SELECT change_kind||':'||live_eligible FROM revisions ORDER BY seq DESC LIMIT 1") == "new:1",
+                "regional arrival baseline survives restart");
+        }
         const auto path = root / "live.sqlite3";
         {
             atlas::Collector collector(path);
@@ -111,7 +157,7 @@ int main() {
             require(reader.sessions().empty(),
                     "existing reader accepts new managed library");
             const auto initial = collector.sourceStates();
-            require(initial.size() == 2 && initial[0].lastAttemptUtc.empty(),
+            require(initial.size() == 3 && initial[0].lastAttemptUtc.empty(),
                     "no fake fetch state before poll");
             auto baseline = collector.collect(
                 "birdweather", now,

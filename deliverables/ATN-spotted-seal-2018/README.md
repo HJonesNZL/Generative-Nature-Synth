@@ -1,6 +1,6 @@
 # ATN spotted seal: actual historical playback library
 
-Downloaded 7 November 2026 UTC from NOAA/IOOS ATN's public ERDDAP. Raw source JSON and full metadata are checked in under `source/`; `prepare_archive.py --output NEW_FOLDER` reproducibly prepares a new SQLite library using existing development-only Store/Sessions tooling. The standalone opens the resulting SQLite file and replays natively; Python and network access are unnecessary for playback.
+Downloaded 7 November 2026 UTC from NOAA/IOOS ATN's public ERDDAP. The original source data and metadata are included beside the library. Developer reproduction instructions are in the project’s `data-pilots/atn-seal` folder. The standalone opens the resulting SQLite file and replays natively; Python and network access are unnecessary for playback.
 
 263 actual source rows cover 14 April–3 November 2018. We accept 224 Argos rows with QARTOD rollup PASS. We exclude 39 SUSPECT/FAIL rows (including the one User location); the original source file retains them. All four QC flags and Argos location classes remain attached to accepted events. PASS rollup does not imply every component test was evaluated. Error radii remain in metres, often kilometres; no precise track or interpolation is invented.
 
@@ -12,4 +12,4 @@ The dataset explicitly allows free use and redistribution, requires acknowledgem
 
 Source: https://atn.ioos.us/erddap/info/atn_174822_spotted-seal_trajectory_20180414-20181103/index.html
 
-User artifact: `deliverables/ATN-spotted-seal-2018/ATN spotted seal 2018.sqlite3`. Choose wildlife library, select this file, then choose a saved piece. The final-five-fixes excerpt is suitable for a short replay; the complete-deployment piece retains real long gaps. Increase observed replay speed as desired (3600× makes a day about 24 seconds). No animal sounds are included; synthesizer output is musical interpretation.
+User artifact: `deliverables/ATN-spotted-seal-2018/ATN spotted seal 2018.sqlite3`. In the packaged app, choose File → Open historical spotted seal library, then select a saved piece. The separate SQLite file also opens through Choose wildlife library. The final-five-fixes excerpt is suitable for a short replay; the complete-deployment piece retains real long gaps. Increase observed replay speed as desired (3600× makes a day about 24 seconds). No animal sounds are included; synthesizer output is musical interpretation.

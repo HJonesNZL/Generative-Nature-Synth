@@ -16,5 +16,11 @@
     "metadata.json": "6816a425bc23a2246959c09edfe7bac52b645d9149b701198c6df5d9fbd575d1"
   },
   "context": "Historical identified animal fixes, not live. No interpolation. Native replay requires no Python.",
-  "excerpt_session_id": "980d87e8-27f1-454d-b4df-5a3a7c13388d"
+  "excerpt_session_id": "980d87e8-27f1-454d-b4df-5a3a7c13388d",
+  "files_sha256": {
+    "ATN spotted seal 2018.sqlite3": "d17ee183f405479c49520a5b4d8750fc523aeafff774237aab0fc7671104bb72",
+    "README.md": "e0fe4daf7d74ca9dffd0ce8a3c2165767e236c5c2167a778a749d89f144c5bc3",
+    "source-metadata.json": "6816a425bc23a2246959c09edfe7bac52b645d9149b701198c6df5d9fbd575d1",
+    "source-locations.json": "b8e5668fe1c19e244ed48228a2f4398cbb4d9bf012b098520730797f511d9aed"
+  }
 }

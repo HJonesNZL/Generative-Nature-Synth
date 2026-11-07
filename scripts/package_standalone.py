@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 import plistlib
 import shutil
+import sqlite3
 import subprocess
 import sys
 
@@ -28,6 +29,47 @@ def system_dependency(path):
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def package_historical_library(source, resources):
+    """Verified public development artifact only; never reads user libraries."""
+    names = ('ATN spotted seal 2018.sqlite3', 'README.md', 'manifest.json',
+             'source-metadata.json', 'source-locations.json')
+    for name in names:
+        path = source / name
+        if path.is_symlink() or not path.is_file():
+            raise ValueError('Missing regular historical archive resource: ' + name)
+    manifest = json.loads((source / 'manifest.json').read_text())
+    if manifest.get('dataset') != 'atn_174822_spotted-seal_trajectory_20180414-20181103':
+        raise ValueError('Unexpected historical archive dataset')
+    for original, bundled in (('metadata.json', 'source-metadata.json'),
+                              ('locations.json', 'source-locations.json')):
+        if digest(source / bundled) != manifest['raw_sha256'][original]:
+            raise ValueError('Historical archive source integrity mismatch')
+    for name in (names[0], 'README.md', 'source-metadata.json', 'source-locations.json'):
+        if digest(source / name) != manifest['files_sha256'][name]:
+            raise ValueError('Historical archive deliverable integrity mismatch')
+    library = source / names[0]
+    with sqlite3.connect(library.as_uri() + '?mode=ro&immutable=1', uri=True) as db:
+        count, live = db.execute('SELECT count(*),sum(live_eligible) FROM revisions').fetchone()
+        sessions = sorted(row[0] for row in db.execute('SELECT event_count FROM sessions'))
+        imported = db.execute("SELECT count(*) FROM revisions WHERE json_extract(event_json,'$.provenance_mode')='imported' AND json_extract(event_json,'$.individual_id') IS NOT NULL AND json_extract(event_json,'$.deployment_id') IS NOT NULL").fetchone()[0]
+        if count != 224 or live != 0 or imported != 224 or sessions != [5, 224]:
+            raise ValueError('Historical archive identity/session/context verification failed')
+    target = resources / 'historical-spotted-seal'
+    if target.is_symlink():
+        raise ValueError('Historical resource directory must not be a symlink')
+    if target.exists():
+        shutil.rmtree(target)
+    target.mkdir()
+    hashes = {}
+    for name in names:
+        shutil.copyfile(source / name, target / name)
+        (target / name).chmod(0o444)
+        hashes[name] = digest(target / name)
+    return dict(relativeLibraryPath='historical-spotted-seal/' + names[0],
+                context='historical imported satellite fixes; never live',
+                records=count, sessionEventCounts=sessions, sha256=hashes)
 
 
 def main():
@@ -74,6 +116,9 @@ def main():
     if target_ui.exists():
         shutil.rmtree(target_ui)
     shutil.copytree(ui, target_ui)
+    historical = package_historical_library(
+        Path(__file__).resolve().parents[1] / 'deliverables' / 'ATN-spotted-seal-2018',
+        contents / 'Resources')
     sqlite = args.sqlite.resolve(strict=True)
     bundled_sqlite = contents / 'Frameworks' / 'libsqlite3.dylib'
     if bundled_sqlite.is_symlink():
@@ -125,6 +170,7 @@ def main():
         'executableSha256BeforeOuterSignature': digest(executable),
         'sqliteSha256': digest(bundled_sqlite),
         'ui': {str(path.relative_to(ui)): digest(path) for path in files},
+        'historicalSpottedSeal': historical,
         'externalNativeDependencies': dependencies(executable),
         'signing': 'local ad-hoc; not notarised',
         'runtimeRequiresNode': False,

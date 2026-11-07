@@ -13,6 +13,7 @@ namespace atlas {
 
 using Microseconds = std::int64_t;
 Microseconds parseUtc(std::string_view iso8601);
+std::string formatUtc(Microseconds value);
 
 struct Position { double latitude{}, longitude{}; };
 

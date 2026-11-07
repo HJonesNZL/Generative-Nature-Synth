@@ -26,7 +26,7 @@ struct Launch {
     fs::path state, library, smokeReceipt, smokeScene, smokeExport,
         smokeSceneExport, smokeBackup, smokeRestore;
     int smokeSeconds{3};
-    bool libraryOverride{}, stateOverride{}, smokeLive{};
+    bool libraryOverride{}, stateOverride{}, smokeLive{}, smokeWorld{};
 };
 Launch parse(const juce::StringArray &arguments) {
     Launch launch;
@@ -58,10 +58,11 @@ Launch parse(const juce::StringArray &arguments) {
         else if (option == "--smoke-restore")
             launch.smokeRestore = path(value);
         else if (option == "--smoke-live") {
-            if (value != "1")
+            if (value != "1" && value != "world")
                 throw std::invalid_argument(
-                    "Live smoke requires explicit value 1.");
+                    "Live smoke requires explicit value 1 or world.");
             launch.smokeLive = true;
+            launch.smokeWorld = value == "world";
         } else if (option == "--smoke-seconds") {
             if (!value.containsOnly("0123456789") || value.isEmpty())
                 throw std::invalid_argument(
@@ -291,6 +292,12 @@ class Shell final : public juce::Component, private juce::Timer {
     void showFileMenu() {
         juce::PopupMenu menu;
         menu.addItem(1, "Choose wildlife library…");
+        const auto historicalLibrary =
+            juce::File::getSpecialLocation(juce::File::currentApplicationFile)
+                .getChildFile("Contents/Resources/historical-spotted-seal/"
+                              "ATN spotted seal 2018.sqlite3");
+        menu.addItem(8, "Open historical spotted seal library",
+                     historicalLibrary.existsAsFile());
         menu.addItem(2, "Scene only");
         menu.addItem(3, "Import soundscape…");
         menu.addSeparator();
@@ -302,11 +309,15 @@ class Shell final : public juce::Component, private juce::Timer {
         auto safe = juce::Component::SafePointer<Shell>(this);
         menu.showMenuAsync(
             juce::PopupMenu::Options().withTargetComponent(&fileMenu_),
-            [safe](int action) {
+            [safe, historicalLibrary](int action) {
                 if (!safe || !safe->ready_)
                     return;
                 if (action == 1)
                     safe->chooseFile(false);
+                else if (action == 8)
+                    safe->submitControl(
+                        {Work::library, 0, {},
+                         path(historicalLibrary.getFullPathName())});
                 else if (action == 2)
                     safe->submitControl({Work::library});
                 else if (action == 3)
@@ -751,25 +762,20 @@ class Shell final : public juce::Component, private juce::Timer {
                             if (method == "setLiveSources") {
                                 const auto *ids =
                                     request["args"]["sourceIds"].getArray();
-                                if (count != 1 || !ids || ids->size() > 2)
+                                if (count != 1 || !ids || ids->size() > 3)
                                     throw std::invalid_argument(
                                         "Choose only the available live "
                                         "sources.");
                                 std::vector<std::string> selected;
                                 for (const auto &id : *ids) {
-                                    if (!id.isString() ||
-                                        (id.toString() != "birdweather" &&
-                                         id.toString() != "nzsharks") ||
-                                        std::find(
-                                            selected.begin(), selected.end(),
-                                            id.toString().toStdString()) !=
-                                            selected.end())
+                                    if (!id.isString())
                                         throw std::invalid_argument(
                                             "Invalid or duplicate live "
                                             "source.");
                                     selected.push_back(
                                         id.toString().toStdString());
                                 }
+                                atlas::standalone::CollectionService::validateSelection(selected);
                                 if (!selected.empty() &&
                                     settings.library !=
                                         collection->databasePath()) {
@@ -1156,9 +1162,10 @@ class Shell final : public juce::Component, private juce::Timer {
    result.audioDevices = await call('getAudioDevices');
    if (result.audioDevices.available !== true || !Array.isArray(result.audioDevices.devices) || result.audioDevices.devices.length > 128 || result.audioDevices.active !== null) throw Error('Native silent device discovery was invalid.');
    await waitFor(() => document.getElementById('root')?.innerText?.includes('ANIMAL ATLAS') && document.querySelector('button[aria-label="Audio settings"]'), 'the production React UI');
-   const audioSettings = document.querySelector('button[aria-label="Audio settings"]');
-   audioSettings.click();
    await waitFor(() => {
+     const audioSettings = document.querySelector('button[aria-label="Audio settings"]');
+     if (!audioSettings) return false;
+     if (audioSettings.getAttribute('aria-expanded') === 'false') { audioSettings.click(); return false; }
      const select = document.querySelector('[role="dialog"][aria-label="Audio settings"] select[aria-label="Output device"]');
      return select && !select.disabled && select.options.length >= result.audioDevices.devices.length + 1;
    }, 'the native output catalogue in Audio settings');
@@ -1167,7 +1174,7 @@ class Shell final : public juce::Component, private juce::Timer {
    if (!result.deviceUI.text.includes('Output off') || !result.audioDevices.devices.every(device => result.deviceUI.outputs.some(label => label.includes(device.name)))) throw Error('Visible Audio settings did not show the native quiet catalogue.');
    result.afterDiscoveryAudio = await call('getAudioState');
    if (result.afterDiscoveryAudio.status === 'running') throw Error('Device discovery enabled output.');
-   audioSettings.click();
+   document.querySelector('button[aria-label="Audio settings"]').click();
    result.scenes = await call('listSoundscapes', {limit: 100});
    result.dom = {visibility: document.visibilityState, title: document.title, text: document.getElementById('root')?.innerText?.slice(0, 3000) ?? '', buttons: [...document.querySelectorAll('button')].map(button => button.textContent).slice(0, 100)};
    if (!result.dom.text.includes('ATLAS') || !result.dom.buttons.length || result.dom.text.includes('DEMO DATA')) throw Error('Native React UI did not render.');
@@ -1214,6 +1221,11 @@ class Shell final : public juce::Component, private juce::Timer {
      collect.click();
      const start = () => [...document.querySelectorAll('.live-sources__menu button')].find(button => button.textContent === 'Start live updates');
      await waitFor(() => start() && !start().disabled, 'enabled native collection control');
+     const name = WORLD_SCOPE ? 'Worldwide reported sightings' : 'NZ bird detections';
+     const selector = [...document.querySelectorAll('.live-sources__choices label')].find(label => label.textContent.trim() === name)?.querySelector('input');
+     if (!selector) throw Error('Missing source choice: ' + name);
+     if (!selector.checked) selector.click();
+     await new Promise(resolve => setTimeout(resolve, 30));
      start().click();
      // This old-document mutation is deliberately queued after the switch.
      // Native epoch retirement must discard it before it can pause the new view.
@@ -1226,28 +1238,35 @@ class Shell final : public juce::Component, private juce::Timer {
      const deadline = Date.now() + 65000;
      do {
        result.live = await call('getLiveSources');
-       if (result.live.sources.every(source => source.lastSuccessUtc || source.error)) break;
+       if (result.live.sources.filter(source => source.enabled).every(source => source.lastSuccessUtc || source.error)) break;
        await new Promise(resolve => setTimeout(resolve, 250));
      } while (Date.now() < deadline);
-     if (!result.live.sources.every(source => source.lastSuccessUtc && (!source.error || source.error === 'pagination_limit_reached') && BigInt(source.records) > 0n)) throw Error('Native provider collection did not populate both streams: ' + JSON.stringify(result.live));
+     if (!result.live.sources.filter(source => source.enabled).every(source => source.lastSuccessUtc && (!source.error || ['pagination_limit_reached', 'invalid_or_future_records'].includes(source.error)) && BigInt(source.records) > 0n)) throw Error('Native provider collection did not populate the selected streams: ' + JSON.stringify(result.live));
      const changes = await call('getChanges', {storeId: '', afterSequence: '0', limit: 500});
      result.liveMap = {count: changes.events.length, sources: [...new Set(changes.events.map(item => item.event.sourceId))], baselinePulses: changes.events.filter(item => item.liveEligible).length};
-     if (!['birdweather', 'nzsharks'].every(id => result.liveMap.sources.includes(id)) || result.liveMap.baselinePulses) throw Error('Map baseline lost a source or replayed old pings.');
+     if (!(WORLD_SCOPE ? ['birdweather', 'nzsharks', 'inaturalist'] : ['birdweather', 'nzsharks']).every(id => result.liveMap.sources.includes(id)) || result.liveMap.baselinePulses) throw Error('Map baseline lost a source or replayed old pings.');
      document.querySelector('button[aria-label="Map details and coverage"]')?.click();
-     await waitFor(() => /[1-9][0-9]* records \u00b7 [1-9][0-9]* of [1-9][0-9]* locations shown/.test(document.querySelector('.map-stage')?.textContent ?? ''), 'loaded event counts in map details');
+     await waitFor(() => /[1-9][0-9]* matching records \u00b7 [1-9][0-9]* of [1-9][0-9]* locations shown/.test(document.querySelector('.map-stage')?.textContent ?? ''), 'loaded event counts in map details');
      await waitFor(() => document.querySelector('.grain__ticks path[d]'), 'actual detections in Grain before the catalogue refresh');
-     const initialBird = result.live.sources.find(source => source.id === 'birdweather');
+     const initialBird = result.live.sources.find(source => source.id === (WORLD_SCOPE ? 'birdweather_world' : 'birdweather'));
      const nextDeadline = Date.now() + 75000;
      do {
        await new Promise(resolve => setTimeout(resolve, 500));
        result.liveNext = await call('getLiveSources');
-       const bird = result.liveNext.sources.find(source => source.id === 'birdweather');
+       const bird = result.liveNext.sources.find(source => source.id === (WORLD_SCOPE ? 'birdweather_world' : 'birdweather'));
        if (bird.lastSuccessUtc !== initialBird.lastSuccessUtc) break;
        if (Date.now() >= nextDeadline) throw Error('No second native bird poll completed.');
      } while (true);
+     if (WORLD_SCOPE) {
+       const world = result.liveNext.sources.find(source => source.id === 'birdweather_world');
+       if (world.regions.filter(region => region.lastAttemptUtc).length !== 8) throw Error('World rotation missed regions');
+       const sightings = changes.events.filter(item => item.event.sourceId === 'inaturalist');
+       if (!sightings.length || !sightings.every(item => item.event.locationKind === 'reported_location' && !item.event.individualId))
+         throw Error('Reported sightings lost source semantics');
+     }
      const incoming = await call('getChanges', {storeId: changes.storeId, afterSequence: changes.nextSequence, limit: 500});
      result.liveIncoming = {count: incoming.events.length, pings: incoming.events.filter(item => item.liveEligible).length, sources: [...new Set(incoming.events.map(item => item.event.sourceId))]};
-     if (!result.liveIncoming.pings) throw Error('No genuinely new bird activity arrived during the live smoke window.');
+     if (!WORLD_SCOPE && !result.liveIncoming.pings) throw Error('No genuinely new bird activity arrived during the live smoke window.');
      await waitFor(() => parseInt(document.querySelector('.map-locations > summary')?.textContent ?? '0', 10) > 0 && document.querySelectorAll('.species-row').length > 0, 'real observations in the React map and species list');
      result.liveUI = {mapDetails: document.querySelector('.map-stage').innerText.slice(0, 3000), locations: document.querySelector('.map-locations > summary').textContent, speciesRows: document.querySelectorAll('.species-row').length, sourceText: document.querySelector('[aria-label="Live source status"]').innerText, canvas: !!document.querySelector('.map-stage canvas')};
    } finally {
@@ -1256,6 +1275,7 @@ class Shell final : public juce::Component, private juce::Timer {
    }
 )JS")
                                                           : juce::String())
+                    .replace("WORLD_SCOPE", launch_.smokeWorld ? "true" : "false")
                     .replace("SCENE_EXPORT_SMOKE",
                              launch_.smokeSceneExport.empty()
                                  ? juce::String()
@@ -1335,7 +1355,7 @@ class Window final : public juce::DocumentWindow {
 class Application final : public juce::JUCEApplication {
   public:
     const juce::String getApplicationName() override { return "Animal Atlas"; }
-    const juce::String getApplicationVersion() override { return "0.4.1"; }
+    const juce::String getApplicationVersion() override { return "0.5.0"; }
     bool moreThanOneInstanceAllowed() override { return true; }
     void initialise(const juce::String &) override {
         try {

@@ -3,10 +3,9 @@
 #include "sha256.hpp"
 #include <algorithm>
 #include <atlas/collection.hpp>
+#include <atlas/inaturalist.hpp>
 #include <atlas/core.hpp>
-#include <chrono>
 #include <cmath>
-#include <cstdio>
 #include <map>
 #include <random>
 #include <set>
@@ -197,25 +196,6 @@ class Json {
     sqlite3 *db_;
     std::map<std::string, Field> fields_;
 };
-std::string utc(Microseconds value) {
-    using namespace std::chrono;
-    const sys_time<microseconds> point{microseconds{value}};
-    const auto day = floor<days>(point);
-    const year_month_day date{day};
-    const hh_mm_ss clock{point - day};
-    char output[40]{};
-    const auto count = std::snprintf(
-        output, sizeof(output), "%04d-%02u-%02uT%02lld:%02lld:%02lld.%06lldZ",
-        static_cast<int>(date.year()), static_cast<unsigned>(date.month()),
-        static_cast<unsigned>(date.day()),
-        static_cast<long long>(clock.hours().count()),
-        static_cast<long long>(clock.minutes().count()),
-        static_cast<long long>(clock.seconds().count()),
-        static_cast<long long>(clock.subseconds().count()));
-    if (count != 27)
-        throw std::invalid_argument("collection time outside supported range");
-    return output;
-}
 std::string safeCode(std::string code) {
     if (code.empty() || code.size() > 64 ||
         std::any_of(code.begin(), code.end(), [](unsigned char c) {
@@ -245,7 +225,91 @@ struct Batch {
     CollectionResult result;
     std::size_t pages{};
     bool exhausted{};
+    std::vector<std::string> withdrawals;
+    std::string revalidationCursor, revalidationError;
 };
+Batch sightings(sqlite3* db, const Collector::Fetch& callback, const std::string& now,
+                const std::string& previousCursor) {
+    const auto start = parseUtc(now) - 86400000000LL;
+    const auto response = callback({inaturalistRequestUrl(formatUtc(start), now), {}});
+    const auto parsed = parseInaturalistResponse(response, now);
+    Batch batch;
+    batch.pages = 1;
+    batch.result.invalidRecords = parsed.invalidRecords;
+    batch.exhausted = parsed.totalResults <= parsed.perPage;
+    batch.result.complete = batch.exhausted && parsed.invalidRecords == 0;
+    std::map<std::string, std::string> accepted, evidence;
+    const auto accept = [&](const std::string& normalized, bool recentOnly,
+                            const InaturalistPage& page) {
+        const Json value(db, normalized);
+        if (recentOnly && parseUtc(value.text("observed_at_utc")) < start) {
+            ++batch.result.invalidRecords;
+            batch.result.complete = false;
+            return;
+        }
+        const auto id = value.text("event_id");
+        accepted[id] = normalized;
+        evidence[id] = page.originalTimestampEvidence.at(id);
+    };
+    for (const auto& normalized : parsed.normalizedRecords) accept(normalized, true, parsed);
+    std::vector<std::string> ids;
+    const auto loadIds = [&](const std::string& cursor) {
+        Sql query(db, "SELECT substr(id,13) FROM events WHERE source_id='inaturalist' AND id>?1 ORDER BY id LIMIT 30");
+        query.bind(1, cursor);
+        while (query.next()) ids.push_back(query.text(0));
+    };
+    loadIds(previousCursor);
+    if (ids.empty() && !previousCursor.empty()) loadIds("");
+    if (!ids.empty()) {
+        try {
+            const auto recheck = parseInaturalistResponse(callback({inaturalistRevalidationUrl(ids), {}}), now);
+            ++batch.pages;
+            if (recheck.page != 1 || recheck.perPage != 30 || recheck.invalidRecords != 0 ||
+                recheck.totalResults != recheck.returnedRecords || recheck.totalResults > ids.size())
+                throw std::invalid_argument("incomplete revalidation");
+            std::set<std::string> returned;
+            for (const auto& normalized : recheck.normalizedRecords) {
+                const auto id = Json(db, normalized).text("provider_event_id");
+                if (std::find(ids.begin(), ids.end(), id) == ids.end() || !returned.insert(id).second)
+                    throw std::invalid_argument("unexpected revalidation identity");
+            }
+            auto identities = returned;
+            for (const auto& id : recheck.explicitlyRevokedIds) {
+                if (std::find(ids.begin(), ids.end(), id) == ids.end() || !identities.insert(id).second)
+                    throw std::invalid_argument("unexpected revoked observation identity");
+            }
+            for (const auto& id : ids) {
+                if (!returned.contains(id)) {
+                    batch.withdrawals.push_back("inaturalist:" + id);
+                    accepted.erase("inaturalist:" + id);
+                }
+            }
+            for (const auto& normalized : recheck.normalizedRecords) accept(normalized, false, recheck);
+            batch.revalidationCursor = "inaturalist:" + ids.back();
+        } catch (const CollectionFetchError& error) {
+            if (std::string_view(error.what()) == "cancelled" ||
+                error.retryAfterSeconds() > 0 || std::string_view(error.what()) == "http_429" ||
+                std::string_view(error.what()) == "http_503") throw;
+            batch.revalidationError = error.what();
+        } catch (const std::invalid_argument&) {
+            batch.revalidationError = "revalidation_incomplete";
+        }
+    }
+    if (!batch.revalidationError.empty()) batch.result.complete = false;
+    for (const auto& [id, normalized] : accepted) {
+        (void)id;
+        Fields fields;
+        Sql query(db, "SELECT key,CASE WHEN type IN ('array','object') THEN json(value) ELSE json_quote(value) END FROM json_each(?1)");
+        query.bind(1, normalized);
+        while (query.next()) {
+            const auto key = query.text(0);
+            if (key != "first_seen_at_utc" && key != "ingested_at_utc") fields.emplace(key, query.text(1));
+        }
+        batch.records.push_back({std::move(fields), "{\"normalized_event\":" + normalized +
+            ",\"original_timestamps\":" + evidence.at(id) + "}"});
+    }
+    return batch;
+}
 constexpr auto birdQuery =
     R"(query Atlas($first:Int,$after:String,$period:InputDuration,$ne:InputLocation,$sw:InputLocation) { detections(first:$first,after:$after,period:$period,ne:$ne,sw:$sw) { nodes { id timestamp coords {lat lon} species {id scientificName commonName} station {id} confidence score probability certainty } pageInfo {endCursor hasNextPage} } })";
 Fields event(std::string_view source, const std::string &providerId,
@@ -289,17 +353,34 @@ std::string fetch(const Collector::Fetch &callback, CollectionRequest request) {
         throw CollectionFetchError("response_too_large");
     return value;
 }
+struct BirdRegion {
+    const char *id;
+    const char *southwest;
+    const char *northeast;
+};
+// Oceania straddles the antimeridian: two explicit query slots avoid
+// relying on undocumented wrapping of the provider's bounding boxes.
+constexpr BirdRegion birdRegions[]{
+    {"nz", R"({"lat":-48,"lon":166})", R"({"lat":-34,"lon":179.9})"},
+    {"oceania_west", R"({"lat":-60,"lon":110})", R"({"lat":0,"lon":180})"},
+    {"asia", R"({"lat":0,"lon":25})", R"({"lat":85,"lon":180})"},
+    {"africa", R"({"lat":-60,"lon":-20})", R"({"lat":38,"lon":55})"},
+    {"europe", R"({"lat":35,"lon":-25})", R"({"lat":85,"lon":45})"},
+    {"north_america", R"({"lat":5,"lon":-180})", R"({"lat":85,"lon":-25})"},
+    {"south_america", R"({"lat":-60,"lon":-90})", R"({"lat":15,"lon":-30})"},
+    {"oceania_east", R"({"lat":-60,"lon":-180})", R"({"lat":0,"lon":-110})"}
+};
 Batch birds(sqlite3 *db, const Collector::Fetch &callback,
-            const std::string &now) {
+            const std::string &now, const BirdRegion &region, unsigned pageLimit) {
     Batch batch;
     std::string cursor = "null";
     std::set<std::string> cursors;
-    for (unsigned page = 0; page < 4; ++page) {
+    for (unsigned page = 0; page < pageLimit; ++page) {
         Fields variables{{"first", std::to_string(birdPageSize)},
                          {"after", cursor},
                          {"period", R"({"count":10,"unit":"minute"})"},
-                         {"sw", R"({"lat":-48,"lon":166})"},
-                         {"ne", R"({"lat":-34,"lon":179.9})"}};
+                         {"sw", region.southwest},
+                         {"ne", region.northeast}};
         const auto raw =
             fetch(callback, {"https://app.birdweather.com/graphql",
                              object({{"query", quoteJson(birdQuery)},
@@ -321,7 +402,7 @@ Batch birds(sqlite3 *db, const Collector::Fetch &callback,
                 const auto coords = item.null("coords") ? Json(db, "{}")
                                                         : item.nested("coords");
                 auto fields =
-                    event("birdweather", item.id("id"), utc(when),
+                    event("birdweather", item.id("id"), formatUtc(when),
                           "acoustic_species_detection", "station_detection",
                           coords.numeric("lat"), coords.numeric("lon"));
                 const auto species = item.null("species")
@@ -443,7 +524,7 @@ Batch sharks(sqlite3 *db, const Collector::Fetch &callback,
                 ++batch.result.deferredFuture;
                 continue;
             }
-            const auto observed = utc(when), id = subject.id("id");
+            const auto observed = formatUtc(when), id = subject.id("id");
             auto fields =
                 event("nzsharks", id + ":" + observed, observed,
                       "satellite_fix", "individual_fix", coords[1], coords[0]);
@@ -609,7 +690,13 @@ PRAGMA user_version=3;
 Collector::~Collector() = default;
 std::vector<CollectionSourceState> Collector::sourceStates() const {
     std::vector<CollectionSourceState> result;
-    for (const auto *id : {"birdweather", "nzsharks"}) {
+    std::vector<std::string> ids{"birdweather", "nzsharks", "inaturalist"};
+    if (!impl_->status("birdweather_world").empty()) {
+        ids.emplace_back("birdweather_world");
+        for (const auto &region : birdRegions)
+            ids.emplace_back(std::string("birdweather:") + region.id);
+    }
+    for (const auto &id : ids) {
         const Json state(impl_->database.value, object(impl_->status(id)));
         CollectionSourceState item;
         item.id = id;
@@ -642,16 +729,99 @@ std::vector<CollectionSourceState> Collector::sourceStates() const {
 CollectionResult Collector::collect(std::string_view source,
                                     std::string_view nowUtc,
                                     const Fetch &callback) {
-    if (source != "birdweather" && source != "nzsharks")
+    if (source == "birdweather_world") {
+        // Four distinct geographic slots get a turn before continuation.
+        // Cursor paging is bounded to this request's relative lookback;
+        // saturation stays explicitly incomplete rather than claiming coverage.
+        const auto now = formatUtc(parseUtc(nowUtc));
+        auto state = impl_->status(source);
+        const Json prior(impl_->database.value, object(state));
+        if (!prior.null("last_attempt_at_utc") &&
+            parseUtc(now) - parseUtc(prior.text("last_attempt_at_utc")) < 60000000LL)
+            throw CollectionFetchError("provider_budget_wait", 60);
+        const unsigned count = std::size(birdRegions);
+        unsigned next = prior.null("next_region") ? 0U :
+            static_cast<unsigned>(std::stoul(prior.numeric("next_region"))) % count;
+        state["last_attempt_at_utc"] = quoteJson(now);
+        impl_->saveStatus(source, state);
+        CollectionResult total;
+        total.complete = true;
+        unsigned successes{};
+        std::string failure;
+        int retry{};
+        for (unsigned request = 0; request < 4; ++request) {
+            const auto region = next++ % count;
+            // Record the attempted slot before fetching; an interrupted region
+            // cannot indefinitely starve the following regions after restart.
+            state["next_region"] = std::to_string(next % count);
+            impl_->saveStatus(source, state);
+            try {
+                const auto result = collect(std::string("birdweather:") +
+                    birdRegions[region].id, now, callback);
+                ++successes;
+                total.inserted += result.inserted;
+                total.corrected += result.corrected;
+                total.duplicates += result.duplicates;
+                total.invalidRecords += result.invalidRecords;
+                total.deferredFuture += result.deferredFuture;
+                total.complete = total.complete && result.complete;
+            } catch (const CollectionFetchError &error) {
+                if (std::string_view(error.what()) == "cancelled") throw;
+                failure = error.what();
+                total.complete = false;
+                retry = error.retryAfterSeconds();
+                if (retry || failure == "http_429" || failure == "http_503" ||
+                    failure == "local_storage_capacity") break;
+            }
+        }
+        std::string latest;
+        std::uint64_t insertedByRegions{};
+        bool gap{};
+        for (const auto &slot : birdRegions) {
+            const Json local(impl_->database.value,
+                object(impl_->status(std::string("birdweather:") + slot.id)));
+            if (!local.null("unique_events"))
+                insertedByRegions += std::stoull(local.numeric("unique_events"));
+            if (!local.null("latest_observation_at_utc"))
+                latest = std::max(latest, local.text("latest_observation_at_utc"));
+            gap |= !local.null("possible_unrecoverable_gap") &&
+                   local.boolean("possible_unrecoverable_gap");
+        }
+        state["possible_unrecoverable_gap"] = gap ? "true" : "false";
+        state["latest_observation_at_utc"] = latest.empty() ? "null" : quoteJson(latest);
+        state["unique_events"] = std::to_string(insertedByRegions);
+        state["last_poll_complete"] = total.complete ? "true" : "false";
+        if (successes) state["last_success_at_utc"] = quoteJson(now);
+        if (failure.empty()) {
+            state["last_error"] = total.complete ? "null" :
+                (total.invalidRecords || total.deferredFuture ? quoteJson("invalid_or_future_records") : quoteJson("pagination_limit_reached"));
+            state["consecutive_errors"] = "0";
+            state["retry_delay_seconds"] = "0";
+        }
+        impl_->saveStatus(source, state);
+        if (!failure.empty()) {
+            impl_->failure(source, now, failure, retry);
+            throw CollectionFetchError(failure, retry);
+        }
+        return total;
+    }
+    const BirdRegion *region = nullptr;
+    for (const auto &candidate : birdRegions)
+        if (source == std::string("birdweather:") + candidate.id)
+            region = &candidate;
+    const bool regional = region != nullptr;
+    const bool birdSource = regional || source == "birdweather";
+    const auto eventSource = birdSource ? std::string_view("birdweather") : source;
+    if (!birdSource && source != "nzsharks" && source != "inaturalist")
         throw std::invalid_argument("unsupported collection source");
     if (!callback)
         throw std::invalid_argument("collection fetch callback required");
-    const auto now = utc(parseUtc(nowUtc));
+    const auto now = formatUtc(parseUtc(nowUtc));
     auto *db = impl_->database.value;
     auto status = impl_->status(source);
     const Json priorState(db, object(status));
     const bool arrivalReady =
-        impl_->establishedSources.contains(std::string(source)) &&
+        (regional || impl_->establishedSources.contains(std::string(source))) &&
         !priorState.null("arrival_baseline_established") &&
         priorState.boolean("arrival_baseline_established");
     const auto arrivalCutoff =
@@ -659,9 +829,9 @@ CollectionResult Collector::collect(std::string_view source,
             ? parseUtc(priorState.text("last_attempt_at_utc"))
             : parseUtc(now);
     status["enabled"] = "true";
-    status["configured_poll_seconds"] = source == "birdweather" ? "60" : "900";
+    status["configured_poll_seconds"] = birdSource ? "60" : "900";
     status["last_attempt_at_utc"] = quoteJson(now);
-    status["permissions_status"] = quoteJson("unresolved");
+    status["permissions_status"] = quoteJson(source == "inaturalist" ? "cc0_or_cc_by_observations_at_fetch;media_excluded" : "unresolved");
     status["technical_status"] = quoteJson("endpoint_tested");
     status["monetary_cost"] = "0";
     impl_->saveStatus(source, status);
@@ -677,19 +847,39 @@ CollectionResult Collector::collect(std::string_view source,
             std::filesystem::space(impl_->path.parent_path()).available <
                 64U * 1024U * 1024U)
             throw CollectionFetchError("local_storage_capacity");
-        auto batch = source == "birdweather" ? birds(db, callback, now)
-                                             : sharks(db, callback, now);
+        auto batch = birdSource ? birds(db, callback, now, regional ? *region : birdRegions[0], regional ? 1U : 4U)
+                                : source == "inaturalist" ? sightings(db, callback, now, priorState.null("revalidation_after_id") ? "" : priorState.text("revalidation_after_id"))
+                                : sharks(db, callback, now);
         const Json previous(db, object(status));
         const bool baseline = previous.null("baseline_complete") ||
                               !previous.boolean("baseline_complete");
         bool gap = !previous.null("possible_unrecoverable_gap") &&
                    previous.boolean("possible_unrecoverable_gap");
-        if (source == "birdweather" && !previous.null("last_success_at_utc") &&
+        if (birdSource && !previous.null("last_success_at_utc") &&
             parseUtc(previous.text("last_success_at_utc")) <
                 parseUtc(now) - 600000000LL)
             gap = true;
         execute(db, "BEGIN IMMEDIATE");
         try {
+            if (source == "inaturalist") {
+                for (const auto& id : batch.withdrawals) {
+                    Sql removeEvent(db, "DELETE FROM events WHERE id=?1 AND source_id='inaturalist'");
+                    removeEvent.bind(1, id); removeEvent.next();
+                    Sql removeRevisions(db, "DELETE FROM revisions WHERE event_id=?1 AND source_id='inaturalist'");
+                    removeRevisions.bind(1, id); removeRevisions.next();
+                }
+                if (!batch.withdrawals.empty()) {
+                    Sql rotate(db, "UPDATE metadata SET value=?1 WHERE key='store_id'");
+                    rotate.bind(1, randomId()); rotate.next();
+                }
+                if (!batch.revalidationCursor.empty()) {
+                    status["revalidation_after_id"] = quoteJson(batch.revalidationCursor);
+                    status["last_revalidation_at_utc"] = quoteJson(now);
+                }
+                status["last_revalidation_error"] = batch.revalidationError.empty() ? "null" : quoteJson(batch.revalidationError);
+                status["last_revalidation_withdrawn"] = std::to_string(batch.withdrawals.size());
+                status["revalidation_policy"] = quoteJson("round_robin_30_per_poll; managed_live_only; frozen_archives_not_rewritten");
+            }
             for (const auto &record : batch.records) {
                 detail::Sha256 hash;
                 hash.update(object(record.event));
@@ -716,6 +906,7 @@ CollectionResult Collector::collect(std::string_view source,
                 // Newly discovered older material remains non-live baseline.
                 const bool liveArrival =
                     !existing && arrivalReady &&
+                    (!regional || parseUtc(now) - arrivalCutoff <= 600000000LL) &&
                     parseUtc(value.text("observed_at_utc")) > arrivalCutoff;
                 const auto kind = existing      ? "corrected"
                                   : liveArrival ? "new"
@@ -727,7 +918,7 @@ CollectionResult Collector::collect(std::string_view source,
                     "first_seen_at,ingested_at,change_kind,live_eligible,event_"
                     "json,raw_json) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10)");
                 insert.bind(1, id);
-                insert.bind(2, source);
+                insert.bind(2, eventSource);
                 insert.bind(3, fingerprint);
                 insert.bind(4, value.text("observed_at_utc"));
                 insert.bind(5, firstSeen);
@@ -743,7 +934,7 @@ CollectionResult Collector::collect(std::string_view source,
                                 "observed_at=excluded.observed_at,revision_seq="
                                 "excluded.revision_seq");
                 current.bind(1, id);
-                current.bind(2, source);
+                current.bind(2, eventSource);
                 current.bind(3, value.text("observed_at_utc"));
                 current.bind(4, sequence);
                 current.next();
@@ -756,6 +947,7 @@ CollectionResult Collector::collect(std::string_view source,
             status["consecutive_errors"] = "0";
             status["retry_delay_seconds"] = "0";
             status["last_error"] =
+                !batch.revalidationError.empty() ? quoteJson("revalidation_" + batch.revalidationError) :
                 batch.result.invalidRecords || batch.result.deferredFuture
                     ? quoteJson("invalid_or_future_records")
                 : !batch.exhausted ? quoteJson("pagination_limit_reached")
@@ -772,7 +964,7 @@ CollectionResult Collector::collect(std::string_view source,
                 previous.boolean("arrival_baseline_established");
             status["arrival_baseline_established"] =
                 priorArrivalBaseline || snapshotEstablished ? "true" : "false";
-            status["arrival_window_start_utc"] = quoteJson(utc(arrivalCutoff));
+            status["arrival_window_start_utc"] = quoteJson(formatUtc(arrivalCutoff));
             if (batch.result.complete)
                 status["last_complete_at_utc"] = quoteJson(now);
             status["last_poll_inserted"] =
@@ -788,26 +980,36 @@ CollectionResult Collector::collect(std::string_view source,
             status["pages_fetched"] = std::to_string(batch.pages);
             status["possible_unrecoverable_gap"] = gap ? "true" : "false";
             status["completeness"] =
-                quoteJson(source == "birdweather"
+                quoteJson(birdSource
                               ? "rolling_window_best_effort; no publication "
                                 "cursor; late uploads may be missed"
+                              : source == "inaturalist" ? "bounded recent public reported sightings; omissions possible"
                               : "latest_position_snapshots_only; intermediate "
                                 "fixes can be missed");
             status["freshness_claim"] =
                 quoteJson("inspect latest_observation_at_utc");
             status["publication_lag_seconds"] = "null";
-            if (source == "birdweather") {
-                status["region"] = "[-48,166,-34,179.9]";
+            if (birdSource) {
+                status["region"] = quoteJson(regional ? region->id : "nz");
                 status["observation_window_start_utc"] =
-                    quoteJson(utc(parseUtc(now) - 600000000LL));
+                    quoteJson(formatUtc(parseUtc(now) - 600000000LL));
                 status["observation_window_end_utc"] = quoteJson(now);
             }
-            Sql newest(db, "SELECT json_quote(max(observed_at)),count(*) FROM "
-                           "events WHERE source_id=?1");
-            newest.bind(1, source);
-            newest.next();
-            status["latest_observation_at_utc"] = newest.text(0);
-            status["unique_events"] = std::to_string(newest.number(1));
+            if (regional) {
+                std::string newest = previous.null("latest_observation_at_utc") ? "" :
+                    previous.text("latest_observation_at_utc");
+                for (const auto& record : batch.records)
+                    newest = std::max(newest, Json(db, object(record.event)).text("observed_at_utc"));
+                status["latest_observation_at_utc"] = newest.empty() ? "null" : quoteJson(newest);
+                status["unique_events"] = std::to_string(batch.result.inserted +
+                    (previous.null("unique_events") ? 0ULL : std::stoull(previous.numeric("unique_events"))));
+            } else {
+                Sql newest(db, "SELECT json_quote(max(observed_at)),count(*) FROM events WHERE source_id=?1");
+                newest.bind(1, eventSource);
+                newest.next();
+                status["latest_observation_at_utc"] = newest.text(0);
+                status["unique_events"] = std::to_string(newest.number(1));
+            }
             impl_->saveStatus(source, status);
             Sql poll(
                 db,

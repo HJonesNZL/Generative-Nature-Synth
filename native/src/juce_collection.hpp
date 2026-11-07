@@ -15,7 +15,8 @@ class CollectionService {
     ~CollectionService();
     CollectionService(const CollectionService &) = delete;
     CollectionService &operator=(const CollectionService &) = delete;
-    // birdweather / nzsharks only. Enabling respects the last attempt's minimum
+    static void validateSelection(const std::vector<std::string>& sourceIds);
+    // Enabling respects the last attempt's minimum
     // interval; disabling cancels HTTP and discards a response before
     // ingestion.
     void configure(const std::vector<std::string> &sourceIds);

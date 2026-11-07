@@ -1,6 +1,6 @@
 # ATN spotted seal: actual historical playback library
 
-Downloaded 7 November 2026 UTC from NOAA/IOOS ATN's public ERDDAP. Raw source JSON and full metadata are checked in under `source/`; `prepare_archive.py --output NEW_FOLDER` reproducibly prepares a new SQLite library using existing development-only Store/Sessions tooling. The standalone opens the resulting SQLite file and replays natively; Python and network access are unnecessary for playback.
+Downloaded 7 November 2026 UTC from NOAA/IOOS ATN's public ERDDAP. Raw source JSON and full metadata are checked in under `source/`; `prepare_archive.py --output NEW_FOLDER` reproducibly prepares a self-contained new folder containing the SQLite library, both raw source files, the user README and a SHA-256 manifest using existing development-only Store/Sessions tooling. The standalone opens the resulting SQLite file and replays natively; Python and network access are unnecessary for playback.
 
 263 actual source rows cover 14 April–3 November 2018. We accept 224 Argos rows with QARTOD rollup PASS. We exclude 39 SUSPECT/FAIL rows (including the one User location); the original source file retains them. All four QC flags and Argos location classes remain attached to accepted events. PASS rollup does not imply every component test was evaluated. Error radii remain in metres, often kilometres; no precise track or interpolation is invented.
 

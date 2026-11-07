@@ -20,6 +20,28 @@ using Clock = std::chrono::steady_clock;
 using namespace std::chrono_literals;
 constexpr std::size_t responseLimit = 4U * 1024U * 1024U;
 constexpr int maximumRetrySeconds = 86400;
+struct SourceSpec { std::string_view id; int intervalSeconds; };
+constexpr std::array<SourceSpec, 4> sourceSpecs{{
+    {"birdweather", 60}, {"nzsharks", 900}, {"birdweather_world", 60}, {"inaturalist", 900}
+}};
+constexpr bool isBirdMode(std::string_view id) {
+    return id == "birdweather" || id == "birdweather_world";
+}
+std::array<bool, sourceSpecs.size()> selectedSources(const std::vector<std::string>& ids) {
+    std::array<bool, sourceSpecs.size()> enabled{};
+    bool birds = false;
+    for (const auto& id : ids) {
+        const auto found = std::find_if(sourceSpecs.begin(), sourceSpecs.end(),
+            [&](const SourceSpec& spec) { return spec.id == id; });
+        if (found == sourceSpecs.end() || (isBirdMode(id) && birds))
+            throw std::invalid_argument("Invalid live source or conflicting bird regions.");
+        const auto i = static_cast<std::size_t>(found - sourceSpecs.begin());
+        if (enabled[i]) throw std::invalid_argument("Duplicate live source.");
+        enabled[i] = true;
+        birds = birds || isBirdMode(id);
+    }
+    return enabled;
+}
 std::string utcNow() {
     using namespace std::chrono;
     const auto now = floor<seconds>(system_clock::now());
@@ -46,6 +68,8 @@ bool allowed(const CollectionRequest &request) {
         return !request.body.empty() && request.body.size() <= 32768;
     if (!request.body.empty())
         return false;
+    if (request.url.starts_with("https://api.inaturalist.org/v1/observations?"))
+        return request.url.size() <= 1024 && request.url.find_first_of("#\r\n ") == std::string::npos;
     if (request.url ==
             "https://map.sustainableoceansociety.co.nz/public/bootstrap.json" ||
         request.url == "https://map.sustainableoceansociety.co.nz/public/"
@@ -125,19 +149,21 @@ struct CollectionService::Impl {
     Collector::Fetch injected;
     mutable std::mutex mutex;
     std::condition_variable wake;
-    std::array<Source, 2> sources;
+    std::array<Source, sourceSpecs.size()> sources;
+    std::vector<CollectionSourceState> regions;
     std::shared_ptr<juce::WebInputStream> active;
     std::atomic<bool> cancelled{false};
+    Clock::time_point nextSightingRequest{};
     std::jthread worker;
 
     Impl(const std::filesystem::path &database, Collector::Fetch fetch)
         : path(database), collector(std::make_unique<Collector>(database)),
           injected(std::move(fetch)) {
-        sources[0].stored.id = "birdweather";
-        sources[0].minimumSeconds = 60;
-        sources[1].stored.id = "nzsharks";
-        sources[1].minimumSeconds = 900;
-        hydrate();
+        for (std::size_t i = 0; i < sources.size(); ++i) {
+            sources[i].stored.id = sourceSpecs[i].id;
+            sources[i].minimumSeconds = sourceSpecs[i].intervalSeconds;
+        }
+        updateStates(collector->sourceStates());
         const auto now = Clock::now();
         const auto wall =
             std::chrono::duration_cast<std::chrono::microseconds>(
@@ -158,6 +184,7 @@ struct CollectionService::Impl {
                 std::clamp<std::int64_t>(interval - elapsed, 0, interval);
             source.due += std::chrono::seconds{remaining};
         }
+        shareBirdDeadline();
         worker = std::jthread([this](std::stop_token stop) { run(stop); });
     }
     ~Impl() {
@@ -173,12 +200,20 @@ struct CollectionService::Impl {
         wake.notify_all();
         worker.join();
     }
-    void hydrate() {
-        for (auto &value : collector->sourceStates()) {
+    void updateStates(std::vector<CollectionSourceState> refreshed) {
+        regions.clear();
+        for (auto &value : refreshed) {
+            if (value.id.starts_with("birdweather:")) {
+                regions.push_back(std::move(value));
+                continue;
+            }
             for (auto &source : sources)
-                if (source.stored.id == value.id)
-                    source.stored = std::move(value);
+                if (source.stored.id == value.id) source.stored = std::move(value);
         }
+    }
+    void shareBirdDeadline() {
+        const auto next = std::max(sources[0].due, sources[2].due);
+        sources[0].due = sources[2].due = next;
     }
     void checkCancelled() const {
         if (cancelled.load())
@@ -295,6 +330,12 @@ struct CollectionService::Impl {
                         checkCancelled();
                         if (!allowed(request))
                             throw CollectionFetchError("endpoint_not_allowed");
+                        if (request.url.starts_with("https://api.inaturalist.org/")) {
+                            std::unique_lock pacing(mutex);
+                            wake.wait_until(pacing, nextSightingRequest, [this]{ return cancelled.load(); });
+                            checkCancelled();
+                            nextSightingRequest = Clock::now() + 1s;
+                        }
                         auto response =
                             injected ? injected(request) : http(request);
                         checkCancelled();
@@ -323,11 +364,7 @@ struct CollectionService::Impl {
                 failure = "status_unavailable";
             }
             lock.lock();
-            for (auto &value : refreshed) {
-                for (auto &source : sources)
-                    if (source.stored.id == value.id)
-                        source.stored = std::move(value);
-            }
+            if (!refreshed.empty()) updateStates(std::move(refreshed));
             selected->polling = false;
             if (failed) {
                 selected->failures = std::min(selected->failures + 1U, 7U);
@@ -347,6 +384,7 @@ struct CollectionService::Impl {
             selected->due =
                 Clock::now() +
                 std::chrono::seconds{std::max(selected->minimumSeconds, retry)};
+            if (isBirdMode(selected->stored.id)) shareBirdDeadline();
         }
     }
 };
@@ -354,16 +392,11 @@ CollectionService::CollectionService(const std::filesystem::path &database,
                                      Collector::Fetch fetch)
     : impl_(std::make_unique<Impl>(database, std::move(fetch))) {}
 CollectionService::~CollectionService() = default;
+void CollectionService::validateSelection(const std::vector<std::string>& ids) {
+    (void)selectedSources(ids);
+}
 void CollectionService::configure(const std::vector<std::string> &ids) {
-    std::array<bool, 2> enabled{};
-    for (const auto &id : ids) {
-        const auto index = id == "birdweather" ? 0U
-                           : id == "nzsharks"  ? 1U
-                                               : 2U;
-        if (index == 2U || enabled[index])
-            throw std::invalid_argument("Invalid collection source selection.");
-        enabled[index] = true;
-    }
+    const auto enabled = selectedSources(ids);
     std::shared_ptr<juce::WebInputStream> request;
     {
         std::lock_guard lock(impl_->mutex);
@@ -409,7 +442,21 @@ std::string CollectionService::stateJson() const {
             detail::quoteJson(std::to_string(source.stored.records)) +
             ",\"complete\":" + (source.stored.complete ? "true" : "false") +
             ",\"gap\":" + (source.stored.gap ? "true" : "false") +
-            ",\"nextPollSeconds\":" + std::to_string(remaining) + '}';
+            ",\"nextPollSeconds\":" + std::to_string(remaining);
+        if (source.stored.id == "birdweather_world") {
+            result += ",\"regions\":[";
+            for (const auto& region : impl_->regions) {
+                if (result.back() != '[') result += ',';
+                result += "{\"id\":" + detail::quoteJson(region.id.substr(std::string_view("birdweather:").size())) +
+                    ",\"lastAttemptUtc\":" + nullable(region.lastAttemptUtc) +
+                    ",\"lastObservationUtc\":" + nullable(region.lastObservationUtc) +
+                    ",\"error\":" + nullable(region.error) +
+                    ",\"gap\":" + (region.gap ? "true" : "false") +
+                    ",\"complete\":" + (region.complete ? "true" : "false") + '}';
+            }
+            result += ']';
+        }
+        result += '}';
     }
     return result + "]}";
 }

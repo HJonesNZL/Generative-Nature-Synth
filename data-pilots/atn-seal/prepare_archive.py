@@ -1,5 +1,7 @@
 """Development-only preparation; resulting SQLite library plays in native standalone."""
 import argparse
+import gc
+from contextlib import closing
 from collections import Counter
 import hashlib
 import json
@@ -7,6 +9,7 @@ import math
 from pathlib import Path
 import sys
 import sqlite3
+import shutil
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
@@ -81,10 +84,19 @@ def main():
         observed_to='2018-11-04T00:00:00Z')
     excerpt = Sessions(store).snapshot('Spotted seal · final five fixes · 2–3 Nov 2018',
         sources=[SOURCE], observed_from='2018-11-02T00:00:00Z', observed_to='2018-11-04T00:00:00Z')
-    with sqlite3.connect(library) as db:
+    # Store uses short-lived SQLite contexts; release their reference cycles
+    # before finalizing this newly created, exclusively owned archive.
+    gc.collect()
+    with closing(sqlite3.connect(library)) as db:
         db.execute('PRAGMA wal_checkpoint(TRUNCATE)')
         db.execute('PRAGMA journal_mode=DELETE')
-    manifest = dict(excerpt_session_id=excerpt['id'], dataset=DATASET, library=library.name, session_id=session['id'],
+    sidecar = Path(str(library) + '-shm')
+    if sidecar.exists() and not Path(str(library) + '-wal').exists():
+        sidecar.unlink()
+    shutil.copyfile(HERE/'README-library.md', output/'README.md')
+    shutil.copyfile(HERE/'source/metadata.json', output/'source-metadata.json')
+    shutil.copyfile(HERE/'source/locations.json', output/'source-locations.json')
+    manifest = dict(files_sha256={name:hashlib.sha256((output/name).read_bytes()).hexdigest() for name in [library.name, 'README.md', 'source-metadata.json', 'source-locations.json']}, excerpt_session_id=excerpt['id'], dataset=DATASET, library=library.name, session_id=session['id'],
         raw_records=len(table['rows']), accepted_records=len(records), omitted=omitted,
         observation_start=records[0][0]['observed_at_utc'], observation_end=records[-1][0]['observed_at_utc'],
         source_url=URL, license=license_text,

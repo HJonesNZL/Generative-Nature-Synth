@@ -20,10 +20,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--binary', required=True, type=Path)
     parser.add_argument('--scene', type=Path)
-    parser.add_argument('--live', action='store_true', help='Opt in to actual public-provider HTTP in disposable state')
+    parser.add_argument('--live', action='store_true', help='Opt in to NZ bird and shark provider HTTP in disposable state')
+    parser.add_argument('--world', action='store_true', help='Exercise worldwide birds, sharks and reported sightings in disposable state')
     parser.add_argument('--seconds', type=int, default=3)
     parser.add_argument('--evidence', type=Path)
     args = parser.parse_args()
+    args.live = args.live or args.world
     if not 1 <= args.seconds <= 600:
         parser.error('--seconds must be 1..600')
     with tempfile.TemporaryDirectory(prefix='atlas-standalone-smoke-') as temporary:
@@ -36,7 +38,7 @@ def main():
         command = [str(args.binary.resolve()), '--state-dir', str(folder / 'state'),
                    '--smoke-test', str(receipt), '--smoke-seconds', str(args.seconds)]
         if args.live:
-            command += ['--smoke-live', '1']
+            command += ['--smoke-live', 'world' if args.world else '1']
         if args.scene:
             command += ['--smoke-scene', str(args.scene.resolve()), '--smoke-export', str(exported),
                         '--smoke-scene-export', str(scene_export), '--smoke-backup', str(backup),
@@ -69,9 +71,10 @@ def main():
         if args.live:
             assert evidence['webview']['liveStarted']['collecting'], evidence
             assert evidence['webview']['liveUI']['speciesRows'] > 0, evidence
-            assert evidence['webview']['liveIncoming']['pings'] > 0, evidence
+            if not args.world:
+                assert evidence['webview']['liveIncoming']['pings'] > 0, evidence
             assert evidence['webview']['liveStopped']['collecting'] is False, evidence
-            assert set(evidence['webview']['liveMap']['sources']) == {'birdweather', 'nzsharks'}, evidence
+            assert set(evidence['webview']['liveMap']['sources']) == ({'birdweather', 'nzsharks', 'inaturalist'} if args.world else {'birdweather', 'nzsharks'}), evidence
         if args.scene:
             # The existing oracle validates RIFF extents, extensible PCM,
             # stereo/24-bit channel layout, fact length and embedded recipe.

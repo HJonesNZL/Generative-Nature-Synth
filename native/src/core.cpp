@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <charconv>
 #include <chrono>
+#include <cstdio>
 #include <cmath>
 #include <limits>
 #include <numeric>
@@ -43,6 +44,26 @@ void checkSpeed(const Speed& speed) {
         throw std::invalid_argument("speed outside supported rational range");
 }
 } // namespace
+
+std::string formatUtc(Microseconds value) {
+    using namespace std::chrono;
+    const sys_time<microseconds> point{microseconds{value}};
+    const auto day = floor<days>(point);
+    const year_month_day date{day};
+    const hh_mm_ss clock{point - day};
+    char output[40]{};
+    const auto count = std::snprintf(
+        output, sizeof(output), "%04d-%02u-%02uT%02lld:%02lld:%02lld.%06lldZ",
+        static_cast<int>(date.year()), static_cast<unsigned>(date.month()),
+        static_cast<unsigned>(date.day()),
+        static_cast<long long>(clock.hours().count()),
+        static_cast<long long>(clock.minutes().count()),
+        static_cast<long long>(clock.seconds().count()),
+        static_cast<long long>(clock.subseconds().count()));
+    if (count != 27)
+        throw std::invalid_argument("collection time outside supported range");
+    return output;
+}
 
 Microseconds parseUtc(std::string_view value) {
     using namespace std::chrono;

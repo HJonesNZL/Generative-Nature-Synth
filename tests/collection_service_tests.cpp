@@ -113,6 +113,10 @@ void scheduling(const std::filesystem::path &path) {
             rejected = true;
         }
         require(rejected, "Duplicate source selection accepted");
+        rejected = false;
+        try { service.configure({"birdweather", "birdweather_world"}); }
+        catch (const std::invalid_argument &) { rejected = true; }
+        require(rejected && calls.load() == 0, "Conflicting bird coverage scheduled twice");
         service.configure({"birdweather", "nzsharks"});
         waitFor(
             [&] {
@@ -165,6 +169,10 @@ void scheduling(const std::filesystem::path &path) {
         require(!static_cast<bool>(cached["enabled"]) &&
                     !static_cast<bool>(state(restarted)["collecting"]),
                 "Restart enabled collection without instruction");
+        restarted.configure({"birdweather_world"});
+        std::this_thread::sleep_for(40ms);
+        require(restartedCalls.load() == 0 && static_cast<int>(source(restarted, 2)["nextPollSeconds"]) > 0,
+                "Switching to worldwide after restart bypassed the shared provider interval");
         restarted.configure({"birdweather", "nzsharks"});
         std::this_thread::sleep_for(40ms);
         require(restartedCalls.load() == 0 &&
