@@ -470,6 +470,8 @@ std::string audioView(const PlaybackSnapshot &snapshot,
            (snapshot.deviceOutputChannels
                 ? std::to_string(snapshot.deviceOutputChannels)
                 : "null") +
+           ",\"liveTriggeredNotes\":" +
+           quoteJson(std::to_string(snapshot.liveTriggeredNotes)) +
            ",\"callbackCount\":" +
            quoteJson(std::to_string(snapshot.callbackCount)) +
            ",\"callbackFrames\":" +
@@ -558,7 +560,7 @@ struct UiHost::Impl {
     std::unique_ptr<LiveAdmission> liveAdmission;
     LiveSettings liveSettings;
     LivePerformance performance;
-    bool liveEnabled{};
+    bool liveEnabled{}, liveCatchingUp{};
     std::uint64_t liveReceived{}, liveInvalid{}, liveSkipped{};
     std::string liveError, liveStoreId;
     std::chrono::steady_clock::time_point liveLastService{};
@@ -573,8 +575,12 @@ struct UiHost::Impl {
                ",\"dropped\":" +
                std::to_string(performance.skipped + liveInvalid) +
                ",\"grouped\":" + std::to_string(performance.grouped) +
+               ",\"pending\":" + std::to_string(performance.pendingCount()) +
+               ",\"catchingUp\":" + (liveCatchingUp ? "true" : "false") +
                ",\"mode\":" +
-               quoteJson(liveSettings.musical ? "musical" : "direct") +
+               quoteJson(liveSettings.mode == LiveMode::musical    ? "musical"
+                         : liveSettings.mode == LiveMode::smoothed ? "smoothed"
+                                                                   : "direct") +
                ",\"density\":" + std::to_string(liveSettings.density) +
                ",\"composition\":" + compositionView(liveSettings.composition) +
                ",\"spatial\":" + spatialView(liveSettings.spatial) +
@@ -582,7 +588,10 @@ struct UiHost::Impl {
                ",\"error\":" + quoteJson(liveError) + "}";
     }
     void retireLive() {
+        if (playback)
+            performance.acknowledge(playback->snapshot());
         performance.cancel();
+        liveCatchingUp = false;
         liveEnabled = false;
         liveAdmission.reset();
     }
@@ -626,10 +635,10 @@ struct UiHost::Impl {
     void prepareLiveOutput() {
         auto settings = context.audio;
         settings.composition = liveSettings.composition;
-        settings.composition.enabled = liveSettings.musical;
+        settings.composition.enabled = liveSettings.mode == LiveMode::musical;
         settings.spatial = liveSettings.spatial;
         settings.spatial.enabled =
-            liveSettings.musical && settings.spatial.enabled;
+            liveSettings.mode != LiveMode::direct && settings.spatial.enabled;
         auto result = playback->prepareLive(settings);
         if (result.ok)
             result = playback->enable(true);
@@ -649,9 +658,14 @@ struct UiHost::Impl {
         auto next = liveSettings;
         if (args.has("mode")) {
             const auto mode = args.text("mode", 16);
-            if (mode != "direct" && mode != "musical")
+            if (mode == "direct")
+                next.mode = LiveMode::direct;
+            else if (mode == "musical")
+                next.mode = LiveMode::musical;
+            else if (mode == "smoothed")
+                next.mode = LiveMode::smoothed;
+            else
                 throw std::invalid_argument("Unknown live mode");
-            next.musical = mode == "musical";
         }
         if (args.has("density")) {
             next.density = static_cast<unsigned>(args.number("density", 8));
@@ -672,12 +686,20 @@ struct UiHost::Impl {
         const bool reroute =
             args.has("spatial") &&
             spatialView(next.spatial) != spatialView(liveSettings.spatial);
-        const bool rebuild = next.musical != liveSettings.musical ||
-                             (next.musical && (reroute || retune));
+        const bool modeChanged = next.mode != liveSettings.mode;
+        const bool rebuild = modeChanged ||
+                             (next.mode != LiveMode::direct && reroute) ||
+                             (next.mode == LiveMode::musical && retune);
         liveSettings = std::move(next);
         if (liveEnabled && rebuild) {
-            performance.cancel();
             try {
+                playback->enable(false);
+                performance.acknowledge(playback->snapshot());
+                if (!modeChanged && liveSettings.mode == LiveMode::smoothed)
+                    performance.retryHandedOff();
+                else
+                    performance.cancel();
+                liveCatchingUp = false;
                 prepareLiveOutput();
             } catch (const std::exception &e) {
                 stopLive();
@@ -721,9 +743,11 @@ struct UiHost::Impl {
                 return;
             }
             playback->heartbeat();
-            if (now - liveLastService > std::chrono::seconds(5))
+            performance.acknowledge(snapshot);
+            const bool smooth = liveSettings.mode == LiveMode::smoothed;
+            if (!smooth && now - liveLastService > std::chrono::seconds(5))
                 performance.cancel();
-            if (now - liveLastService > std::chrono::seconds(5) &&
+            if (!smooth && now - liveLastService > std::chrono::seconds(5) &&
                 liveAdmission->baseline()) {
                 performance = {};
                 liveError =
@@ -732,7 +756,10 @@ struct UiHost::Impl {
                 return;
             }
             liveLastService = now;
-            const auto batch = liveAdmission->poll(512);
+            const auto batch =
+                smooth ? liveAdmission->pollFifo(performance.smoothCapacity())
+                       : liveAdmission->poll(512);
+            liveCatchingUp = batch.hasMore;
             if (batch.storeReset) {
                 performance = {};
                 liveError =
@@ -757,7 +784,8 @@ struct UiHost::Impl {
                 observations.push_back(std::move(observation));
             }
             const auto clock = std::chrono::steady_clock::now();
-            performance.accept(std::move(observations), liveSettings, clock);
+            performance.accept(std::move(observations), liveSettings, clock,
+                               batch.smoothTiming);
             performance.playDue(clock, db.get(), *playback, voices,
                                 liveSettings, context.audio.rootMidi);
         } catch (const std::exception &) {
@@ -1351,7 +1379,10 @@ void UiHost::setLibrary(const std::filesystem::path &library) {
 
 std::chrono::milliseconds UiHost::serviceLive() {
     impl_->serviceLive();
-    return impl_->performance.nextServiceDelay();
+    if (impl_->liveCatchingUp && impl_->performance.smoothCapacity() > 0)
+        return std::chrono::milliseconds(1);
+    return impl_->performance.nextServiceDelay(impl_->liveSettings.mode ==
+                                               LiveMode::smoothed);
 }
 void UiHost::stopLive() noexcept {
     try {
@@ -1409,6 +1440,8 @@ std::string UiHost::request(std::string_view envelope) {
                 std::string("],\"audioAvailable\":") +
                 (impl_->playback ? "true" : "false") +
                 ",\"libraryAvailable\":" + (impl_->library ? "true" : "false") +
+                ",\"supportsSmoothedLive\":" +
+                (impl_->liveAvailable() ? "true" : "false") +
                 ",\"maxEventBatch\":500,\"maxVisibleMarkers\":500}";
         } else if (impl_->playback && method == "getLiveState") {
             Object args(impl_->db.get(), arguments);

@@ -20,6 +20,18 @@ public:
         if (value.size() > 128 || sqlite3_bind_text(value_, 1, value.data(), static_cast<int>(value.size()), SQLITE_TRANSIENT) != SQLITE_OK)
             throw std::invalid_argument("invalid session ID");
     }
+    void bind(int index, std::string_view value) {
+        if (value.size() > 32768 ||
+            sqlite3_bind_text(value_, index, value.data(),
+                              static_cast<int>(value.size()),
+                              SQLITE_TRANSIENT) != SQLITE_OK)
+            throw std::invalid_argument(
+                "text bind exceeds capacity or index is invalid");
+    }
+    void bind(int index, std::int64_t value) {
+        if (sqlite3_bind_int64(value_, index, value) != SQLITE_OK)
+            throw std::runtime_error("integer query bind failed");
+    }
     void bindJson(std::string_view value) {
         if (value.size() > 32768 || sqlite3_bind_text(value_, 1, value.data(), static_cast<int>(value.size()), SQLITE_TRANSIENT) != SQLITE_OK)
             throw std::invalid_argument("JSON exceeds capacity");

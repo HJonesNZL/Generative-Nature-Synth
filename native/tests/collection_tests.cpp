@@ -148,6 +148,31 @@ int main() {
                 "SELECT change_kind||':'||live_eligible FROM revisions ORDER BY seq DESC LIMIT 1") == "new:1",
                 "regional arrival baseline survives restart");
         }
+        // v0.8 schema-v3 managed libraries gain v0.9 read indexes on reopen,
+        // preserving their schema version, store identity and collected data.
+        {
+            Query before(worldPath);
+            const auto store = before.text("SELECT value FROM metadata WHERE key='store_id'");
+            const auto revisions = before.text("SELECT count(*) FROM revisions");
+            before.execute("DROP INDEX polls_by_completion;"
+                           "DROP INDEX polls_at_completion;"
+                           "DROP INDEX revisions_ingestion");
+            {
+                atlas::Collector upgraded(worldPath);
+                require(before.text("SELECT count(*) FROM sqlite_master WHERE type='index' "
+                                    "AND name IN ('polls_by_completion','polls_at_completion',"
+                                    "'revisions_ingestion')") == "3",
+                        "v0.8 managed library gains v0.9 live read indexes");
+                require(before.text("PRAGMA user_version") == "3" &&
+                        before.text("SELECT value FROM metadata WHERE key='store_id'") == store &&
+                        before.text("SELECT count(*) FROM revisions") == revisions,
+                        "index upgrade preserves schema identity and data");
+            }
+            atlas::Collector reopened(worldPath);
+            require(before.text("SELECT count(*) FROM sqlite_master WHERE type='index' "
+                                "AND name='polls_at_completion'") == "1",
+                    "index upgrade remains idempotent");
+        }
         const auto path = root / "live.sqlite3";
         {
             atlas::Collector collector(path);

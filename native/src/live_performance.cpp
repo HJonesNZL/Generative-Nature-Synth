@@ -11,7 +11,7 @@ liveRegion(const LiveSettings &settings,
            const std::optional<Position> &position) {
     if (!position)
         return {"", "Unassigned"};
-    if (settings.musical && settings.spatial.enabled) {
+    if (settings.mode != LiveMode::direct && settings.spatial.enabled) {
         const auto slot =
             prepareSpatialRoute(settings.spatial, position).regionSlot;
         if (slot) {
@@ -33,6 +33,13 @@ liveRegion(const LiveSettings &settings,
                        std::to_string(west + 60) + "° longitude";
     return {label, label};
 }
+bool currentEligible(sqlite3 *db, const std::string &eventId) {
+    detail::Statement revision(
+        db, "SELECT 1 FROM events e JOIN revisions r ON r.seq=e.revision_seq "
+            "WHERE e.id=?1 AND r.change_kind='new' AND r.live_eligible=1");
+    revision.bindJson(eventId);
+    return revision.next();
+}
 } // namespace
 const LiveOutcome *LivePerformance::outcome(const std::string &id) const {
     const auto it = outcomes_.find(id);
@@ -40,14 +47,16 @@ const LiveOutcome *LivePerformance::outcome(const std::string &id) const {
 }
 void LivePerformance::accept(std::vector<LiveObservation> observations,
                              const LiveSettings &settings,
-                             Clock::time_point now) {
+                             Clock::time_point now,
+                             std::span<const LiveSmoothTiming> timing) {
     if (observations.empty())
         return;
     std::vector<LiveArrangementCandidate> candidates;
     candidates.reserve(observations.size());
     for (const auto &event : observations) {
         auto [key, label] = liveRegion(settings, event.position);
-        candidates.push_back({event.id, event.species, std::move(key)});
+        if (settings.mode != LiveMode::smoothed)
+            candidates.push_back({event.id, event.species, std::move(key)});
         outcomes_.insert_or_assign(
             event.id,
             LiveOutcome{
@@ -58,8 +67,12 @@ void LivePerformance::accept(std::vector<LiveObservation> observations,
         outcomes_.erase(order_.front());
         order_.pop_front();
     }
+    if (settings.mode == LiveMode::smoothed) {
+        queueSmoothed(observations, timing, now);
+        return;
+    }
     std::vector<LiveArrangementDecision> decisions;
-    if (settings.musical) {
+    if (settings.mode == LiveMode::musical) {
         while (!reservations_.empty() &&
                reservations_.front() + phraseWindow <= now)
             reservations_.pop_front();
@@ -93,12 +106,96 @@ void LivePerformance::accept(std::vector<LiveObservation> observations,
                             candidates[decision.candidateIndex],
                             now + std::chrono::milliseconds(decision.offsetMs),
                             std::move(members[decision.candidateIndex])});
-        if (settings.musical)
+        if (settings.mode == LiveMode::musical)
             reservations_.push_back(now);
     }
     std::stable_sort(
         pending_.begin(), pending_.end(),
         [](const Note &a, const Note &b) { return a.due < b.due; });
+}
+void LivePerformance::queueSmoothed(std::vector<LiveObservation> &observations,
+                                    std::span<const LiveSmoothTiming> timing,
+                                    Clock::time_point now) {
+    if (timing.size() != observations.size() ||
+        observations.size() > smoothCapacity())
+        throw std::logic_error("Invalid smoothed playback page");
+    for (std::size_t i = 0; i < observations.size(); ++i) {
+        const auto &row = timing[i];
+        auto [entry, inserted] = sourceWindows_.try_emplace(
+            row.sourceId, SourceWindow{row.ingestedUs, now, now});
+        auto &window = entry->second;
+        if (!inserted && window.ingestion != row.ingestedUs)
+            window = {row.ingestedUs, std::max(now, window.lastDue),
+                      window.lastDue};
+        const auto due = window.start + std::chrono::microseconds(row.offsetUs);
+        window.lastDue = std::max(window.lastDue, due);
+        pending_.push_back(
+            {std::move(observations[i]), {}, window.lastDue, {}});
+    }
+    std::stable_sort(
+        pending_.begin(), pending_.end(),
+        [](const Note &a, const Note &b) { return a.due < b.due; });
+}
+void LivePerformance::acknowledge(const PlaybackSnapshot &snapshot) {
+    while (!inFlight_.empty() &&
+           inFlight_.front().id <= snapshot.liveAcknowledgedId) {
+        finish(inFlight_.front().note, inFlight_.front().character);
+        inFlight_.pop_front();
+    }
+}
+void LivePerformance::retryHandedOff() {
+    while (!inFlight_.empty()) {
+        pending_.push_front(std::move(inFlight_.back().note));
+        inFlight_.pop_back();
+    }
+}
+void LivePerformance::submitSmoothed(Clock::time_point now, sqlite3 *db,
+                                     PlaybackRuntime &playback,
+                                     VoiceStore *voices, unsigned rootMidi) {
+    const auto snap = playback.snapshot();
+    acknowledge(snap);
+    // Keep decisions near the output, so changes and withdrawals can retire
+    // waiting notes.
+    constexpr std::size_t handoffLimit = 4;
+    const auto limit = handoffLimit - inFlight_.size();
+    std::array<LiveNoteInput, handoffLimit> notes{};
+    std::size_t n = 0;
+    for (auto it = pending_.begin();
+         it != pending_.end() && n < limit &&
+         it->due <= now + std::chrono::milliseconds(30);) {
+        const auto &event = it->observation;
+        if (!currentEligible(db, event.id)) {
+            finish(*it, {});
+            it = pending_.erase(it);
+            continue;
+        }
+        const auto delay =
+            std::max(0.0, std::chrono::duration<double>(it->due - now).count());
+        auto &note = notes[n];
+        note.id = nextId_ + n;
+        note.voice = voices ? voices->liveSettings(event.species, event.name)
+                            : VoiceSettings{};
+        note.midiNote = directSpeciesNote(rootMidi, event.species);
+        note.position = event.position;
+        note.notBeforeFrame =
+            snap.positionFrames +
+            static_cast<std::uint64_t>(std::ceil(delay * snap.sampleRate));
+        ++n;
+        ++it;
+    }
+    if (!n)
+        return;
+    const auto reply = playback.submitLiveBatch(
+        std::span<const LiveNoteInput>{notes.data(), n});
+    for (std::size_t i = 0; i < reply.accepted; ++i) {
+        inFlight_.push_back({std::move(pending_.front()), notes[i].id,
+                             voiceCharacterIds[static_cast<std::size_t>(
+                                 notes[i].voice.character)]});
+        pending_.pop_front();
+    }
+    nextId_ += reply.accepted;
+    if (reply.error != PlaybackError::none)
+        throw std::runtime_error("Smoothed playback submission failed");
 }
 void LivePerformance::finish(const Note &note, std::string_view character) {
     const bool played = !character.empty();
@@ -120,33 +217,30 @@ void LivePerformance::finish(const Note &note, std::string_view character) {
 void LivePerformance::playDue(Clock::time_point now, sqlite3 *db,
                               PlaybackRuntime &playback, VoiceStore *voices,
                               const LiveSettings &settings, unsigned rootMidi) {
+    if (settings.mode == LiveMode::smoothed) {
+        submitSmoothed(now, db, playback, voices, rootMidi);
+        return;
+    }
     while (!pending_.empty() && pending_.front().due <= now) {
         const auto &note = pending_.front();
         const auto &event = note.observation;
         std::string_view character;
         // Recheck the representative after it has waited. A correction or
         // withdrawal retires its note.
-        if (Clock::now() - note.due <= std::chrono::milliseconds(300)) {
-            detail::Statement current(
-                db, "SELECT 1 FROM events e JOIN revisions r ON "
-                    "r.seq=e.revision_seq WHERE e.id=?1 AND "
-                    "r.change_kind='new' AND r.live_eligible=1");
-            current.bindJson(event.id);
-            if (current.next()) {
-                const auto voice =
-                    voices ? voices->liveSettings(event.species, event.name)
-                           : VoiceSettings{};
-                const auto pitch =
-                    settings.musical
-                        ? musicalSpeciesNote(rootMidi, event.species,
-                                             settings.composition)
-                        : directSpeciesNote(rootMidi, event.species);
-                if (playback.submitLive(voice, pitch, 1, 0, event.position).ok)
-                    character = voiceCharacterIds[static_cast<std::size_t>(
-                        voice.character)];
-            }
+        if (Clock::now() - note.due <= std::chrono::milliseconds(300) &&
+            currentEligible(db, event.id)) {
+            const auto voice =
+                voices ? voices->liveSettings(event.species, event.name)
+                       : VoiceSettings{};
+            const auto pitch = (settings.mode == LiveMode::musical)
+                                   ? musicalSpeciesNote(rootMidi, event.species,
+                                                        settings.composition)
+                                   : directSpeciesNote(rootMidi, event.species);
+            if (playback.submitLive(voice, pitch, 1, 0, event.position).ok)
+                character = voiceCharacterIds[static_cast<std::size_t>(
+                    voice.character)];
         }
-        if (!character.empty() && settings.musical) {
+        if (!character.empty() && settings.mode == LiveMode::musical) {
             if (recent_.size() == 64)
                 recent_.erase(recent_.begin());
             recent_.push_back(note.group);
@@ -155,14 +249,25 @@ void LivePerformance::playDue(Clock::time_point now, sqlite3 *db,
         pending_.pop_front();
     }
 }
-std::chrono::milliseconds LivePerformance::nextServiceDelay() const {
+std::chrono::milliseconds
+LivePerformance::nextServiceDelay(bool smoothed) const {
     using namespace std::chrono;
+    if (smoothed && (!pending_.empty() || !inFlight_.empty())) {
+        if (pending_.empty() || inFlight_.size() >= 4)
+            return milliseconds(8);
+        return std::clamp(
+            ceil<milliseconds>(pending_.front().due - Clock::now()) -
+                milliseconds(30),
+            milliseconds(5), milliseconds(100));
+    }
     if (pending_.empty())
         return milliseconds(100);
     return std::clamp(ceil<milliseconds>(pending_.front().due - Clock::now()),
                       milliseconds(0), milliseconds(100));
 }
 void LivePerformance::cancel() {
+    retryHandedOff();
+    sourceWindows_.clear();
     for (const auto &note : pending_)
         finish(note);
     pending_.clear();

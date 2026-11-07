@@ -117,6 +117,210 @@ int main() {
         check(batch.received == 1 && batch.payloads.empty() &&
               batch.dropped == 1);
         check(live.poll(512).payloads.empty());
+        // FIFO mode retains every eligible record beyond both page and caller
+        // capacity, while consuming invalid/corrected records only once.
+        live.baseline();
+        for (int i = 639; i < 1839; ++i)
+            add(db, i);
+        batch = live.pollFifo(0);
+        check(batch.hasMore && batch.payloads.empty());
+        std::size_t admitted{};
+        std::string previous;
+        std::int64_t previousOffset = -1;
+        do {
+            batch = live.pollFifo(37, 1000000);
+            check(batch.dropped == 0 && batch.skippedRevisions == 0 &&
+                  batch.payloads.size() <= 37);
+            check(batch.smoothTiming.size() == batch.payloads.size());
+            for (const auto &timing : batch.smoothTiming) {
+                check(timing.sourceId == "bird" && timing.offsetUs >= previousOffset &&
+                      timing.offsetUs <= 900000000);
+                previousOffset = timing.offsetUs;
+            }
+            for (const auto &payload : batch.payloads) {
+                check(payload != previous);
+                previous = payload;
+                ++admitted;
+            }
+        } while (batch.hasMore);
+        check(admitted == 1200 && previousOffset == 1000000 &&
+              live.pollFifo().payloads.empty());
+        add(db, 1839, "corrected");
+        add(db, 1840, "new", true, "imported");
+        add(db, 1841);
+        batch = live.pollFifo(1);
+        check(batch.payloads.size() == 1 && batch.dropped == 1 &&
+              batch.received == 2 && !batch.hasMore);
+        // Separate source collection with reversed provider observation order:
+        // spacing remains monotonic across pages, retaining three observed seconds.
+        for (int i = 1842; i < 1846; ++i) {
+            add(db, i);
+            const auto observed = "2026-11-07T01:00:0" + std::to_string(1845 - i) + "Z";
+            sql(db, "UPDATE revisions SET ingested_at='2026-11-07T01:00:10Z',observed_at='" +
+                    observed + "',event_json=json_set(event_json,'$.ingested_at_utc',"
+                    "'2026-11-07T01:00:10Z','$.observed_at_utc','" + observed + "') WHERE seq=" +
+                    std::to_string(i));
+        }
+        batch = live.pollFifo(2);
+        check(batch.smoothTiming.size() == 2 && batch.hasMore &&
+              batch.smoothTiming[0].offsetUs == 0 &&
+              batch.smoothTiming[1].offsetUs > 0);
+        const auto secondOffset = batch.smoothTiming[1].offsetUs;
+        batch = live.pollFifo(2);
+        check(batch.smoothTiming.size() == 2 && !batch.hasMore &&
+              batch.smoothTiming[0].offsetUs > secondOffset &&
+              batch.smoothTiming[1].offsetUs == 3000000);
+        // Ascending unequal observation gaps are retained proportionally.
+        for (int i = 1846; i < 1849; ++i) {
+            add(db, i);
+            const auto seconds = i == 1846 ? "00" : (i == 1847 ? "01" : "10");
+            const auto observed = std::string("2026-11-07T01:00:") + seconds + "Z";
+            sql(db, "UPDATE revisions SET ingested_at='2026-11-07T01:00:20Z',observed_at='" +
+                    observed + "',event_json=json_set(event_json,'$.ingested_at_utc',"
+                    "'2026-11-07T01:00:20Z','$.observed_at_utc','" + observed + "') WHERE seq=" +
+                    std::to_string(i));
+        }
+        batch = live.pollFifo();
+        check(batch.smoothTiming.size() == 3 && batch.smoothTiming[0].offsetUs == 0 &&
+              batch.smoothTiming[1].offsetUs == 1000000 &&
+              batch.smoothTiming[2].offsetUs == 10000000);
+        // Pending FIFO rows must not survive privacy/store replacement.
+        add(db, 1849);
+        sql(db, "UPDATE metadata SET value='fifo-reset'");
+        check(live.pollFifo().storeReset);
+        check(live.pollFifo().payloads.empty());
+        for (int i = 1850; i < 2550; ++i)
+            add(db, i);
+        batch = live.pollFifo(512);
+        check(batch.payloads.size() == 512 && batch.hasMore && batch.dropped == 0);
+        batch = live.pollFifo(512);
+        check(batch.payloads.size() == 188 && !batch.hasMore && batch.dropped == 0);
+        // Deleted sequence gaps do not turn into long runs of empty polls.
+        add(db, 1000000);
+        batch = live.pollFifo();
+        check(batch.payloads.size() == 1 && !batch.hasMore);
+        // Repeated timestamps mixed with irregular ascending observations
+        // retain unequal data gaps, with distinct neutral intra-timestamp onsets.
+        for (int i = 1000001; i <= 1000004; ++i) {
+            add(db, i);
+            const auto seconds = i < 1000003 ? "00" : (i == 1000003 ? "01" : "10");
+            const auto observed = std::string("2026-11-07T01:00:") + seconds + "Z";
+            sql(db, "UPDATE revisions SET ingested_at='2026-11-07T01:01:00Z',observed_at='" +
+                    observed + "',event_json=json_set(event_json,'$.ingested_at_utc',"
+                    "'2026-11-07T01:01:00Z','$.observed_at_utc','" + observed + "') WHERE seq=" +
+                    std::to_string(i));
+        }
+        batch = live.pollFifo();
+        check(batch.smoothTiming.size() == 4 && batch.smoothTiming[0].offsetUs == 0 &&
+              batch.smoothTiming[1].offsetUs > batch.smoothTiming[0].offsetUs &&
+              batch.smoothTiming[2].offsetUs > batch.smoothTiming[1].offsetUs &&
+              batch.smoothTiming[3].offsetUs > batch.smoothTiming[2].offsetUs &&
+              batch.smoothTiming[3].offsetUs == 10000000);
+        // An empty/partial successful poll measures cadence even though it
+        // created no revisions. It prevents stretching to the last animal event.
+        sql(db, "CREATE TABLE polls(source_id TEXT,completed_at TEXT,complete INTEGER);"
+                "CREATE INDEX polls_completed ON polls(source_id,completed_at);"
+                "INSERT INTO polls VALUES('bird','2026-11-07T01:01:55Z',0)");
+        for (int i = 1000005; i <= 1000006; ++i) {
+            add(db, i);
+            sql(db, "UPDATE revisions SET ingested_at='2026-11-07T01:02:00Z',"
+                    "event_json=json_set(event_json,'$.ingested_at_utc',"
+                    "'2026-11-07T01:02:00Z') WHERE seq=" + std::to_string(i));
+        }
+        batch = live.pollFifo();
+        check(batch.smoothTiming.size() == 2 && batch.smoothTiming[0].offsetUs == 0 &&
+              batch.smoothTiming[1].offsetUs == 5000000);
+        // Monotonic newest-first batches retain genuine unequal reverse gaps.
+        for (int i = 1000007; i <= 1000009; ++i) {
+            add(db, i);
+            const auto seconds = i == 1000007 ? "10" : (i == 1000008 ? "09" : "00");
+            const auto observed = std::string("2026-11-07T01:00:") + seconds + "Z";
+            sql(db, "UPDATE revisions SET ingested_at='2026-11-07T01:03:00Z',observed_at='" +
+                    observed + "',event_json=json_set(event_json,'$.ingested_at_utc',"
+                    "'2026-11-07T01:03:00Z','$.observed_at_utc','" + observed + "') WHERE seq=" +
+                    std::to_string(i));
+        }
+        batch = live.pollFifo();
+        check(batch.smoothTiming.size() == 3 && batch.smoothTiming[0].offsetUs == 0 &&
+              batch.smoothTiming[1].offsetUs == 1000000 &&
+              batch.smoothTiming[2].offsetUs == 10000000);
+        // A short poll interval does not squash a real 60-second observation
+        // span: genuine observed timing is retained within normal source cadence.
+        sql(db, "INSERT INTO polls VALUES('bird','2026-11-07T01:03:55Z',1)");
+        for (int i = 1000010; i <= 1000011; ++i) {
+            add(db, i);
+            const auto observed = i == 1000010 ? "2026-11-07T01:00:00Z"
+                                              : "2026-11-07T01:01:00Z";
+            sql(db, std::string("UPDATE revisions SET ingested_at='2026-11-07T01:04:00Z',observed_at='") +
+                    observed + "',event_json=json_set(event_json,'$.ingested_at_utc',"
+                    "'2026-11-07T01:04:00Z','$.observed_at_utc','" + observed + "') WHERE seq=" +
+                    std::to_string(i));
+        }
+        batch = live.pollFifo();
+        check(batch.smoothTiming.size() == 2 && batch.smoothTiming[0].offsetUs == 0 &&
+              batch.smoothTiming[1].offsetUs == 60000000);
+        sql(db, "ALTER TABLE polls ADD COLUMN details TEXT NOT NULL DEFAULT '{}'");
+        const auto addTimed = [&](int seq, const std::string &ingested,
+                                  const std::string &observed) {
+            add(db, seq);
+            sql(db, "UPDATE revisions SET ingested_at='" + ingested +
+                    "',observed_at='" + observed +
+                    "',event_json=json_set(event_json,'$.ingested_at_utc','" +
+                    ingested + "','$.observed_at_utc','" + observed +
+                    "') WHERE seq=" + std::to_string(seq));
+        };
+        sql(db, "INSERT INTO polls VALUES('bird','2026-11-07T01:04:00Z',1,"
+                "'{\"configured_poll_seconds\":60}')");
+        addTimed(1000012, "2026-11-07T01:05:00Z", "2026-11-07T01:00:00Z");
+        addTimed(1000013, "2026-11-07T01:05:00Z", "2026-11-07T01:00:02Z");
+        addTimed(1000014, "2026-11-07T01:05:00Z", "2026-11-07T01:00:14Z");
+        batch = live.pollFifo();
+        check(batch.smoothTiming.size() == 3 && batch.smoothTiming[0].offsetUs == 0 &&
+              batch.smoothTiming[1].offsetUs == 2000000 &&
+              batch.smoothTiming[2].offsetUs == 14000000);
+        sql(db, "INSERT INTO polls VALUES('bird','2026-11-07T01:05:00Z',1,"
+                "'{\"configured_poll_seconds\":60}')");
+        addTimed(1000015, "2026-11-07T01:06:00Z", "2026-11-07T01:00:00Z");
+        addTimed(1000016, "2026-11-07T01:06:00Z", "2026-11-07T01:00:00Z");
+        batch = live.pollFifo();
+        check(batch.smoothTiming.size() == 2 && batch.smoothTiming[0].offsetUs == 0 &&
+              batch.smoothTiming[1].offsetUs == 60000000);
+        // An hour's outage is bounded by this source's configured minute.
+        sql(db, "INSERT INTO polls VALUES('bird','2026-11-07T01:06:00Z',1,"
+                "'{\"configured_poll_seconds\":60}')");
+        addTimed(1000017, "2026-11-07T02:06:00Z", "2026-11-07T01:00:00Z");
+        addTimed(1000018, "2026-11-07T02:06:00Z", "2026-11-07T01:00:00Z");
+        batch = live.pollFifo();
+        check(batch.smoothTiming.size() == 2 && batch.smoothTiming[1].offsetUs == 60000000);
+        // Fast fixtures use genuine source poll cadence, not a playback override.
+        sql(db, "INSERT INTO polls VALUES('bird','2026-11-07T02:06:00Z',1,"
+                "'{\"configured_poll_seconds\":2}')");
+        addTimed(1000019, "2026-11-07T02:06:02Z", "2026-11-07T01:00:00Z");
+        addTimed(1000020, "2026-11-07T02:06:02Z", "2026-11-07T01:00:00Z");
+        batch = live.pollFifo();
+        check(batch.smoothTiming.size() == 2 && batch.smoothTiming[1].offsetUs == 2000000);
+        addTimed(1000021, "2026-11-07T02:06:04Z", "2026-11-07T01:00:00Z");
+        batch = live.pollFifo();
+        check(batch.smoothTiming.size() == 1 && batch.smoothTiming[0].offsetUs == 0);
+        // Regional empty polls retain collector identity, while detections use
+        // canonical provider source_id. Bind through the current collection.
+        sql(db, "CREATE INDEX polls_at_completion ON polls(completed_at,source_id);"
+                "INSERT INTO polls VALUES('birdweather:oceania','2026-11-07T03:00:00Z',1,"
+                "'{\"configured_poll_seconds\":60}');"
+                "INSERT INTO polls VALUES('birdweather:oceania','2026-11-07T03:00:02Z',1,"
+                "'{\"configured_poll_seconds\":60}')");
+        addTimed(1000022, "2026-11-07T03:00:02Z", "2026-11-07T01:00:00Z");
+        addTimed(1000023, "2026-11-07T03:00:02Z", "2026-11-07T01:00:00Z");
+        sql(db, "UPDATE events SET id='birdweather:'||substr(id,6) "
+                "WHERE revision_seq IN (1000022,1000023);"
+                "UPDATE revisions SET source_id='birdweather',event_id='birdweather:'||seq,"
+                "event_json=json_set(event_json,'$.source_id','birdweather',"
+                "'$.event_id','birdweather:'||seq) WHERE seq IN (1000022,1000023)");
+        batch = live.pollFifo();
+        check(batch.smoothTiming.size() == 2 &&
+              batch.smoothTiming[0].sourceId == "birdweather" &&
+              batch.smoothTiming[0].offsetUs == 0 &&
+              batch.smoothTiming[1].offsetUs == 2000000);
         sqlite3_close(db);
         std::cout << "Live admission checks passed\n";
     } catch (const std::exception &e) {

@@ -686,6 +686,10 @@ PRAGMA user_version=3;
     // tests.
     sqlite3_limit(db, SQLITE_LIMIT_LENGTH,
                   static_cast<int>(responseLimit + 65536));
+    execute(db, "CREATE INDEX IF NOT EXISTS polls_by_completion ON polls(source_id,completed_at)");
+    execute(db, "CREATE INDEX IF NOT EXISTS polls_at_completion ON polls(completed_at,source_id)");
+    execute(db, "CREATE INDEX IF NOT EXISTS revisions_ingestion ON revisions(source_id,ingested_at,seq)");
+
 }
 Collector::~Collector() = default;
 std::vector<CollectionSourceState> Collector::sourceStates() const {
