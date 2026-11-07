@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import type { SpatialState } from "../host/contracts";
 import { spatialDraft, spatialFromDraft, type SpatialDraft } from "../host/spatialSettings";
+import { useLiveSettings } from "./LiveSettingsContext";
 import { recipeStillCurrent } from "./recipeIdentity";
 import { useHost, useHostQuery, valueOf } from "./HostContext";
 import { useAppState, useDispatch } from "./store";
@@ -66,8 +67,36 @@ export function SpatialProvider({ children }: { children: ReactNode }) {
   const ready = !!draft && query.status === "ready" && refs.current.loadedId === state.transport.preparationId;
   const busy = state.soundscape.operation !== null || connection !== "connected" || applying;
   const dirty = !!draft && !!accepted && JSON.stringify(draft) !== JSON.stringify(spatialDraft(accepted.settings));
-  return <Context.Provider value={{ draft, accepted, ready, busy, dirty, message: query.status === "error" ? query.error.message : message, edit, apply, refresh }}>{children}</Context.Provider>;
+  return <Context.Provider value={{ draft, accepted, ready, busy, dirty, message: query.status === "error" ? query.error.message : message, edit, apply, refresh }}><LiveSpatialAdapter>{children}</LiveSpatialAdapter></Context.Provider>;
 }
 export function useSpatialEditor() {
   const value = useContext(Context); if (!value) throw Error("SpatialProvider missing"); return value;
+}
+
+/** Keeps separate live/replay drafts; live changes affect future phrases without preparing a piece. */
+function LiveSpatialAdapter({children}: {children: ReactNode}) {
+  const saved = useSpatialEditor(), live = useLiveSettings(), app = useAppState();
+  const {client, connection} = useHost();
+  const [draft, setDraft] = useState<SpatialDraft | null>(null), [message, setMessage] = useState<string | null>(null);
+  const accepted = useRef<string | null>(null);
+  useEffect(() => {
+    if (!live.state?.spatial) return;
+    const next = JSON.stringify(live.state.spatial);
+    if (next !== accepted.current) { accepted.current = next; setDraft(spatialDraft(live.state.spatial)); setMessage(null); }
+  }, [live.state?.spatial]);
+  const busy = live.busy || connection !== "connected";
+  const apply = async () => {
+    if (!draft || busy) return;
+    try { const settings = spatialFromDraft(draft); if (await live.change({spatial: settings})) setMessage("Live regions applied to upcoming observations."); }
+    catch (error) { setMessage((error as Error).message); }
+  };
+  const value: SpatialEditorState = {
+    draft, accepted: live.state?.spatial ? {settings: live.state.spatial, preparation: null} : null,
+    ready: !!draft && connection === "connected", busy,
+    dirty: !!draft && !!live.state?.spatial && JSON.stringify(draft) !== JSON.stringify(spatialDraft(live.state.spatial)),
+    message: live.error ?? message,
+    edit: change => { if (!busy) {setDraft(previous => previous ? change(previous) : null); setMessage(null);} },
+    apply, refresh: live.refresh,
+  };
+  return <Context.Provider value={app.mode === "live" && client.supports("setLiveSettings") ? value : saved}>{children}</Context.Provider>;
 }

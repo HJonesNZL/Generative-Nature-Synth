@@ -12,7 +12,8 @@ import { Toggle } from "../../components/Toggle";
 
 export function RegionEffectsPanel({ voiceName }: { voiceName: string | null }) {
   const { client } = useHost();
-  return client.supports("getSpatial") && client.supports("setSpatial") ? <NativeSpatialEditor /> : <LegacyRegionEffectsPanel voiceName={voiceName} />;
+  const {mode} = useAppState();
+  return mode === "live" && client.supports("setLiveSettings") || client.supports("getSpatial") && client.supports("setSpatial") ? <NativeSpatialEditor /> : <LegacyRegionEffectsPanel voiceName={voiceName} />;
 }
 function LegacyRegionEffectsPanel({ voiceName }: { voiceName: string | null }) {
   const { client } = useHost();

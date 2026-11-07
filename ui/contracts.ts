@@ -29,7 +29,22 @@ export interface TransportState {
   durationUs: Int64String;
 }
 
-export interface LiveListeningState {
+export interface LiveSettings {
+  mode: "direct" | "musical";
+  density: number; // whole notes per phrase, 1..8
+  composition: CompositionSettings;
+  spatial: SpatialSettings;
+}
+export interface LiveOutcome {
+  voiceCharacter?: "struck" | "whistle" | "reed" | "bell" | "air" | "pulse" | null;
+  eventId: string;
+  speciesId: string | null;
+  region: string | null;
+  status: "queued" | "sounded" | "grouped" | "skipped";
+  representativeId: string | null;
+}
+export interface LiveListeningState extends Partial<LiveSettings> {
+  grouped?: number;
   enabled: boolean;
   status: "off" | "listening" | "error";
   received: number;
@@ -314,6 +329,8 @@ export interface SpatialState {
 }
 
 export interface HostMethods {
+  setLiveSettings: { request: Partial<LiveSettings>; response: LiveListeningState };
+  getLiveOutcome: { request: { eventId: string }; response: { outcome: LiveOutcome | null } };
   getLiveState: { request: Record<string, never>; response: LiveListeningState };
   setLiveEnabled: { request: { enabled: boolean }; response: LiveListeningState };
   getSpatial: { request: Record<string, never>; response: SpatialState };

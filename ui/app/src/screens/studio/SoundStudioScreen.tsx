@@ -51,11 +51,11 @@ export function SoundStudioScreen() {
 }
 
 function ContextStrip({ actions }: { actions: ReactNode }) {
-  const { caps } = useHost();
+  const { caps, client } = useHost();
   const state = useAppState();
   const catalog = useCatalog();
   const text = caps?.libraryAvailable === false && state.mode === "live" ? "Choose a soundscape to edit." : caps?.implementation === "native" && !caps.audioAvailable ? "Data preview · audio unavailable" : state.mode === "live"
-    ? caps?.implementation === "native" ? "Choose a saved piece to edit." : "Live edits apply to new arrivals."
+    ? client.supports("setLiveSettings") ? "Live edits apply to upcoming observations." : caps?.implementation === "native" ? "Choose a saved piece to edit." : "Live edits apply to new arrivals."
     : state.mode === "replay"
       ? state.replay.session ? `Editing for ${state.replay.session.id.startsWith("scene:") ? "soundscape" : "saved piece"} “${state.replay.session.name}”${state.replay.session.origin === "imported_bundle" ? " (imported)" : ""}.` : "Replay — no piece open."
       : state.history.frozen ? `Editing for frozen history “${state.history.frozen.name}”.` : state.history.result ? "History selection · not frozen" : "History — no selection yet.";

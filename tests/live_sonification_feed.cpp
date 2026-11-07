@@ -5,6 +5,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace {
 void require(bool condition, const char *message) {
@@ -18,25 +19,35 @@ std::string nowUtc() {
             .count());
 }
 std::string detection(const std::string &id, const std::string &observed,
-                      const std::string &confidence = "0.87") {
+                      const std::string &confidence = "0.87",
+                      unsigned species = 424242) {
     return "{\"id\":\"" + id + "\",\"timestamp\":\"" + observed +
-           R"(","coords":{"lat":-41,"lon":174},"species":{"id":424242,"scientificName":"Fixture species","commonName":"Fixture live bird"},"station":{"id":"fixture-live-station"},"confidence":)" +
+           R"(","coords":{"lat":-41,"lon":174},"species":{"id":)" + std::to_string(species) +
+           R"(,"scientificName":"Fixture species","commonName":"Fixture live bird"},"station":{"id":"fixture-live-station"},"confidence":)" +
            confidence +
            R"(,"score":9.6,"probability":0.99,"certainty":"almost_certain"})";
 }
-atlas::CollectionResult feed(atlas::Collector &collector,
-                             const std::string &nodes) {
-    const auto response =
-        R"({"data":{"detections":{"nodes":[)" + nodes +
-        R"(],"pageInfo":{"hasNextPage":false,"endCursor":null}}}})";
-    return collector.collect(
+atlas::CollectionResult feedPages(atlas::Collector &collector,
+                                  const std::vector<std::string> &pages) {
+    std::size_t next{};
+    const auto result = collector.collect(
         "birdweather", nowUtc(), [&](const atlas::CollectionRequest &request) {
             require(request.url == "https://app.birdweather.com/graphql" &&
-                        !request.body.empty(),
+                        !request.body.empty() && next < pages.size(),
                     "Unexpected injected fixture request");
-            return response; // No HTTP client or network operation exists in
-                             // this fixture.
+            const auto index = next++;
+            const bool more = next < pages.size();
+            return R"({"data":{"detections":{"nodes":[)" + pages[index] +
+                   R"(],"pageInfo":{"hasNextPage":)" + (more ? "true" : "false") +
+                   R"(,"endCursor":)" + (more ? "\"fixture-page-" + std::to_string(next) + "\"" : "null") +
+                   "}}}}";
         });
+    require(next == pages.size(), "Collector did not consume all fixture pages");
+    return result;
+}
+atlas::CollectionResult feed(atlas::Collector &collector,
+                             const std::string &nodes) {
+    return feedPages(collector, {nodes});
 }
 } // namespace
 int main(int argc, char **argv) {
@@ -59,7 +70,7 @@ int main(int argc, char **argv) {
                 "Baseline fixture was not inserted exactly once");
         std::cout << "{\"status\":\"ready\",\"events\":1,\"revisions\":1}"
                   << std::endl;
-        bool inserted{}, quiet{};
+        bool inserted{}, quiet{}, dense{};
         std::string current, command;
         while (std::getline(std::cin, command)) {
             if (command == "quit")
@@ -98,6 +109,24 @@ int main(int argc, char **argv) {
                 quiet = true;
                 std::cout << "{\"status\":\"duplicates\",\"events\":3,"
                              "\"revisions\":4,\"duplicates\":2,\"corrected\":1}"
+                          << std::endl;
+            } else if (command == "dense") {
+                require(quiet && !dense, "Dense phase requires completed sparse duplicate checks");
+                const auto observed = nowUtc();
+                std::vector<std::string> pages(2);
+                for (unsigned i = 0; i < 500; ++i) {
+                    auto &nodes = pages[i / 250];
+                    if (i % 250) nodes += ',';
+                    nodes += detection("fixture-dense-" + std::to_string(i), observed,
+                                       "0.87", 424242 + i % 8);
+                }
+                const auto result = feedPages(collector, pages);
+                require(result.inserted == 500 && result.corrected == 0 &&
+                            result.invalidRecords == 0,
+                        "Dense fixture must commit exactly 500 genuine fixture observations");
+                dense = true;
+                std::cout << "{\"status\":\"dense\",\"events\":503,"
+                             "\"revisions\":504,\"inserted\":500,\"speciesGroups\":8}"
                           << std::endl;
             } else {
                 throw std::invalid_argument("Unknown fixture command");

@@ -69,7 +69,7 @@ def provenance(database):
     with sqlite3.connect(database.as_uri() + '?mode=ro', uri=True) as db:
         counts = dict(events=db.execute('SELECT count(*) FROM events').fetchone()[0],
                       revisions=db.execute('SELECT count(*) FROM revisions').fetchone()[0])
-        require(counts == dict(events=3, revisions=4), 'Canonical counts differ: ' + repr(counts))
+        require(counts == dict(events=503, revisions=504), 'Canonical counts differ: ' + repr(counts))
         rows = db.execute('SELECT change_kind, event_json, raw_json FROM revisions WHERE '
                           "json_extract(event_json,'$.provider_event_id')='fixture-current' ORDER BY seq").fetchall()
         require(len(rows) == 2, 'Expected one current insertion and its correction')
@@ -100,7 +100,11 @@ def provenance(database):
                 'Provider correction was not preserved')
         require(json.loads(rows[0][2])['confidence'] == .87 and
                 json.loads(rows[1][2])['confidence'] == .93, 'Raw provider records were lost')
-        return {**counts, 'source': first['source_id'], 'stationId': first['station_id'],
+        dense = db.execute("SELECT count(*),count(DISTINCT json_extract(event_json,'$.species_id')) "
+                           "FROM revisions WHERE json_extract(event_json,'$.provider_event_id') "
+                           "LIKE 'fixture-dense-%'").fetchone()
+        require(dense == (500, 8), 'Dense fixture observations/species groups differ: ' + repr(dense))
+        return {**counts, 'denseObservations': dense[0], 'denseSpeciesGroups': dense[1], 'source': first['source_id'], 'stationId': first['station_id'],
                 'observedAtUtc': first['observed_at_utc'], 'provenancePreserved': True}
 
 
@@ -129,6 +133,8 @@ def main():
                 inserted = fixture.command('live')
                 wait_marker(Path(str(receipt) + '.admitted'), app)
                 duplicates = fixture.command('duplicates')
+                wait_marker(Path(str(receipt) + '.dense-ready'), app)
+                dense = fixture.command('dense')
                 try:
                     result = app.wait(timeout=90)
                 except subprocess.TimeoutExpired as failure:
@@ -142,6 +148,19 @@ def main():
             listening, off = sonification['listening'], sonification['off']
             require(listening['enabled'] is True and listening['received'] == 1 and
                     listening['admitted'] == 1, 'Current insertion was not admitted exactly once')
+            require(listening.get('mode') == 'musical' and listening.get('density') == 4,
+                    'React did not select musical mode/density')
+            outcome = sonification.get('selectedOutcome', {})
+            require(outcome.get('status') == 'sounded' and
+                    outcome.get('speciesId') == 'birdweather:species:424242' and outcome.get('voiceCharacter') == 'struck',
+                    'Selected React observation did not report its sounded species outcome')
+            dense_state = sonification.get('dense', {})
+            require(dense_state.get('received') == 501 and 2 <= dense_state.get('admitted', 0) <= 5 and
+                    dense_state.get('grouped', 0) > 0 and dense_state.get('dropped', 0) > 0 and
+                    dense_state['admitted'] + dense_state['grouped'] + dense_state['dropped'] == 501,
+                    'Dense phrase did not complete with bounded, conserved musical accounting')
+            require(sonification.get('outputPeakDbfs', -96) > -96,
+                    'Actual output signal was not observed by React polling')
             require(off['enabled'] is False, 'Live sonification did not turn off')
             frames = sonification['callbackFrames']
             require(isinstance(frames, str) and frames.isdecimal() and int(frames) > 0,
@@ -152,9 +171,14 @@ def main():
                     'Live listening header error regression was not checked')
             for method in ('getTransport', 'getAudioState'):
                 require(sonification['polls'][method] >= 3, 'Missing React live polls: ' + method)
-            evidence = dict(schema='animal-atlas-live-sonification-package-v1', status='passed',
+            require(sonification.get('denseCountersRendered') is True and sonification.get('muteMeterCleared') is True,
+                    'Dense React counters or mute meter reset were not verified')
+            require(sonification['polls'].get('getLiveOutcome', 0) >= 1,
+                    'Missing actual React selected-outcome polling')
+            require(int(sonification['denseCallbackFrames']) > int(frames), 'Dense output callbacks did not advance')
+            evidence = dict(schema='animal-atlas-live-sonification-package-v2', status='passed',
                 binary=str(args.binary.resolve()), fixture=str(args.fixture.resolve()),
-                fixturePhases=[baseline, inserted, duplicates], database=provenance(state / 'live.sqlite3'),
+                fixturePhases=[baseline, inserted, duplicates, dense], database=provenance(state / 'live.sqlite3'),
                 sonification=sonification, shutdownComplete=True,
                 limits=dict(disposableOnly=True, providerRequests=False, ownerStateAccess=False,
                             device=args.device, physicalSpeakers=False, heardAudioVerified=False))

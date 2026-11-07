@@ -15,6 +15,7 @@ import { formatTime, formatUs, zoneAbbreviation } from "./time";
 import { LiveListeningControl } from "./LiveListeningControl";
 import { AudioDeviceSettings } from "./AudioDeviceSettings";
 import { LiveSourcesControl } from "./LiveSources";
+import { useLiveSettings } from "./LiveSettingsContext";
 import type { HostMethods } from "../host/contracts";
 import { useCoalescedGesture } from "./useCoalescedGesture";
 
@@ -22,7 +23,8 @@ export function Header({ demoMenu, projectTools }: { demoMenu?: ReactNode; proje
   const state = useAppState();
   const dispatch = useDispatch();
   const { client, caps, onNotification } = useHost();
-  const [audioQ, refreshAudio] = useHostQuery("getAudioState", {}, [state.soundscape.epoch], { refreshMs: 1000 });
+  const livePlayback = useLiveSettings().state;
+  const [audioQ, refreshAudio] = useHostQuery("getAudioState", {}, [state.soundscape.epoch], { refreshMs: livePlayback?.enabled || state.transport.state === "playing" ? 250 : 1000 });
   const nativeLiveSources = caps?.implementation === "native" && client.supports("getLiveSources");
   const [collectionQ, refreshCollection] = useHostQuery("getCollectionState", nativeLiveSources ? null : {}, [], { refreshMs: 1000 });
   const audio = valueOf(audioQ);

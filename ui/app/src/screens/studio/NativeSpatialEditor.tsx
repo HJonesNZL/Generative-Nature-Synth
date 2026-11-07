@@ -1,10 +1,15 @@
 import { useMemo, useState } from "react";
+import { LiveCompositionPanel } from "../../app/LiveCompositionPanel";
+import { useHost } from "../../app/HostContext";
+import { useAppState } from "../../app/store";
 import { useSpatialEditor } from "../../app/SpatialContext";
 import { spatialDraft, newSpatialRegion, spatialNumbers } from "../../host/spatialSettings";
 import { Map2D } from "../../components/map/Map2D";
 import { BOUNDS_WORLD, type MapRegion } from "../../components/map/geo";
 
 export function NativeSpatialEditor() {
+  const {client} = useHost();
+  const live = useAppState().mode === "live" && client.supports("setLiveSettings");
   const { draft, accepted, ready, busy, dirty, message, edit, apply, refresh } = useSpatialEditor();
   const [selection, setSelection] = useState(0);
   const index = Math.min(selection, Math.max(0, (draft?.regions.length ?? 0) - 1));
@@ -32,6 +37,7 @@ export function NativeSpatialEditor() {
     edit(previous => { const regions = [...previous.regions]; const from = regions[index], to = regions[target]; if (!from || !to) return previous; [regions[index], regions[target]] = [to, from]; return { ...previous, regions }; }); setSelection(target);
   };
   return <aside className="studio__right native-spatial" aria-label="Regional spatial mixing">
+    {live ? <details className="panel-details"><summary>Live key & scale</summary><LiveCompositionPanel /></details> : null}
     <span className="label">REGIONAL MIXING & AMBIENCE</span>
     <span className="small muted">Custom regions · first match wins</span>
     <fieldset disabled={busy || !ready}>
@@ -52,15 +58,15 @@ export function NativeSpatialEditor() {
       </details>
       <button type="button" className="btn btn--primary btn--sm" disabled={!dirty} onClick={() => void apply()}>Apply spatial settings</button>
     </fieldset>
-    {!ready ? <p className="small muted">Open a saved piece in Replay to edit its spatial recipe.</p> : null}
+    {!ready ? <p className="small muted">{live ? "Live spatial settings unavailable from this host." : "Open a saved piece in Replay to edit its spatial recipe."}</p> : null}
     {dirty ? <p className="small" role="status">Spatial edits pending</p> : null}
     {accepted?.routedNotes !== undefined ? <p className="small" aria-label="Spatial note accounting">{accepted.routedNotes} routed · {accepted.unassignedNotes ?? 0} unassigned · {accepted.wetActive ? "ambience active" : "no audible ambience"}</p> : null}
     <details className="panel-details small muted"><summary>Routing & ambience help</summary>
     <p>Custom regions are geographic selections, not animal habitats. Outside or missing positions use centred direct sound without a region send. Station records use the receiver position; individual fixes retain their reported uncertainty.</p>
     <p className="small muted">Centre pan is −3 dB per channel. West greater than east crosses the dateline. Echo / room blend: 0 is room, 1 is echo. Room decay is nominal.</p>
-    <p className="small muted">Ambience applies a compensating overall level reduction; more configured regions share the return. Apply stops Listening and resets ambience. Save soundscape also applies pending composition and spatial edits.</p>
+    <p className="small muted">Ambience applies a compensating overall level reduction; more configured regions share the return. {live ? "Live settings apply to upcoming observations." : "Apply stops Listening and resets ambience. Save soundscape also applies pending composition and spatial edits."}</p>
     </details>
-    <span className="small muted">Apply stops Listening and resets ambience.</span>
+    <span className="small muted">{live ? "Apply changes upcoming live observations." : "Apply stops Listening and resets ambience."}</span>
     {message ? <p className="small" role="status">{message} <button className="btn btn--quiet btn--sm" disabled={busy} onClick={refresh}>Reload spatial settings</button></p> : null}
     <span className="small muted">Experimental ambience · listening approval pending</span>
   </aside>;

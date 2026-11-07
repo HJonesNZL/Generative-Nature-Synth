@@ -15,8 +15,8 @@ import readline from 'node:readline';
 process.on('SIGTERM', () => { setTimeout(() => { process.stdout.write('{"requestId":"retired","ok":true}\\n'); process.exit(0); }, 30); });
 readline.createInterface({ input: process.stdin }).on('line', line => {
  const req = JSON.parse(line);
- if (req.method === 'hold' || req.method === 'setTransport') return;
- setTimeout(() => process.stdout.write(JSON.stringify({ requestId: req.requestId, ok: true, result: { pid: process.pid, exportDirectory: process.env.ATLAS_EXPORT_DIRECTORY } }) + '\\n'), ['wait', 'prepareReplay', 'getCatalog', 'getAudioDevices'].includes(req.method) ? 150 : 0);
+ if (req.method === 'hold' || req.method === 'setTransport' || req.method === 'setLiveSettings') return;
+ setTimeout(() => process.stdout.write(JSON.stringify({ requestId: req.requestId, ok: true, result: { pid: process.pid, exportDirectory: process.env.ATLAS_EXPORT_DIRECTORY } }) + '\\n'), ['wait', 'prepareReplay', 'getCatalog', 'getAudioDevices', 'getLiveState', 'getLiveOutcome'].includes(req.method) ? 150 : 0);
 });
 `);
   // The nested source needs actual JS backslash-n string literals.
@@ -65,13 +65,20 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
     const replacementPid = JSON.parse(replacement.text).result.pid;
     assert.notEqual(replacementPid, workerPid);
     workerPid = replacementPid;
-    for (const method of ['prepareReplay', 'getCatalog', 'getAudioDevices']) {
+    for (const method of ['prepareReplay', 'getCatalog', 'getAudioDevices', 'getLiveState', 'getLiveOutcome']) {
       const preparing = send(envelope(`cancelled-${method}`, method)); preparing.promise.catch(() => {});
       await new Promise(resolve => setTimeout(resolve, 20)); preparing.cancel();
       const afterPrepare = await send(envelope(`after-${method}`)).promise;
       assert.equal(afterPrepare.status, 200);
       assert.equal(JSON.parse(afterPrepare.text).result.pid, workerPid);
     }
+    const liveMutation = send({...envelope('cancelled-live-settings', 'setLiveSettings'), args: {mode: 'musical'}}); liveMutation.promise.catch(() => {});
+    await new Promise(resolve => setTimeout(resolve, 30)); liveMutation.cancel();
+    const afterLiveMutation = await send(envelope('after-live-settings')).promise;
+    assert.equal(afterLiveMutation.status, 200);
+    const liveReplacementPid = JSON.parse(afterLiveMutation.text).result.pid;
+    assert.notEqual(liveReplacementPid, workerPid, 'abandoned live setting mutation retires audible worker');
+    workerPid = liveReplacementPid;
     const started = Date.now();
     assert.equal((await send(envelope('timeout', 'hold')).promise).status, 503);
     assert.ok(Date.now() - started >= 4500 && Date.now() - started < 8000);

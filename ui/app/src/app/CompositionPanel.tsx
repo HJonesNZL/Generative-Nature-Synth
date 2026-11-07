@@ -1,3 +1,4 @@
+import { LiveCompositionPanel } from "./LiveCompositionPanel";
 import { useEffect, useRef, useState } from "react";
 import type { CompositionSettings, CompositionState } from "../host/contracts";
 import { recipeStillCurrent } from "./recipeIdentity";
@@ -6,6 +7,10 @@ import { useAppState, useDispatch } from "./store";
 
 /** One persistent draft above screen changes. Save finalizes it after voice queues. */
 export function CompositionPanel({ onAttention }: { onAttention?: () => void }) {
+  const state = useAppState();
+  return <><div hidden={state.mode !== "live"}><LiveCompositionPanel /></div><div hidden={state.mode === "live"}><SavedCompositionPanel onAttention={onAttention} /></div></>;
+}
+function SavedCompositionPanel({ onAttention }: { onAttention?: () => void }) {
   const { client, connection } = useHost();
   const state = useAppState(), dispatch = useDispatch();
   const [query, refresh] = useHostQuery("getComposition", {}, [state.transport.preparationId, state.soundscape.epoch]);

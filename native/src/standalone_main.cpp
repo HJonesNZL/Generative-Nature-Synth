@@ -735,8 +735,8 @@ class Shell final : public juce::Component, private juce::Timer {
                 // a genuine worker stall/fault observable before renewing.
                 playback.heartbeat();
                 if (Clock::now() >= nextLiveTick) {
-                    host->serviceLive();
-                    nextLiveTick = Clock::now() + std::chrono::milliseconds(100);
+                    const auto delay = host->serviceLive();
+                    nextLiveTick = Clock::now() + delay;
                 }
                 std::optional<Work> work;
                 {
@@ -1349,7 +1349,7 @@ class Shell final : public juce::Component, private juce::Timer {
                     const auto parsed = juce::JSON::parse(value->toString());
                     const auto stage = parsed["feedStage"].toString();
                     if (safe->launch_.smokeSonification && stage != safe->smokeFeedStage_ &&
-                        (stage == "armed" || stage == "admitted")) {
+                        (stage == "armed" || stage == "admitted" || stage == "dense-ready")) {
                         const juce::File marker(string(safe->launch_.smokeReceipt) + "." + stage);
                         if (marker.replaceWithText(stage))
                             safe->smokeFeedStage_ = stage;
@@ -1412,7 +1412,7 @@ class Window final : public juce::DocumentWindow {
 class Application final : public juce::JUCEApplication {
   public:
     const juce::String getApplicationName() override { return "Animal Atlas"; }
-    const juce::String getApplicationVersion() override { return "0.7.1"; }
+    const juce::String getApplicationVersion() override { return "0.8.0"; }
     bool moreThanOneInstanceAllowed() override { return true; }
     void initialise(const juce::String &) override {
         try {

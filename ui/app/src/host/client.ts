@@ -91,11 +91,30 @@ function validVoiceReply(method: string, value: unknown, args: unknown): boolean
     (reply.editingBehavior === undefined || reply.editingBehavior === "new_notes");
 }
 function validLiveListeningReply(method: string, value: unknown): boolean {
-  if (!["getLiveState", "setLiveEnabled"].includes(method)) return true;
+  if (method === "getLiveOutcome") {
+    if (!value || typeof value !== "object") return false;
+    const outcome = (value as {outcome?: unknown}).outcome;
+    if (outcome === null) return true;
+    if (!outcome || typeof outcome !== "object") return false;
+    const o = outcome as Record<string, unknown>;
+    const boundedId = (v: unknown, max: number, allowEmpty = false) => typeof v === "string" && (allowEmpty || v.length > 0) && v.length <= max;
+    return boundedId(o.eventId, 2048) && (o.speciesId === null || boundedId(o.speciesId, 512, true)) &&
+      (o.voiceCharacter === undefined || o.voiceCharacter === null || ["struck", "whistle", "reed", "bell", "air", "pulse"].includes(o.voiceCharacter as string)) &&
+      (o.region === null || typeof o.region === "string" && o.region.length <= 256) &&
+      ["queued", "sounded", "grouped", "skipped"].includes(o.status as string) &&
+      (o.representativeId === null || boundedId(o.representativeId, 2048));
+  }
+  if (!["getLiveState", "setLiveEnabled", "setLiveSettings"].includes(method)) return true;
   if (!value || typeof value !== "object") return false;
   const state = value as Record<string, unknown>;
   return typeof state.enabled === "boolean" && ["off", "listening", "error"].includes(state.status as string) &&
     [state.received, state.admitted, state.dropped, state.skippedRevisions].every(count => Number.isSafeInteger(count) && (count as number) >= 0) &&
+    (state.mode === undefined || state.mode === "direct" || state.mode === "musical") &&
+    (state.density === undefined || Number.isInteger(state.density) && (state.density as number) >= 1 && (state.density as number) <= 8) &&
+    (state.grouped === undefined || Number.isSafeInteger(state.grouped) && (state.grouped as number) >= 0) &&
+    (state.composition === undefined || validCompositionReply("getComposition", { settings: state.composition, preparation: null })) &&
+    (state.spatial === undefined || validSpatialSettings(state.spatial)) &&
+    (method !== "setLiveSettings" || state.mode !== undefined && state.density !== undefined && state.composition !== undefined && state.spatial !== undefined) &&
     typeof state.error === "string" && state.error.length <= 4096 &&
     (state.status !== "listening" || state.enabled === true) && (state.status !== "off" || state.enabled === false);
 }

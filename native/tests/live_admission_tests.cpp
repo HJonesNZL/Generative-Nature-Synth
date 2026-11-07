@@ -107,6 +107,16 @@ int main() {
                 "WHERE id='bird:622';DELETE FROM revisions WHERE "
                 "event_id='bird:622'");
         check(live.poll().storeReset);
+        for (int i = 626; i < 638; ++i)
+            add(db, i);
+        batch = live.poll(512);
+        check(batch.received == 12 && batch.payloads.size() == 12 &&
+              batch.dropped == 0);
+        add(db, 638);
+        batch = live.poll(0);
+        check(batch.received == 1 && batch.payloads.empty() &&
+              batch.dropped == 1);
+        check(live.poll(512).payloads.empty());
         sqlite3_close(db);
         std::cout << "Live admission checks passed\n";
     } catch (const std::exception &e) {

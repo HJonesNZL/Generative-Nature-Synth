@@ -148,7 +148,7 @@ export function nativeBridge() {
                   // Reads and preparation may finish into a discarded response;
                   // preserve FIFO correlation for the replacement selection.
                   // An abandoned audible mutation retires the process immediately.
-                  if (!['getCapabilities', 'getChanges', 'getCatalog', 'listSessions', 'listSessionsPage', 'getMaterialEvents', 'getTransport', 'getAudioState', 'getAudioDevices', 'getVoiceLibrary', 'getVoice', 'getComposition', 'getSpatial', 'prepareReplay', 'listSoundscapes', 'listExports', 'getRenderJob'].includes(request.method)) fail();
+                  if (!['getCapabilities', 'getChanges', 'getCatalog', 'listSessions', 'listSessionsPage', 'getMaterialEvents', 'getTransport', 'getAudioState', 'getAudioDevices', 'getVoiceLibrary', 'getVoice', 'getComposition', 'getSpatial', 'getLiveState', 'getLiveOutcome', 'prepareReplay', 'listSoundscapes', 'listExports', 'getRenderJob'].includes(request.method)) fail();
                   return;
                 }
                 const entry = pending.get(request.requestId);

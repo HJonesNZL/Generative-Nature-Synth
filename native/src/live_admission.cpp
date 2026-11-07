@@ -32,7 +32,8 @@ bool LiveAdmission::baseline() {
     cursor_ = head.integer(1);
     return reset;
 }
-LiveBatch LiveAdmission::poll() {
+LiveBatch LiveAdmission::poll(std::size_t limit) {
+    limit = std::min<std::size_t>(limit, 512);
     const Snapshot snapshot(db_);
     Statement head(db_, "SELECT value,(SELECT COALESCE(MAX(seq),0) FROM "
                         "revisions) FROM metadata WHERE key='store_id'");
@@ -87,7 +88,7 @@ LiveBatch LiveAdmission::poll() {
             ++result.dropped;
             continue;
         }
-        if (result.payloads.size() == 8) {
+        if (result.payloads.size() == limit) {
             ++result.dropped;
             continue;
         }

@@ -2,6 +2,7 @@
  * Atlas right column — the approved H2 "Region Mix" panel above the event
  * inspector / incoming list.
  */
+import { LiveObservationOutcome } from "../../app/LiveObservationOutcome";
 import { useEffect, useMemo, useState } from "react";
 import type { EventView } from "../../host/contracts";
 import type { MaterialRef, MusicalOutcome, RegionSpeciesActivity } from "../../host/provisional";
@@ -165,6 +166,7 @@ function EventPanel({ view, catalog, latest, onLocate }: Props) {
       ) : (
         <div role="tabpanel" id="panel-incoming" aria-labelledby="tab-incoming" className="event-panel__body">
           {state.mode === "live" && view.allEvents.length > incoming.length ? <p className="small muted">Showing {incoming.length} of {view.allEvents.length} matching records; {view.allEvents.length - incoming.length} omitted. Sampled across sources and geographic sectors, ordered by observed time.</p> : null}
+          {state.mode === "live" && incoming[0] ? <LiveObservationOutcome event={incoming[0]} /> : null}
           {incoming.length === 0 ? <EmptyState title="Nothing here yet">{state.mode === "live" ? "Collected detections appear here, ordered by observation time." : "No events in this material."}</EmptyState> : (
             <ul className={state.mode === "live" ? "incoming latest-detections" : "incoming"} aria-label={state.mode === "live" ? "Latest detections by observation time" : "Events"}>
               {incoming.map((e, index) => state.mode === "live" ? (
@@ -207,6 +209,7 @@ function Inspector({ event, outcome, catalog, onLocate }: { onLocate: (event: Ev
   const [libQ] = useHostQuery("getVoiceLibrary", {}, []);
   const lib = valueOf(libQ);
   const voiceId = outcome && "voiceId" in outcome ? outcome.voiceId : lib?.entries.flatMap((g) => g.species.map((s) => ({ s, g }))).find(({ s }) => s.speciesId === event.speciesId)?.s.voiceId ?? null;
+  const live = useAppState().mode === "live";
   const o = outcomeText(outcome);
   const identity = event.individualId ? `Individual ${event.individualId}${event.deploymentId ? ` (deployment ${event.deploymentId})` : ""}` : "Species only — individual unknown";
   const location = !event.position ? "No usable position" : ["station_detection", "receiver_detection"].includes(event.locationKind) && event.stationId ? `${catalog.stationName(event.stationId)} receiver position (not the animal’s position)` : `${event.locationKind === "reported_location" || event.eventKind === "human_observation" ? "Reported observation location" : "Measured fix"}; reported accuracy ${event.position.uncertaintyMetres != null ? `±${event.position.uncertaintyMetres} m` : "unknown"}`;
@@ -225,14 +228,14 @@ function Inspector({ event, outcome, catalog, onLocate }: { onLocate: (event: Ev
         <dt>Source</dt><dd>{catalog.sourceName(event.sourceId)}{event.attribution ? ` · ${event.attribution}` : ""}</dd>
       </dl>
       {event.position && markerKeyForEvent(event) ? <button type="button" className="btn btn--quiet btn--sm" onClick={() => onLocate(event)}>Locate observation on map</button> : null}
-      <p className="small"><span aria-hidden="true">→ </span>{o.short}</p>
+      {live ? <LiveObservationOutcome event={event} /> : <p className="small"><span aria-hidden="true">→ </span>{o.short}</p>}
       <details className="panel-details small"><summary>Record details</summary>
         <dl className="kv kv--tight">
           <dt>Kind</dt><dd>{KIND_TEXT[event.eventKind]}</dd>
           <dt>Arrived</dt><dd className="mono">{formatTime(event.firstSeenAtUtc)} {zoneAbbreviation(event.firstSeenAtUtc)}</dd>
           <dt>Confidence</dt><dd>{event.confidence ? `${event.confidence.value.toFixed(2)} — ${event.confidence.meaning}` : "Not provided"}</dd>
         </dl>
-        <p>{o.long}</p>
+        {!live ? <p>{o.long}</p> : null}
       </details>
       <button
         type="button"
@@ -243,7 +246,7 @@ function Inspector({ event, outcome, catalog, onLocate }: { onLocate: (event: Ev
       >
         {voiceId ? "Edit voice →" : "Assign voice →"}
       </button>
-      {!client.supports("getMusicalOutcomes") ? <span className="small muted">This host does not report musical outcomes.</span> : null}
+      {!(live ? client.supports("getLiveOutcome") : client.supports("getMusicalOutcomes")) ? <span className="small muted">This host does not report musical outcomes.</span> : null}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 #pragma once
+#include <chrono>
 #include <filesystem>
 #include <memory>
 #include <string>
@@ -26,7 +27,7 @@ class UiHost {
     // exports.
     void setLibrary(const std::filesystem::path &library);
     std::string request(std::string_view envelope);
-    void serviceLive();
+    std::chrono::milliseconds serviceLive();
     void stopLive() noexcept;
 
   private:

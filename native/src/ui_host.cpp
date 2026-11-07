@@ -1,5 +1,6 @@
 #include "event_validation.hpp"
 #include "json_text.hpp"
+#include "live_performance.hpp"
 #include "piece_jobs.hpp"
 #include "sqlite_statement.hpp"
 #include <algorithm>
@@ -101,6 +102,9 @@ class Object {
         if (field.type != "true" && field.type != "false")
             throw std::invalid_argument("boolean argument required");
         return field.type == "true";
+    }
+    bool has(std::string_view key) const {
+        return fields_.contains(std::string(key));
     }
     bool null(std::string_view key) const {
         const auto i = fields_.find(std::string(key));
@@ -443,10 +447,16 @@ std::string audioView(const PlaybackSnapshot &snapshot,
     const auto status = snapshot.error != PlaybackError::none ? "device_lost"
                         : snapshot.enabled                    ? "running"
                                                               : "disabled";
+    const double peak =
+        std::max(snapshot.outputPeakLeft, snapshot.outputPeakRight);
+    const double peakDb =
+        peak > 0 ? std::max(-96.0, 20 * std::log10(peak)) : -96.0;
     return "{\"status\":" + quoteJson(status) + ",\"deviceName\":" +
            (catalog.active ? quoteJson(catalog.active->name) : "null") +
            ",\"masterGainDb\":" + std::to_string(snapshot.gainDb) +
-           ",\"peakDbfs\":null,\"meterIsSimulated\":false,\"clipping\":false,"
+           ",\"peakDbfs\":" + (snapshot.enabled ? decimal(peakDb) : "null") +
+           ",\"meterIsSimulated\":false,\"clipping\":" +
+           (peak >= 1 ? "true," : "false,") +
            "\"activeSynthVoices\":null,\"maxSynthVoices\":8," +
            "\"sampleRate\":" +
            (snapshot.deviceSampleRate
@@ -546,9 +556,11 @@ struct UiHost::Impl {
     std::uint64_t generation{};
     PlaybackRuntime *playback{};
     std::unique_ptr<LiveAdmission> liveAdmission;
+    LiveSettings liveSettings;
+    LivePerformance performance;
     bool liveEnabled{};
-    std::uint64_t liveReceived{}, liveAdmitted{}, liveDropped{}, liveSkipped{};
-    std::string liveError;
+    std::uint64_t liveReceived{}, liveInvalid{}, liveSkipped{};
+    std::string liveError, liveStoreId;
     std::chrono::steady_clock::time_point liveLastService{};
     std::string liveState() const {
         return "{\"enabled\":" + std::string(liveEnabled ? "true" : "false") +
@@ -557,12 +569,20 @@ struct UiHost::Impl {
                          : liveEnabled      ? "listening"
                                             : "off") +
                ",\"received\":" + std::to_string(liveReceived) +
-               ",\"admitted\":" + std::to_string(liveAdmitted) +
-               ",\"dropped\":" + std::to_string(liveDropped) +
+               ",\"admitted\":" + std::to_string(performance.sounded) +
+               ",\"dropped\":" +
+               std::to_string(performance.skipped + liveInvalid) +
+               ",\"grouped\":" + std::to_string(performance.grouped) +
+               ",\"mode\":" +
+               quoteJson(liveSettings.musical ? "musical" : "direct") +
+               ",\"density\":" + std::to_string(liveSettings.density) +
+               ",\"composition\":" + compositionView(liveSettings.composition) +
+               ",\"spatial\":" + spatialView(liveSettings.spatial) +
                ",\"skippedRevisions\":" + std::to_string(liveSkipped) +
                ",\"error\":" + quoteJson(liveError) + "}";
     }
     void retireLive() {
+        performance.cancel();
         liveEnabled = false;
         liveAdmission.reset();
     }
@@ -586,16 +606,30 @@ struct UiHost::Impl {
                 "Live listening requires the managed live library and output");
         auto admission = std::make_unique<LiveAdmission>(db.get());
         admission->baseline();
+        liveStoreId = admission->storeId();
         auto settings = context.audio;
         if (!prepared)
             settings.masterDb = -18;
-        settings.composition.enabled = false;
-        settings.spatial.enabled = false;
         prepared.reset();
         saved = {};
         voiceSlots.clear();
         context = {};
         context.audio = settings;
+        prepareLiveOutput();
+        liveAdmission = std::move(admission);
+        liveEnabled = true;
+        liveError.clear();
+        performance = {};
+        liveReceived = liveInvalid = liveSkipped = 0;
+        liveLastService = std::chrono::steady_clock::now();
+    }
+    void prepareLiveOutput() {
+        auto settings = context.audio;
+        settings.composition = liveSettings.composition;
+        settings.composition.enabled = liveSettings.musical;
+        settings.spatial = liveSettings.spatial;
+        settings.spatial.enabled =
+            liveSettings.musical && settings.spatial.enabled;
         auto result = playback->prepareLive(settings);
         if (result.ok)
             result = playback->enable(true);
@@ -607,11 +641,70 @@ struct UiHost::Impl {
             playback->enable(false);
             throw std::runtime_error(playbackErrorText(result.error));
         }
-        liveAdmission = std::move(admission);
-        liveEnabled = true;
-        liveError.clear();
-        liveReceived = liveAdmitted = liveDropped = liveSkipped = 0;
-        liveLastService = std::chrono::steady_clock::now();
+    }
+    void updateLiveSettings(const Object &args) {
+        if (!liveAvailable() || !args.size())
+            throw std::invalid_argument(
+                "Live settings require the managed library and an edit");
+        auto next = liveSettings;
+        if (args.has("mode")) {
+            const auto mode = args.text("mode", 16);
+            if (mode != "direct" && mode != "musical")
+                throw std::invalid_argument("Unknown live mode");
+            next.musical = mode == "musical";
+        }
+        if (args.has("density")) {
+            next.density = static_cast<unsigned>(args.number("density", 8));
+            if (!next.density)
+                throw std::invalid_argument("Choose one to eight live notes");
+        }
+        if (args.has("composition")) {
+            next.composition =
+                readComposition(db.get(), args.object("composition"));
+            next.composition.enabled = true;
+        }
+        if (args.has("spatial"))
+            next.spatial = readSpatial(db.get(), args.object("spatial"));
+        const bool retune =
+            next.composition.tonicPitchClass !=
+                liveSettings.composition.tonicPitchClass ||
+            next.composition.scale != liveSettings.composition.scale;
+        const bool reroute =
+            args.has("spatial") &&
+            spatialView(next.spatial) != spatialView(liveSettings.spatial);
+        const bool rebuild = next.musical != liveSettings.musical ||
+                             (next.musical && (reroute || retune));
+        liveSettings = std::move(next);
+        if (liveEnabled && rebuild) {
+            performance.cancel();
+            try {
+                prepareLiveOutput();
+            } catch (const std::exception &e) {
+                stopLive();
+                liveError = e.what();
+            }
+        }
+    }
+    std::string liveOutcome(const std::string &id) const {
+        const auto *o = performance.outcome(id);
+        if (!o)
+            return "{\"outcome\":null}";
+        // A cached result must not disclose a withdrawn record or a replaced
+        // library.
+        Statement visible(db.get(), "SELECT (SELECT value FROM metadata WHERE "
+                                    "key='store_id') FROM events WHERE id=?1");
+        visible.bindJson(id);
+        if (!visible.next() || visible.text(0) != liveStoreId)
+            return "{\"outcome\":null}";
+        return "{\"outcome\":{\"eventId\":" + quoteJson(o->eventId) +
+               ",\"speciesId\":" + quoteJson(o->speciesId) +
+               ",\"region\":" + quoteJson(o->region) +
+               ",\"status\":" + quoteJson(o->status) +
+               ",\"voiceCharacter\":" + (o->voiceCharacter.empty() ? "null" : quoteJson(o->voiceCharacter)) +
+               ",\"representativeId\":" +
+               (o->representativeId.empty() ? "null"
+                                            : quoteJson(o->representativeId)) +
+               "}}";
     }
     void serviceLive() {
         if (!liveEnabled)
@@ -628,39 +721,45 @@ struct UiHost::Impl {
                 return;
             }
             playback->heartbeat();
+            if (now - liveLastService > std::chrono::seconds(5))
+                performance.cancel();
             if (now - liveLastService > std::chrono::seconds(5) &&
                 liveAdmission->baseline()) {
+                performance = {};
                 liveError =
                     "Live library changed. Enable Listening again to resume.";
                 stopLive();
                 return;
             }
             liveLastService = now;
-            const auto batch = liveAdmission->poll();
+            const auto batch = liveAdmission->poll(512);
             if (batch.storeReset) {
+                performance = {};
                 liveError =
                     "Live library changed. Enable Listening again to resume.";
                 stopLive();
                 return;
             }
             liveReceived += batch.received;
-            liveDropped += batch.dropped;
+            liveInvalid += batch.dropped;
             liveSkipped += batch.skippedRevisions;
+            std::vector<LiveObservation> observations;
+            observations.reserve(batch.payloads.size());
             for (const auto &payload : batch.payloads) {
                 Object event(db.get(), payload);
-                const auto species = event.optionalText("species_id");
-                const auto settings =
-                    voices ? voices->liveSettings(
-                                 species, event.optionalText("common_name"))
-                           : VoiceSettings{};
-                const auto note =
-                    directSpeciesNote(context.audio.rootMidi, species);
-                const auto result = playback->submitLive(settings, note);
-                if (result.ok)
-                    ++liveAdmitted;
-                else
-                    ++liveDropped;
+                LiveObservation observation{event.text("event_id", 2048),
+                                            event.optionalText("species_id"),
+                                            event.optionalText("common_name"),
+                                            {}};
+                if (!event.null("latitude") && !event.null("longitude"))
+                    observation.position = Position{event.real("latitude"),
+                                                    event.real("longitude")};
+                observations.push_back(std::move(observation));
             }
+            const auto clock = std::chrono::steady_clock::now();
+            performance.accept(std::move(observations), liveSettings, clock);
+            performance.playDue(clock, db.get(), *playback, voices,
+                                liveSettings, context.audio.rootMidi);
         } catch (const std::exception &) {
             liveError =
                 "Live listening failed while reading committed detections";
@@ -1242,6 +1341,7 @@ void UiHost::setLibrary(const std::filesystem::path &library) {
         throw std::invalid_argument("library must be an existing regular file");
     auto next = std::make_unique<Impl>(library, impl_->playback, impl_->voices,
                                        impl_->storage);
+    next->liveSettings = impl_->liveSettings;
     next->pieces = std::move(impl_->pieces);
     next->renders = std::move(impl_->renders);
     next->renderScenes = std::move(impl_->renderScenes);
@@ -1249,7 +1349,10 @@ void UiHost::setLibrary(const std::filesystem::path &library) {
     impl_.swap(next);
 }
 
-void UiHost::serviceLive() { impl_->serviceLive(); }
+std::chrono::milliseconds UiHost::serviceLive() {
+    impl_->serviceLive();
+    return impl_->performance.nextServiceDelay();
+}
 void UiHost::stopLive() noexcept {
     try {
         impl_->stopLive();
@@ -1286,7 +1389,8 @@ std::string UiHost::request(std::string_view envelope) {
                 result +=
                     R"(,"startPieceFreeze","startPieceImport","getPieceJob","cancelPieceJob","openManagedPiece")";
             if (impl_->liveAvailable())
-                result += R"(,"getLiveState","setLiveEnabled")";
+                result +=
+                    R"(,"getLiveState","setLiveEnabled","getLiveOutcome","setLiveSettings")";
             if (impl_->playback)
                 result +=
                     R"(,"getTransport","setTransport","getAudioState","setAudioEnabled","getAudioDevices","setAudioDevice")";
@@ -1311,6 +1415,14 @@ std::string UiHost::request(std::string_view envelope) {
             if (args.size())
                 throw std::invalid_argument("unexpected arguments");
             result = impl_->liveState();
+        } else if (impl_->liveAvailable() && method == "setLiveSettings") {
+            Object args(impl_->db.get(), arguments,
+                        {"mode", "density", "composition", "spatial"});
+            impl_->updateLiveSettings(args);
+            result = impl_->liveState();
+        } else if (impl_->liveAvailable() && method == "getLiveOutcome") {
+            Object args(impl_->db.get(), arguments, {"eventId"});
+            result = impl_->liveOutcome(args.text("eventId", 2048));
         } else if (impl_->playback && method == "setLiveEnabled") {
             Object args(impl_->db.get(), arguments, {"enabled"});
             if (args.boolean("enabled")) {
