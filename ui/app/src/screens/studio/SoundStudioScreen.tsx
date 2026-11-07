@@ -41,7 +41,7 @@ export function SoundStudioScreen() {
 
   return (
     <main className="screen studio" id="main" aria-label="Sound Studio">
-      <ContextStrip actions={<StudioActions selectedEventId={state.selectedEventId} />} />
+      <ContextStrip actions={<StudioActions selectedEventId={view.allEvents.some(event => event.id === state.selectedEventId) ? state.selectedEventId : null} />} />
       <VoiceLibrary entries={lib?.entries ?? []} dirtyIds={dirty} status={libStatus} />
       <VoiceEditor key={`${state.soundscape.epoch}:${state.selectedVoiceId ?? "no-voice"}`} parameters={lib?.parameters ?? []} types={lib?.types} editingBehavior={lib?.editingBehavior} catalog={catalog} onDirtyChange={onDirtyChange} />
       <RegionEffectsPanel voiceName={voiceName} />
@@ -63,7 +63,7 @@ function ContextStrip({ actions }: { actions: ReactNode }) {
     <div className="context-strip" role="status">
       <span className="badge badge--context">{state.mode.toUpperCase()}</span>
       <span className="small">{text}</span>
-      {state.highlightSpeciesId ? <span className="small muted">{catalog.speciesName(state.highlightSpeciesId)}</span> : null}
+      {state.highlightSpeciesId && catalog.data?.species.some(species => species.id === state.highlightSpeciesId) ? <span className="small muted">{catalog.speciesName(state.highlightSpeciesId)}</span> : null}
       <div className="context-strip__actions">{actions}</div>
     </div>
   );

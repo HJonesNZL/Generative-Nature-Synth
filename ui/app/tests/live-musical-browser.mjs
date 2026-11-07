@@ -16,17 +16,22 @@ try {
   const errors=[];page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(10000);
   await page.addInitScript(()=>{
     const stamp=new Date().toISOString();
-    const event={id:'musical-event-1',revisionSequence:'1',sourceId:'fixture',speciesId:'fixture-bird',commonName:'Fixture bird',individualId:null,deploymentId:null,stationId:'receiver',eventKind:'acoustic_species_detection',locationKind:'station_detection',position:{latitude:-38,longitude:176,uncertaintyMetres:null},observedAtUtc:stamp,firstSeenAtUtc:stamp,confidence:null,attribution:'Synthetic UI qualification',qualityFlags:[],provenance:'demo'};
+    const event={id:'musical-event-1',revisionSequence:'1',sourceId:'fixture',speciesId:'fixture-bird',commonName:'Fixture bird',individualId:null,deploymentId:null,stationId:'receiver',eventKind:'acoustic_species_detection',locationKind:'station_detection',position:{latitude:-38,longitude:176,uncertaintyMetres:null},observedAtUtc:stamp,firstSeenAtUtc:stamp,confidence:null,attribution:'Synthetic UI qualification',qualityFlags:[],provenance:'live_source'};
     const f=window.musicalFixture={peak:-18,calls:[],live:{enabled:false,status:'off',received:1,admitted:1,dropped:0,skippedRevisions:0,grouped:0,error:'',mode:'direct',density:3,composition:{enabled:true,tempoBpm:90,tonicPitchClass:0,scale:'majorPentatonic',density:1,variation:.25,seed:1,quantize:true},spatial:{enabled:false,amount:.25,regions:[]}},outcome:{eventId:event.id,speciesId:event.speciesId,region:'New Zealand',status:'sounded',voiceCharacter:'whistle',representativeId:null}};
-    const methods=['getCapabilities','getCatalog','getChanges','getLiveState','setLiveEnabled','setLiveSettings','getLiveOutcome','getAudioState'];
+    const source=id=>({id,enabled:id==='birdweather',polling:false,lastAttemptUtc:null,lastSuccessUtc:null,lastObservationUtc:null,error:null,records:'0',complete:false,gap:false,nextPollSeconds:60});
+    const session={id:'musical-session',storeId:'musical-ui',baselineRevision:'0',observedFromUtc:new Date(Date.parse(stamp)-1000).toISOString()};
+    const methods=['getLiveSources','getLiveChanges','getCapabilities','getCatalog','getChanges','getLiveState','setLiveEnabled','setLiveSettings','getLiveOutcome','getAudioState'];
     window.atlasHost={request:async request=>{
       const {method,args}=request;f.calls.push({method,args});let result;
       if(method==='getCapabilities')result={protocolVersion:1,implementation:'native',supportedMethods:methods,audioAvailable:true,supportsSmoothedLive:true,libraryAvailable:true,maxEventBatch:500,maxVisibleMarkers:400};
       else if(method==='getCatalog')result={species:[{id:'fixture-bird',commonName:'Fixture bird',scientificName:'Synthetic species',group:'bird'}],stations:[{id:'receiver',name:'Fixture receiver',sourceId:'fixture',latitude:-38,longitude:176,positionDescription:'Test'}],sources:[{id:'fixture',name:'Synthetic fixture'}],limited:false};
+      else if(method==='getLiveSources')result={collecting:true,libraryActive:true,session,sources:[source('birdweather'),source('nzsharks')]};
+      else if(method==='getLiveChanges')result={sessionId:session.id,sessionActive:true,storeId:'musical-ui',nextSequence:'1',events:args.afterSequence==='0'?[{event,liveEligible:false,change:'baseline'}]:[]};
       else if(method==='getChanges')result={storeId:'musical-ui',nextSequence:'1',events:args.afterSequence==='0'?[{event,liveEligible:false,change:'baseline'}]:[]};
       else if(method==='getAudioState')result={status:f.live.enabled?'running':'disabled',deviceName:null,masterGainDb:-18,peakDbfs:f.live.enabled?f.peak:null,meterIsSimulated:false,clipping:false,activeSynthVoices:0,maxSynthVoices:24};
       else if(method==='getLiveOutcome')result={outcome:f.outcome};
       else {if(method==='setLiveEnabled'){f.live.enabled=args.enabled;f.live.status=args.enabled?'listening':'off';}if(method==='setLiveSettings')Object.assign(f.live,args);result=f.live;}
+      if(method==='getLiveChanges')Object.assign(result,{removedEventIds:[],hasMore:false});
       return {ok:true,requestId:request.requestId,result:structuredClone(result)};
     }};
   });

@@ -13,6 +13,8 @@ import { EmptyState, Notice } from "../../components/Notice";
 import { SegmentedControl } from "../../components/SegmentedControl";
 import type { MaterialView } from "../shared/useMaterialView";
 import { SessionBrowser } from "./SessionBrowser";
+import { useLiveSpeciesCounts } from "../../app/LiveSpeciesCountsContext";
+import { useLiveCollection } from "../../app/LiveCollectionContext";
 import { LiveSourcesStatus } from "../../app/LiveSources";
 
 export function LeftColumn({ view, catalog }: { view: MaterialView; catalog: Catalog }) {
@@ -28,23 +30,27 @@ export function LeftColumn({ view, catalog }: { view: MaterialView; catalog: Cat
 function SpeciesPanel({ view, catalog }: { view: MaterialView; catalog: Catalog }) {
   const { highlightSpeciesId } = useAppState();
   const { caps } = useHost();
+  const {session, connected} = useLiveCollection();
+  const ranking = useLiveSpeciesCounts();
   const dispatch = useDispatch();
   const [search, setSearch] = useState("");
   const counts = useMemo(() => {
+    if (caps?.implementation === "native" && ranking.rows !== null) return new Map(ranking.rows.map(row => [row.speciesId, row.count]));
     const c = new Map<string, number>();
     for (const e of view.allEvents) if (e.speciesId) c.set(e.speciesId, (c.get(e.speciesId) ?? 0) + 1);
     return c;
-  }, [view]);
+  }, [view, caps?.implementation, ranking.rows]);
   const species = useMemo(() => {
     const known = catalog.data?.species ?? [];
     const ids = new Set(known.map((species) => species.id));
-    const extra = [...counts.keys()].filter((id) => !ids.has(id)).map((id) => ({ id, commonName: id, scientificName: "", group: "unknown" }));
+    const extra = [...counts.keys()].filter((id) => !ids.has(id)).map((id) => ({ id, commonName: ranking.rows?.find(row => row.speciesId === id)?.commonName || id, scientificName: "", group: "unknown" }));
     return [...known, ...extra].sort((a, b) => a.commonName.localeCompare(b.commonName));
-  }, [catalog.data, counts]);
+  }, [catalog.data, counts, ranking.rows]);
   return (
     <section className="stack-sm">
       {caps?.libraryAvailable === false ? <p className="small muted">No live library connected. {caps.supportedMethods.includes("getLiveSources") ? "Open Collect to choose live sources and start updates." : "Choose a wildlife library in the app toolbar."}</p> : null}
-      <span className="label" title="Counts include all loaded records. Select a species to highlight its reported locations.">SPECIES · {species.length} AVAILABLE</span>
+      {caps?.implementation === "native" && !session ? <p className="small muted">{connected ? "Start Collect to see observations from this collection session. Older records remain in History and saved pieces." : "Waiting for the current collection session."}</p> : null}
+      <span className="label" title="Counts describe this collection session. Select a species to highlight its displayed locations.">SPECIES · {species.length} AVAILABLE</span>
       {catalog.status === "unsupported" ? <Notice tone="caution" title="Species list unavailable">This host does not provide a catalogue.</Notice> : null}
       {catalog.data?.limited ? <Notice tone="caution" title="Catalogue display limited">More names or stations are available than can be displayed (500 species, 500 receivers, 128 sources).</Notice> : null}
       <label className="sr-only" htmlFor="species-search">Find species</label>

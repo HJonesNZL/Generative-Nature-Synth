@@ -1,0 +1,13 @@
+/* Only the live ranking scrolls; replay playhead and coverage keep their layout. */
+.grain--live .grain__lanes { min-height: 0; }
+.grain--live .grain__scroll {
+  display: flex; flex-direction: column; gap: 5px; min-height: 0;
+  overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable;
+  flex: 1; padding-right: 5px;
+}
+.grain--live .grain__lane { grid-template-columns: minmax(90px, 150px) minmax(0, 1fr) 54px; flex-shrink: 0; }
+.grain--live .grain__name { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.grain--live .grain__ticks { min-width: 0; }
+.grain__count { text-align: right; font-family: var(--font-mono); font-size: var(--fs-small); font-variant-numeric: tabular-nums; }
+.grain--live .grain__axis { margin-left: 160px; margin-right: 69px; flex-shrink: 0; }
+.grain__rows { display: contents; }

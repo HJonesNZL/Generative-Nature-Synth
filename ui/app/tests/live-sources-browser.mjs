@@ -19,7 +19,7 @@ page.setDefaultTimeout(15000);
 await page.addInitScript(() => {
   const saved = JSON.parse(sessionStorage.getItem('liveSourceFixture') || 'null');
   const paused = id => ({ id, enabled: false, polling: false, lastAttemptUtc: null, lastSuccessUtc: null, lastObservationUtc: null, error: null, records: '0', complete: false, gap: false, nextPollSeconds: 0 });
-  const fixture = window.liveSourceTest = { state: saved?.state || { collecting: false, libraryActive: false, sources: [paused('birdweather'), paused('nzsharks')] }, calls: saved?.calls || [], failApply: false, failRead: false, libraryActive: saved?.libraryActive || false };
+  const fixture = window.liveSourceTest = { state: saved?.state || { collecting: false, libraryActive: false, session:null,sources: [paused('birdweather'), paused('nzsharks')] }, calls: saved?.calls || [], failApply: false, failRead: false, libraryActive: saved?.libraryActive || false };
   const persist = () => sessionStorage.setItem('liveSourceFixture', JSON.stringify({ state: fixture.state, calls: fixture.calls, libraryActive: fixture.libraryActive }));
   const methods = ['getCapabilities', 'getLiveSources', 'setLiveSources', 'getCatalog', 'getChanges'];
   window.atlasHost = { request: async request => {
@@ -37,7 +37,10 @@ await page.addInitScript(() => {
       const libraryChanged = !fixture.libraryActive && args.sourceIds.length > 0;
       fixture.libraryActive ||= args.sourceIds.length > 0;
       fixture.state.libraryActive = fixture.libraryActive;
+      const wasCollecting=fixture.state.collecting;
       fixture.state.collecting = args.sourceIds.length > 0;
+      if (!fixture.state.collecting) fixture.state.session=null;
+      else if (!wasCollecting) fixture.state.session={id:'fixture-'+Date.now(),storeId:'synthetic-managed-live',baselineRevision:'0',observedFromUtc:new Date().toISOString()};
       fixture.state.sources = fixture.state.sources.map(source => ({ ...source, enabled: args.sourceIds.includes(source.id), polling: false, nextPollSeconds: args.sourceIds.includes(source.id) ? source.id === 'birdweather' ? 60 : 900 : 0 }));
       persist();
       result = { ...fixture.state, libraryChanged };
@@ -83,7 +86,7 @@ try {
     Object.assign(window.liveSourceTest.state.sources[0], { polling: false, lastAttemptUtc: new Date(Date.now() - 60000).toISOString(), lastSuccessUtc: new Date(Date.now() - 60000).toISOString(), lastObservationUtc: new Date(Date.now() - 3 * 86400000).toISOString(), records: '123', complete: false, gap: true });
   });
   await sourceSection.getByText('Last update 1 min ago', { exact: true }).waitFor();
-  await sourceSection.getByText('Newest detection 3 d old', { exact: true }).waitFor();
+  assert.equal(await sourceSection.getByText('Newest detection 3 d old', {exact:true}).count(),0,'Historical source observation age is not a live-session observation');
   await sourceSection.getByText('Collection gap reported', { exact: true }).waitFor();
   await sourceSection.getByText('Partial source update · coverage incomplete', { exact: true }).waitFor();
   await page.evaluate(() => { window.liveSourceTest.state.sources[0].error = 'pagination_limit_reached'; });
@@ -136,7 +139,7 @@ try {
   const calls = await page.evaluate(() => window.liveSourceTest.calls);
   assert.equal(calls.some(call => ['getCollectionState', 'setCollection', 'getSourceHealth', 'setAudioEnabled'].includes(call.method)), false);
   assert.deepEqual(errors, []); assert.deepEqual(external, []); assert.deepEqual(bridge, []);
-  const result = { checks: ['explicit native source selection with disclosure draft retention', 'no legacy duration/listen promises or legacy collection calls', 'failed apply observable and retry preserves draft', 'managed-library activation reload', 'enabled does not imply Connected', 'waiting/updating/last update/actual observation age separate', 'partial coverage and collection gap visible', 'page-cap and excluded-record results are partial updates, not failed fetches', 'rate-limited source and 86400s retry supported', 'apply both source streams, pause updates and status read recovery', 'external archive browsing distinguished from scene-only startup', '1440x900 and 1280x800 Atlas/Collect/Studio layouts'], pageErrors: errors, external, bridge };
+  const result = { checks: ['explicit native source selection with disclosure draft retention', 'no legacy duration/listen promises or legacy collection calls', 'failed apply observable and retry preserves draft', 'managed-library activation reload', 'enabled does not imply Connected', 'waiting/updating/last update visible; historical observation metrics omitted from Live', 'partial coverage and collection gap visible', 'page-cap and excluded-record results are partial updates, not failed fetches', 'rate-limited source and 86400s retry supported', 'apply both source streams, pause updates and status read recovery', 'external archive browsing distinguished from scene-only startup', '1440x900 and 1280x800 Atlas/Collect/Studio layouts'], pageErrors: errors, external, bridge };
   await writeFile(resolve(output, 'result.json'), JSON.stringify(result, null, 2));
   console.log(JSON.stringify(result));
 } finally { await browser.close(); }

@@ -11,10 +11,12 @@ import { useHost } from "../../app/HostContext";
 import { useAppState, useDispatch } from "../../app/store";
 import type { Catalog } from "../../app/catalog";
 import { formatHm, zoneAbbreviation } from "../../app/time";
+import { useLiveSpeciesCounts } from "../../app/LiveSpeciesCountsContext";
+import { grainLanes } from "./grainLanes";
+import "./GrainPanel.css";
 import type { MaterialView } from "./useMaterialView";
 
 const LANE_COLORS = ["var(--c-sp-1)", "var(--c-sp-2)", "var(--c-sp-3)", "var(--c-sp-4)", "var(--c-sp-5)", "var(--c-sp-6)"];
-const MAX_LANES = 6;
 
 export function GrainPanel({ view, catalog, aside }: { view: MaterialView; catalog: Catalog; aside?: ReactNode }) {
   const state = useAppState();
@@ -23,28 +25,11 @@ export function GrainPanel({ view, catalog, aside }: { view: MaterialView; catal
   const span = Math.max(1, view.windowToMs - view.windowFromMs);
   const x = (t: number) => ((t - view.windowFromMs) / span) * 1000;
 
-  const lanes = useMemo(() => {
-    const bySpecies = new Map<string, EventView[]>();
-    const reportedNames = new Map<string, string>();
-    for (const e of view.events) {
-      if (!e.speciesId) continue;
-      const list = bySpecies.get(e.speciesId) ?? [];
-      list.push(e);
-      bySpecies.set(e.speciesId, list);
-      if (e.commonName && !reportedNames.has(e.speciesId)) reportedNames.set(e.speciesId, e.commonName);
-    }
-    const order = (catalog.data?.species ?? []).map((s) => s.id).filter((id) => bySpecies.has(id) || id === state.highlightSpeciesId);
-    // New reports can arrive before the catalogue's next refresh. Keep its
-    // known order, then append actual reported IDs without inventing lanes.
-    const listed = new Set(order);
-    for (const speciesId of bySpecies.keys()) {
-      if (!listed.has(speciesId)) { order.push(speciesId); listed.add(speciesId); }
-    }
-    const catalogueNames = new Map(catalog.data?.species.map(species => [species.id, species.commonName]) ?? []);
-    return order.slice(0, MAX_LANES).map((speciesId) => ({ speciesId, name: catalogueNames.get(speciesId) || reportedNames.get(speciesId) || speciesId, events: bySpecies.get(speciesId) ?? [] }));
-  }, [view.events, catalog.data, state.highlightSpeciesId]);
+  const live = state.mode === "live";
+  const ranking = useLiveSpeciesCounts();
+  const lanes = useMemo(() => grainLanes(view.events, catalog.data?.species ?? [], state.highlightSpeciesId, live, live && ranking.supported ? ranking.rows ?? [] : null), [view.events, catalog.data, state.highlightSpeciesId, live, ranking.rows, ranking.supported]);
 
-  const selected = view.store.get(state.selectedEventId);
+  const selected = view.allEvents.find(event => event.id === state.selectedEventId) ?? null;
   const coverage = state.mode === "history" ? state.history.result?.coverage ?? [] : [];
 
   const pick = (e: MouseEvent<SVGSVGElement>, events: EventView[]) => {
@@ -65,23 +50,26 @@ export function GrainPanel({ view, catalog, aside }: { view: MaterialView; catal
     : null;
 
   return (
-    <section className="grain" aria-label="Detections by species">
+    <section className={`grain${live ? " grain--live" : ""}`} aria-label="Detections by species">
       <div className="grain__intro">
         <span className="label">GRAIN · {view.label.toUpperCase()}</span>
-        <span className="grain__title">Every detection in view, one line each</span>
+        <span className="grain__title">{live ? "Species in this collection" : "Every detection in view, one line each"}</span>
         <details className="panel-details small muted"><summary>{state.timeBasis === "observed" ? "Observation time" : "Arrival time"} · details</summary>
-          <p>Short lines were filtered or held back.{state.mode === "live" ? " Recent received records only; coverage may be incomplete." : ""} No records do not establish that animals were absent or silent.</p>
+          <p>Short lines were filtered or held back.{state.mode === "live" ? " Counts cover this collection session; ticks show retained detections in the visible time window. Coverage may be incomplete." : ""} No records do not establish that animals were absent or silent.</p>
           {!client.supports("getMusicalOutcomes") ? <p>Musical outcomes unavailable; all lines are full height.</p> : null}
         </details>
         {view.feed.displayOmitted > 0 ? <span className="small is-caution">Display limit: {view.store.size} shown · {view.feed.displayOmitted} omitted</span> : null}
         {(view.feed.status === "retrying" || view.feed.status === "error") ? <span className="small is-problem" role="alert">{view.feed.error}</span> : null}
+        {live && ranking.error ? <span className="small is-problem" role="alert">Species counts: {ranking.error}</span> : null}
+        {live && !ranking.supported ? <span className="small muted">Counts cover retained display records.</span> : null}
         {aside}
       </div>
       <div className="grain__lanes">
         {coverage.length ? <CoverageBand coverage={coverage} x={x} /> : null}
+        <div className={live ? "grain__scroll" : "grain__rows"} role={live ? "region" : undefined} aria-label={live ? "Species ranked by detection count" : undefined} tabIndex={live ? 0 : undefined} aria-busy={live && ranking.loading}>
         {lanes.length === 0 ? (
           <p className="grain__empty">
-            {view.feed.status === "loading" ? "Loading detections…" : state.mode === "history" && !state.history.result ? "Choose species, place and time, then check available data." : state.mode === "replay" && !state.replay.session ? "Open a saved piece to see its detections." : "No records in this window · coverage may be incomplete."}
+            {live && ranking.loading ? "Loading species counts…" : view.feed.status === "loading" ? "Loading detections…" : state.mode === "history" && !state.history.result ? "Choose species, place and time, then check available data." : state.mode === "replay" && !state.replay.session ? "Open a saved piece to see its detections." : "No records in this window · coverage may be incomplete."}
           </p>
         ) : lanes.map((lane, i) => {
           const full: string[] = [];
@@ -97,16 +85,18 @@ export function GrainPanel({ view, catalog, aside }: { view: MaterialView; catal
             <div className="grain__lane" key={lane.speciesId}>
               <button type="button" className={`grain__name${highlighted ? " is-highlighted" : ""}`} aria-pressed={highlighted} onClick={() => dispatch({ type: "highlightSpecies", speciesId: highlighted ? null : lane.speciesId })}>
                 {lane.name}
-                <span className="sr-only">, {lane.events.length} detections{highlighted ? ", highlighted" : ""}</span>
+                <span className="sr-only">, {lane.count} detections{highlighted ? ", highlighted" : ""}</span>
               </button>
               <svg viewBox="0 0 1000 26" preserveAspectRatio="none" className="grain__ticks" aria-hidden="true" onClick={(e) => pick(e, lane.events)}>
                 <path d={full.join("")} stroke={LANE_COLORS[i % LANE_COLORS.length]} strokeWidth={highlighted ? 2 : 1.4} vectorEffect="non-scaling-stroke" />
                 <path d={short.join("")} stroke={LANE_COLORS[i % LANE_COLORS.length]} strokeOpacity={0.6} strokeWidth={1.2} vectorEffect="non-scaling-stroke" />
                 {selected && selected.speciesId === lane.speciesId ? <path d={`M${x(view.timeOf(selected)).toFixed(1)} 0v26`} stroke="var(--c-warn)" strokeWidth={2.5} vectorEffect="non-scaling-stroke" /> : null}
               </svg>
+              {live ? <span className="grain__count" aria-label={`${lane.count} detections`}>{lane.count.toLocaleString()}</span> : null}
             </div>
           );
         })}
+        </div>
         <div className="grain__axis" aria-hidden="true">
           {ticks.map((t, i) => <span key={i}>{i === 4 && state.mode === "live" ? "now" : formatHm(t)}</span>)}
         </div>

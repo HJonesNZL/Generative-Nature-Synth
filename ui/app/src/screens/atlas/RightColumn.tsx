@@ -145,7 +145,7 @@ function EventPanel({ view, catalog, latest, onLocate }: Props) {
   const dispatch = useDispatch();
   const { client } = useHost();
   const [tab, setTab] = useState<"selected" | "incoming">(() => state.mode === "live" && !state.selectedEventId ? "incoming" : "selected");
-  const selected = view.store.get(state.selectedEventId);
+  const selected = view.allEvents.find(event => event.id === state.selectedEventId) ?? null;
   useEffect(() => { if (selected) setTab("selected"); }, [selected?.id]);
   useEffect(() => { if (selected) view.store.requestOutcomes(client, [selected.id]); }, [selected, client, view.store]);
   const incoming = useMemo(() => state.mode === "live" ? latest : [...view.events].sort((a, b) => view.timeOf(b) - view.timeOf(a)).slice(0, 40), [view, latest, state.mode]);

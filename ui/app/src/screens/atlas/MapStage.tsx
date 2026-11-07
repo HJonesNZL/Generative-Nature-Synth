@@ -57,9 +57,10 @@ export function MapStage({ view, catalog, latest, locateRequest, sourceTypes, on
     }
     return keys;
   }, [latest]);
+  const visibleEventIds = useMemo(() => new Set(view.allEvents.map(event => event.id)), [view.allEvents]);
   const mapEvents = scope === "loaded" ? view.allEvents : view.events;
   const allMarkers = useMemo(() => buildMarkers(view, catalog, state.highlightSpeciesId, scope === "loaded").filter(marker => state.mode !== "live" || sourceTypes.includes(marker.kind === "station" ? "acoustic" : marker.kind === "reported" ? "reported" : "tracking")), [view, catalog, state.highlightSpeciesId, scope, sourceTypes, state.mode]);
-  const selected = view.store.get(state.selectedEventId);
+  const selected = view.allEvents.find(event => event.id === state.selectedEventId) ?? null;
   const selectedKey = markerKeyForEvent(selected);
   const markers = useMemo(() => boundMarkers(allMarkers, Math.min(400, caps?.maxVisibleMarkers ?? 400), selectedKey, recentMarkerKeys, latestMarkerKey), [allMarkers, caps, selectedKey, recentMarkerKeys, latestMarkerKey]);
   const newest = newestObservation(mapEvents)?.observedAtUtc;
@@ -124,7 +125,7 @@ export function MapStage({ view, catalog, latest, locateRequest, sourceTypes, on
               selectedKey={selectedKey} latestMarkerKey={latestMarkerKey} recentMarkerKeys={recentMarkerKeys} locateRequest={locateRequest}
               orientation={state.globeOrientation}
               reducedMotion={state.reducedMotion}
-              getPulses={(age) => (live ? liveStore.activePulses(age) : [])}
+              getPulses={(age) => (live ? liveStore.activePulses(age).filter(pulse => visibleEventIds.has(pulse.eventId)) : [])}
               pulseVersion={pulseVersion}
               onPick={pick}
               onOrientationChange={(o) => dispatch({ type: "globeOrientation", orientation: o })}

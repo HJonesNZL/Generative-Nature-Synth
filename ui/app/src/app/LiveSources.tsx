@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import { useLiveCollection } from "./LiveCollectionContext";
 import type { HostMethods } from "../host/contracts";
 import { useHost } from "./HostContext";
 import { formatAge } from "./time";
@@ -17,55 +18,10 @@ const DEFAULT_SOURCES: SourceId[] = ["birdweather", "nzsharks"];
  * cancels/invalidate older status reads, so an old read cannot undo its receipt.
  * Native workers own collection; this React state owns only controls and feedback.
  */
-function useLiveSourceState() {
-  const { client, caps, connection } = useHost();
-  const [status, setStatus] = useState<LiveSourceState | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
-  const [refresh, setRefresh] = useState(0);
-  const generation = useRef(0);
-  const readController = useRef<AbortController | null>(null);
-  const writing = useRef(false);
-  const mounted = useRef(true);
-  useEffect(() => { mounted.current = true; return () => { mounted.current = false; ++generation.current; readController.current?.abort(); }; }, []);
-  useEffect(() => {
-    if (!caps || connection !== "connected" || !client.supports("getLiveSources")) return;
-    let stopped = false;
-    const pull = async () => {
-      if (writing.current || document.hidden) return;
-      readController.current?.abort();
-      const controller = new AbortController();
-      readController.current = controller;
-      const requestGeneration = ++generation.current;
-      const reply = await client.call("getLiveSources", {}, { signal: controller.signal });
-      if (stopped || controller.signal.aborted || requestGeneration !== generation.current) return;
-      if (reply.ok) { setStatus(reply.value); setError(null); }
-      else setError(reply.error.message);
-    };
-    void pull();
-    const timer = window.setInterval(() => void pull(), 5000);
-    return () => { stopped = true; readController.current?.abort(); ++generation.current; window.clearInterval(timer); };
-  }, [client, caps, connection, refresh]);
-
-  const apply = useCallback(async (sourceIds: SourceId[]) => {
-    writing.current = true;
-    readController.current?.abort();
-    const requestGeneration = ++generation.current;
-    setPending(true);
-    const reply = await client.call("setLiveSources", { sourceIds }, { timeoutMs: 30000 });
-    writing.current = false;
-    if (mounted.current) {
-      setPending(false);
-      if (reply.ok && requestGeneration === generation.current) { setStatus(reply.value); setError(null); }
-    }
-    return reply;
-  }, [client]);
-  return { status, error, pending, apply, refresh: () => setRefresh(value => value + 1), connected: connection === "connected" };
-}
 
 export function LiveSourcesControl() {
   const { client, caps } = useHost();
-  const { status, error, pending, apply, connected, refresh } = useLiveSourceState();
+  const { status, error, pending, apply, connected, refresh } = useLiveCollection();
   const [draft, setDraft] = useState<SourceId[] | null>(null);
   const [applyError, setApplyError] = useState<string | null>(null);
   const enabled = status?.sources.filter(source => source.enabled).map(source => source.id) ?? [];
@@ -81,7 +37,7 @@ export function LiveSourcesControl() {
     if (caps?.implementation === "native" && reply.value.libraryChanged) { window.location.reload(); return; }
     close();
   };
-  return <Popover className="live-sources" label={collecting ? "Live collection options" : "Start live collection"} trigger={<span className={`collect-chip${collecting ? " is-on" : ""}`}><Icon name="collect" size={14} />{collecting ? "Collecting" : "Collect"}</span>}>
+  return <><Popover className="live-sources" label={collecting ? "Live collection options" : "Start live collection"} trigger={<span className={`collect-chip${collecting ? " is-on" : ""}`}><Icon name="collect" size={14} />{collecting ? "Collecting" : "Collect"}</span>}>
     {close => <div className="menu live-sources__menu">
       <p className="menu__title">Live sources</p>
       <p className="menu__note">Updates run only while this app is open. Each launch starts paused; choose sources and start again.</p>
@@ -103,12 +59,12 @@ export function LiveSourcesControl() {
       {!client.supports("setLiveSources") ? <p className="menu__note">This host cannot change live-source selection.</p> : null}
       <SourceDetails />
     </div>}
-  </Popover>;
+  </Popover>{status?.sessionError ? <span className="header-error" role="alert">{status.sessionError}</span> : null}</>;
 }
 
 export function LiveSourcesStatus() {
   const { caps } = useHost();
-  const { status, error, refresh } = useLiveSourceState();
+  const { status, error, refresh } = useLiveCollection();
   const now = Date.now();
   return <section className="stack-sm sources live-source-status" aria-label="Live source status">
     <span className="label">SOURCES</span>
@@ -128,16 +84,15 @@ function LiveSourceRow({ source, now }: { source: LiveSource; now: number }) {
     <span className="source-row__name">{SOURCE_NAMES[source.id]}</span>
     <span className="source-row__line">{update}</span>
     {source.lastSuccessUtc && (!source.enabled || source.error || source.polling) ? <span className="source-row__line">Last update {formatAge(source.lastSuccessUtc, now)} ago</span> : null}
-    <span className="source-row__line">{source.id === "nzsharks" ? "Newest reported fix" : source.id === "inaturalist" ? "Newest sighting" : "Newest detection"} {source.lastObservationUtc ? `${formatAge(source.lastObservationUtc, now)} old` : "unknown"}</span>
     {source.error ? <span className={`source-row__line${partialReason ? " is-stale" : " is-problem"}`}>{partialReason ?? `Source error: ${source.error.replaceAll("_", " ")}`}</span> : null}
     {source.gap ? <span className="source-row__line is-stale">Collection gap reported</span> : null}
     {source.lastSuccessUtc && !source.complete && (!partialReason || !source.enabled || source.polling) ? <span className="source-row__line is-stale">Partial source update · coverage incomplete</span> : null}
     <details className="panel-details">
       <summary>Collection details</summary>
-      <p>{source.records} collected records. {source.lastAttemptUtc ? `Last attempt ${formatAge(source.lastAttemptUtc, now)} ago.` : "No collection attempt this launch."}</p>
+      <p>{source.lastAttemptUtc ? `Last attempt ${formatAge(source.lastAttemptUtc, now)} ago.` : "No collection attempt this launch."}</p>
       {source.enabled && !source.polling ? <p>Next check in about {source.nextPollSeconds} seconds; source limits or retries may delay it.</p> : null}
-      {source.regions?.length ? <ul aria-label="Bird region coverage">{source.regions.map(region => <li key={region.id}>{region.id.replaceAll("_", " ")} · {region.error || region.gap ? "partial coverage" : region.lastAttemptUtc ? "checked" : "awaiting check"}{region.lastObservationUtc ? ` · last heard ${formatAge(region.lastObservationUtc, now)} ago` : ""}</li>)}</ul> : null}
-      <p>Observation age describes the animal report; update age describes when the app checked the source.</p>
+      {source.regions?.length ? <ul aria-label="Bird region coverage">{source.regions.map(region => <li key={region.id}>{region.id.replaceAll("_", " ")} · {region.error || region.gap ? "partial coverage" : region.lastAttemptUtc ? "checked" : "awaiting check"}</li>)}</ul> : null}
+      <p>Update age describes when the app checked the source.</p>
     </details>
   </div>;
 }

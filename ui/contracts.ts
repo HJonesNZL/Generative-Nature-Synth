@@ -132,7 +132,20 @@ export interface LiveSourceState {
   gap: boolean;
   nextPollSeconds: number;
 }
+export interface LiveSpeciesCount {
+  speciesId: string;
+  commonName: string;
+  count: number;
+}
+export interface LiveCollectionSession {
+  id: string;
+  storeId: string;
+  baselineRevision: Int64String;
+  observedFromUtc: UtcTimestamp;
+}
 export interface LiveSourcesState {
+  session?: LiveCollectionSession | null;
+  sessionError?: string | null;
   collecting: boolean;
   libraryActive: boolean;
   libraryChanged?: boolean;
@@ -354,6 +367,14 @@ export interface HostMethods {
   getChanges: {
     request: { storeId: string; afterSequence: Int64String; limit: number };
     response: { storeId: string; nextSequence: Int64String; baselineTotal?: number; events: Array<{ event: EventView; liveEligible: boolean; change: "baseline" | "new" | "corrected" }> };
+  };
+  getLiveChanges: {
+    request: { sessionId: string; storeId: string; afterSequence: Int64String; limit: number };
+    response: HostMethods["getChanges"]["response"] & { sessionId: string; sessionActive: boolean; removedEventIds: string[]; hasMore: boolean };
+  };
+  getLiveSpeciesCounts: {
+    request: { sessionId: string; cursor?: string; limit?: number };
+    response: { sessionId: string; sessionActive: boolean; revision: Int64String; species: LiveSpeciesCount[]; nextCursor: string | null };
   };
   startPieceFreeze: { request: { name: string; startUtc: string; endUtc: string; sourceId?: string; speciesId?: string; requestId: string }; response: PieceJob };
   startPieceImport: { request: { sessionId: string }; response: PieceJob };

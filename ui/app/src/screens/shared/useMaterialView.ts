@@ -7,6 +7,8 @@ import { useEffect, useMemo, useState } from "react";
 import type { EventView } from "../../host/contracts";
 import { useHost } from "../../app/HostContext";
 import { useEventStore, type EventStore } from "../../app/eventStore";
+import { useLiveCollection } from "../../app/LiveCollectionContext";
+import { currentSessionEvents } from "../../app/liveSession";
 import { useAppState } from "../../app/store";
 
 const LIVE_WINDOW_MS = 60 * 60_000;
@@ -26,7 +28,8 @@ export interface MaterialView {
 }
 
 export function useMaterialView(): MaterialView {
-  const { liveStore, materialStore } = useHost();
+  const { liveStore, materialStore, caps, connection } = useHost();
+  const {session} = useLiveCollection();
   const state = useAppState();
   const store = state.mode === "live" ? liveStore : materialStore;
   const version = useEventStore(store);
@@ -40,7 +43,8 @@ export function useMaterialView(): MaterialView {
   return useMemo(() => {
     const basis = state.timeBasis;
     const timeOf = (e: EventView) => Date.parse(basis === "observed" ? e.observedAtUtc : e.firstSeenAtUtc);
-    const allEvents = store.all();
+    const visible = state.mode !== "live" || caps?.implementation === "mock" || connection === "connected" && session?.id === store.liveSessionId && session !== null;
+    const allEvents = !visible ? [] : state.mode === "live" && caps?.implementation === "native" ? currentSessionEvents(store.all(), session, store.liveSessionId) : store.all();
     let from: number;
     let to: number;
     let label: string;
@@ -60,9 +64,9 @@ export function useMaterialView(): MaterialView {
       label = state.mode === "replay" ? state.replay.session?.id.startsWith("scene:") ? "Saved soundscape" : "Saved piece" : "No selection";
     }
     const events = allEvents.filter((e) => { const t = timeOf(e); return t >= from && t <= to; }).sort((a, b) => timeOf(a) - timeOf(b));
-    return { store, version, events, allEvents, windowFromMs: from, windowToMs: to, recentFromMs: state.mode === "live" ? to - RECENT_MS : from, timeOf, feed: store.feed, label };
+    return { store, version, events, allEvents, windowFromMs: from, windowToMs: to, recentFromMs: state.mode === "live" ? to - RECENT_MS : from, timeOf, feed: visible ? store.feed : {...store.feed, status: "idle", lastBatchWallMs: null, totalRecords: 0, baselineOmitted: 0, displayOmitted: 0, error: null}, label };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [store, version, now, state.mode, state.timeBasis, state.history.result, state.replay.session]);
+  }, [store, version, now, session?.id, caps?.implementation, connection, state.mode, state.timeBasis, state.history.result, state.replay.session]);
 }
 
 export function markerKeyForEvent(e: EventView | null): string | null {

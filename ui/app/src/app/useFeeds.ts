@@ -1,28 +1,58 @@
 /**
  * Data feeds into the bounded event stores.
  *
- * Live: pages through getChanges from the durable cursor. The cursor survives
- * screen switches (store is above the screen router) so returning to Atlas or
- * reconnecting the bridge resumes, never replays, and baseline/corrected
- * records never pulse. Wake-ups come from the provisional `changesAvailable`
- * notification when offered; otherwise a 2 s display poll. Neither is a
- * musical clock — sound timing is entirely host-side.
+ * Native Live reads only the confirmed collection session with getLiveChanges.
+ * Its revision cursor survives screen changes and failed control edits; an
+ * actual stop/start retires the store and begins a new native boundary.
+ * Demo hosts retain their illustrative getChanges feed. Notification wake-ups
+ * or a 2 s visible-page poll drive display ingestion, never musical timing.
  *
  * Material: loads replay-session or frozen/queried history events in pages.
  */
+import type { HostMethods } from "../host/contracts";
 import { EVENT_DISPLAY_CAPACITY } from "./eventStore";
 import { useEffect } from "react";
 import { useHost } from "./HostContext";
-import { useAppState } from "./store";
+import { useAppState, useDispatch } from "./store";
+import { currentSessionEvents } from "./liveSession";
+import { useLiveCollection } from "./LiveCollectionContext";
 
 const PAGE = 200;
 
 export function useLiveFeed() {
   const { client, caps, connection, liveStore, onNotification } = useHost();
+  const collection = useLiveCollection();
+  const session = collection.session;
+  const dispatch = useDispatch();
+  const {mode} = useAppState();
+  useEffect(() => {
+    if (caps?.implementation === "native" && mode === "live") {
+      dispatch({type: "selectEvent", eventId: null});
+      dispatch({type: "highlightSpecies", speciesId: null});
+    }
+  }, [session?.id, caps?.implementation, dispatch, mode]);
   useEffect(() => {
     if (!caps || connection !== "connected") return;
     if (caps.libraryAvailable === false) { liveStore.clear(); liveStore.setFeed({ status: "unsupported" }); return; }
-    if (!client.supports("getChanges")) { liveStore.setFeed({ status: "unsupported" }); return; }
+    const strict = caps.implementation === "native";
+    if (strict) {
+      if (!session) {
+        // A pending stop masks the view immediately but keeps the cursor until
+        // its receipt, so a rejected stop cannot replay already-seen arrivals.
+        if (!collection.pending) liveStore.clear();
+        return;
+      }
+      if (!client.supports("getLiveChanges")) {
+        liveStore.clear(); liveStore.setFeed({status: "unsupported"});
+        return;
+      }
+      if (liveStore.liveSessionId !== session.id) {
+        liveStore.clear();
+        liveStore.liveSessionId = session.id;
+        liveStore.cursor = {storeId: session.storeId, nextSequence: session.baselineRevision};
+      }
+    }
+    if (!strict && !client.supports("getChanges")) { liveStore.setFeed({ status: "unsupported" }); return; }
     let cancelled = false;
     let timer = 0;
     let backoff = 1000;
@@ -39,7 +69,9 @@ export function useLiveFeed() {
       wakePending = false;
       if (liveStore.feed.status === "idle") liveStore.setFeed({ status: "loading" });
       const { storeId, nextSequence } = liveStore.cursor;
-      const result = await client.call("getChanges", { storeId, afterSequence: nextSequence, limit: PAGE }, { signal: controller.signal });
+      const result = strict && session
+        ? await client.call("getLiveChanges", {sessionId: session.id, storeId, afterSequence: nextSequence, limit: PAGE}, {signal: controller.signal})
+        : await client.call("getChanges", {storeId, afterSequence: nextSequence, limit: PAGE}, {signal: controller.signal});
       inFlight = false;
       if (cancelled) return;
       if (!result.ok) {
@@ -51,22 +83,31 @@ export function useLiveFeed() {
       }
       backoff = 1000;
       const { value } = result;
+      if (strict && (!session || !("sessionId" in value) || !("sessionActive" in value) || !value.sessionActive || value.sessionId !== session.id || value.storeId !== session.storeId)) {
+        liveStore.clear();
+        collection.invalidateView();
+        return;
+      }
       if (liveStore.cursor.storeId && value.storeId !== liveStore.cursor.storeId) {
         // Store identity changed (host reset or different library): start a fresh baseline.
         liveStore.clear();
       }
       liveStore.cursor = { storeId: value.storeId, nextSequence: value.nextSequence };
-      if (value.baselineTotal !== undefined) liveStore.setFeed({ baselineOmitted: Math.max(0, value.baselineTotal - value.events.length) });
-      liveStore.upsert(value.events.map(({ event, liveEligible, change }) => ({ event, pulse: liveEligible && change === "new" })));
-      liveStore.requestOutcomes(client, value.events.map((e) => e.event.id));
-      liveStore.setFeed({ status: "running", error: null, lastBatchWallMs: value.events.length ? Date.now() : liveStore.feed.lastBatchWallMs });
-      timer = window.setTimeout(pull, wakePending || value.events.length >= PAGE ? 0 : 2000);
+      if (!strict && value.baselineTotal !== undefined) liveStore.setFeed({ baselineOmitted: Math.max(0, value.baselineTotal - value.events.length) });
+      const sessionPage = strict ? value as HostMethods["getLiveChanges"]["response"] : null;
+      if (sessionPage) liveStore.remove(sessionPage.removedEventIds);
+      const admittedEvents = strict && session ? new Set(currentSessionEvents(value.events.map(row => row.event), session, session.id)) : null;
+      const changes = admittedEvents ? value.events.filter(row => admittedEvents.has(row.event)) : value.events;
+      liveStore.upsert(changes.map(({ event, liveEligible, change }) => ({ event, pulse: liveEligible && change === "new" })));
+      liveStore.requestOutcomes(client, changes.map(row => row.event.id));
+      liveStore.setFeed({ status: "running", error: null, lastBatchWallMs: changes.length ? Date.now() : liveStore.feed.lastBatchWallMs });
+      timer = window.setTimeout(pull, wakePending || (sessionPage ? sessionPage.hasMore : value.events.length >= PAGE) ? 0 : 2000);
     };
 
     const off = onNotification((n) => { if (n.type === "changesAvailable") void pull(); });
     void pull();
     return () => { cancelled = true; controller.abort(); window.clearTimeout(timer); off(); };
-  }, [client, caps, connection, liveStore, onNotification]);
+  }, [client, caps, connection, liveStore, onNotification, session?.id, collection.pending, collection.invalidateView]);
 }
 
 export function useMaterialFeed() {

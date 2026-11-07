@@ -1,7 +1,7 @@
 /* Base element styles, focus, and shared primitives. */
 *, *::before, *::after { box-sizing: border-box; }
-html, body, #root { height: 100%; overflow: clip; }
-html, body { overscroll-behavior: none; }
+html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+#root { position: fixed; inset: 0; overflow: hidden; }
 body {
   margin: 0;
   background-color: var(--c-ground);

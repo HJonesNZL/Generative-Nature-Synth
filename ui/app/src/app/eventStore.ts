@@ -34,6 +34,7 @@ export class EventStore {
   private notificationIsTimer = false;
   private pendingOutcomeIds = new Set<string>();
   private outcomeTimer: number | null = null;
+  liveSessionId: string | null = null;
   cursor: { storeId: string; nextSequence: string } = { storeId: "", nextSequence: "0" };
   feed: { status: "idle" | "loading" | "running" | "retrying" | "error" | "unsupported"; error: string | null; lastBatchWallMs: number | null; totalRecords: number | null; baselineOmitted: number; displayOmitted: number } = { status: "idle", error: null, lastBatchWallMs: null, totalRecords: null, baselineOmitted: 0, displayOmitted: 0 };
 
@@ -78,6 +79,7 @@ export class EventStore {
 
   clear() {
     this.dispose();
+    this.liveSessionId = null;
     this.outcomes.clear();
     this.feed = { status: "idle", error: null, lastBatchWallMs: null, totalRecords: null, baselineOmitted: 0, displayOmitted: 0 };
     this.byId.clear();
@@ -117,6 +119,15 @@ export class EventStore {
     this.notify();
   }
 
+  /** Native correction tombstones withdraw a record without fabricating an event. */
+  remove(ids: readonly string[]) {
+    if (!ids.length) return;
+    const removed = new Set(ids);
+    for (const id of removed) { this.byId.delete(id); this.outcomes.delete(id); this.pendingOutcomeIds.delete(id); }
+    this.order = this.order.filter(id => !removed.has(id));
+    this.pulses = this.pulses.filter(pulse => !removed.has(pulse.eventId));
+    this.notify();
+  }
   get size() { return this.order.length; }
   get(id: string | null) { return id ? this.byId.get(id) ?? null : null; }
   /** Newest-last list; callers must not mutate. */

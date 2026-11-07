@@ -42,6 +42,32 @@ function validBaselineTotal(method: string, value: unknown): boolean {
     Array.isArray(reply.events) && (reply.baselineTotal as number) >= reply.events.length &&
     reply.events.every(row => row && row.change === "baseline" && row.liveEligible === false);
 }
+function validLiveSessionReply(method: string, value: unknown, args: unknown): boolean {
+  if (!["getLiveChanges", "getLiveSpeciesCounts"].includes(method)) return true;
+  if (!value || typeof value !== "object") return false;
+  const reply = value as Record<string, unknown>;
+  const request = args as {sessionId: string; limit?: number};
+  if (typeof reply.sessionActive !== "boolean" || typeof reply.sessionId !== "string" || reply.sessionId.length > 256 ||
+      reply.sessionActive && (!identity(reply.sessionId) || reply.sessionId !== request.sessionId)) return false;
+  if (method === "getLiveChanges") {
+    if (!identity(reply.storeId) || !unsignedDecimal(reply.nextSequence) || !Array.isArray(reply.events) ||
+        reply.events.length > (request.limit ?? 200) || typeof reply.hasMore !== "boolean" ||
+        !Array.isArray(reply.removedEventIds) || reply.removedEventIds.length > (request.limit ?? 200) ||
+        !reply.removedEventIds.every(id => typeof id === "string" && id.length > 0 && id.length <= 2048) ||
+        !reply.sessionActive && (reply.events.length > 0 || reply.removedEventIds.length > 0 || reply.hasMore)) return false;
+    return reply.events.every(row => row && typeof row.liveEligible === "boolean" && ["baseline", "new", "corrected"].includes(row.change) &&
+      row.event && typeof row.event.id === "string" && row.event.id.length > 0 && row.event.id.length <= 2048 &&
+      unsignedDecimal(row.event.revisionSequence) && typeof row.event.observedAtUtc === "string" &&
+      Number.isFinite(Date.parse(row.event.observedAtUtc)) && row.event.provenance === "live_source");
+  }
+  if (!unsignedDecimal(reply.revision) || !Array.isArray(reply.species) || reply.species.length > Math.min(request.limit ?? 250, 250) ||
+      !(reply.nextCursor === null || typeof reply.nextCursor === "string" && reply.nextCursor.length > 0 && reply.nextCursor.length <= 2048) ||
+      !reply.sessionActive && (reply.species.length > 0 || reply.nextCursor !== null) || reply.nextCursor !== null && !reply.species.length) return false;
+  const ids = new Set();
+  return reply.species.every(row => row && typeof row.speciesId === "string" && row.speciesId.length > 0 && row.speciesId.length <= 512 &&
+    !ids.has(row.speciesId) && ids.add(row.speciesId) && typeof row.commonName === "string" && row.commonName.length <= 2048 &&
+    Number.isSafeInteger(row.count) && row.count > 0);
+}
 function validVoiceDefinition(value: unknown): boolean {
   if (!value || typeof value !== "object") return false;
   const voice = value as Record<string, unknown>;
@@ -205,6 +231,11 @@ function validLiveSources(value: unknown, method: string, args: unknown): boolea
   }) && ids.has("birdweather") && ids.has("nzsharks") &&
     state.sources.filter(s => s.enabled && (s.id === "birdweather" || s.id === "birdweather_world")).length <= 1 &&
     state.collecting === state.sources.some(source => source.enabled);
+  if (state.sessionError !== undefined && state.sessionError !== null && (typeof state.sessionError !== "string" || state.sessionError.length > 4096)) return false;
+  const session = state.session as Record<string, unknown> | null | undefined;
+  if (session !== undefined && session !== null && (!state.collecting || !identity(session.id) || !identity(session.storeId) ||
+      !unsignedDecimal(session.baselineRevision) || !timestamp(session.observedFromUtc) || session.observedFromUtc === null)) return false;
+  if (session === null && state.collecting) return false;
   if (!valid || method !== "setLiveSources") return valid;
   const requested = (args as { sourceIds?: unknown } | null)?.sourceIds;
   return Array.isArray(requested) && requested.length <= 3 && new Set(requested).size === requested.length &&
@@ -386,7 +417,7 @@ export class HostClient {
       const request = { protocolVersion: 1 as const, requestId, method, args };
       const reply = (this.host as ExtendedHost).request(request, controller.signal).then((r): HostResult<AllMethods[M]["response"]> => {
         if (!r || typeof r !== "object" || typeof r.ok !== "boolean" || r.requestId !== requestId) return { ok: false, error: { code: "internal", message: "Reply did not match request id" } };
-        if (r.ok) return "result" in r && validBaselineTotal(method, r.result) && validLiveListeningReply(method, r.result) && validPlaybackReply(method, r.result) && validVoiceReply(method, r.result, args) && validSoundscapeReply(method, r.result, args) && validCompositionReply(method, r.result) && validSpatialReply(method, r.result) && validPieceReply(method, r.result, args) && (method !== "listSessionsPage" || validSessionPage(r.result, args)) && (!["getLiveSources", "setLiveSources"].includes(method) || validLiveSources(r.result, method, args)) && (!["getAudioDevices", "setAudioDevice"].includes(method) || validAudioDeviceCatalog(r.result)) ? { ok: true, value: r.result } : { ok: false, error: { code: "internal", message: "Malformed host result" } };
+        if (r.ok) return "result" in r && validBaselineTotal(method, r.result) && validLiveSessionReply(method, r.result, args) && validLiveListeningReply(method, r.result) && validPlaybackReply(method, r.result) && validVoiceReply(method, r.result, args) && validSoundscapeReply(method, r.result, args) && validCompositionReply(method, r.result) && validSpatialReply(method, r.result) && validPieceReply(method, r.result, args) && (method !== "listSessionsPage" || validSessionPage(r.result, args)) && (!["getLiveSources", "setLiveSources"].includes(method) || validLiveSources(r.result, method, args)) && (!["getAudioDevices", "setAudioDevice"].includes(method) || validAudioDeviceCatalog(r.result)) ? { ok: true, value: r.result } : { ok: false, error: { code: "internal", message: "Malformed host result" } };
         if (!r.error || typeof r.error.message !== "string" || !["unsupported", "invalid_request", "unavailable", "stale_generation", "internal"].includes(r.error.code))
           return { ok: false, error: { code: "internal", message: "Malformed host error" } };
         return { ok: false, error: r.error };

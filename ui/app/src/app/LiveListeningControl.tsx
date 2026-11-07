@@ -4,11 +4,15 @@ import { Toggle } from "../components/Toggle";
 import { Popover } from "../components/Popover";
 import { useDispatch } from "./store";
 import { useLiveSettings } from "./LiveSettingsContext";
+import { useLiveCollection } from "./LiveCollectionContext";
 import { useHost } from "./HostContext";
 
 export function LiveListeningControl() {
   const { client, caps, connection } = useHost();
   const live = useLiveSettings();
+  const {session} = useLiveCollection();
+  const needsCollection = caps?.implementation === "native" && client.supports("getLiveSources") && client.supports("getLiveChanges");
+  const canStart = !needsCollection || session !== null;
   const state = live.state, refresh = live.refresh;
   const dispatch = useDispatch();
   const pending = useRef(false);
@@ -16,7 +20,7 @@ export function LiveListeningControl() {
   const [error, setError] = useState<string | null>(null);
   const enabled = connection === "connected" && live.ready && state?.enabled === true;
   const change = async (enabled: boolean) => {
-    if (pending.current) return;
+    if (pending.current || enabled && !canStart) return;
     pending.current = true;
     setBusy(true); setError(null);
     const reply = await client.call("setLiveEnabled", { enabled });
@@ -26,9 +30,9 @@ export function LiveListeningControl() {
   const fault = error ?? live.error ?? (state?.status === "error" ? state.error || "Live listening stopped." : null);
   return <>
     <Toggle label={enabled ? "Live listening (on)" : "Live listening (off)"} checked={enabled}
-      disabled={busy || connection !== "connected" || !state || (!enabled && (!caps?.audioAvailable || !live.ready))}
+      disabled={busy || connection !== "connected" || !state || (!enabled && (!caps?.audioAvailable || !live.ready || !canStart))}
       onChange={value => void change(value)} showState={false} />
-    <Popover label="Live listening status" trigger={<span className="small muted">{connection !== "connected" || !live.ready ? "Live unknown" : enabled ? "Live on" : "Live off"}</span>}>
+    <Popover label="Live listening status" trigger={<span className="small muted">{connection !== "connected" || !live.ready ? "Live unknown" : enabled ? "Live on" : !canStart ? "Start Collect to listen" : "Live off"}</span>}>
       {close => <div className="menu"><p className="menu__title">Live listening · {enabled ? "on" : "off"}</p>
         {client.supports("setLiveSettings") ? <fieldset disabled={live.busy || !live.state?.mode} className="composition-panel__controls">
           <label>Mode <select aria-label="Live mode" value={live.state?.mode ?? "direct"} onChange={e => void live.change({mode: e.target.value as "direct" | "musical" | "smoothed"})}>{caps?.supportsSmoothedLive === true ? <option value="smoothed">Smoothed (recommended)</option> : null}<option value="direct">Direct</option><option value="musical">Musical</option></select></label>
