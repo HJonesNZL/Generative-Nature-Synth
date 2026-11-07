@@ -94,6 +94,11 @@ class VoiceStore {
     VoiceStore(const VoiceStore &) = delete;
     VoiceStore &operator=(const VoiceStore &) = delete;
     void registerSpecies(std::span<const VoiceSpecies>);
+    // Serial worker: current draft first, then saved/exact candidate settings.
+    // New editable entries are optional; a full catalogue or a valid provider
+    // ID beyond the editable 256-byte limit never interrupts Live playback.
+    VoiceSettings liveSettings(std::string_view speciesId,
+                               std::string_view name = {});
     std::vector<VoiceSnapshot> voices() const;
     VoiceSnapshot getVoice(std::string_view id) const;
     VoiceSnapshot previewParameter(std::string_view id,

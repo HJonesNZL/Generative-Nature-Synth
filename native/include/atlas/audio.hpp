@@ -15,6 +15,7 @@ struct VoiceSettings {
     double brightness{.5}, roughness{}, pulseHz{}, sweepSemitones{};
 };
 bool validVoiceSettings(const VoiceSettings &) noexcept;
+unsigned directSpeciesNote(unsigned rootMidi, std::string_view species) noexcept;
 struct VoiceProfile {
     std::string speciesId;
     VoiceSettings settings;

@@ -671,6 +671,56 @@ int main() {
                   "Candidate lookup overwrote saved voice or failed to restore "
                   "unsaved base");
         }
+        {
+            const auto livePath = temp.file("live-full.sqlite3");
+            VoiceStore live(livePath);
+            const auto registered =
+                live.liveSettings("fixture:editable", "Editable");
+            check(sameSettings(registered, VoiceSettings{}) &&
+                      live.voices().size() == 2,
+                  "Live species did not become editable when capacity was "
+                  "available");
+            const auto draft =
+                edit(live, "species:fixture:editable", "gain", .25);
+            check(sameSettings(live.liveSettings("fixture:editable"),
+                               draft.settings),
+                  "Live resolution lost unsaved species draft");
+            std::vector<VoiceSpecies> fill;
+            for (std::size_t i = 0; i < voiceDefinitionCapacity - 2; ++i)
+                fill.push_back(
+                    {"fixture:fill:" + std::to_string(i), "Fixture"});
+            live.registerSpecies(fill);
+            check(live.voices().size() == voiceDefinitionCapacity,
+                  "Live capacity fixture incomplete");
+            VoiceSettings durable;
+            {
+                const std::array<VoiceSpecies, 1> target{
+                    {{"fixture:saved-later", "Saved later"}}};
+                VoiceStore writer(livePath, target);
+                edit(writer, "species:fixture:saved-later", "brightness", .91);
+                durable =
+                    writer.save("species:fixture:saved-later", 0).settings;
+            }
+            check(
+                sameSettings(live.liveSettings("fixture:saved-later"), durable),
+                "Full editable catalogue hid a durable species voice");
+            const auto candidates = speciesPresets();
+            check(!candidates.empty() &&
+                      sameSettings(
+                          live.liveSettings(candidates.front().speciesId),
+                          candidates.front().settings),
+                  "Full editable catalogue hid an exact species candidate");
+            check(sameSettings(live.liveSettings("fixture:unseen"),
+                               VoiceSettings{}) &&
+                      sameSettings(
+                          live.liveSettings("fixture:" + std::string(300, 'x')),
+                          VoiceSettings{}) &&
+                      sameSettings(live.liveSettings("fixture:editable"),
+                                   draft.settings) &&
+                      live.voices().size() == voiceDefinitionCapacity,
+                  "Full catalogue interrupted neutral/long-ID live resolution "
+                  "or changed existing drafts");
+        }
         std::cout << "Voice drafts, normalized values, durable CAS, rollback, "
                      "read-only, corruption and capacity passed\n";
     } catch (const std::exception &failure) {

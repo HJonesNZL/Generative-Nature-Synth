@@ -26,6 +26,8 @@ class UiHost {
     // exports.
     void setLibrary(const std::filesystem::path &library);
     std::string request(std::string_view envelope);
+    void serviceLive();
+    void stopLive() noexcept;
 
   private:
     struct Impl;

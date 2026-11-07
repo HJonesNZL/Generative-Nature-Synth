@@ -11,7 +11,7 @@ constexpr Microseconds maximumDurationUs = 1800LL * 1000000;
 std::uint64_t frameAt(Microseconds us, std::uint32_t rate) {
     return (static_cast<std::uint64_t>(us) * rate + 999999) / 1000000;
 }
-std::uint32_t hashSpecies(std::string_view id) {
+std::uint32_t hashSpecies(std::string_view id) noexcept {
     std::uint32_t hash = 2166136261u;
     for (const auto byte : id) {
         hash ^= static_cast<unsigned char>(byte);
@@ -20,6 +20,11 @@ std::uint32_t hashSpecies(std::string_view id) {
     return hash;
 }
 } // namespace
+
+unsigned directSpeciesNote(unsigned rootMidi, std::string_view species) noexcept {
+    constexpr std::array<unsigned, 8> offsets{0, 2, 4, 7, 9, 12, 14, 16};
+    return rootMidi + (species.empty() ? 0 : offsets[hashSpecies(species) % offsets.size()]);
+}
 
 namespace {
 bool validCharacter(VoiceCharacter character) noexcept {
@@ -402,7 +407,6 @@ AudioPlan::AudioPlan(const Timeline &timeline, AudioSettings settings,
     } else {
         actions_.reserve(timeline.schedule().size());
         decisions_.reserve(timeline.schedule().size());
-        constexpr std::array<unsigned, 8> offsets{0, 2, 4, 7, 9, 12, 14, 16};
         Microseconds window = -1;
         unsigned admitted{};
         for (const auto &item : timeline.schedule()) {
@@ -421,13 +425,9 @@ AudioPlan::AudioPlan(const Timeline &timeline, AudioSettings settings,
                 event.speciesId && !event.speciesId->empty();
             const auto voiceSlot =
                 hasSpecies ? this->voiceSlot(*event.speciesId) : VoiceSlot{};
-            const auto offset =
-                hasSpecies
-                    ? offsets[hashSpecies(*event.speciesId) % offsets.size()]
-                    : 0;
             if (!hasSpecies)
                 ++missingSpecies_;
-            const auto midi = settings.rootMidi + offset;
+            const auto midi = directSpeciesNote(settings.rootMidi, hasSpecies ? std::string_view(*event.speciesId) : std::string_view{});
             const auto frequency =
                 440.0 * std::exp2((static_cast<double>(midi) - 69.0) / 12.0);
             const auto frame = frameAt(item.dueUs, settings.sampleRate);

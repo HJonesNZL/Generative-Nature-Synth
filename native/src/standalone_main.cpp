@@ -2,6 +2,7 @@
 #include "json_text.hpp"
 #include "juce_collection.hpp"
 #include "piece_workflow_smoke.hpp"
+#include "live_sonification_smoke.hpp"
 #include "standalone_bridge.hpp"
 #include "standalone_support.hpp"
 #include <algorithm>
@@ -28,7 +29,7 @@ struct Launch {
         smokeSceneExport, smokeBackup, smokeRestore;
     int smokeSeconds{3};
     bool libraryOverride{}, stateOverride{}, smokeLive{}, smokeWorld{},
-        smokePieces{}, smokeWholePiece{};
+        smokePieces{}, smokeWholePiece{}, smokeSonification{};
 };
 Launch parse(const juce::StringArray &arguments) {
     Launch launch;
@@ -65,6 +66,10 @@ Launch parse(const juce::StringArray &arguments) {
                     "Live smoke requires explicit value 1 or world.");
             launch.smokeLive = true;
             launch.smokeWorld = value == "world";
+        } else if (option == "--smoke-sonification") {
+            if (value != "ZoomAudioDevice")
+                throw std::invalid_argument("Sonification smoke requires the explicit virtual output.");
+            launch.smokeSonification = true;
         } else if (option == "--smoke-pieces") {
             if (value != "1" && value != "whole")
                 throw std::invalid_argument(
@@ -97,7 +102,9 @@ Launch parse(const juce::StringArray &arguments) {
         launch.smokeReceipt.empty())
         throw std::invalid_argument(
             "Smoke scene/export requires --smoke-test.");
-    if ((launch.smokeLive || launch.smokePieces) &&
+    if (launch.smokeSonification && (launch.smokeLive || !launch.libraryOverride || launch.library != launch.state / "live.sqlite3"))
+        throw std::invalid_argument("Sonification smoke requires an isolated managed library.");
+    if ((launch.smokeLive || launch.smokePieces || launch.smokeSonification) &&
         (!launch.stateOverride || launch.smokeReceipt.empty()))
         throw std::invalid_argument(
             "Live smoke requires explicit state and receipt paths.");
@@ -247,6 +254,7 @@ class Shell final : public juce::Component, private juce::Timer {
     std::vector<atlas::standalone::ManagedScene> backupScenes_;
     std::vector<bool> backupSelection_;
     juce::var smokeResult_;
+    juce::String smokeFeedStage_;
     Clock::time_point smokeStarted_, frontendStarted_;
     std::string stateNotice_;
     unsigned browserEpoch_{};
@@ -719,17 +727,22 @@ class Shell final : public juce::Component, private juce::Timer {
                 shell.updateStatus(initial, true);
             });
             unsigned expectedPageEpoch = 1;
+            auto nextLiveTick = Clock::now();
             while (!closing_.load(std::memory_order_acquire)) {
                 playback.service();
                 // This in-process owner remains alive while WKWebView timers
                 // are throttled or the window is hidden. Service first keeps
                 // a genuine worker stall/fault observable before renewing.
                 playback.heartbeat();
+                if (Clock::now() >= nextLiveTick) {
+                    host->serviceLive();
+                    nextLiveTick = Clock::now() + std::chrono::milliseconds(100);
+                }
                 std::optional<Work> work;
                 {
                     std::unique_lock lock(mutex_);
-                    condition_.wait_for(
-                        lock, std::chrono::milliseconds(100), [this] {
+                    condition_.wait_until(
+                        lock, nextLiveTick, [this] {
                             return closing_.load(std::memory_order_acquire) ||
                                    !queue_.empty();
                         });
@@ -807,6 +820,8 @@ class Shell final : public juce::Component, private juce::Timer {
                                     reloadLibrary = true;
                                 }
                                 collection->configure(selected);
+                                if (selected.empty())
+                                    host->stopLive();
                             }
                             auto result = juce::JSON::parse(
                                 juce::String(collection->stateJson()));
@@ -1218,6 +1233,7 @@ class Shell final : public juce::Component, private juce::Timer {
                                                 : juce::String()) +
                                         juce::String(R"JS(
    PIECE_WORKFLOW_SMOKE
+   LIVE_SONIFICATION_SMOKE
    const until = Date.now() + SMOKE_DURATION_MS;
    while (Date.now() < until) {
      const audio = await call('getAudioState');
@@ -1239,6 +1255,7 @@ class Shell final : public juce::Component, private juce::Timer {
                                  ? juce::String(
                                        atlas::standalone::pieceWorkflowSmoke)
                                  : juce::String())
+                    .replace("LIVE_SONIFICATION_SMOKE", launch_.smokeSonification ? juce::String(atlas::standalone::liveSonificationSmoke) : juce::String())
                     .replace("WHOLE_INTERVAL_ONLY",
                              launch_.smokeWholePiece ? "true" : "false")
                     .replace("SMOKE_DURATION_MS",
@@ -1330,6 +1347,13 @@ class Shell final : public juce::Component, private juce::Timer {
                 safe->smokeEvaluating_ = false;
                 if (const auto *value = result.getResult()) {
                     const auto parsed = juce::JSON::parse(value->toString());
+                    const auto stage = parsed["feedStage"].toString();
+                    if (safe->launch_.smokeSonification && stage != safe->smokeFeedStage_ &&
+                        (stage == "armed" || stage == "admitted")) {
+                        const juce::File marker(string(safe->launch_.smokeReceipt) + "." + stage);
+                        if (marker.replaceWithText(stage))
+                            safe->smokeFeedStage_ = stage;
+                    }
                     if (parsed.isObject() &&
                         static_cast<bool>(parsed["finished"])) {
                         safe->smokeResult_ = parsed;
@@ -1388,12 +1412,12 @@ class Window final : public juce::DocumentWindow {
 class Application final : public juce::JUCEApplication {
   public:
     const juce::String getApplicationName() override { return "Animal Atlas"; }
-    const juce::String getApplicationVersion() override { return "0.6.0"; }
+    const juce::String getApplicationVersion() override { return "0.7.0"; }
     bool moreThanOneInstanceAllowed() override { return true; }
     void initialise(const juce::String &) override {
         try {
             auto launch = parse(getCommandLineParameterArray());
-            const bool liveSmoke = launch.smokeLive;
+            const bool liveSmoke = launch.smokeLive || launch.smokeSonification;
             window_ = std::make_unique<Window>(
                 std::move(launch), [] { juce::JUCEApplicationBase::quit(); });
             if (liveSmoke) {

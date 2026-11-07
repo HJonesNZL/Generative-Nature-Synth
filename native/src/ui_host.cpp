@@ -4,6 +4,7 @@
 #include "sqlite_statement.hpp"
 #include <algorithm>
 #include <atlas/exports.hpp>
+#include <atlas/live_admission.hpp>
 #include <atlas/piece_import.hpp>
 #include <atlas/playback.hpp>
 #include <atlas/presets.hpp>
@@ -334,6 +335,8 @@ const char *playbackMessage(PlaybackError error) noexcept {
     switch (error) {
     case PlaybackError::none:
         return "";
+    case PlaybackError::liveNoteRejected:
+        return "Live note capacity exceeded.";
     case PlaybackError::staleControlRevision:
         return "Audio devices changed. Refresh the output choices and try "
                "again.";
@@ -538,6 +541,128 @@ struct UiHost::Impl {
     std::optional<LibraryRevision> materialRevision;
     std::uint64_t generation{};
     PlaybackRuntime *playback{};
+    std::unique_ptr<LiveAdmission> liveAdmission;
+    bool liveEnabled{};
+    std::uint64_t liveReceived{}, liveAdmitted{}, liveDropped{}, liveSkipped{};
+    std::string liveError;
+    std::chrono::steady_clock::time_point liveLastService{};
+    std::string liveState() const {
+        return "{\"enabled\":" + std::string(liveEnabled ? "true" : "false") +
+               ",\"status\":" +
+               quoteJson(!liveError.empty() ? "error"
+                         : liveEnabled      ? "listening"
+                                            : "off") +
+               ",\"received\":" + std::to_string(liveReceived) +
+               ",\"admitted\":" + std::to_string(liveAdmitted) +
+               ",\"dropped\":" + std::to_string(liveDropped) +
+               ",\"skippedRevisions\":" + std::to_string(liveSkipped) +
+               ",\"error\":" + quoteJson(liveError) + "}";
+    }
+    void retireLive() {
+        liveEnabled = false;
+        liveAdmission.reset();
+    }
+    void stopLive() {
+        if (liveEnabled && playback)
+            playback->enable(false);
+        retireLive();
+    }
+    bool liveAvailable() const {
+        std::error_code error;
+        return playback && library && !storage.managedLibrary.empty() &&
+               std::filesystem::equivalent(attachedPath, storage.managedLibrary,
+                                           error) &&
+               !error;
+    }
+    void startLive() {
+        if (liveEnabled)
+            return;
+        if (!liveAvailable())
+            throw std::invalid_argument(
+                "Live listening requires the managed live library and output");
+        auto admission = std::make_unique<LiveAdmission>(db.get());
+        admission->baseline();
+        auto settings = context.audio;
+        if (!prepared)
+            settings.masterDb = -18;
+        settings.composition.enabled = false;
+        settings.spatial.enabled = false;
+        prepared.reset();
+        saved = {};
+        voiceSlots.clear();
+        context = {};
+        context.audio = settings;
+        auto result = playback->prepareLive(settings);
+        if (result.ok)
+            result = playback->enable(true);
+        if (result.ok)
+            result = playback->command({PlaybackCommandKind::play,
+                                        result.snapshot.preparationId,
+                                        result.snapshot.generation});
+        if (!result.ok) {
+            playback->enable(false);
+            throw std::runtime_error(playbackErrorText(result.error));
+        }
+        liveAdmission = std::move(admission);
+        liveEnabled = true;
+        liveError.clear();
+        liveReceived = liveAdmitted = liveDropped = liveSkipped = 0;
+        liveLastService = std::chrono::steady_clock::now();
+    }
+    void serviceLive() {
+        if (!liveEnabled)
+            return;
+        try {
+            const auto now = std::chrono::steady_clock::now();
+            const auto snapshot = playback->snapshot();
+            if (!snapshot.live || !snapshot.enabled ||
+                snapshot.error != PlaybackError::none) {
+                liveError = snapshot.error == PlaybackError::none
+                                ? "Live output stopped"
+                                : playbackMessage(snapshot.error);
+                stopLive();
+                return;
+            }
+            playback->heartbeat();
+            if (now - liveLastService > std::chrono::seconds(5) &&
+                liveAdmission->baseline()) {
+                liveError =
+                    "Live library changed. Enable Listening again to resume.";
+                stopLive();
+                return;
+            }
+            liveLastService = now;
+            const auto batch = liveAdmission->poll();
+            if (batch.storeReset) {
+                liveError =
+                    "Live library changed. Enable Listening again to resume.";
+                stopLive();
+                return;
+            }
+            liveReceived += batch.received;
+            liveDropped += batch.dropped;
+            liveSkipped += batch.skippedRevisions;
+            for (const auto &payload : batch.payloads) {
+                Object event(db.get(), payload);
+                const auto species = event.optionalText("species_id");
+                const auto settings =
+                    voices ? voices->liveSettings(
+                                 species, event.optionalText("common_name"))
+                           : VoiceSettings{};
+                const auto note =
+                    directSpeciesNote(context.audio.rootMidi, species);
+                const auto result = playback->submitLive(settings, note);
+                if (result.ok)
+                    ++liveAdmitted;
+                else
+                    ++liveDropped;
+            }
+        } catch (const std::exception &) {
+            liveError =
+                "Live listening failed while reading committed detections";
+            stopLive();
+        }
+    }
     VoiceStore *voices{};
     std::map<std::string, VoiceSlot> voiceSlots;
     UiHostStorage storage;
@@ -605,6 +730,7 @@ struct UiHost::Impl {
     void prepare(Timeline next, SavedSession metadata,
                  SoundscapeCapture nextContext,
                  std::optional<VoiceStore::DraftUpdate> update = {}) {
+        stopLive();
         std::map<std::string, VoiceSlot> slots;
         for (std::size_t i = 0; i < nextContext.profiles.size(); ++i)
             slots.emplace(i == 0
@@ -766,7 +892,7 @@ struct UiHost::Impl {
     }
     void applyVoice(const VoiceSnapshot &next, const VoiceSnapshot &rollback) {
         const auto slot = voiceSlots.find(next.id);
-        if (!playback || slot == voiceSlots.end())
+        if (liveEnabled || !playback || slot == voiceSlots.end())
             return;
         const auto result = playback->updateVoice(slot->second, next.settings);
         if (!result.ok) {
@@ -1106,7 +1232,7 @@ UiHost::UiHost(const std::filesystem::path &library, PlaybackRuntime *playback,
                VoiceStore *voices, UiHostStorage storage)
     : impl_(std::make_unique<Impl>(library, playback, voices,
                                    std::move(storage))) {}
-UiHost::~UiHost() = default;
+UiHost::~UiHost() { stopLive(); }
 void UiHost::setLibrary(const std::filesystem::path &library) {
     if (!library.empty() && !std::filesystem::is_regular_file(library))
         throw std::invalid_argument("library must be an existing regular file");
@@ -1115,7 +1241,17 @@ void UiHost::setLibrary(const std::filesystem::path &library) {
     next->pieces = std::move(impl_->pieces);
     next->renders = std::move(impl_->renders);
     next->renderScenes = std::move(impl_->renderScenes);
+    impl_->stopLive();
     impl_.swap(next);
+}
+
+void UiHost::serviceLive() { impl_->serviceLive(); }
+void UiHost::stopLive() noexcept {
+    try {
+        impl_->stopLive();
+    } catch (...) {
+        impl_->liveEnabled = false;
+    }
 }
 
 std::string UiHost::request(std::string_view envelope) {
@@ -1145,6 +1281,8 @@ std::string UiHost::request(std::string_view envelope) {
             if (impl_->pieces)
                 result +=
                     R"(,"startPieceFreeze","startPieceImport","getPieceJob","cancelPieceJob","openManagedPiece")";
+            if (impl_->liveAvailable())
+                result += R"(,"getLiveState","setLiveEnabled")";
             if (impl_->playback)
                 result +=
                     R"(,"getTransport","setTransport","getAudioState","setAudioEnabled","getAudioDevices","setAudioDevice")";
@@ -1164,6 +1302,25 @@ std::string UiHost::request(std::string_view envelope) {
                 (impl_->playback ? "true" : "false") +
                 ",\"libraryAvailable\":" + (impl_->library ? "true" : "false") +
                 ",\"maxEventBatch\":500,\"maxVisibleMarkers\":500}";
+        } else if (impl_->playback && method == "getLiveState") {
+            Object args(impl_->db.get(), arguments);
+            if (args.size())
+                throw std::invalid_argument("unexpected arguments");
+            result = impl_->liveState();
+        } else if (impl_->playback && method == "setLiveEnabled") {
+            Object args(impl_->db.get(), arguments, {"enabled"});
+            if (args.boolean("enabled")) {
+                try {
+                    impl_->startLive();
+                } catch (const std::exception &error) {
+                    impl_->stopLive();
+                    impl_->liveError = error.what();
+                }
+            } else {
+                impl_->stopLive();
+                impl_->liveError.clear();
+            }
+            result = impl_->liveState();
         } else if (impl_->playback &&
                    (method == "getTransport" || method == "getAudioState")) {
             Object args(impl_->db.get(), arguments);
@@ -1216,6 +1373,10 @@ std::string UiHost::request(std::string_view envelope) {
                 preparation,
                 static_cast<std::uint64_t>(
                     integer(args.text("generation", 20), INT64_MAX)));
+            if (impl_->liveEnabled && (reply.ok || !reply.snapshot.enabled)) {
+                impl_->retireLive();
+                impl_->liveError = reply.ok ? "" : playbackMessage(reply.error);
+            }
             if (!reply.ok) {
                 const auto code =
                     reply.error == PlaybackError::staleControlRevision
@@ -1232,9 +1393,14 @@ std::string UiHost::request(std::string_view envelope) {
                                        reply.snapshot);
         } else if (impl_->playback && method == "setAudioEnabled") {
             Object args(impl_->db.get(), arguments, {"enabled"});
-            const auto reply = impl_->playback->enable(args.boolean("enabled"));
+            const bool enabled = args.boolean("enabled");
+            const auto reply = impl_->playback->enable(enabled);
             if (!reply.ok)
                 return failure("unavailable", playbackMessage(reply.error));
+            if (!enabled) {
+                impl_->retireLive();
+                impl_->liveError.clear();
+            }
             result =
                 audioView(reply.snapshot, impl_->playback->audioDevices(false));
         } else if (impl_->playback && method == "setTransport") {
@@ -1289,6 +1455,10 @@ std::string UiHost::request(std::string_view envelope) {
                     reply.error == PlaybackError::staleGeneration;
                 return failure(stale ? "stale_generation" : "unavailable",
                                playbackMessage(reply.error));
+            }
+            if (safety || action == "pause") {
+                impl_->retireLive();
+                impl_->liveError.clear();
             }
             result = transportView(reply.snapshot);
         } else if (impl_->voices && method == "getComposition") {

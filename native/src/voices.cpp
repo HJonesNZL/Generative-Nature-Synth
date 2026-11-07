@@ -349,6 +349,14 @@ struct VoiceStore::Impl {
         }
         return unsaved;
     }
+    Draft speciesDraft(const VoiceSpecies &species) {
+        Draft draft;
+        draft.snapshot.id = "species:" + species.speciesId;
+        draft.snapshot.name = species.name;
+        draft.snapshot.speciesId = species.speciesId;
+        refresh(draft, read(draft.snapshot.id));
+        return draft;
+    }
     void refresh(Draft &draft, const Durable &saved) {
         draft.saved = saved.settings;
         draft.snapshot.normalizedValues = normalizedValues(saved.settings);
@@ -599,12 +607,7 @@ void VoiceStore::registerSpecies(std::span<const VoiceSpecies> species) {
         } else {
             if (staged.size() >= voiceDefinitionCapacity)
                 fail(Code::full, "Voice definition capacity reached");
-            Impl::Draft draft;
-            draft.snapshot.id = id;
-            draft.snapshot.name = item.name;
-            draft.snapshot.speciesId = item.speciesId;
-            impl_->refresh(draft, impl_->read(id));
-            staged.emplace(id, std::move(draft));
+            staged.emplace(id, impl_->speciesDraft(item));
             changed = true;
         }
     }
@@ -621,6 +624,31 @@ void VoiceStore::registerSpecies(std::span<const VoiceSpecies> species) {
     }
     impl_->drafts.swap(staged);
     impl_->changeRevision = revision;
+}
+VoiceSettings VoiceStore::liveSettings(std::string_view speciesId,
+                                       std::string_view name) {
+    if (speciesId.empty())
+        return impl_->find("default").snapshot.settings;
+    if (!validId(speciesId, 512))
+        fail(Code::invalidArgument, "Invalid live species identifier");
+    // Stored/editable IDs are limited to 256 bytes. Longer, validated provider
+    // identities still receive the neutral voice without truncation/aliasing.
+    if (!validId(speciesId))
+        return VoiceSettings{};
+    const auto id = "species:" + std::string(speciesId);
+    if (const auto found = impl_->drafts.find(id); found != impl_->drafts.end())
+        return found->second.snapshot.settings;
+    if (impl_->drafts.size() >= voiceDefinitionCapacity ||
+        impl_->changeRevision == maxRevision)
+        return impl_->read(id).settings;
+    const VoiceSpecies species{
+        std::string(speciesId),
+        std::string(validId(name, 512) ? name : speciesId)};
+    auto draft = impl_->speciesDraft(species);
+    impl_->changed(draft);
+    const auto settings = draft.snapshot.settings;
+    impl_->drafts.emplace(id, std::move(draft));
+    return settings;
 }
 std::vector<VoiceSnapshot> VoiceStore::voices() const {
     std::vector<VoiceSnapshot> result;
