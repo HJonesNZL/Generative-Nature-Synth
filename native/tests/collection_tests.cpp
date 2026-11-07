@@ -119,7 +119,7 @@ int main() {
                     require(request.url ==
                                 "https://app.birdweather.com/graphql",
                             "BirdWeather public fixed URL");
-                    require(request.body.find("\"first\":100") !=
+                    require(request.body.find("\"first\":250") !=
                                     std::string::npos &&
                                 request.body.find("\"count\":10") !=
                                     std::string::npos,
@@ -293,6 +293,71 @@ int main() {
                                      fixed(page(bird())))
                             .duplicates == 1,
                     "restart retains identity/dedupe");
+        }
+        {
+            const auto paged = root / "large-pages.sqlite3";
+            atlas::Collector collector(paged);
+            Query query(paged);
+            auto nodes = [](unsigned first, unsigned count) {
+                std::string result;
+                for (unsigned i = 0; i < count; ++i) {
+                    if (!result.empty())
+                        result += ',';
+                    result += bird("paged-" + std::to_string(first + i));
+                }
+                return result;
+            };
+            auto completeFetch = [&nodes, calls = 0U](
+                                     const atlas::CollectionRequest &request) mutable {
+                require(request.body.find("\"first\":250") != std::string::npos,
+                        "request supports full 250-node pages");
+                const auto pageIndex = calls++;
+                require(pageIndex < 3, "complete pagination stops after last page");
+                if (pageIndex != 0)
+                    require(request.body.find("\"after\":\"large-" +
+                                              std::to_string(pageIndex) + "\"") !=
+                                std::string::npos,
+                            "next page uses provider cursor");
+                return page(nodes(pageIndex * 250, pageIndex == 2 ? 1 : 250),
+                            pageIndex != 2,
+                            "large-" + std::to_string(pageIndex + 1));
+            };
+            const auto initial = collector.collect("birdweather", now, completeFetch);
+            require(initial.inserted == 501 && initial.complete,
+                    "250 plus 250 plus one records complete beyond old 400 cap");
+            require(query.text("SELECT count(*) FROM revisions WHERE "
+                               "change_kind='baseline' AND live_eligible=0") == "501",
+                    "large initial snapshot preserves baseline semantics");
+            const auto repeated = collector.collect(
+                "birdweather", "2026-11-07T01:06:00Z", completeFetch);
+            require(repeated.duplicates == 501 && repeated.inserted == 0 &&
+                        repeated.complete,
+                    "large overlapping pages deduplicate without revisions");
+            const auto before = query.text("SELECT count(*) FROM revisions");
+            unsigned calls{};
+            rejects([&] {
+                collector.collect("birdweather", "2026-11-07T01:07:00Z",
+                                  [&](const atlas::CollectionRequest &) {
+                    ++calls;
+                    return calls == 1
+                               ? page(bird("uncommitted-page"), true, "oversized")
+                               : page(nodes(1000, 251));
+                });
+            }, "oversized provider page rejected");
+            require(calls == 2 &&
+                        query.text("SELECT count(*) FROM revisions") == before,
+                    "oversized later page commits no earlier records");
+            calls = 0;
+            const auto capped = collector.collect(
+                "birdweather", "2026-11-07T01:08:00Z",
+                [&](const atlas::CollectionRequest &) {
+                    const auto pageIndex = calls++;
+                    return page(nodes(2000 + pageIndex * 250, 250), true,
+                                "saturated-" + std::to_string(calls));
+                });
+            require(calls == 4 && capped.inserted == 1000 && !capped.complete &&
+                        collector.sourceStates()[0].error == "pagination_limit_reached",
+                    "1000-record cap remains bounded and visibly incomplete");
         }
         {
             const auto incomplete = root / "incomplete.sqlite3";

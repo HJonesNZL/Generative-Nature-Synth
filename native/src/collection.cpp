@@ -17,6 +17,7 @@ namespace atlas {
 namespace {
 using detail::quoteJson;
 constexpr std::size_t responseLimit = 4U * 1024U * 1024U;
+constexpr std::size_t birdPageSize = 250;
 constexpr std::string_view ownerKey = "animal_atlas_native_v1";
 class Sql {
   public:
@@ -294,7 +295,7 @@ Batch birds(sqlite3 *db, const Collector::Fetch &callback,
     std::string cursor = "null";
     std::set<std::string> cursors;
     for (unsigned page = 0; page < 4; ++page) {
-        Fields variables{{"first", "100"},
+        Fields variables{{"first", std::to_string(birdPageSize)},
                          {"after", cursor},
                          {"period", R"({"count":10,"unit":"minute"})"},
                          {"sw", R"({"lat":-48,"lon":166})"},
@@ -307,7 +308,7 @@ Batch birds(sqlite3 *db, const Collector::Fetch &callback,
         if (!root.null("errors") && !root.array("errors", 100).empty())
             throw CollectionFetchError("graphql_error");
         const auto connection = root.nested("data").nested("detections");
-        const auto nodes = connection.array("nodes", 100);
+        const auto nodes = connection.array("nodes", birdPageSize);
         ++batch.pages;
         for (const auto &node : nodes) {
             try {
