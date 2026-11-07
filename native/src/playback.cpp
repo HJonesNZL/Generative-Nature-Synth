@@ -146,6 +146,9 @@ struct PlaybackRuntime::Impl {
                        std::memory_order_release);
         nextLiveFrame = 0;
     }
+    // Callback writes an entire block before publishing it to the host worker.
+    std::array<LiveVoiceStart, 4096> voiceStarts{};
+    std::atomic<std::uint64_t> startWrite{}, startRead{}, lostStarts{};
     PlaybackCommand pending;
     std::atomic<std::uint64_t> request{}, acknowledged{};
     std::atomic<bool> accepted{};
@@ -168,7 +171,8 @@ struct PlaybackRuntime::Impl {
         return static_cast<PlaybackError>(
             failure.load(std::memory_order_acquire));
     }
-    bool apply(const PlaybackCommand &command) noexcept {
+    bool apply(const PlaybackCommand &command,
+               LiveVoiceFrames *frames = nullptr) noexcept {
         if (!renderer)
             return false;
         const bool safety = (command.kind == PlaybackCommandKind::stop ||
@@ -188,7 +192,8 @@ struct PlaybackRuntime::Impl {
             return live &&
                    renderer->triggerLive(command.voiceSlot, command.midiNote,
                                          command.phaseStep, command.velocity,
-                                         command.gateFrames, command.route);
+                                         command.gateFrames, command.route,
+                                         command.liveToken, frames);
         case PlaybackCommandKind::play:
             return renderer->play(current);
         case PlaybackCommandKind::pause:
@@ -242,6 +247,7 @@ PlaybackSnapshot PlaybackRuntime::snapshot() const noexcept {
     PlaybackSnapshot value;
     value.prepared = p.plan != nullptr;
     value.live = p.live;
+    value.lostLiveStarts = p.lostStarts.load(std::memory_order_relaxed);
     value.liveAcknowledgedId = p.liveAcknowledged.load(std::memory_order_acquire);
     value.liveTriggeredNotes = p.liveTriggered.load(std::memory_order_acquire);
     value.preparationId = p.preparationId;
@@ -378,6 +384,9 @@ PlaybackResult PlaybackRuntime::prepare(const Timeline &timeline,
             return action.route.regionSlot != 0;
         }));
     impl_->lastSubmittedId = 0;
+    impl_->startRead.store(impl_->startWrite.load(std::memory_order_acquire),
+                           std::memory_order_release);
+    impl_->lostStarts.store(0, std::memory_order_relaxed);
     impl_->liveAcknowledged.store(0, std::memory_order_release);
     impl_->liveTriggered.store(0, std::memory_order_release);
     impl_->live = false;
@@ -395,9 +404,11 @@ PlaybackResult PlaybackRuntime::prepareLive(AudioSettings settings) {
     impl_->renderer->setLive(true);
     return {true, PlaybackError::none, snapshot()};
 }
-PlaybackResult PlaybackRuntime::submitLive(const VoiceSettings &settings, unsigned midiNote,
-                                          double velocity, std::uint32_t gateFrames,
-                                          std::optional<Position> position) {
+PlaybackResult PlaybackRuntime::submitLive(const VoiceSettings &settings,
+                                           unsigned midiNote, double velocity,
+                                           std::uint32_t gateFrames,
+                                           std::optional<Position> position,
+                                           std::uint64_t token) {
     const auto current = snapshot();
     if (!current.live || !current.enabled || current.state != AudioState::playing)
         return {false, PlaybackError::liveNoteRejected, current};
@@ -406,6 +417,7 @@ PlaybackResult PlaybackRuntime::submitLive(const VoiceSettings &settings, unsign
     note.preparationId = current.preparationId;
     note.generation = current.generation;
     note.midiNote = midiNote;
+    note.liveToken = token;
     note.phaseStep = 2 * std::numbers::pi * 440 *
                      std::exp2((static_cast<double>(midiNote) - 69) / 12) /
                      current.sampleRate;
@@ -419,6 +431,18 @@ PlaybackResult PlaybackRuntime::submitLive(const VoiceSettings &settings, unsign
     if (!result.ok && result.error == PlaybackError::invalidTransition)
         result.error = PlaybackError::liveNoteRejected;
     return result;
+}
+std::size_t PlaybackRuntime::drainLiveStarts(
+    std::span<LiveVoiceStart> destination) noexcept {
+    auto &p = *impl_;
+    const auto read = p.startRead.load(std::memory_order_relaxed);
+    const auto available = p.startWrite.load(std::memory_order_acquire) - read;
+    const auto size =
+        std::min(destination.size(), static_cast<std::size_t>(available));
+    for (std::size_t i = 0; i < size; ++i)
+        destination[i] = p.voiceStarts[(read + i) % p.voiceStarts.size()];
+    p.startRead.store(read + size, std::memory_order_release);
+    return size;
 }
 LiveBatchResult
 PlaybackRuntime::submitLiveBatch(std::span<const LiveNoteInput> notes) {
@@ -445,6 +469,7 @@ PlaybackRuntime::submitLiveBatch(std::span<const LiveNoteInput> notes) {
         note.preparationId = current.preparationId;
         note.generation = current.generation;
         note.midiNote = input.midiNote;
+        note.liveToken = input.id;
         note.phaseStep =
             2 * std::numbers::pi * 440 *
             std::exp2((static_cast<double>(input.midiNote) - 69) / 12) /
@@ -667,8 +692,39 @@ void PlaybackRuntime::process(float *const *outputs, int channels,
     const auto request = p.request.load(std::memory_order_acquire);
     const bool hasCommand =
         request != p.acknowledged.load(std::memory_order_relaxed);
+    const auto blockStart = p.live ? Clock::now() : Clock::time_point{};
+    const auto blockUs = std::chrono::duration_cast<std::chrono::microseconds>(
+                             blockStart.time_since_epoch())
+                             .count();
+    const auto firstWrite = p.startWrite.load(std::memory_order_relaxed);
+    auto write = firstWrite;
+    std::uint64_t lost = 0;
+    const auto apply = [&](const PlaybackCommand &command, std::size_t offset) {
+        LiveVoiceFrames frames;
+        if (!p.apply(command, command.liveToken ? &frames : nullptr))
+            return false;
+        if (command.kind == PlaybackCommandKind::liveNote &&
+            command.liveToken) {
+            if (write - p.startRead.load(std::memory_order_acquire) <
+                p.voiceStarts.size()) {
+                const auto at = [&](std::size_t frame) {
+                    return blockUs + static_cast<std::int64_t>(
+                                         frame * std::uint64_t{1000000} /
+                                         p.plan->settings().sampleRate);
+                };
+                p.voiceStarts[write++ % p.voiceStarts.size()] = {
+                    command.liveToken, frames.endedToken, at(offset),
+                    at(offset + frames.duration),
+                    frames.endedToken ? at(offset + frames.shortenedDuration)
+                                      : 0};
+            } else {
+                ++lost;
+            }
+        }
+        return true;
+    };
     if (hasCommand)
-        p.accepted.store(p.apply(p.pending), std::memory_order_relaxed);
+        p.accepted.store(apply(p.pending, 0), std::memory_order_relaxed);
     const auto count = static_cast<std::size_t>(frames);
     bool rendered = true;
     std::uint64_t lastRenderedOnset{}, renderedOnsets{};
@@ -685,7 +741,7 @@ void PlaybackRuntime::process(float *const *outputs, int channels,
                          p.liveQueue[read % Impl::liveCapacity].command.frame);
         if (queued && p.renderer->position() >= p.nextLiveFrame) {
             const auto &note = p.liveQueue[read % Impl::liveCapacity];
-            if (p.apply(note.command)) {
+            if (apply(note.command, offset)) {
                 onsetId = note.id;
                 p.liveRead.store(read + 1, std::memory_order_release);
             }
@@ -723,6 +779,10 @@ void PlaybackRuntime::process(float *const *outputs, int channels,
         }
         // Publish onsets only after their complete callback buffer reached
         // output.
+        if (write != firstWrite)
+            p.startWrite.store(write, std::memory_order_release);
+        if (lost)
+            p.lostStarts.fetch_add(lost, std::memory_order_relaxed);
         if (renderedOnsets) {
             p.liveTriggered.fetch_add(renderedOnsets,
                                       std::memory_order_relaxed);

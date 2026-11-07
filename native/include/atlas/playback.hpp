@@ -87,6 +87,7 @@ struct PlaybackCommand {
     std::uint32_t gateFrames{};
     bool liveVoiceUpdate{};
     SpatialRoute route{};
+    std::uint64_t liveToken{};
 };
 struct LiveNoteInput {
     std::uint64_t id{};
@@ -97,13 +98,19 @@ struct LiveNoteInput {
     std::uint32_t gateFrames{};
     std::optional<Position> position;
 };
+// Callback-confirmed dry-voice interval on the host's steady clock. A steal
+// revises the earlier token's end to include its short retirement fade.
+struct LiveVoiceStart {
+    std::uint64_t token{}, endedToken{};
+    std::int64_t onsetUs{}, endUs{}, shortenedEndUs{};
+};
 struct LiveBatchResult {
     std::size_t accepted{};
     PlaybackError error{PlaybackError::none};
 };
 struct PlaybackSnapshot {
     bool prepared{}, enabled{}, live{};
-    std::uint64_t liveAcknowledgedId{}, liveTriggeredNotes{};
+    std::uint64_t liveAcknowledgedId{}, liveTriggeredNotes{}, lostLiveStarts{};
     std::uint64_t preparationId{}, generation{}, positionFrames{},
         totalFrames{};
     std::uint32_t sampleRate{};
@@ -144,7 +151,9 @@ class PlaybackRuntime {
     PlaybackResult prepareLive(AudioSettings = {48000, 60, .008, .650, -18});
     PlaybackResult submitLive(const VoiceSettings &, unsigned midiNote,
                               double velocity = 1, std::uint32_t gateFrames = 0,
-                              std::optional<Position> position = {});
+                              std::optional<Position> position = {},
+                              std::uint64_t token = 0);
+    std::size_t drainLiveStarts(std::span<LiveVoiceStart>) noexcept;
     // Serial producer: accepts a prefix without waiting for the device. Retry
     // the unaccepted suffix when capacity is available; IDs increase per
     // preparation.

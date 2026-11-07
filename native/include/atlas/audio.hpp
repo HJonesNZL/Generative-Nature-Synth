@@ -114,6 +114,11 @@ class AudioPlan {
 };
 
 enum class AudioState { ready, playing, pausing, paused, draining, finished };
+// Numeric lifetime of a live voice, in frames from its confirmed onset.
+struct LiveVoiceFrames {
+    std::uint64_t endedToken{};
+    std::uint32_t duration{}, shortenedDuration{};
+};
 struct AudioStatistics {
     std::uint64_t triggered{}, stolen{}, faults{};
     double peak{};
@@ -137,8 +142,10 @@ class AudioRenderer {
     // Continuous mode is selected only while quiescent; note delivery is
     // callback-owned and bounded to one onset. Existing voice/tail limits apply.
     void setLive(bool live) noexcept { live_ = live; }
-    bool triggerLive(VoiceSlot, unsigned midiNote, double phaseStep, double velocity,
-                     std::uint32_t gateFrames = 0, SpatialRoute route = {}) noexcept;
+    bool triggerLive(VoiceSlot, unsigned midiNote, double phaseStep,
+                     double velocity, std::uint32_t gateFrames = 0,
+                     SpatialRoute route = {}, std::uint64_t token = 0,
+                     LiveVoiceFrames *frames = nullptr) noexcept;
     bool process(std::span<float> interleavedStereo) noexcept;
     AudioState state() const noexcept { return state_; }
     std::uint64_t generation() const noexcept { return generation_; }
@@ -148,7 +155,7 @@ class AudioRenderer {
   private:
     struct Voice {
         bool active{};
-        std::uint64_t started{};
+        std::uint64_t started{}, liveToken{};
         std::uint32_t age{}, fadeAge{}, releaseStart{}, endAge{};
         double velocity{1};
         SpatialRoute route{};
@@ -172,7 +179,8 @@ class AudioRenderer {
     void clearVoices() noexcept;
     void clearToStart() noexcept;
     void beginRamp(double target) noexcept;
-    bool trigger(const MusicalAction &) noexcept;
+    bool trigger(const MusicalAction &, std::uint64_t token = 0,
+                 LiveVoiceFrames *frames = nullptr) noexcept;
     double tick(Voice &, bool retiring) noexcept;
 };
 } // namespace atlas

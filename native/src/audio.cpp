@@ -588,7 +588,9 @@ bool AudioRenderer::seek(std::uint64_t frame,
 }
 bool AudioRenderer::triggerLive(VoiceSlot slot, unsigned midiNote,
                                 double phaseStep, double velocity,
-                                std::uint32_t gateFrames, SpatialRoute route) noexcept {
+                                std::uint32_t gateFrames, SpatialRoute route,
+                                std::uint64_t token,
+                                LiveVoiceFrames *frames) noexcept {
     if (!live_ || state_ != AudioState::playing ||
         slot >= std::max(std::size_t{1}, plan_.voiceProfiles_.size()) ||
         midiNote < plan_.settings_.rootMidi ||
@@ -612,9 +614,12 @@ bool AudioRenderer::triggerLive(VoiceSlot slot, unsigned midiNote,
     action.velocity = velocity;
     action.gateFrames = gateFrames;
     action.phaseSeed = static_cast<std::uint32_t>(frame_) ^ (static_cast<std::uint32_t>(slot) * 2654435761u);
-    return trigger(action);
+    return trigger(action, token, frames);
 }
-bool AudioRenderer::trigger(const MusicalAction &action) noexcept {
+bool AudioRenderer::trigger(const MusicalAction &action, std::uint64_t token,
+                            LiveVoiceFrames *frames) noexcept {
+    if (frames)
+        *frames = {};
     auto slot = std::find_if(voices_.begin(), voices_.end(),
                              [](const Voice &voice) { return !voice.active; });
     if (slot == voices_.end()) {
@@ -629,6 +634,11 @@ bool AudioRenderer::trigger(const MusicalAction &action) noexcept {
             ++statistics_.faults;
             return false;
         }
+        if (frames && slot->liveToken) {
+            frames->endedToken = slot->liveToken;
+            frames->shortenedDuration =
+                std::min(slot->endAge - slot->age, plan_.fadeFrames_);
+        }
         *tail = *slot;
         tail->fadeAge = 0;
         ++statistics_.stolen;
@@ -637,6 +647,7 @@ bool AudioRenderer::trigger(const MusicalAction &action) noexcept {
     *slot = {};
     slot->active = true;
     slot->started = action.frame;
+    slot->liveToken = token;
     slot->phaseStep =
         action.phaseStep *
         (coefficients.scaleQuantized
@@ -650,6 +661,8 @@ bool AudioRenderer::trigger(const MusicalAction &action) noexcept {
             std::min(slot->releaseStart,
                      std::max(coefficients.attackFrames, action.gateFrames));
     slot->endAge = slot->releaseStart + coefficients.releaseFrames;
+    if (frames)
+        frames->duration = slot->endAge;
     slot->coefficients = coefficients;
     slot->partialGains.fill(1);
     if (!coefficients.legacyStruck && coefficients.phaseSpread != 0) {

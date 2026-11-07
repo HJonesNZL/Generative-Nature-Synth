@@ -120,6 +120,28 @@ int main() {
             check(renderer.triggerLive(0, 60, phaseStep, 1), "bounded onset accepted");
         check(!renderer.triggerLive(0, 60, phaseStep, 1), "overload rejected at fixed capacity");
         check(renderer.statistics().stolen == 8, "voice stealing is bounded");
+        Harness immediate;
+        immediate.start();
+        for (std::uint64_t id = 1; id <= AudioRenderer::voiceCapacity + 1; ++id)
+            check(immediate
+                      .deliver([&] {
+                          return immediate.runtime.submitLive(
+                              VoiceSettings{}, 60, 1, 4800, {}, id);
+                      })
+                      .ok,
+                  "synchronous live onset accepted");
+        std::array<LiveVoiceStart, 9> receipts{};
+        check(immediate.runtime.drainLiveStarts(receipts) == receipts.size(),
+              "all immediate onsets reported");
+        for (std::size_t i = 0; i < receipts.size(); ++i)
+            check(receipts[i].token == i + 1 &&
+                      receipts[i].endUs - receipts[i].onsetUs == 120000,
+                  "actual gate and release determine the displayed duration");
+        check(receipts.back().endedToken == receipts.front().token &&
+                  receipts.back().shortenedEndUs - receipts.back().onsetUs ==
+                      5000,
+              "voice stealing shortens the correct token after its retirement "
+              "fade");
         Harness timing;
         timing.start();
         LiveNoteInput timed;
@@ -135,7 +157,17 @@ int main() {
             timing.tick();
         check(timing.runtime.snapshot().liveAcknowledgedId == 0,
               "no onset before exact sample target");
+        std::array<LiveVoiceStart, 16> starts{};
+        check(timing.runtime.drainLiveStarts(starts) == 0,
+              "queued note has no visual onset");
         timing.tick();
+        check(timing.runtime.drainLiveStarts(starts) == 1 &&
+                  starts[0].token == 1 &&
+                  starts[0].endUs - starts[0].onsetUs == 678000 &&
+                  starts[0].endedToken == 0,
+              "callback publishes rendered note and exact dry voice end");
+        check(timing.runtime.drainLiveStarts(starts) == 0,
+              "confirmed onsets consumed once");
         check(timing.runtime.snapshot().liveAcknowledgedId == 1 &&
                   timing.runtime.snapshot().liveTriggeredNotes == 1,
               "onset starts inside callback block containing exact sample "
