@@ -4,7 +4,9 @@
 #include "sqlite_statement.hpp"
 #include "event_validation.hpp"
 #include <algorithm>
+#include <array>
 #include <limits>
+#include <random>
 #include <stdexcept>
 
 namespace atlas {
@@ -31,7 +33,7 @@ constexpr auto sessionColumns = R"SQL(
  json_extract(options_json,'$.timeline_bounds.arrival[0]'),
  json_extract(options_json,'$.timeline_bounds.arrival[1]'),
  COALESCE(json_extract(options_json,'$.capture_truncated'),0),content_hash,
- COALESCE(json_extract(options_json,'$.window_policy'),'legacy_saved_bounds')
+ COALESCE(json_extract(options_json,'$.window_policy'),'legacy_saved_bounds'),created_at
  FROM sessions
 )SQL";
 
@@ -158,27 +160,119 @@ std::string verifyMetadata(sqlite3* db, std::string_view id, int schema) {
     validateOptions(db, id);
     return "sha256-envelope-v1-verified";
 }
+std::string hexText(std::string_view value) {
+    constexpr char hex[] = "0123456789abcdef";
+    std::string result;
+    result.reserve(value.size() * 2);
+    for (const char character : value) {
+        const auto byte = static_cast<unsigned char>(character);
+        result += hex[byte >> 4U];
+        result += hex[byte & 15U];
+    }
+    return result;
+}
+std::string unhexText(std::string_view value) {
+    if (value.empty() || value.size() % 2 != 0 || value.size() > 256)
+        throw std::invalid_argument("Invalid session cursor. Refresh pieces.");
+    const auto digit = [](char c) -> unsigned {
+        if (c >= '0' && c <= '9') return static_cast<unsigned>(c - '0');
+        if (c >= 'a' && c <= 'f') return static_cast<unsigned>(c - 'a') + 10U;
+        throw std::invalid_argument("Invalid session cursor. Refresh pieces.");
+    };
+    std::string result;
+    for (std::size_t i = 0; i < value.size(); i += 2)
+        result += static_cast<char>((digit(value[i]) << 4U) | digit(value[i + 1]));
+    if (result.find('\0') != std::string::npos)
+        throw std::invalid_argument("Invalid session cursor. Refresh pieces.");
+    return result;
+}
+std::string cursorDigest(std::string_view value) {
+    detail::Sha256 hash;
+    hash.update(value);
+    return hash.hexDigest();
+}
+struct SessionAnchor {
+    std::string createdAt, id;
+};
+SessionAnchor parseCursor(std::string_view cursor, const LibraryRevision& library) {
+    if (cursor.size() > 2048)
+        throw std::invalid_argument("Invalid session cursor. Refresh pieces.");
+    std::array<std::string_view, 6> fields;
+    std::size_t start{};
+    for (std::size_t i = 0; i < fields.size(); ++i) {
+        const auto end = cursor.find('.', start);
+        if ((end == std::string_view::npos) != (i == fields.size() - 1))
+            throw std::invalid_argument("Invalid session cursor. Refresh pieces.");
+        fields[i] = cursor.substr(start, end == std::string_view::npos ? end : end - start);
+        if (end != std::string_view::npos) start = end + 1;
+    }
+    const auto body = cursor.substr(0, cursor.size() - fields.back().size() - 1);
+    if (fields[0] != "v1" || fields[1].size() != 32 || fields[2].empty() ||
+        fields[2].size() > 20 || fields[5] != cursorDigest(body))
+        throw std::invalid_argument("Invalid session cursor. Refresh pieces.");
+    SessionAnchor anchor{unhexText(fields[3]), unhexText(fields[4])};
+    if (fields[1] != library.sourceId || fields[2] != library.revision)
+        throw StaleLibraryCursor("Library changed. Refresh pieces before continuing.");
+    return anchor;
+}
+std::string makeCursor(const LibraryRevision& library, const SessionAnchor& anchor) {
+    if (anchor.createdAt.empty() || anchor.createdAt.size() > 128 || anchor.id.empty() || anchor.id.size() > 128 ||
+        anchor.createdAt.find('\0') != std::string::npos || anchor.id.find('\0') != std::string::npos)
+        throw std::runtime_error("Saved session paging key is invalid.");
+    auto value = "v1." + library.sourceId + "." + library.revision + "." + hexText(anchor.createdAt) + "." + hexText(anchor.id);
+    return value + "." + cursorDigest(value);
+}
 } // namespace
 
 struct ReadOnlyLibrary::Impl {
     sqlite3* db{};
     int schema{};
+    std::string sourceId;
     ~Impl() { if (db) sqlite3_close(db); }
 };
 
 ReadOnlyLibrary::ReadOnlyLibrary(const std::filesystem::path& path) : impl_(std::make_unique<Impl>()) {
+    std::error_code error;
+    const auto status = std::filesystem::status(path, error);
+    if (status.type() == std::filesystem::file_type::not_found)
+        throw LibraryOpenError(LibraryOpenFailure::missing, "Library file is missing. Choose an existing library.");
+    if (error || !std::filesystem::is_regular_file(status))
+        throw LibraryOpenError(LibraryOpenFailure::unreadable, "Library file cannot be read. Choose an accessible library.");
     const auto utf8 = path.u8string();
     const std::string filename(reinterpret_cast<const char*>(utf8.data()), utf8.size());
     if (sqlite3_open_v2(filename.c_str(), &impl_->db, SQLITE_OPEN_READONLY | SQLITE_OPEN_FULLMUTEX, nullptr) != SQLITE_OK)
-        throw std::runtime_error("unable to open existing library read-only");
+        throw LibraryOpenError(LibraryOpenFailure::unreadable, "Library file cannot be opened read-only. Choose an accessible library.");
     sqlite3_busy_timeout(impl_->db, 5000);
-    Statement version(impl_->db, "PRAGMA user_version");
-    if (!version.next() || (version.integer(0) != 2 && version.integer(0) != 3))
-        throw std::runtime_error("native reader requires database schema v2 or v3");
-    impl_->schema = static_cast<int>(version.integer(0));
-    Statement jsonSupport(impl_->db, "SELECT json_valid('{}')");
-    if (!jsonSupport.next() || jsonSupport.integer(0) != 1) throw std::runtime_error("SQLite JSON functions required");
-    if (sqlite3_db_readonly(impl_->db, "main") != 1) throw std::runtime_error("library must be read-only");
+    try {
+        Statement version(impl_->db, "PRAGMA user_version");
+        if (!version.next() || (version.integer(0) != 2 && version.integer(0) != 3))
+            throw std::runtime_error("unsupported schema");
+        impl_->schema = static_cast<int>(version.integer(0));
+        Statement jsonSupport(impl_->db, "SELECT json_valid('{}')");
+        if (!jsonSupport.next() || jsonSupport.integer(0) != 1)
+            throw std::runtime_error("SQLite JSON functions required");
+        const auto probeSql = std::string(sessionColumns) + " LIMIT 0";
+        Statement sessionsProbe(impl_->db, probeSql.c_str());
+        Statement eventsProbe(impl_->db, "SELECT session_id,ordinal,original_seq,event_json FROM session_events LIMIT 0");
+        if (impl_->schema == 3) {
+            Statement envelopeProbe(impl_->db, "SELECT envelope_version,envelope_json,envelope_hash FROM sessions LIMIT 0");
+        }
+    } catch (const std::exception&) {
+        const auto code = sqlite3_errcode(impl_->db);
+        if (code == SQLITE_CANTOPEN || code == SQLITE_IOERR || code == SQLITE_PERM ||
+            code == SQLITE_AUTH || code == SQLITE_BUSY || code == SQLITE_LOCKED)
+            throw LibraryOpenError(LibraryOpenFailure::unreadable, "Library file cannot be read. Close conflicting access or choose an accessible library.");
+        throw LibraryOpenError(LibraryOpenFailure::incompatible, "Library format is incompatible. Choose a schema v2 or v3 library.");
+    }
+    if (sqlite3_db_readonly(impl_->db, "main") != 1)
+        throw LibraryOpenError(LibraryOpenFailure::unreadable, "Library connection must be read-only.");
+    std::random_device random;
+    constexpr char hex[] = "0123456789abcdef";
+    for (int i = 0; i < 16; ++i) {
+        const auto byte = random() & 255U;
+        impl_->sourceId += hex[byte >> 4U];
+        impl_->sourceId += hex[byte & 15U];
+    }
 }
 ReadOnlyLibrary::~ReadOnlyLibrary() = default;
 
@@ -195,6 +289,55 @@ std::vector<SavedSession> ReadOnlyLibrary::sessions(std::size_t limit) const {
         result.push_back(std::move(saved));
     }
     return result;
+}
+
+LibraryRevision ReadOnlyLibrary::revision() const {
+    Statement query(impl_->db, "PRAGMA data_version");
+    if (!query.next()) throw std::runtime_error("Library revision unavailable.");
+    return {impl_->sourceId, std::to_string(query.integer(0))};
+}
+
+SessionPage ReadOnlyLibrary::sessionPage(std::size_t limit, std::string_view cursor) const {
+    if (limit < 1 || limit > 100) throw std::invalid_argument("session list limit must be 1..100");
+    SessionPage page;
+    page.library = revision();
+    const auto anchor = cursor.empty() ? std::optional<SessionAnchor>{} : parseCursor(cursor, page.library);
+    {
+        ReadSnapshot snapshot(impl_->db);
+        // Pin the snapshot before checking its revision; BEGIN alone does not read.
+        Statement pin(impl_->db, "SELECT id FROM sessions LIMIT 1");
+        (void)pin.next();
+        if (revision() != page.library)
+            throw StaleLibraryCursor("Library changed. Refresh pieces before continuing.");
+        // Hex literals avoid interpolation of source text into SQL and keep the
+        // existing statement adapter's single-parameter interface unchanged.
+        std::string where;
+        if (anchor) {
+            const auto created = "CAST(X'" + hexText(anchor->createdAt) + "' AS TEXT)";
+            const auto id = "CAST(X'" + hexText(anchor->id) + "' AS TEXT)";
+            Statement exists(impl_->db, ("SELECT 1 FROM sessions WHERE created_at=" + created + " AND id=" + id).c_str());
+            if (!exists.next()) throw std::invalid_argument("Invalid session cursor anchor. Refresh pieces.");
+            where = " WHERE created_at<" + created + " OR (created_at=" + created + " AND id>" + id + ")";
+        }
+        const auto sql = std::string(sessionColumns) + where + " ORDER BY created_at DESC,id ASC LIMIT " + std::to_string(limit + 1);
+        Statement query(impl_->db, sql.c_str());
+        SessionAnchor last;
+        page.sessions.reserve(limit);
+        while (query.next()) {
+            if (page.sessions.size() == limit) {
+                page.nextCursor = makeCursor(page.library, last);
+                break;
+            }
+            auto saved = readSession(query);
+            if (saved.state == "frozen" || saved.state == "interrupted")
+                saved.metadataIntegrity = verifyMetadata(impl_->db, saved.id, impl_->schema);
+            last = {query.text(12), saved.id};
+            page.sessions.push_back(std::move(saved));
+        }
+    }
+    if (revision() != page.library)
+        throw StaleLibraryCursor("Library changed. Refresh pieces before continuing.");
+    return page;
 }
 
 SavedSession ReadOnlyLibrary::session(std::string_view id) const {

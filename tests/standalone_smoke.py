@@ -2,7 +2,8 @@
 """Launch the actual bundled WKWebView and validate its native bridge receipt.
 
 All writable files live in a temporary state directory. This never enables audio,
-attaches the owner's library, or starts/stops collectors. A supplied scene is
+attaches the owner's library, or alters external collectors. The explicit --live
+option contacts public providers using only a disposable managed library. A supplied scene is
 fully verified and imported as an independent copy by the app.
 """
 import argparse
@@ -19,6 +20,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--binary', required=True, type=Path)
     parser.add_argument('--scene', type=Path)
+    parser.add_argument('--live', action='store_true', help='Opt in to actual public-provider HTTP in disposable state')
     parser.add_argument('--seconds', type=int, default=3)
     parser.add_argument('--evidence', type=Path)
     args = parser.parse_args()
@@ -33,6 +35,8 @@ def main():
         restored = folder / 'restored-state'
         command = [str(args.binary.resolve()), '--state-dir', str(folder / 'state'),
                    '--smoke-test', str(receipt), '--smoke-seconds', str(args.seconds)]
+        if args.live:
+            command += ['--smoke-live', '1']
         if args.scene:
             command += ['--smoke-scene', str(args.scene.resolve()), '--smoke-export', str(exported),
                         '--smoke-scene-export', str(scene_export), '--smoke-backup', str(backup),
@@ -42,23 +46,32 @@ def main():
         environment = {key: value for key, value in os.environ.items()
                        if not key.startswith('ATLAS_')}
         result = subprocess.run(command, env=environment, capture_output=True, text=True,
-                                timeout=args.seconds + 90, check=False)
+                                timeout=args.seconds + (150 if args.live else 90), check=False)
         if result.returncode:
             raise AssertionError(f'App exited {result.returncode}: {result.stderr[-3000:]}')
         evidence = json.loads(receipt.read_text())
+        if args.evidence:
+            args.evidence.parent.mkdir(parents=True, exist_ok=True)
+            args.evidence.write_text(json.dumps(evidence, indent=2) + '\n')
         assert evidence['ok'], evidence
         assert evidence['shutdownComplete'], evidence
         assert evidence['audioEnabled'] is False, evidence
         assert evidence['nativeRequests'] >= 5, evidence
         assert evidence['webview']['rounds'] >= args.seconds * 5, evidence
         assert evidence['webview']['capabilities']['implementation'] == 'native', evidence
-        assert evidence['webview']['capabilities']['libraryAvailable'] is False, evidence
+        assert evidence['webview']['capabilities']['libraryAvailable'] is args.live, evidence
         assert evidence['webview']['dom']['buttons'], evidence
         assert evidence['webview']['audio']['status'] != 'running', evidence
         assert evidence['webview']['deviceUI']['visible'], evidence
         assert evidence['webview']['audioDevices']['available'], evidence
         assert evidence['webview']['afterDiscoveryAudio']['status'] != 'running', evidence
         assert evidence['webview']['dom']['title'] == 'Animal Atlas', evidence
+        if args.live:
+            assert evidence['webview']['liveStarted']['collecting'], evidence
+            assert evidence['webview']['liveUI']['speciesRows'] > 0, evidence
+            assert evidence['webview']['liveIncoming']['pings'] > 0, evidence
+            assert evidence['webview']['liveStopped']['collecting'] is False, evidence
+            assert set(evidence['webview']['liveMap']['sources']) == {'birdweather', 'nzsharks'}, evidence
         if args.scene:
             # The existing oracle validates RIFF extents, extensible PCM,
             # stereo/24-bit channel layout, fact length and embedded recipe.

@@ -517,6 +517,7 @@ struct UiHost::Impl {
     SavedSession saved;
     std::optional<Timeline> material;
     SavedSession materialSaved;
+    std::optional<LibraryRevision> materialRevision;
     std::uint64_t generation{};
     PlaybackRuntime *playback{};
     VoiceStore *voices{};
@@ -809,7 +810,11 @@ struct UiHost::Impl {
         } else {
             if (!library)
                 throw std::runtime_error("Wildlife library is unavailable");
-            next = library->load(id, basis, speed, &metadata);
+            loadMaterial(id);
+            metadata = materialSaved;
+            next.emplace(material->events(), basis, speed,
+                         basis == TimeBasis::observed ? metadata.observedBounds
+                                                      : metadata.arrivalBounds);
             nextContext.session = metadata;
             nextContext.basis = basis;
             nextContext.speed = speed;
@@ -824,7 +829,11 @@ struct UiHost::Impl {
         prepare(std::move(*next), std::move(metadata), std::move(nextContext));
     }
     void loadMaterial(std::string_view id) {
-        if (material && materialSaved.id == id)
+        const bool scene = id.starts_with("scene:");
+        const auto revision = !scene && library
+                                  ? std::optional{library->revision()}
+                                  : std::nullopt;
+        if (material && materialSaved.id == id && materialRevision == revision)
             return;
         SavedSession metadata;
         std::optional<Timeline> next;
@@ -838,8 +847,12 @@ struct UiHost::Impl {
                 throw std::runtime_error("Wildlife library is unavailable");
             next = library->load(id, TimeBasis::observed, {}, &metadata);
         }
+        if (revision && library->revision() != *revision)
+            throw StaleLibraryCursor(
+                "Library changed while material was read. Refresh the piece.");
         material = std::move(next);
         materialSaved = std::move(metadata);
+        materialRevision = revision;
     }
     std::string changes(const Object &args) {
         const auto limit = args.number("limit", 500);
@@ -857,16 +870,35 @@ struct UiHost::Impl {
         const auto storeId = head.text(0);
         const auto high = head.integer(1);
         const bool baseline = requestedStore != storeId || after > high;
+        // Reserve at most half the baseline (up to 100) for current animal-
+        // position fixes, so high-volume detections do not erase older fixes.
+        // The remaining slots retain newest changes; all rows remain baseline.
         const auto sql =
-            baseline ? "SELECT seq,event_json,change_kind,live_eligible FROM "
-                       "(SELECT * FROM revisions WHERE seq<=" +
-                           std::to_string(high) + " ORDER BY seq DESC LIMIT " +
-                           std::to_string(limit) + ") ORDER BY seq"
-                     : "SELECT seq,event_json,change_kind,live_eligible FROM "
-                       "revisions WHERE seq>" +
-                           std::to_string(after) +
-                           " AND seq<=" + std::to_string(high) +
-                           " ORDER BY seq LIMIT " + std::to_string(limit);
+            baseline
+                ? "WITH fixes AS (SELECT r.seq,r.event_json,r.change_kind,"
+                  "r.live_eligible FROM events e JOIN revisions r ON "
+                  "r.seq=e.revision_seq WHERE r.seq<=" +
+                      std::to_string(high) +
+                      " AND json_extract(r.event_json,'$.location_kind')="
+                      "'individual_fix' AND json_extract(r.event_json,"
+                      "'$.latitude') IS NOT NULL AND json_extract("
+                      "r.event_json,'$.longitude') IS NOT NULL "
+                      "ORDER BY r.seq DESC LIMIT " +
+                      std::to_string(std::min<std::int64_t>(100, limit / 2)) +
+                      "), recent AS (SELECT seq,event_json,change_kind,"
+                      "live_eligible FROM revisions WHERE seq<=" +
+                      std::to_string(high) +
+                      " AND seq NOT IN (SELECT seq FROM fixes) "
+                      "ORDER BY seq DESC LIMIT (" +
+                      std::to_string(limit) +
+                      "-(SELECT count(*) FROM fixes))) "
+                      "SELECT * FROM (SELECT * FROM fixes UNION ALL "
+                      "SELECT * FROM recent) ORDER BY seq"
+                : "SELECT seq,event_json,change_kind,live_eligible FROM "
+                  "revisions WHERE seq>" +
+                      std::to_string(after) +
+                      " AND seq<=" + std::to_string(high) +
+                      " ORDER BY seq LIMIT " + std::to_string(limit);
         Statement rows(db.get(), sql.c_str());
         std::string events = "[";
         auto next = baseline ? high : after;
@@ -1026,7 +1058,7 @@ std::string UiHost::request(std::string_view envelope) {
             if (args.size())
                 throw std::invalid_argument("unexpected arguments");
             result =
-                R"({"protocolVersion":1,"implementation":"native","supportedMethods":["getCapabilities","getChanges","getCatalog","listSessions","prepareReplay","getMaterialEvents")";
+                R"({"protocolVersion":1,"implementation":"native","supportedMethods":["getCapabilities","getChanges","getCatalog","listSessions","listSessionsPage","prepareReplay","getMaterialEvents")";
             if (impl_->playback)
                 result +=
                     R"(,"getTransport","setTransport","getAudioState","setAudioEnabled","getAudioDevices","setAudioDevice")";
@@ -1505,6 +1537,20 @@ std::string UiHost::request(std::string_view envelope) {
         } else if (method == "getCatalog") {
             result = impl_->catalog(
                 Object(impl_->db.get(), arguments, {"material"}));
+        } else if (method == "listSessionsPage") {
+            Object args(impl_->db.get(), arguments, {"limit", "cursor"});
+            if (!impl_->library)
+                throw std::runtime_error("Wildlife library is unavailable");
+            const auto page = impl_->library->sessionPage(
+                static_cast<std::size_t>(args.number("limit", 100)),
+                args.optionalText("cursor"));
+            std::string items = "[";
+            for (const auto &saved : page.sessions)
+                append(items, sessionView(saved));
+            result = "{\"items\":" + items + "],\"nextCursor\":" +
+                     (page.nextCursor ? quoteJson(*page.nextCursor) : "null") +
+                     ",\"sourceId\":" + quoteJson(page.library.sourceId) +
+                     ",\"revision\":" + quoteJson(page.library.revision) + "}";
         } else if (method == "listSessions") {
             Object args(impl_->db.get(), arguments, {"limit"});
             if (!impl_->library)
@@ -1531,7 +1577,7 @@ std::string UiHost::request(std::string_view envelope) {
             result = impl_->preparation();
         } else if (method == "getMaterialEvents") {
             Object args(impl_->db.get(), arguments,
-                        {"material", "offset", "limit"});
+                        {"material", "offset", "limit", "revision"});
             Object material(impl_->db.get(), args.object("material"),
                             {"kind", "sessionId"});
             if (material.text("kind") != "session")
@@ -1544,6 +1590,15 @@ std::string UiHost::request(std::string_view envelope) {
             if (!limit)
                 throw std::invalid_argument("positive page limit required");
             impl_->loadMaterial(sid);
+            const auto revision =
+                impl_->materialRevision
+                    ? impl_->materialRevision->sourceId + ":" +
+                          impl_->materialRevision->revision
+                    : "scene:" + impl_->materialSaved.contentHash;
+            const auto requestedRevision = args.optionalText("revision");
+            if (!requestedRevision.empty() && requestedRevision != revision)
+                throw StaleLibraryCursor("Library changed between material "
+                                         "pages. Reload the piece.");
             const auto &events = impl_->material->events();
             result = "[";
             for (auto i = offset; i < std::min(events.size(), offset + limit);
@@ -1552,6 +1607,7 @@ std::string UiHost::request(std::string_view envelope) {
                        eventView(impl_->db.get(), events[i].normalizedJson,
                                  events[i].revisionSequence));
             result = "{\"total\":" + std::to_string(events.size()) +
+                     ",\"revision\":" + quoteJson(revision) +
                      ",\"events\":" + result + "]}";
         } else
             return failure(
@@ -1559,6 +1615,10 @@ std::string UiHost::request(std::string_view envelope) {
                 "This capability is not implemented by the native data host");
         return "{\"requestId\":" + quoteJson(id) +
                ",\"ok\":true,\"result\":" + result + "}";
+    } catch (const StaleLibraryCursor &e) {
+        return failure("stale_generation", e.what());
+    } catch (const LibraryOpenError &e) {
+        return failure("unavailable", e.what());
     } catch (const SoundscapeError &e) {
         return failure(e.code() == SoundscapeErrorCode::invalidArgument
                            ? "invalid_request"

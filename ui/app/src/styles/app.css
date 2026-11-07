@@ -68,6 +68,10 @@
 .source-row__name { font-family: var(--font-text); font-size: var(--fs-small); font-weight: 600; }
 .source-row__line.is-stale, .source-row__line.is-problem, .source-row.is-problem .source-row__name { color: var(--c-warn); }
 
+.session-browser__navigation { display: flex; flex-wrap: wrap; gap: var(--s-1); }
+.session-browser__navigation .btn { padding-inline: var(--s-2); }
+.session-browser .session-list { max-height: 360px; overflow-y: auto; scrollbar-width: thin; }
+.session-row__name { overflow-wrap: anywhere; }
 .session-list { display: flex; flex-direction: column; border-top: var(--rule-strong); }
 .session-row { width: 100%; display: flex; flex-direction: column; gap: 2px; padding: var(--s-3) var(--s-2); border: 0; border-bottom: var(--rule-hair); background: transparent; text-align: left; }
 .session-row.is-on { background: var(--c-ground-sunk); }
@@ -302,3 +306,12 @@
 .export-history__item small { display: block; color: var(--c-ink-muted); margin-top: 3px; }
 
 .export-history a { color: var(--c-rule-strong); }
+
+/* Live collection stays in the existing header disclosure and source column. */
+.live-sources .popover__panel { max-height: calc(100vh - 120px); overflow-y: auto; }
+.live-sources__menu { width: min(340px, calc(100vw - 64px)); }
+.live-sources__choices { display: flex; flex-direction: column; gap: var(--s-3); border: 0; margin: 0; padding: 0; }
+.live-sources__details { max-width: 100%; }
+.live-source-status .source-row { gap: 2px; overflow-wrap: anywhere; }
+.live-source-status .panel-details { font-family: var(--font-text); }
+.live-source-status > .source-row + .source-row { border-top: var(--rule-hair); padding-top: var(--s-3); }

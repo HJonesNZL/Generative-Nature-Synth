@@ -99,7 +99,7 @@ export interface ProvisionalMethods {
   listEffects: { request: Record<string, never>; response: EffectView[] };
   setRegionEffect: { request: { regionId: string; effectId: string; enabled?: boolean; send?: number; gesture?: "begin" | "change" | "end" }; response: RegionView };
   setRegionPolicy: { request: { overlapPolicy?: RegionView["overlapPolicy"]; uncertainPosition?: "use_reported_point" | "skip_region_effects" }; response: { overlapPolicy: RegionView["overlapPolicy"]; uncertainPosition: "use_reported_point" | "skip_region_effects" } };
-  getMaterialEvents: { request: { material: MaterialRef; offset: number; limit: number }; response: { total: number; events: EventView[] } };
+  getMaterialEvents: { request: { material: MaterialRef; offset: number; limit: number; revision?: string }; response: { total: number; revision?: string; events: EventView[] } };
   startRender: { request: { sessionId: string; format: "wav_stereo_48k_24"; tailPolicy: "let_ring" | "cut" }; response: RenderJob };
   getRenderJob: { request: { jobId: string }; response: RenderJob };
   cancelRender: { request: { jobId: string }; response: RenderJob };

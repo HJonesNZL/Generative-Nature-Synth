@@ -12,20 +12,22 @@ import { DISPLAY_TIMEZONE, formatAge, formatHm, formatDate, zonedToUtc, zoneAbbr
 import { EmptyState, Notice } from "../../components/Notice";
 import { SegmentedControl } from "../../components/SegmentedControl";
 import type { MaterialView } from "../shared/useMaterialView";
+import { SessionBrowser } from "./SessionBrowser";
+import { LiveSourcesStatus } from "../../app/LiveSources";
 
 export function LeftColumn({ view, catalog }: { view: MaterialView; catalog: Catalog }) {
   const { mode } = useAppState();
-  const { caps } = useHost();
   return (
     <aside className="atlas__left" aria-label={mode === "history" ? "History query" : mode === "replay" ? "Saved pieces" : "Species and sources"}>
       {mode === "history" ? <HistoryQueryPanel catalog={catalog} /> : mode === "replay" ? <SessionsPanel /> : <SpeciesPanel view={view} catalog={catalog} />}
-      {mode !== "history" && caps?.libraryAvailable !== false ? <SourcesPanel catalog={catalog} /> : null}
+      {mode !== "history" ? <SourcesPanel catalog={catalog} /> : null}
     </aside>
   );
 }
 
 function SpeciesPanel({ view, catalog }: { view: MaterialView; catalog: Catalog }) {
   const { highlightSpeciesId } = useAppState();
+  const { caps } = useHost();
   const dispatch = useDispatch();
   const [search, setSearch] = useState("");
   const counts = useMemo(() => {
@@ -41,6 +43,7 @@ function SpeciesPanel({ view, catalog }: { view: MaterialView; catalog: Catalog 
   }, [catalog.data, counts]);
   return (
     <section className="stack-sm">
+      {caps?.libraryAvailable === false ? <p className="small muted">No live library connected. {caps.supportedMethods.includes("getLiveSources") ? "Open Collect to choose live sources and start updates." : "Choose a wildlife library in the app toolbar."}</p> : null}
       <span className="label" title="Counts include all loaded records. Select a species to highlight its reported locations.">SPECIES · {species.length} AVAILABLE</span>
       {catalog.status === "unsupported" ? <Notice tone="caution" title="Species list unavailable">This host does not provide a catalogue.</Notice> : null}
       {catalog.data?.limited ? <Notice tone="caution" title="Catalogue display limited">Names and stations are sampled from at most 2,000 records.</Notice> : null}
@@ -70,6 +73,13 @@ function SpeciesPanel({ view, catalog }: { view: MaterialView; catalog: Catalog 
 }
 
 function SourcesPanel({ catalog }: { catalog: Catalog }) {
+  const { client, caps } = useHost();
+  if (caps?.implementation === "native" && client.supports("getLiveSources")) return <LiveSourcesStatus />;
+  if (caps?.libraryAvailable === false) return null;
+  return <LegacySourcesPanel catalog={catalog} />;
+}
+
+function LegacySourcesPanel({ catalog }: { catalog: Catalog }) {
   const { onNotification } = useHost();
   const [q, refresh] = useHostQuery("getSourceHealth", {}, [], { refreshMs: 10_000 });
   useEffect(() => onNotification((n) => { if (n.type === "sourceHealthChanged") refresh(); }), [onNotification, refresh]);
@@ -114,39 +124,15 @@ function SourceRow({ health, name, now }: { health: SourceHealth; name: string; 
 }
 
 function SessionsPanel() {
-  const { client, caps } = useHost();
+  const { client } = useHost();
   const state = useAppState();
   const dispatch = useDispatch();
-  const [q, refreshSessions] = useHostQuery("listSessions", caps?.libraryAvailable === false ? null : { limit: 100 }, []);
-  const sessions = valueOf(q) ?? [];
 
   return (
     <section className="stack-sm">
       <span className="label">SAVED PIECES</span>
-      {caps?.libraryAvailable === false ? <p className="small muted">Choose a wildlife library to list its pieces. Saved soundscapes remain available above.</p> : null}
-      {q.status === "unsupported" ? <Notice tone="caution" title="Saved pieces unavailable">This host cannot list sessions.</Notice> : null}
-      {q.status === "error" ? <Notice tone="problem" title="Could not read saved pieces" action={<button type="button" className="btn btn--quiet btn--sm" onClick={refreshSessions}>Retry</button>}>{q.error.message}</Notice> : null}
-      {sessions.length === 100 ? <Notice tone="caution" title="Library display limit">Showing the newest 100 pieces. Full library pagination is not implemented yet.</Notice> : null}
+      <SessionBrowser />
       {state.replay.session?.metadataIntegrity === "legacy-metadata-unverified" ? <Notice tone="caution" title="Legacy metadata unverified">Event content is checked when opened; the old saved interpretation has no metadata seal.</Notice> : null}
-      {q.status === "ready" && sessions.length === 0 ? <EmptyState title="No saved pieces yet">Collect for a while, or freeze a history selection.</EmptyState> : null}
-      <ul className="session-list" role="list">
-        {sessions.map((s) => {
-          const on = state.replay.session?.id === s.id;
-          return (
-            <li key={s.id}>
-              <button type="button" className={`session-row${on ? " is-on" : ""}`} aria-pressed={on} onClick={() => { dispatch({ type: "replaySession", session: s });  }}>
-                <span className="session-row__name">{s.name}</span>
-                <span className="session-row__meta">
-                  {s.origin === "imported_bundle" ? <span className="badge">Imported</span> : null}
-                  {s.state === "interrupted" ? <span className="badge badge--caution">Interrupted</span> : null}
-                  {s.captureTruncated ? <span className="badge badge--caution">Truncated</span> : null}
-                  <span className="mono">{s.eventCount} records</span>
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
       {state.replay.session?.captureTruncated ? <Notice tone="caution" title="Capture truncated">The piece hit a storage limit; later records were not kept.</Notice> : null}
       {state.replay.session?.state === "interrupted" ? <Notice tone="caution" title="Interrupted capture">Collection stopped unexpectedly. The piece ends at the last durable record; no coverage is assumed after it.</Notice> : null}
       {state.transport.error ? <Notice tone="problem" title="Playback unavailable">{state.transport.error}</Notice> : null}

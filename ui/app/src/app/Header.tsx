@@ -13,6 +13,7 @@ import { useHost, useHostQuery, valueOf } from "./HostContext";
 import { useAppState, useDispatch, type ViewMode } from "./store";
 import { formatTime, formatUs, zoneAbbreviation } from "./time";
 import { AudioDeviceSettings } from "./AudioDeviceSettings";
+import { LiveSourcesControl } from "./LiveSources";
 import type { HostMethods } from "../host/contracts";
 import { useCoalescedGesture } from "./useCoalescedGesture";
 
@@ -21,7 +22,8 @@ export function Header({ demoMenu, projectTools }: { demoMenu?: ReactNode; proje
   const dispatch = useDispatch();
   const { client, caps, onNotification } = useHost();
   const [audioQ, refreshAudio] = useHostQuery("getAudioState", {}, [state.soundscape.epoch], { refreshMs: 1000 });
-  const [collectionQ, refreshCollection] = useHostQuery("getCollectionState", {}, [], { refreshMs: 1000 });
+  const nativeLiveSources = caps?.implementation === "native" && client.supports("getLiveSources");
+  const [collectionQ, refreshCollection] = useHostQuery("getCollectionState", nativeLiveSources ? null : {}, [], { refreshMs: 1000 });
   const audio = valueOf(audioQ);
   const collection = valueOf(collectionQ);
   const [now, setNow] = useState(() => Date.now());
@@ -192,12 +194,12 @@ export function Header({ demoMenu, projectTools }: { demoMenu?: ReactNode; proje
       </div>
 
       <div className="header-group" role="group" aria-label="Collection">
-        <Popover
+        {nativeLiveSources ? <LiveSourcesControl /> : <Popover
           label={collecting ? "Collection running — options" : "Start collection"}
           trigger={<span className={`collect-chip${collecting ? " is-on" : ""}`}><Icon name="collect" size={14} />{collecting ? `Collecting ${Math.floor(elapsedMinutes / 60)}:${String(elapsedMinutes % 60).padStart(2, "0")}` : "Collect"}</span>}
         >
           {(close) => <CollectionMenu collection={collection} onDone={() => { refreshCollection(); close(); }} confirmStop={confirmStop} setConfirmStop={setConfirmStop} />}
-        </Popover>
+        </Popover>}
       </div>
 
       <div className="header-clock" aria-live="off">

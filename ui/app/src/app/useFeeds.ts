@@ -86,10 +86,23 @@ export function useMaterialFeed() {
     (async () => {
       materialStore.setFeed({ status: "loading", error: null });
       let offset = 0;
+      let revision: string | undefined;
       for (let page = 0; page < EVENT_DISPLAY_CAPACITY / 500; page += 1) {
-        const result = await client.call("getMaterialEvents", { material, offset, limit: 500 }, { signal: controller.signal });
+        const result = await client.call("getMaterialEvents", { material, offset, limit: 500, ...(revision ? { revision } : {}) }, { signal: controller.signal });
         if (controller.signal.aborted) return;
-        if (!result.ok) { materialStore.setFeed({ status: "error", error: result.error.message }); return; }
+        if (!result.ok) {
+          // A stale revision invalidates every accumulated page, including map
+          // markers and counts. Keep the failure visible without showing a mix.
+          if (result.error.code === "stale_generation") materialStore.clear();
+          materialStore.setFeed({ status: "error", error: result.error.message });
+          return;
+        }
+        if (revision && result.value.revision !== revision) {
+          materialStore.clear();
+          materialStore.setFeed({ status: "error", error: "Library changed between pages. Reload this piece." });
+          return;
+        }
+        revision = result.value.revision;
         materialStore.upsert(result.value.events.map((event) => ({ event, pulse: false })));
         materialStore.requestOutcomes(client, result.value.events.map((e) => e.id));
         offset += result.value.events.length;

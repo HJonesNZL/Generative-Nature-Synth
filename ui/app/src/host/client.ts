@@ -143,6 +143,42 @@ function validSoundscape(value: unknown): boolean {
     (scene.speedDenominator === null || unsignedDecimal(scene.speedDenominator) && scene.speedDenominator !== "0") &&
     (!scene.valid || scene.durationUs !== null && scene.basis !== null && scene.speedNumerator !== null && scene.speedDenominator !== null);
 }
+function validLiveSources(value: unknown, method: string, args: unknown): boolean {
+  if (!value || typeof value !== "object") return false;
+  const state = value as Record<string, unknown>;
+  if (typeof state.collecting !== "boolean" || typeof state.libraryActive !== "boolean" ||
+      state.libraryChanged !== undefined && typeof state.libraryChanged !== "boolean" ||
+      !Array.isArray(state.sources) || state.sources.length !== 2) return false;
+  const ids = new Set();
+  const timestamp = (v: unknown) => v === null || typeof v === "string" && v.length <= 40 && /^\d{4}-\d\d-\d\dT.*Z$/.test(v) && Number.isFinite(Date.parse(v));
+  const valid = state.sources.every(source => {
+    if (!source || !["birdweather", "nzsharks"].includes(source.id) || ids.has(source.id) ||
+        ![source.enabled, source.polling, source.complete, source.gap].every(v => typeof v === "boolean") ||
+        ![source.lastAttemptUtc, source.lastSuccessUtc, source.lastObservationUtc].every(timestamp) ||
+        !(source.error === null || typeof source.error === "string" && /^[a-z0-9_]{1,100}$/.test(source.error)) ||
+        !unsignedDecimal(source.records) || !Number.isInteger(source.nextPollSeconds) || source.nextPollSeconds < 0 || source.nextPollSeconds > 86400) return false;
+    ids.add(source.id); return true;
+  }) && state.collecting === state.sources.some(source => source.enabled);
+  if (!valid || method !== "setLiveSources") return valid;
+  const requested = (args as { sourceIds?: unknown } | null)?.sourceIds;
+  return Array.isArray(requested) && requested.length <= 2 && new Set(requested).size === requested.length &&
+    requested.every(id => ["birdweather", "nzsharks"].includes(id)) &&
+    state.sources.every(source => source.enabled === requested.includes(source.id));
+}
+function validSessionPage(value: unknown, args: unknown): boolean {
+  if (!value || typeof value !== "object") return false;
+  const page = value as Record<string, unknown>;
+  const limit = (args as { limit?: unknown } | null)?.limit;
+  if (!Number.isInteger(limit) || (limit as number) < 1 || (limit as number) > 100 ||
+      !Array.isArray(page.items) || page.items.length > (limit as number) || !opaqueId(page.sourceId) || !unsignedDecimal(page.revision) ||
+      !(page.nextCursor === null || typeof page.nextCursor === "string" && page.nextCursor.length > 0 && page.nextCursor.length <= 2048) ||
+      page.items.length === 0 && page.nextCursor !== null) return false;
+  const ids = new Set();
+  return page.items.every(item => {
+    if (!validSceneSession(item) || ids.has(item.id)) return false;
+    ids.add(item.id); return true;
+  });
+}
 function validSoundscapeReply(method: string, value: unknown, args: unknown): boolean {
   if (!["listExports", "listSoundscapes", "saveSoundscape", "recallSoundscape", "startSoundscapeRender", "getRenderJob", "cancelRender"].includes(method)) return true;
   if (!value || typeof value !== "object") return false;
@@ -271,7 +307,7 @@ export class HostClient {
       const request = { protocolVersion: 1 as const, requestId, method, args };
       const reply = (this.host as ExtendedHost).request(request, controller.signal).then((r): HostResult<AllMethods[M]["response"]> => {
         if (!r || typeof r !== "object" || typeof r.ok !== "boolean" || r.requestId !== requestId) return { ok: false, error: { code: "internal", message: "Reply did not match request id" } };
-        if (r.ok) return "result" in r && validPlaybackReply(method, r.result) && validVoiceReply(method, r.result, args) && validSoundscapeReply(method, r.result, args) && validCompositionReply(method, r.result) && validSpatialReply(method, r.result) && (!["getAudioDevices", "setAudioDevice"].includes(method) || validAudioDeviceCatalog(r.result)) ? { ok: true, value: r.result } : { ok: false, error: { code: "internal", message: "Malformed host result" } };
+        if (r.ok) return "result" in r && validPlaybackReply(method, r.result) && validVoiceReply(method, r.result, args) && validSoundscapeReply(method, r.result, args) && validCompositionReply(method, r.result) && validSpatialReply(method, r.result) && (method !== "listSessionsPage" || validSessionPage(r.result, args)) && (!["getLiveSources", "setLiveSources"].includes(method) || validLiveSources(r.result, method, args)) && (!["getAudioDevices", "setAudioDevice"].includes(method) || validAudioDeviceCatalog(r.result)) ? { ok: true, value: r.result } : { ok: false, error: { code: "internal", message: "Malformed host result" } };
         if (!r.error || typeof r.error.message !== "string" || !["unsupported", "invalid_request", "unavailable", "stale_generation", "internal"].includes(r.error.code))
           return { ok: false, error: { code: "internal", message: "Malformed host error" } };
         return { ok: false, error: r.error };

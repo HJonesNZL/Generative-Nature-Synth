@@ -1,5 +1,6 @@
 #include "atlas_build_identity.hpp"
 #include "json_text.hpp"
+#include "juce_collection.hpp"
 #include "standalone_bridge.hpp"
 #include "standalone_support.hpp"
 #include <algorithm>
@@ -25,7 +26,7 @@ struct Launch {
     fs::path state, library, smokeReceipt, smokeScene, smokeExport,
         smokeSceneExport, smokeBackup, smokeRestore;
     int smokeSeconds{3};
-    bool libraryOverride{};
+    bool libraryOverride{}, stateOverride{}, smokeLive{};
 };
 Launch parse(const juce::StringArray &arguments) {
     Launch launch;
@@ -38,9 +39,10 @@ Launch parse(const juce::StringArray &arguments) {
         if (i + 1 == arguments.size())
             throw std::invalid_argument("A launch option requires a value.");
         const auto value = arguments[++i];
-        if (option == "--state-dir")
+        if (option == "--state-dir") {
             launch.state = path(value);
-        else if (option == "--library") {
+            launch.stateOverride = true;
+        } else if (option == "--library") {
             launch.library = path(value);
             launch.libraryOverride = true;
         } else if (option == "--smoke-test")
@@ -55,7 +57,12 @@ Launch parse(const juce::StringArray &arguments) {
             launch.smokeBackup = path(value);
         else if (option == "--smoke-restore")
             launch.smokeRestore = path(value);
-        else if (option == "--smoke-seconds") {
+        else if (option == "--smoke-live") {
+            if (value != "1")
+                throw std::invalid_argument(
+                    "Live smoke requires explicit value 1.");
+            launch.smokeLive = true;
+        } else if (option == "--smoke-seconds") {
             if (!value.containsOnly("0123456789") || value.isEmpty())
                 throw std::invalid_argument(
                     "Smoke seconds must be an integer.");
@@ -81,6 +88,10 @@ Launch parse(const juce::StringArray &arguments) {
         launch.smokeReceipt.empty())
         throw std::invalid_argument(
             "Smoke scene/export requires --smoke-test.");
+    if (launch.smokeLive &&
+        (!launch.stateOverride || launch.smokeReceipt.empty()))
+        throw std::invalid_argument(
+            "Live smoke requires explicit state and receipt paths.");
     if (launch.smokeBackup.empty() != launch.smokeRestore.empty())
         throw std::invalid_argument("Smoke backup and restore must be paired.");
     return launch;
@@ -621,6 +632,15 @@ class Shell final : public juce::Component, private juce::Timer {
             }
             if (launch_.libraryOverride)
                 settings.library = launch_.library;
+            std::unique_ptr<atlas::standalone::CollectionService> collection;
+            try {
+                collection =
+                    std::make_unique<atlas::standalone::CollectionService>(
+                        state / "live.sqlite3");
+            } catch (const std::exception &) {
+                notice += " Live collection storage is unavailable; existing "
+                          "library browsing remains available.";
+            }
             atlas::PlaybackRuntime playback(atlas::makeJuceOutputDriver(),
                                             configuration(settings.output));
             atlas::VoiceStore voices(state / "voices.sqlite3");
@@ -695,14 +715,130 @@ class Shell final : public juce::Component, private juce::Timer {
                     if (work->epoch != expectedPageEpoch)
                         continue;
                     ++requests_;
+                    bool reloadLibrary{};
                     auto response = host->request(work->text);
                     if (response.size() > 8 * 1024 * 1024)
                         response = failed(work->text,
                                           "Native reply exceeds capacity.");
                     const auto request =
                         juce::JSON::parse(juce::String(work->text));
-                    const auto reply =
-                        juce::JSON::parse(juce::String(response));
+                    auto reply = juce::JSON::parse(juce::String(response));
+                    const auto method = request["method"].toString();
+                    if (collection && method == "getCapabilities" &&
+                        static_cast<bool>(reply["ok"])) {
+                        if (auto *methods = reply["result"]["supportedMethods"]
+                                                .getArray()) {
+                            methods->add("getLiveSources");
+                            methods->add("setLiveSources");
+                        }
+                        response =
+                            juce::JSON::toString(reply, true).toStdString();
+                    }
+                    if (collection &&
+                        (method == "getLiveSources" ||
+                         method == "setLiveSources") &&
+                        reply["error"]["code"].toString() == "unsupported") {
+                        try {
+                            const auto *arguments =
+                                request["args"].getDynamicObject();
+                            const auto count =
+                                arguments ? arguments->getProperties().size()
+                                          : -1;
+                            bool libraryChanged{};
+                            if (method == "getLiveSources" && count != 0)
+                                throw std::invalid_argument(
+                                    "Unexpected live source arguments.");
+                            if (method == "setLiveSources") {
+                                const auto *ids =
+                                    request["args"]["sourceIds"].getArray();
+                                if (count != 1 || !ids || ids->size() > 2)
+                                    throw std::invalid_argument(
+                                        "Choose only the available live "
+                                        "sources.");
+                                std::vector<std::string> selected;
+                                for (const auto &id : *ids) {
+                                    if (!id.isString() ||
+                                        (id.toString() != "birdweather" &&
+                                         id.toString() != "nzsharks") ||
+                                        std::find(
+                                            selected.begin(), selected.end(),
+                                            id.toString().toStdString()) !=
+                                            selected.end())
+                                        throw std::invalid_argument(
+                                            "Invalid or duplicate live "
+                                            "source.");
+                                    selected.push_back(
+                                        id.toString().toStdString());
+                                }
+                                if (!selected.empty() &&
+                                    settings.library !=
+                                        collection->databasePath()) {
+                                    host->setLibrary(
+                                        collection->databasePath());
+                                    playback.enable(false);
+                                    settings.library =
+                                        collection->databasePath();
+                                    libraryChanged = true;
+                                    reloadLibrary = true;
+                                    post([file =
+                                              settings.library](Shell &shell) {
+                                        shell.libraryStatus_ =
+                                            "Managed live library: " +
+                                            file.string();
+                                        shell.updateStatus(
+                                            "Live library selected · choose "
+                                            "Listening separately",
+                                            false);
+                                    });
+                                    if (settingsWritable) {
+                                        try {
+                                            atlas::standalone::saveSettings(
+                                                state, settings);
+                                        } catch (const std::exception &) {
+                                            post([](Shell &shell) {
+                                                shell.updateStatus(
+                                                    "Live library selected; "
+                                                    "preference could not be "
+                                                    "saved",
+                                                    false);
+                                            });
+                                        }
+                                    }
+                                }
+                                collection->configure(selected);
+                            }
+                            auto result = juce::JSON::parse(
+                                juce::String(collection->stateJson()));
+                            result.getDynamicObject()->setProperty(
+                                "libraryActive",
+                                settings.library == collection->databasePath());
+                            result.getDynamicObject()->setProperty(
+                                "libraryChanged", libraryChanged);
+                            juce::DynamicObject::Ptr envelope =
+                                new juce::DynamicObject;
+                            envelope->setProperty("requestId",
+                                                  request["requestId"]);
+                            envelope->setProperty("ok", true);
+                            envelope->setProperty("result", result);
+                            response = juce::JSON::toString(
+                                           juce::var(envelope.get()), true)
+                                           .toStdString();
+                        } catch (const std::invalid_argument &error) {
+                            response =
+                                "{\"requestId\":" +
+                                atlas::detail::quoteJson(request["requestId"]
+                                                             .toString()
+                                                             .toStdString()) +
+                                ",\"ok\":false,\"error\":{\"code\":\"invalid_"
+                                "request\",\"message\":" +
+                                atlas::detail::quoteJson(error.what()) + "}}";
+                        } catch (const std::exception &) {
+                            response = failed(
+                                work->text, "Live collection could not start. "
+                                            "Check app storage and retry.");
+                        }
+                        reply = juce::JSON::parse(juce::String(response));
+                    }
                     if (request["method"].toString() == "setAudioDevice" &&
                         static_cast<bool>(reply["ok"])) {
                         settings.output =
@@ -719,10 +855,21 @@ class Shell final : public juce::Component, private juce::Timer {
                             }
                         }
                     }
+                    // Retire requests from the old document before replacing
+                    // its view; a queued edit must not cross the library
+                    // switch.
+                    if (reloadLibrary)
+                        ++expectedPageEpoch;
                     post([token = work->token, epoch = work->epoch,
-                          response = std::move(response)](Shell &shell) {
-                        if (epoch == shell.browserEpoch_)
-                            shell.reply(token, response);
+                          response = std::move(response),
+                          reloadLibrary](Shell &shell) {
+                        if (epoch != shell.browserEpoch_)
+                            return;
+                        shell.reply(token, response);
+                        if (reloadLibrary)
+                            shell.updateStatus("Live library selected · choose "
+                                               "Listening separately",
+                                               true);
                     });
                     continue;
                 }
@@ -742,6 +889,9 @@ class Shell final : public juce::Component, private juce::Timer {
                             throw std::runtime_error(
                                 "Choose a regular wildlife library file.");
                         host->setLibrary(work->file);
+                        if (collection &&
+                            work->file != collection->databasePath())
+                            collection->configure({});
                         playback.enable(false);
                         settings.library = work->file;
                         post([path = work->file](Shell &shell) {
@@ -972,7 +1122,8 @@ class Shell final : public juce::Component, private juce::Timer {
             return;
         }
         if (Clock::now() - smokeStarted_ >
-            std::chrono::seconds(launch_.smokeSeconds + 60)) {
+            std::chrono::seconds(launch_.smokeSeconds +
+                                 (launch_.smokeLive ? 120 : 60))) {
             close();
             return;
         }
@@ -1018,7 +1169,7 @@ class Shell final : public juce::Component, private juce::Timer {
    if (result.afterDiscoveryAudio.status === 'running') throw Error('Device discovery enabled output.');
    audioSettings.click();
    result.scenes = await call('listSoundscapes', {limit: 100});
-   result.dom = {title: document.title, text: document.getElementById('root')?.innerText?.slice(0, 3000) ?? '', buttons: [...document.querySelectorAll('button')].map(button => button.textContent).slice(0, 100)};
+   result.dom = {visibility: document.visibilityState, title: document.title, text: document.getElementById('root')?.innerText?.slice(0, 3000) ?? '', buttons: [...document.querySelectorAll('button')].map(button => button.textContent).slice(0, 100)};
    if (!result.dom.text.includes('ATLAS') || !result.dom.buttons.length || result.dom.text.includes('DEMO DATA')) throw Error('Native React UI did not render.');
 )JS") +
                                         (render ? juce::String(R"JS(
@@ -1042,6 +1193,7 @@ class Shell final : public juce::Component, private juce::Timer {
      await call('getTransport'); result.rounds++;
      await new Promise(resolve => setTimeout(resolve, 100));
    }
+   LIVE_COLLECTION_SMOKE
    SCENE_EXPORT_SMOKE
    result.ok = true;
  } catch (error) { result.error = String(error); }
@@ -1052,6 +1204,57 @@ class Shell final : public juce::Component, private juce::Timer {
                 script
                     .replace("SMOKE_DURATION_MS",
                              juce::String(launch_.smokeSeconds * 1000))
+                    .replace("LIVE_COLLECTION_SMOKE", launch_.smokeLive
+                                                          ? juce::String(R"JS(
+   result.liveInitial = await call('getLiveSources');
+   if (!result.liveInitial.libraryActive) {
+     if (result.liveInitial.collecting) throw Error('Unexpected active source in fresh smoke state.');
+     const collect = document.querySelector('button[aria-label="Start live collection"]');
+     if (!collect) throw Error('Native Collect control is missing.');
+     collect.click();
+     const start = () => [...document.querySelectorAll('.live-sources__menu button')].find(button => button.textContent === 'Start live updates');
+     await waitFor(() => start() && !start().disabled, 'enabled native collection control');
+     start().click();
+     // This old-document mutation is deliberately queued after the switch.
+     // Native epoch retirement must discard it before it can pause the new view.
+     void window.atlasHost.request({protocolVersion: 1, requestId: 'retired-page-pause', method: 'setLiveSources', args: {sourceIds: []}}).catch(() => {});
+     return; // The real React action reloads; the shell starts the second phase.
+   }
+   if (!result.liveInitial.collecting || !result.capabilities.libraryAvailable) throw Error('Collect did not survive the native UI reload.');
+   try {
+     result.liveStarted = result.liveInitial;
+     const deadline = Date.now() + 65000;
+     do {
+       result.live = await call('getLiveSources');
+       if (result.live.sources.every(source => source.lastSuccessUtc || source.error)) break;
+       await new Promise(resolve => setTimeout(resolve, 250));
+     } while (Date.now() < deadline);
+     if (!result.live.sources.every(source => source.lastSuccessUtc && (!source.error || source.error === 'pagination_limit_reached') && BigInt(source.records) > 0n)) throw Error('Native provider collection did not populate both streams: ' + JSON.stringify(result.live));
+     const changes = await call('getChanges', {storeId: '', afterSequence: '0', limit: 500});
+     result.liveMap = {count: changes.events.length, sources: [...new Set(changes.events.map(item => item.event.sourceId))], baselinePulses: changes.events.filter(item => item.liveEligible).length};
+     if (!['birdweather', 'nzsharks'].every(id => result.liveMap.sources.includes(id)) || result.liveMap.baselinePulses) throw Error('Map baseline lost a source or replayed old pings.');
+     const initialBird = result.live.sources.find(source => source.id === 'birdweather');
+     const nextDeadline = Date.now() + 75000;
+     do {
+       await new Promise(resolve => setTimeout(resolve, 500));
+       result.liveNext = await call('getLiveSources');
+       const bird = result.liveNext.sources.find(source => source.id === 'birdweather');
+       if (bird.lastSuccessUtc !== initialBird.lastSuccessUtc) break;
+       if (Date.now() >= nextDeadline) throw Error('No second native bird poll completed.');
+     } while (true);
+     const incoming = await call('getChanges', {storeId: changes.storeId, afterSequence: changes.nextSequence, limit: 500});
+     result.liveIncoming = {count: incoming.events.length, pings: incoming.events.filter(item => item.liveEligible).length, sources: [...new Set(incoming.events.map(item => item.event.sourceId))]};
+     if (!result.liveIncoming.pings) throw Error('No genuinely new bird activity arrived during the live smoke window.');
+     await waitFor(() => parseInt(document.querySelector('.map-locations > summary')?.textContent ?? '0', 10) > 0 && document.querySelectorAll('.species-row').length > 0, 'real observations in the React map and species list');
+     document.querySelector('button[aria-label="Map details and coverage"]')?.click();
+     await waitFor(() => /[1-9][0-9]* records · [1-9][0-9]* of [1-9][0-9]* locations shown/.test(document.querySelector('.map-stage')?.innerText ?? ''), 'loaded event counts in map details');
+     result.liveUI = {mapDetails: document.querySelector('.map-stage').innerText.slice(0, 3000), locations: document.querySelector('.map-locations > summary').textContent, speciesRows: document.querySelectorAll('.species-row').length, sourceText: document.querySelector('[aria-label="Live source status"]').innerText, canvas: !!document.querySelector('.map-stage canvas')};
+   } finally {
+     result.liveStopped = await call('setLiveSources', {sourceIds: []});
+     if (result.liveStopped.collecting) throw Error('Live collection did not pause.');
+   }
+)JS")
+                                                          : juce::String())
                     .replace("SCENE_EXPORT_SMOKE",
                              launch_.smokeSceneExport.empty()
                                  ? juce::String()
@@ -1135,9 +1338,14 @@ class Application final : public juce::JUCEApplication {
     bool moreThanOneInstanceAllowed() override { return true; }
     void initialise(const juce::String &) override {
         try {
+            auto launch = parse(getCommandLineParameterArray());
+            const bool liveSmoke = launch.smokeLive;
             window_ = std::make_unique<Window>(
-                parse(getCommandLineParameterArray()),
-                [] { juce::JUCEApplicationBase::quit(); });
+                std::move(launch), [] { juce::JUCEApplicationBase::quit(); });
+            if (liveSmoke) {
+                juce::Process::makeForegroundProcess();
+                window_->toFront(true);
+            }
         } catch (const std::exception &error) {
             juce::AlertWindow::showMessageBoxAsync(
                 juce::MessageBoxIconType::WarningIcon,

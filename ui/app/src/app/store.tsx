@@ -8,6 +8,7 @@ import { createContext, useContext, useMemo, useReducer, type Dispatch, type Rea
 import type { CoverageInterval, SessionView, TimeBasis, SoundscapeView, HostMethods } from "../host/contracts";
 import type { HistoryFreezeResult, RenderJob } from "../host/provisional";
 import { playbackContext } from "./playbackContext";
+import type { SessionBrowserSnapshot } from "../screens/atlas/sessionBrowserState";
 import { DISPLAY_TIMEZONE } from "./time";
 
 export type Screen = "atlas" | "studio";
@@ -43,6 +44,7 @@ export interface TransportView {
 }
 
 export interface AppState {
+  sessionBrowser: SessionBrowserSnapshot | null;
   soundscape: { active: SoundscapeView | null; operation: "save" | "recall" | "composition" | "spatial" | null; epoch: number };
   screen: Screen;
   mode: ViewMode;
@@ -64,6 +66,7 @@ export interface AppState {
 }
 
 export type Action =
+  | { type: "sessionBrowser"; browser: SessionBrowserSnapshot | null }
   | { type: "soundscapeOperation"; operation: "save" | "recall" | "composition" | "spatial" | null }
   | { type: "soundscapeRecalled"; scene: SoundscapeView; preparation: HostMethods["prepareReplay"]["response"] }
   | { type: "screen"; screen: Screen }
@@ -102,6 +105,7 @@ function todayInZone(timeZone: string): string {
 
 export function initialState(demo = false): AppState {
   return {
+    sessionBrowser: null,
     soundscape: { active: null, operation: null, epoch: 0 },
     screen: "atlas",
     mode: "live",
@@ -129,6 +133,7 @@ export function initialState(demo = false): AppState {
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
+    case "sessionBrowser": return { ...state, sessionBrowser: action.browser };
     case "soundscapeOperation": return { ...state, soundscape: { ...state.soundscape, operation: action.operation } };
     case "soundscapeRecalled": {
       const scene = action.scene, preparation = action.preparation;

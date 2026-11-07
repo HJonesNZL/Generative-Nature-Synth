@@ -90,6 +90,26 @@ export interface EventView {
   provenance: "live_source" | "imported" | "demo";
 }
 
+export interface LiveSourceState {
+  id: "birdweather" | "nzsharks";
+  enabled: boolean;
+  polling: boolean;
+  lastAttemptUtc: string | null;
+  lastSuccessUtc: string | null;
+  lastObservationUtc: string | null;
+  error: string | null;
+  records: Int64String;
+  complete: boolean;
+  gap: boolean;
+  nextPollSeconds: number;
+}
+export interface LiveSourcesState {
+  collecting: boolean;
+  libraryActive: boolean;
+  libraryChanged?: boolean;
+  sources: LiveSourceState[];
+}
+
 export interface SourceHealth {
   sourceId: string;
   connection: "connecting" | "connected" | "retrying" | "offline" | "disabled";
@@ -284,11 +304,14 @@ export interface HostMethods {
   recallSoundscape: { request: { soundscapeId: string }; response: { soundscape: SoundscapeView; preparation: HostMethods["prepareReplay"]["response"] } };
   startSoundscapeRender: { request: { soundscapeId: string }; response: RenderJob };
   getCapabilities: { request: Record<string, never>; response: HostCapabilities };
+  getLiveSources: { request: Record<string, never>; response: LiveSourcesState };
+  setLiveSources: { request: { sourceIds: string[] }; response: LiveSourcesState };
   getSourceHealth: { request: Record<string, never>; response: SourceHealth[] };
   getChanges: {
     request: { storeId: string; afterSequence: Int64String; limit: number };
     response: { storeId: string; nextSequence: Int64String; events: Array<{ event: EventView; liveEligible: boolean; change: "baseline" | "new" | "corrected" }> };
   };
+  listSessionsPage: { request: { limit: number; cursor: string | null }; response: { items: SessionView[]; nextCursor: string | null; sourceId: string; revision: string } };
   listSessions: { request: { limit: number }; response: SessionView[] };
   prepareReplay: {
     request: { sessionId: string; basis: TimeBasis; speedNumerator: Int64String; speedDenominator: Int64String };
