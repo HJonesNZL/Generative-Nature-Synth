@@ -79,3 +79,37 @@
   .map-stage--expanded .map-stage__controls { gap: var(--s-1); }
   .map-stage--expanded .map-legend { gap: var(--s-1) var(--s-2); }
 }
+
+/* The circular frame stays fixed while every map layer shares one geographic viewport. */
+.map-stage--expanded .loupe { isolation: isolate; }
+.map-stage--expanded .loupe .map2d {
+  position: static;
+  width: 100%;
+  height: 100%;
+}
+.loupe__pan {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.loupe__pan.is-dragging, .loupe__pan.is-dragging .map2d__marker { cursor: grabbing; }
+.loupe__pan:focus-visible { outline: 2px solid var(--c-focus); outline-offset: -5px; }
+.loupe__reset {
+  position: absolute;
+  bottom: var(--s-2);
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px;
+  border: 1px solid var(--c-rule);
+  background: var(--c-ground);
+  font-size: 10px;
+  line-height: 1.3;
+  white-space: nowrap;
+  cursor: pointer;
+}

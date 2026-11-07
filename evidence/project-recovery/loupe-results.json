@@ -1,0 +1,13 @@
+{
+  "fixture": "Synthetic injected native host; no real data or audio access",
+  "checks": [
+    "Mouse drag moves one geographic viewport; frame, true marker/region/coast coordinates and globe stay unchanged; drag does not pick",
+    "Capture retains loupe ownership outside the circle and releases without affecting globe",
+    "Click threshold and marker click/keyboard work; arrows pan, Home/reset restore view, screen navigation preserves pan",
+    "Actual touch and pen input pan; touchcancel and lostpointercapture stop ownership and leave future interaction usable",
+    "Bounded pans reach South Island; target viewports preserve circular scale/layout; world fallback stays independent and keyboard selectable"
+  ],
+  "errors": [],
+  "external": [],
+  "unexpected": []
+}

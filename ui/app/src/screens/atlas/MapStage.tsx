@@ -15,7 +15,8 @@ import { SegmentedControl } from "../../components/SegmentedControl";
 // Three.js is loaded on demand so the 2D fallback and Sound Studio never pay for it.
 const GlobeView = lazy(() => import("../../components/map/GlobeView").then((m) => ({ default: m.GlobeView })));
 import { Map2D } from "../../components/map/Map2D";
-import { BOUNDS_NZ, BOUNDS_WORLD, type MapRegion, type Ring } from "../../components/map/geo";
+import { NZLoupe } from "../../components/map/NZLoupe";
+import { BOUNDS_WORLD, type MapRegion, type Ring } from "../../components/map/geo";
 import { markerKeyForEvent, type MaterialView } from "../shared/useMaterialView";
 import { buildMarkers, boundMarkers, newestObservation, isReceiverDetection } from "../shared/mapMarkers";
 import "../../styles/map-stage.css";
@@ -117,9 +118,8 @@ export function MapStage({ view, catalog }: { view: MaterialView; catalog: Catal
               zoomCommand={zoom}
             />
             </Suspense>
-            <div className="loupe" aria-label="New Zealand detail">
-              <Map2D bounds={BOUNDS_NZ} markers={markers.filter((m) => m.longitude >= BOUNDS_NZ.west && m.longitude <= BOUNDS_NZ.east && m.latitude >= BOUNDS_NZ.south && m.latitude <= BOUNDS_NZ.north)} regions={regions} selectedKey={selectedKey} onPick={pick} title="New Zealand detail map. Stations are buttons." />
-            </div>
+            <NZLoupe markers={markers} regions={regions} selectedKey={selectedKey} onPick={pick}
+              pan={state.nzLoupePan} onPanChange={(pan) => dispatch({ type: "nzLoupePan", pan })} />
           </>
         )}
       </div>

@@ -59,6 +59,7 @@ export interface AppState {
   history: { draft: HistoryQueryDraft; result: HistoryResult | null; frozen: HistoryFreezeResult | null };
   replay: { session: SessionView | null; speedNumerator: string; speedDenominator: string; preparationRevision: number };
   transport: TransportView;
+  nzLoupePan: { x: number; y: number };
   globeOrientation: { longitude: number; latitude: number; distance: number };
 }
 
@@ -87,6 +88,7 @@ export type Action =
   | { type: "recipePrepared"; preparation: HostMethods["prepareReplay"]["response"] }
   | { type: "transport"; transport: Partial<TransportView> }
   | { type: "transportAck"; preparationId: string | null; generation: string; transport: Partial<TransportView> }
+  | { type: "nzLoupePan"; pan: AppState["nzLoupePan"] }
   | { type: "globeOrientation"; orientation: AppState["globeOrientation"] };
 
 function prefersReducedMotion(): boolean {
@@ -120,6 +122,7 @@ export function initialState(demo = false): AppState {
     },
     replay: { session: null, speedNumerator: "60", speedDenominator: "1", preparationRevision: 0 },
     transport: { generation: "0", state: "stopped", positionUs: "0", durationUs: null, preparationId: null },
+    nzLoupePan: { x: 0, y: 0 },
     globeOrientation: { longitude: 172, latitude: -34, distance: 4.1 },
   };
 }
@@ -181,6 +184,7 @@ function reducer(state: AppState, action: Action): AppState {
       if (state.transport.preparationId !== action.preparationId || state.transport.generation !== action.generation) return state;
       return { ...state, transport: { ...state.transport, ...action.transport } };
     case "transport": return { ...state, transport: { ...state.transport, ...action.transport } };
+    case "nzLoupePan": return { ...state, nzLoupePan: action.pan };
     case "globeOrientation": return { ...state, globeOrientation: action.orientation };
     default: return state;
   }

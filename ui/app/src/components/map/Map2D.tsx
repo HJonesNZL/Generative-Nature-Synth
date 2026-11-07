@@ -4,6 +4,7 @@
  * GPU and keeps every station selectable by keyboard.
  */
 import { memo, useMemo, type KeyboardEvent } from "react";
+import { MAP_WIDTH as WIDTH, mapProjection, type MapViewport } from "./loupeGeometry";
 import { BOUNDS_NZ, LAND_110M, NZ_50M, unwrapLongitude, type Bounds, type MapMarker, type MapRegion, type Ring } from "./geo";
 
 interface Props {
@@ -15,20 +16,14 @@ interface Props {
   title: string;
   showLabels?: boolean;
   interactiveMarkers?: boolean;
+  viewport?: MapViewport;
 }
-
-const WIDTH = 1000;
 
 function useProjection(bounds: Bounds) {
   return useMemo(() => {
-    const midLat = ((bounds.north + bounds.south) / 2) * (Math.PI / 180);
-    const k = Math.cos(midLat);
-    const sx = WIDTH / ((bounds.east - bounds.west) * k);
-    const height = (bounds.north - bounds.south) * sx;
-    const project = (lon: number, lat: number): [number, number] => [(lon - bounds.west) * k * sx, (bounds.north - lat) * sx];
-    const projectPoint = (lon: number, lat: number): [number, number] => project(unwrapLongitude(lon, bounds), lat);
-    const metresToUnits = (m: number) => (m / 111_320) * sx;
-    return { project, projectPoint, height, metresToUnits };
+    const projection = mapProjection(bounds);
+    const projectPoint = (lon: number, lat: number): [number, number] => projection.project(unwrapLongitude(lon, bounds), lat);
+    return { ...projection, projectPoint };
   }, [bounds]);
 }
 
@@ -62,7 +57,7 @@ const Land = memo(function Land({ bounds }: { bounds: Bounds }) {
   return <path d={d} className="map2d__land" />;
 });
 
-export function Map2D({ bounds, markers, regions, selectedKey, onPick, title, showLabels = false, interactiveMarkers = true }: Props) {
+export function Map2D({ bounds, markers, regions, selectedKey, onPick, title, showLabels = false, interactiveMarkers = true, viewport }: Props) {
   const { project, projectPoint, height, metresToUnits } = useProjection(bounds);
   const scale = bounds === BOUNDS_NZ ? 1 : 0.7;
   const graticule = useMemo(() => {
@@ -84,7 +79,7 @@ export function Map2D({ bounds, markers, regions, selectedKey, onPick, title, sh
   };
 
   return (
-    <svg className="map2d" viewBox={`0 0 ${WIDTH} ${height.toFixed(1)}`} role="group" aria-label={title} preserveAspectRatio="xMidYMid meet">
+    <svg className="map2d" viewBox={viewport ? `${viewport.x} ${viewport.y} ${viewport.width} ${viewport.height}` : `0 0 ${WIDTH} ${height.toFixed(1)}`} role="group" aria-label={title} preserveAspectRatio="xMidYMid meet">
       <path d={graticule} className="map2d__graticule" />
       <Land bounds={bounds} />
       {regions.map((r) => (
