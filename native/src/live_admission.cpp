@@ -1,6 +1,7 @@
 #include "event_validation.hpp"
 #include "sqlite_statement.hpp"
 #include <algorithm>
+#include <atomic>
 #include <atlas/core.hpp>
 #include <atlas/live_admission.hpp>
 #include <stdexcept>
@@ -20,6 +21,36 @@ class Snapshot {
 };
 } // namespace
 
+LiveSessionBoundary captureLiveSession(sqlite3 *db, std::string observedFromUtc) {
+    (void)parseUtc(observedFromUtc);
+    const Snapshot snapshot(db);
+    Statement head(db, "SELECT value,(SELECT COALESCE(MAX(seq),0) FROM "
+                       "revisions) FROM metadata WHERE key='store_id'");
+    if (!head.next())
+        throw std::runtime_error("Live session frontier unavailable");
+    static std::atomic<std::uint64_t> serial{};
+    LiveSessionBoundary result;
+    result.storeId = head.text(0);
+    result.baselineRevision = head.integer(1);
+    result.observedFromUtc = std::move(observedFromUtc);
+    result.id = result.storeId + ":" + result.observedFromUtc + ":" +
+                std::to_string(++serial);
+    return result;
+}
+bool liveSessionCurrent(sqlite3 *db, const LiveSessionBoundary &session) {
+    const Snapshot snapshot(db);
+    Statement head(db, "SELECT value,(SELECT COALESCE(MAX(seq),0) FROM "
+                       "revisions) FROM metadata WHERE key='store_id'");
+    if (!head.next())
+        throw std::runtime_error("Live session identity unavailable");
+    return head.text(0) == session.storeId && head.integer(1) >= session.baselineRevision;
+}
+void LiveAdmission::setSession(const LiveSessionBoundary &session) {
+    observedCutoff_ = parseUtc(session.observedFromUtc);
+    store_ = session.storeId;
+    cursor_ = baselineCursor_ = session.baselineRevision;
+    timingGroups_.clear();
+}
 bool LiveAdmission::baseline() {
     const Snapshot snapshot(db_);
     Statement head(db_, "SELECT value,(SELECT COALESCE(MAX(seq),0) FROM "
@@ -58,8 +89,10 @@ LiveSmoothTiming LiveAdmission::timing(const std::string &source,
                  "julianday(observed_at) AS observed_day,"
                  "LAG(julianday(observed_at)) OVER (ORDER BY seq) AS prior_day "
                  "FROM revisions WHERE source_id=?1 AND ingested_at=?2 "
-                 "AND seq>?3 AND seq<=?4 AND change_kind='new' "
-                 "AND live_eligible=1 AND julianday(observed_at) IS NOT NULL) "
+                 "AND seq>?3 AND seq<=?4 AND ((change_kind='new' AND live_eligible=1) "
+                 "OR (change_kind='baseline' AND ?6<>'')) "
+                 "AND julianday(observed_at) IS NOT NULL "
+                 "AND (?6='' OR julianday(observed_at)>=julianday(?6))) "
                  "SELECT COUNT(*),MIN(observed_at),MAX(observed_at),"
                  "SUM(CASE WHEN seq<?5 THEN 1 ELSE 0 END),"
                  "COUNT(DISTINCT observed_at),"
@@ -71,6 +104,7 @@ LiveSmoothTiming LiveAdmission::timing(const std::string &source,
         bounds.bind(3, baselineCursor_);
         bounds.bind(4, high);
         bounds.bind(5, seq);
+        bounds.bind(6, observedCutoff_ ? formatUtc(*observedCutoff_) : std::string{});
         if (!bounds.next() || bounds.integer(0) < 1)
             throw std::runtime_error("Live smoothing batch unavailable");
         TimingGroup next;
@@ -254,9 +288,22 @@ LiveBatch LiveAdmission::pollImpl(std::size_t limit, bool fifo,
         ++examined;
         if (fifo)
             examinedCursor = rows.integer(0);
-        if (rows.text(2) != "new" || rows.integer(3) != 1 || rows.null(4) ||
+        const auto kind = rows.text(2);
+        const bool eligibleNew = kind == "new" && rows.integer(3) == 1;
+        const bool sessionBaseline = observedCutoff_ && kind == "baseline";
+        if ((!eligibleNew && !sessionBaseline) || rows.null(4) ||
             rows.integer(4) != rows.integer(0))
             continue;
+        if (observedCutoff_) {
+            try {
+                if (parseUtc(rows.text(7)) < *observedCutoff_)
+                    continue;
+            } catch (const std::invalid_argument &) {
+                ++result.received;
+                ++result.dropped;
+                continue;
+            }
+        }
         ++result.received;
         const auto payload = rows.text(1);
         try {

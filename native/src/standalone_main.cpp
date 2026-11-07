@@ -679,9 +679,16 @@ class Shell final : public juce::Component, private juce::Timer {
                 settings.library = launch_.library;
             std::unique_ptr<atlas::standalone::CollectionService> collection;
             try {
+                // The package smoke drives Collect against an isolated library.
+                // Its companion process supplies fixture observations.
+                atlas::Collector::Fetch fetch;
+                if (launch_.smokeSonification)
+                    fetch = [](const atlas::CollectionRequest &) {
+                        return R"({"data":{"detections":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}}}})";
+                    };
                 collection =
                     std::make_unique<atlas::standalone::CollectionService>(
-                        state / "live.sqlite3");
+                        state / "live.sqlite3", std::move(fetch));
             } catch (const std::exception &) {
                 notice += " Live collection storage is unavailable; existing "
                           "library browsing remains available.";
@@ -692,15 +699,18 @@ class Shell final : public juce::Component, private juce::Timer {
             atlas::UiHostStorage storage{
                 state / "soundscapes", state / "exports",
                 atlas::nativeSourceSha256,
-                collection ? collection->databasePath() : fs::path{}};
+                collection ? collection->databasePath() : fs::path{}, true};
             const auto makeHost = [&](const fs::path &library) {
                 if (!library.empty() &&
                     !fs::is_regular_file(fs::symlink_status(library)))
                     throw std::runtime_error(
                         "Wildlife library is unavailable; saved path retained. "
                         "Scene only is available.");
-                return std::make_unique<atlas::UiHost>(library, &playback,
-                                                       &voices, storage);
+                auto next = std::make_unique<atlas::UiHost>(library, &playback,
+                                                           &voices, storage);
+                if (collection)
+                    next->setLiveSession(collection->session());
+                return next;
             };
             std::unique_ptr<atlas::UiHost> host;
             std::string initial =
@@ -826,9 +836,12 @@ class Shell final : public juce::Component, private juce::Timer {
                                     reloadLibrary = true;
                                 }
                                 collection->configure(selected);
+                                host->setLiveSession(collection->session());
                                 if (selected.empty())
                                     host->stopLive();
                             }
+                            (void)collection->verifySession();
+                            host->setLiveSession(collection->session());
                             auto result = juce::JSON::parse(
                                 juce::String(collection->stateJson()));
                             result.getDynamicObject()->setProperty(
@@ -1425,7 +1438,7 @@ class Window final : public juce::DocumentWindow {
 class Application final : public juce::JUCEApplication {
   public:
     const juce::String getApplicationName() override { return "Animal Atlas"; }
-    const juce::String getApplicationVersion() override { return "0.9.0"; }
+    const juce::String getApplicationVersion() override { return "0.10.0"; }
     bool moreThanOneInstanceAllowed() override { return true; }
     void initialise(const juce::String &) override {
         try {

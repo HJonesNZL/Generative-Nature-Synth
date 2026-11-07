@@ -117,7 +117,16 @@ void scheduling(const std::filesystem::path &path) {
         try { service.configure({"birdweather", "birdweather_world"}); }
         catch (const std::invalid_argument &) { rejected = true; }
         require(rejected && calls.load() == 0, "Conflicting bird coverage scheduled twice");
+        require(!service.session() && state(service)["session"].isVoid(),
+                "Stopped service exposed active session");
         service.configure({"birdweather", "nzsharks"});
+        const auto session = service.session();
+        require(session && !session->id.empty() && !session->observedFromUtc.empty() &&
+                session->baselineRevision == 0 && !session->storeId.empty(),
+                "Collect did not capture exact initial frontier");
+        service.configure({"birdweather", "nzsharks"});
+        require(service.session()->id == session->id,
+                "Active source edit renewed session");
         waitFor(
             [&] {
                 return source(service, 1)["error"].toString() == "http_429" &&
@@ -144,7 +153,27 @@ void scheduling(const std::filesystem::path &path) {
         require(calls.load() == 2,
                 "Unexpected requests in first collection cycle");
         service.configure({});
+        require(!service.session(), "Stopped service retained active boundary");
         service.configure({"birdweather", "nzsharks"});
+        require(service.session() && service.session()->id != session->id &&
+                service.session()->baselineRevision >= 1,
+                "Collect restart reused previous session frontier");
+        sqlite3 *resetDb{};
+        require(sqlite3_open_v2(path.string().c_str(), &resetDb,
+                               SQLITE_OPEN_READWRITE, nullptr) == SQLITE_OK,
+                "Open disposable privacy reset");
+        require(sqlite3_exec(resetDb, "UPDATE metadata SET value='privacy-reset' "
+                                    "WHERE key='store_id'", nullptr, nullptr, nullptr) == SQLITE_OK,
+                "Rotate disposable library identity");
+        sqlite3_close(resetDb);
+        require(!service.verifySession() && !service.session() &&
+                !static_cast<bool>(state(service)["collecting"]) &&
+                state(service)["sessionError"].toString().contains("privacy"),
+                "Privacy reset left collection silently active");
+        service.configure({"birdweather", "nzsharks"});
+        require(service.session() && service.session()->storeId == "privacy-reset" &&
+                state(service)["sessionError"].isVoid(),
+                "Explicit Collect restart did not recover fresh privacy frontier");
         std::this_thread::sleep_for(40ms);
         require(calls.load() == 2,
                 "Reconfiguration bypassed poll intervals or busy-looped");

@@ -33,12 +33,19 @@ liveRegion(const LiveSettings &settings,
                        std::to_string(west + 60) + "° longitude";
     return {label, label};
 }
-bool currentEligible(sqlite3 *db, const std::string &eventId) {
+bool currentEligible(sqlite3 *db, const std::string &eventId,
+                     const LiveSessionBoundary *session) {
     detail::Statement revision(
-        db, "SELECT 1 FROM events e JOIN revisions r ON r.seq=e.revision_seq "
-            "WHERE e.id=?1 AND r.change_kind='new' AND r.live_eligible=1");
+        db, "SELECT r.seq,r.observed_at FROM events e JOIN revisions r "
+            "ON r.seq=e.revision_seq WHERE e.id=?1 AND "
+            "((r.change_kind='new' AND r.live_eligible=1) OR "
+            "(r.change_kind='baseline' AND ?2=1))");
     revision.bindJson(eventId);
-    return revision.next();
+    revision.bind(2, static_cast<std::int64_t>(session != nullptr));
+    if (!revision.next())
+        return false;
+    return !session || (revision.integer(0) > session->baselineRevision &&
+                        parseUtc(revision.text(1)) >= parseUtc(session->observedFromUtc));
 }
 } // namespace
 const LiveOutcome *LivePerformance::outcome(const std::string &id) const {
@@ -151,7 +158,8 @@ void LivePerformance::retryHandedOff() {
 }
 void LivePerformance::submitSmoothed(Clock::time_point now, sqlite3 *db,
                                      PlaybackRuntime &playback,
-                                     VoiceStore *voices, unsigned rootMidi) {
+                                     VoiceStore *voices, unsigned rootMidi,
+                                     const LiveSessionBoundary *session) {
     const auto snap = playback.snapshot();
     acknowledge(snap);
     // Keep decisions near the output, so changes and withdrawals can retire
@@ -164,7 +172,7 @@ void LivePerformance::submitSmoothed(Clock::time_point now, sqlite3 *db,
          it != pending_.end() && n < limit &&
          it->due <= now + std::chrono::milliseconds(30);) {
         const auto &event = it->observation;
-        if (!currentEligible(db, event.id)) {
+        if (!currentEligible(db, event.id, session)) {
             finish(*it, {});
             it = pending_.erase(it);
             continue;
@@ -216,9 +224,10 @@ void LivePerformance::finish(const Note &note, std::string_view character) {
 }
 void LivePerformance::playDue(Clock::time_point now, sqlite3 *db,
                               PlaybackRuntime &playback, VoiceStore *voices,
-                              const LiveSettings &settings, unsigned rootMidi) {
+                              const LiveSettings &settings, unsigned rootMidi,
+                              const LiveSessionBoundary *session) {
     if (settings.mode == LiveMode::smoothed) {
-        submitSmoothed(now, db, playback, voices, rootMidi);
+        submitSmoothed(now, db, playback, voices, rootMidi, session);
         return;
     }
     while (!pending_.empty() && pending_.front().due <= now) {
@@ -228,7 +237,7 @@ void LivePerformance::playDue(Clock::time_point now, sqlite3 *db,
         // Recheck the representative after it has waited. A correction or
         // withdrawal retires its note.
         if (Clock::now() - note.due <= std::chrono::milliseconds(300) &&
-            currentEligible(db, event.id)) {
+            currentEligible(db, event.id, session)) {
             const auto voice =
                 voices ? voices->liveSettings(event.species, event.name)
                        : VoiceSettings{};

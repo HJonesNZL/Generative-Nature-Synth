@@ -1,5 +1,7 @@
 #pragma once
 #include <chrono>
+#include <atlas/live_admission.hpp>
+#include <optional>
 #include <filesystem>
 #include <memory>
 #include <string>
@@ -10,6 +12,7 @@ struct UiHostStorage {
     std::filesystem::path soundscapes, exports;
     std::string engineSourceSha256;
     std::filesystem::path managedLibrary{};
+    bool requireCollectionSession{};
 };
 class PlaybackRuntime;
 class VoiceStore;
@@ -29,6 +32,7 @@ class UiHost {
     std::string request(std::string_view envelope);
     std::chrono::milliseconds serviceLive();
     void stopLive() noexcept;
+    void setLiveSession(std::optional<LiveSessionBoundary> session);
 
   private:
     struct Impl;

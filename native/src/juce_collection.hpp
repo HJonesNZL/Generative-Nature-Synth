@@ -1,5 +1,7 @@
 #pragma once
 #include <atlas/collection.hpp>
+#include <atlas/live_admission.hpp>
+#include <optional>
 #include <filesystem>
 #include <memory>
 #include <string>
@@ -7,7 +9,8 @@
 
 namespace atlas::standalone {
 // Created on the app worker; transfers the managed Collector to one dedicated
-// thread. Starts disabled. configure/stateJson never access its database.
+// thread. Starts disabled. configure captures the start frontier through a
+// separate read-only snapshot; stateJson never accesses SQLite.
 class CollectionService {
   public:
     explicit CollectionService(const std::filesystem::path &managedDatabase,
@@ -22,6 +25,10 @@ class CollectionService {
     void configure(const std::vector<std::string> &sourceIds);
     // Records are decimal strings; absent timestamps/errors are JSON null.
     std::string stateJson() const;
+    std::optional<LiveSessionBoundary> session() const;
+    // App worker: read-only identity check; a changed/privacy-reset library
+    // visibly stops collection rather than leaving a frozen session active.
+    bool verifySession();
     const std::filesystem::path &databasePath() const noexcept;
 
   private:

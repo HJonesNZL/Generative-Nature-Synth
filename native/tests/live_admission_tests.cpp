@@ -321,6 +321,26 @@ int main() {
               batch.smoothTiming[0].sourceId == "birdweather" &&
               batch.smoothTiming[0].offsetUs == 0 &&
               batch.smoothTiming[1].offsetUs == 2000000);
+        // Collect's frontier excludes existing rows and delayed older provider
+        // observations in every live mode while preserving stored history.
+        const auto boundary = atlas::captureLiveSession(db, "2026-11-07T01:00:10Z");
+        check(boundary.baselineRevision == 1000023 && !boundary.id.empty());
+        live.setSession(boundary);
+        addTimed(1000024, "2026-11-07T04:00:00Z", "2026-11-07T01:00:09Z");
+        addTimed(1000025, "2026-11-07T04:00:00Z", "2026-11-07T01:00:10Z");
+        addTimed(1000026, "2026-11-07T04:00:00Z", "2026-11-07T01:00:12Z");
+        batch = live.poll(512);
+        check(batch.payloads.size() == 2 && batch.dropped == 0);
+        const auto restarted = atlas::captureLiveSession(db, "2026-11-07T01:00:20Z");
+        check(restarted.id != boundary.id && restarted.baselineRevision == 1000026);
+        live.setSession(restarted);
+        addTimed(1000027, "2026-11-07T04:01:00Z", "2026-11-07T01:00:19Z");
+        addTimed(1000028, "2026-11-07T04:01:00Z", "2026-11-07T01:00:20Z");
+        addTimed(1000029, "2026-11-07T04:01:00Z", "2026-11-07T01:00:22Z");
+        batch = live.pollFifo();
+        check(batch.payloads.size() == 2 && batch.smoothTiming.size() == 2 &&
+              batch.smoothTiming[0].offsetUs == 0 &&
+              batch.smoothTiming[1].offsetUs == 2000000);
         sqlite3_close(db);
         std::cout << "Live admission checks passed\n";
     } catch (const std::exception &e) {

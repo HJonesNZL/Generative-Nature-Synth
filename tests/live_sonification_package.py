@@ -147,6 +147,7 @@ def main():
             require(value.get('ok') and value.get('shutdownComplete'), 'App receipt or shutdown failed')
             sonification = value['webview']['sonification']
             require(sonification['device'] == args.device, 'Wrong output device in receipt')
+            require(sonification.get('sessionFiltered') is True, 'Live collection session checks missing')
             listening, off = sonification['listening'], sonification['off']
             require(listening['enabled'] is True and listening['received'] == 1 and
                     listening['admitted'] == 1, 'Current insertion was not admitted exactly once')

@@ -62,6 +62,7 @@ int main(int argc, char **argv) {
                 "Fixture refuses an existing database or SQLite sidecar");
         std::filesystem::create_directories(state);
         atlas::Collector collector(database);
+        const auto observedBeforeCollect = nowUtc();
         const auto baseline =
             detection("fixture-baseline", "2020-01-01T00:00:00Z");
         const auto initial = feed(collector, baseline);
@@ -102,7 +103,7 @@ int main(int argc, char **argv) {
                 const auto backfill =
                     feed(collector, baseline + ',' +
                                         detection("fixture-backfill",
-                                                  "2020-01-02T00:00:00Z"));
+                                                  observedBeforeCollect, "0.87", 818181));
                 require(backfill.duplicates == 1 && backfill.inserted == 1 &&
                             backfill.corrected == 0,
                         "Baseline/backfill canonical counts differ");

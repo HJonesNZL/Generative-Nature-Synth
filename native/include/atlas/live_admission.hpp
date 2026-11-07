@@ -2,10 +2,19 @@
 #include <cstddef>
 #include <cstdint>
 #include <deque>
+#include <optional>
 #include <string>
 #include <vector>
 struct sqlite3;
 namespace atlas {
+struct LiveSessionBoundary {
+    std::string id, storeId, observedFromUtc;
+    std::int64_t baselineRevision{};
+    bool operator==(const LiveSessionBoundary &) const = default;
+};
+// Worker-only atomic database frontier plus the caller's precise UTC start.
+LiveSessionBoundary captureLiveSession(sqlite3 *db, std::string observedFromUtc);
+bool liveSessionCurrent(sqlite3 *db, const LiveSessionBoundary &session);
 struct LiveSmoothTiming {
     std::string sourceId;
     std::int64_t ingestedUs{}, offsetUs{};
@@ -17,14 +26,16 @@ struct LiveBatch {
     bool hasMore{};
     std::uint64_t received{}, dropped{}, skippedRevisions{};
 };
-// Serial UI worker, borrowed read-only connection. Each poll examines at most
-// 512 revisions and admits at most the requested limit (default eight).
+// Serial UI worker, borrowed read-only connection. Admission pages examine at
+// most 512 revisions; smoothing bounds query only the indexed source batch.
 // Start/reconnect baselines at the committed head; browser cursors never enter.
 class LiveAdmission {
   public:
     explicit LiveAdmission(sqlite3 *db) : db_(db) {}
     bool
     baseline(); // True when a previously attached store was replaced/reset.
+    void setSession(const LiveSessionBoundary &session);
+    std::int64_t revision() const noexcept { return cursor_; }
     const std::string &storeId() const noexcept { return store_; }
     LiveBatch poll(std::size_t limit = 8);
     // FIFO backpressure: examine at most 512 revisions, retaining unconsumed
@@ -45,6 +56,7 @@ class LiveAdmission {
     LiveBatch pollImpl(std::size_t limit, bool fifo, std::int64_t intervalUs = 0);
     std::deque<TimingGroup> timingGroups_;
     std::int64_t baselineCursor_{};
+    std::optional<std::int64_t> observedCutoff_;
     sqlite3 *db_{};
     std::string store_;
     std::int64_t cursor_{};

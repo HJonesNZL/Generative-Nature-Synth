@@ -282,6 +282,105 @@ int main() {
             audio.tick();
         check(audio.energy > .01,
               "full catalogue still generates callback PCM");
+        // Collection sessions own both UTC observation cutoff and committed
+        // revision frontier. Delayed provider rows remain historical only.
+        sqlite3 *sessionDb{};
+        check(sqlite3_open_v2(db.string().c_str(), &sessionDb, SQLITE_OPEN_READONLY,
+                             nullptr) == SQLITE_OK, "open session fixture");
+        std::optional<LiveSessionBoundary> lastBoundary;
+        for (int mode = 0; mode < 3; ++mode) {
+            const auto startMinute = 12 + mode * 2;
+            const auto cutoff = "2026-11-07T01:" + std::to_string(startMinute) + ":00Z";
+            const auto boundary = captureLiveSession(sessionDb, cutoff);
+            lastBoundary = boundary;
+            audio.run([&] { host.setLiveSession(boundary); });
+            const auto selectedMode = mode == 0 ? "direct" : (mode == 1 ? "musical" : "smoothed");
+            request(host, "setLiveSettings", std::string("{\"mode\":\"") + selectedMode + "\"}");
+            audio.run([&] { return request(host, "setLiveEnabled", "{\"enabled\":true}"); });
+            const auto oldId = "delayed-session-" + std::to_string(mode);
+            const auto currentId = "current-session-" + std::to_string(mode);
+            collector.collect("birdweather", "2026-11-07T01:" + std::to_string(startMinute + 1) + ":00Z",
+                fetch(bird(oldId, "2026-11-07T01:" + std::to_string(startMinute - 1) + ":30Z") + "," +
+                      bird(currentId, cutoff)));
+            audio.run([&] { host.serviceLive(); });
+            for (int i = 0; i < 32; ++i)
+                audio.tick();
+            audio.run([&] { host.serviceLive(); });
+            contains(request(host, "getLiveState"), "\"admitted\":1");
+            const auto page = request(host, "getLiveChanges",
+                "{\"sessionId\":\"" + boundary.id + "\",\"storeId\":\"" + boundary.storeId +
+                "\",\"afterSequence\":\"0\",\"limit\":500}");
+            contains(page, currentId);
+            check(page.find(oldId) == std::string::npos &&
+                  page.find("birdweather:baseline") == std::string::npos,
+                  "live view leaked historical or delayed observation");
+            const auto ranking = request(host, "getLiveSpeciesCounts",
+                "{\"sessionId\":\"" + boundary.id + "\",\"limit\":250}");
+            contains(ranking, "\"count\":1");
+            contains(request(host, "getLiveChanges",
+                "{\"sessionId\":\"stale\",\"storeId\":\"\",\"afterSequence\":\"0\",\"limit\":500}"),
+                "\"events\":[]");
+            audio.run([&] { return request(host, "setLiveEnabled", "{\"enabled\":false}"); });
+            audio.run([&] { return request(host, "setLiveEnabled", "{\"enabled\":true}"); });
+            audio.run([&] { host.serviceLive(); });
+            contains(request(host, "getLiveState"), "\"admitted\":0");
+        }
+        // Correcting the current row behind the cutoff emits a removal rather
+        // than letting a stale marker survive indefinitely.
+        const auto scopedBoundary = *lastBoundary;
+        audio.run([&] { host.setLiveSession(scopedBoundary); });
+        const auto beforeCorrection = request(host, "getLiveChanges",
+            "{\"sessionId\":\"" + scopedBoundary.id + "\",\"storeId\":\"" + scopedBoundary.storeId +
+            "\",\"afterSequence\":\"0\",\"limit\":500}");
+        contains(beforeCorrection, "current-session-2");
+        collector.collect("birdweather", "2026-11-07T01:18:00Z",
+                          fetch(bird("current-session-2", "2026-11-07T01:15:30Z")));
+        const auto afterCorrection = request(host, "getLiveChanges",
+            "{\"sessionId\":\"" + scopedBoundary.id + "\",\"storeId\":\"" + scopedBoundary.storeId +
+            "\",\"afterSequence\":\"0\",\"limit\":500}");
+        contains(afterCorrection, "\"removedEventIds\":[\"birdweather:current-session-2\"]");
+        const auto filteredPage = request(host, "getLiveChanges",
+            "{\"sessionId\":\"" + scopedBoundary.id + "\",\"storeId\":\"" + scopedBoundary.storeId +
+            "\",\"afterSequence\":\"0\",\"limit\":1}");
+        contains(filteredPage, "\"events\":[]");
+        contains(filteredPage, "\"hasMore\":true");
+        audio.run([&] { host.setLiveSession(std::nullopt); });
+        contains(request(host, "getLiveChanges",
+            "{\"sessionId\":\"stale\",\"storeId\":\"\",\"afterSequence\":\"0\",\"limit\":500}"),
+            "\"sessionActive\":false");
+        sqlite3_close(sessionDb);
+        // First-ever source collection may label its initial snapshot baseline.
+        // Genuinely post-Collect rows still sound if Listening was armed first.
+        const auto firstDb = temporary.path / "first-collection.sqlite3";
+        Collector firstCollector(firstDb);
+        UiHost firstHost(firstDb, &audio.runtime, &voices, {{}, {}, {}, firstDb, true});
+        contains(request(firstHost, "setLiveEnabled", "{\"enabled\":true}"),
+                 "Start Collect before enabling Listening");
+        sqlite3 *firstRead{};
+        check(sqlite3_open_v2(firstDb.string().c_str(), &firstRead,
+                             SQLITE_OPEN_READONLY, nullptr) == SQLITE_OK,
+              "open initial collection fixture");
+        const auto firstBoundary = captureLiveSession(firstRead, "2026-11-07T01:00:10Z");
+        audio.run([&] { firstHost.setLiveSession(firstBoundary); });
+        request(firstHost, "setLiveSettings", "{\"mode\":\"smoothed\"}");
+        audio.run([&] { return request(firstHost, "setLiveEnabled", "{\"enabled\":true}"); });
+        firstCollector.collect("birdweather", "2026-11-07T01:01:00Z",
+            fetch(bird("first-older", "2026-11-07T01:00:09Z") + "," +
+                  bird("first-current", "2026-11-07T01:00:10Z")));
+        audio.run([&] { firstHost.serviceLive(); });
+        for (int i = 0; i < 32; ++i)
+            audio.tick();
+        audio.run([&] { firstHost.serviceLive(); });
+        contains(request(firstHost, "getLiveState"), "\"admitted\":1");
+        contains(request(firstHost, "getLiveState"), "\"received\":1");
+        audio.run([&] { return request(firstHost, "setLiveEnabled", "{\"enabled\":false}"); });
+        firstCollector.collect("birdweather", "2026-11-07T01:02:00Z",
+                               fetch(bird("before-armed", "2026-11-07T01:01:30Z")));
+        audio.run([&] { return request(firstHost, "setLiveEnabled", "{\"enabled\":true}"); });
+        audio.run([&] { firstHost.serviceLive(); });
+        contains(request(firstHost, "getLiveState"), "\"admitted\":0");
+        audio.run([&] { firstHost.setLiveSession(std::nullopt); });
+        sqlite3_close(firstRead);
         std::cout << "Live UiHost callback integration checks passed\n";
     } catch (const std::exception &e) {
         std::cerr << e.what() << '\n';

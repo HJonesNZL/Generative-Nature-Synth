@@ -33,7 +33,8 @@ class LivePerformance {
                 Clock::time_point,
                 std::span<const LiveSmoothTiming> timing = {});
     void playDue(Clock::time_point, sqlite3 *, PlaybackRuntime &, VoiceStore *,
-                 const LiveSettings &, unsigned rootMidi);
+                 const LiveSettings &, unsigned rootMidi,
+                 const LiveSessionBoundary *session = nullptr);
     void acknowledge(const PlaybackSnapshot &);
     void retryHandedOff();
     std::size_t pendingCount() const {
@@ -67,7 +68,7 @@ class LivePerformance {
     void queueSmoothed(std::vector<LiveObservation> &,
                        std::span<const LiveSmoothTiming>, Clock::time_point);
     void submitSmoothed(Clock::time_point, sqlite3 *, PlaybackRuntime &,
-                        VoiceStore *, unsigned);
+                        VoiceStore *, unsigned, const LiveSessionBoundary *);
     std::deque<Note> pending_;
     std::deque<HandedOff> inFlight_;
     std::map<std::string, SourceWindow> sourceWindows_;

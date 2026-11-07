@@ -12,6 +12,7 @@
 #include <juce_core/juce_core.h>
 #include <mutex>
 #include <sstream>
+#include <sqlite3.h>
 #include <thread>
 
 namespace atlas::standalone {
@@ -155,6 +156,8 @@ struct CollectionService::Impl {
     std::atomic<bool> cancelled{false};
     Clock::time_point nextSightingRequest{};
     std::jthread worker;
+    std::optional<LiveSessionBoundary> session;
+    std::string sessionError;
 
     Impl(const std::filesystem::path &database, Collector::Fetch fetch)
         : path(database), collector(std::make_unique<Collector>(database)),
@@ -400,6 +403,23 @@ void CollectionService::configure(const std::vector<std::string> &ids) {
     std::shared_ptr<juce::WebInputStream> request;
     {
         std::lock_guard lock(impl_->mutex);
+        const bool wasActive = std::any_of(impl_->sources.begin(), impl_->sources.end(),
+                                          [](const auto &s) { return s.enabled; });
+        const bool active = std::any_of(enabled.begin(), enabled.end(), [](bool v) { return v; });
+        if (active && !wasActive) {
+            sqlite3 *raw{};
+            const auto opened = sqlite3_open_v2(impl_->path.string().c_str(), &raw,
+                                                SQLITE_OPEN_READONLY, nullptr);
+            std::unique_ptr<sqlite3, decltype(&sqlite3_close)> db(raw, sqlite3_close);
+            if (opened != SQLITE_OK)
+                throw std::runtime_error("Live session library unavailable");
+            const auto nowUs = std::chrono::duration_cast<std::chrono::microseconds>(
+                std::chrono::system_clock::now().time_since_epoch()).count();
+            impl_->session = captureLiveSession(db.get(), formatUtc(nowUs));
+            impl_->sessionError.clear();
+        } else if (!active) {
+            impl_->session.reset();
+        }
         for (std::size_t i = 0; i < enabled.size(); ++i) {
             auto &source = impl_->sources[i];
             source.enabled = enabled[i];
@@ -419,7 +439,14 @@ std::string CollectionService::stateJson() const {
         std::any_of(impl_->sources.begin(), impl_->sources.end(),
                     [](const auto &source) { return source.enabled; });
     std::string result = std::string("{\"collecting\":") +
-                         (active ? "true" : "false") + ",\"sources\":[";
+                         (active ? "true" : "false") +
+                         ",\"sessionError\":" + nullable(impl_->sessionError) + ",\"session\":" +
+                         (impl_->session
+                              ? "{\"id\":" + detail::quoteJson(impl_->session->id) +
+                                ",\"storeId\":" + detail::quoteJson(impl_->session->storeId) +
+                                ",\"baselineRevision\":" + detail::quoteJson(std::to_string(impl_->session->baselineRevision)) +
+                                ",\"observedFromUtc\":" + detail::quoteJson(impl_->session->observedFromUtc) + "}"
+                              : "null") + ",\"sources\":[";
     for (const auto &source : impl_->sources) {
         if (result.back() != '[')
             result += ',';
@@ -459,6 +486,28 @@ std::string CollectionService::stateJson() const {
         result += '}';
     }
     return result + "]}";
+}
+bool CollectionService::verifySession() {
+    const auto boundary = session();
+    if (!boundary)
+        return true;
+    sqlite3 *raw{};
+    const auto opened = sqlite3_open_v2(impl_->path.string().c_str(), &raw,
+                                        SQLITE_OPEN_READONLY, nullptr);
+    std::unique_ptr<sqlite3, decltype(&sqlite3_close)> db(raw, sqlite3_close);
+    if (opened != SQLITE_OK)
+        throw std::runtime_error("Live session library unavailable");
+    if (liveSessionCurrent(db.get(), *boundary))
+        return true;
+    configure({});
+    std::lock_guard lock(impl_->mutex);
+    impl_->sessionError = "Collection stopped because the live library changed or "
+                          "privacy records were withdrawn. Start Collect again.";
+    return false;
+}
+std::optional<LiveSessionBoundary> CollectionService::session() const {
+    std::lock_guard lock(impl_->mutex);
+    return impl_->session;
 }
 const std::filesystem::path &CollectionService::databasePath() const noexcept {
     return impl_->path;

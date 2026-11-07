@@ -1,6 +1,7 @@
 #include "event_validation.hpp"
 #include "json_text.hpp"
 #include "live_performance.hpp"
+#include "live_species_counts.hpp"
 #include "piece_jobs.hpp"
 #include "sqlite_statement.hpp"
 #include <algorithm>
@@ -558,6 +559,8 @@ struct UiHost::Impl {
     std::uint64_t generation{};
     PlaybackRuntime *playback{};
     std::unique_ptr<LiveAdmission> liveAdmission;
+    std::optional<LiveSessionBoundary> liveSession;
+    LiveSpeciesCounts liveSpeciesRanking;
     LiveSettings liveSettings;
     LivePerformance performance;
     bool liveEnabled{}, liveCatchingUp{};
@@ -613,8 +616,19 @@ struct UiHost::Impl {
         if (!liveAvailable())
             throw std::invalid_argument(
                 "Live listening requires the managed live library and output");
+        if (storage.requireCollectionSession && !liveSession)
+            throw std::invalid_argument("Start Collect before enabling Listening");
         auto admission = std::make_unique<LiveAdmission>(db.get());
-        admission->baseline();
+        if (liveSession) {
+            admission->baseline();
+            if (admission->storeId() != liveSession->storeId)
+                throw std::invalid_argument("Live library changed. Restart Collect to listen");
+            auto boundary = *liveSession;
+            boundary.baselineRevision = std::max(boundary.baselineRevision,
+                                                  admission->revision());
+            admission->setSession(boundary);
+        } else
+            admission->baseline();
         liveStoreId = admission->storeId();
         auto settings = context.audio;
         if (!prepared)
@@ -751,7 +765,7 @@ struct UiHost::Impl {
                 liveAdmission->baseline()) {
                 performance = {};
                 liveError =
-                    "Live library changed. Enable Listening again to resume.";
+                    "Live library changed. Restart Collect to resume Listening.";
                 stopLive();
                 return;
             }
@@ -763,7 +777,7 @@ struct UiHost::Impl {
             if (batch.storeReset) {
                 performance = {};
                 liveError =
-                    "Live library changed. Enable Listening again to resume.";
+                    "Live library changed. Restart Collect to resume Listening.";
                 stopLive();
                 return;
             }
@@ -787,7 +801,8 @@ struct UiHost::Impl {
             performance.accept(std::move(observations), liveSettings, clock,
                                batch.smoothTiming);
             performance.playDue(clock, db.get(), *playback, voices,
-                                liveSettings, context.audio.rootMidi);
+                                liveSettings, context.audio.rootMidi,
+                                liveSession ? &*liveSession : nullptr);
         } catch (const std::exception &) {
             liveError =
                 "Live listening failed while reading committed detections";
@@ -1132,6 +1147,82 @@ struct UiHost::Impl {
         materialSaved = std::move(metadata);
         materialRevision = revision;
     }
+    std::string liveChanges(const Object &args) {
+        const auto sessionId = args.text("sessionId", 128);
+        const auto after = integer(args.text("afterSequence", 20), INT64_MAX);
+        const auto requestedStore = args.text("storeId", 128);
+        const auto limit = args.number("limit", 500);
+        if (limit < 1)
+            throw std::invalid_argument("positive page limit required");
+        Statement head(db.get(), "SELECT value,(SELECT COALESCE(MAX(seq),0) FROM "
+                                 "revisions) FROM metadata WHERE key='store_id'");
+        if (!head.next())
+            throw std::runtime_error("Live library identity unavailable");
+        const auto store = head.text(0);
+        const auto high = head.integer(1);
+        const bool active = liveSession && liveSession->storeId == store &&
+                            high >= liveSession->baselineRevision;
+        const auto frontier = active ? liveSession->baselineRevision : high;
+        auto next = frontier;
+        std::string events = "[", removed = "[";
+        bool hasMore{};
+        if (active && sessionId == liveSession->id &&
+            (requestedStore.empty() || requestedStore == store)) {
+            const auto cursor = after > high ? frontier : std::max(after, frontier);
+            next = cursor;
+            Statement rows(db.get(), "SELECT r.seq,r.event_json,r.change_kind,"
+                                     "r.live_eligible,e.revision_seq,r.observed_at,r.event_id,r.source_id,"
+                                     "r.first_seen_at,r.ingested_at "
+                                     "FROM revisions r LEFT JOIN events e ON e.id=r.event_id "
+                                     "WHERE r.seq>?1 AND r.seq<=?2 ORDER BY r.seq LIMIT ?3");
+            rows.bind(1, cursor);
+            rows.bind(2, high);
+            rows.bind(3, limit);
+            std::size_t examined{};
+            while (rows.next()) {
+                ++examined;
+                next = rows.integer(0);
+                if (rows.null(4) || rows.integer(4) != next)
+                    continue;
+                const auto payload = rows.text(1);
+                const auto removeCorrection = [&] {
+                    if (rows.text(2) == "corrected")
+                        append(removed, quoteJson(rows.text(6)));
+                };
+                try {
+                    detail::validateStoredEvent(db.get(), payload);
+                    Object event(db.get(), payload);
+                    if (event.text("provenance_mode") != "live_source" ||
+                        parseUtc(rows.text(5)) < parseUtc(liveSession->observedFromUtc) ||
+                        parseUtc(event.text("observed_at_utc")) != parseUtc(rows.text(5)) ||
+                        event.text("event_id") != rows.text(6) ||
+                        event.text("source_id") != rows.text(7) ||
+                        parseUtc(event.text("first_seen_at_utc")) != parseUtc(rows.text(8)) ||
+                        parseUtc(event.text("ingested_at_utc")) != parseUtc(rows.text(9))) {
+                        removeCorrection();
+                        continue;
+                    }
+                    append(events, "{\"event\":" + eventView(db.get(), payload, next) +
+                                   ",\"liveEligible\":" +
+                                   ((rows.text(2) == "new" && rows.integer(3) == 1) ||
+                                    rows.text(2) == "baseline" ? "true" : "false") +
+                                   ",\"change\":" + quoteJson(rows.text(2)) + "}");
+                } catch (const std::invalid_argument &) {
+                    // A correction can remove previously displayed material.
+                    removeCorrection();
+                }
+            }
+            if (examined < static_cast<std::size_t>(limit))
+                next = high;
+            hasMore = next < high;
+        }
+        return "{\"sessionId\":" + quoteJson(active ? liveSession->id : "") +
+               ",\"sessionActive\":" + (active ? "true" : "false") +
+               ",\"storeId\":" + quoteJson(store) +
+               ",\"nextSequence\":" + quoteJson(std::to_string(next)) +
+               ",\"hasMore\":" + (hasMore ? "true" : "false") +
+               ",\"removedEventIds\":" + removed + "],\"events\":" + events + "]}";
+    }
     std::string changes(const Object &args) {
         const auto limit = args.number("limit", 500);
         if (limit < 1)
@@ -1370,6 +1461,7 @@ void UiHost::setLibrary(const std::filesystem::path &library) {
     auto next = std::make_unique<Impl>(library, impl_->playback, impl_->voices,
                                        impl_->storage);
     next->liveSettings = impl_->liveSettings;
+    next->liveSession = impl_->liveSession;
     next->pieces = std::move(impl_->pieces);
     next->renders = std::move(impl_->renders);
     next->renderScenes = std::move(impl_->renderScenes);
@@ -1390,6 +1482,16 @@ void UiHost::stopLive() noexcept {
     } catch (...) {
         impl_->liveEnabled = false;
     }
+}
+
+void UiHost::setLiveSession(std::optional<LiveSessionBoundary> session) {
+    if (impl_->liveSession == session)
+        return;
+    impl_->stopLive();
+    impl_->liveSession = std::move(session);
+    impl_->liveError.clear();
+    impl_->liveReceived = impl_->liveInvalid = impl_->liveSkipped = 0;
+    impl_->performance = {};
 }
 
 std::string UiHost::request(std::string_view envelope) {
@@ -1415,7 +1517,7 @@ std::string UiHost::request(std::string_view envelope) {
             if (args.size())
                 throw std::invalid_argument("unexpected arguments");
             result =
-                R"({"protocolVersion":1,"implementation":"native","supportedMethods":["getCapabilities","getChanges","getCatalog","listSessions","listSessionsPage","prepareReplay","getMaterialEvents")";
+                R"({"protocolVersion":1,"implementation":"native","supportedMethods":["getCapabilities","getChanges","getLiveChanges","getLiveSpeciesCounts","getCatalog","listSessions","listSessionsPage","prepareReplay","getMaterialEvents")";
             if (impl_->pieces)
                 result +=
                     R"(,"startPieceFreeze","startPieceImport","getPieceJob","cancelPieceJob","openManagedPiece")";
@@ -1935,6 +2037,20 @@ std::string UiHost::request(std::string_view envelope) {
             result = impl_->renderView(method == "getRenderJob"
                                            ? impl_->renders->get(jid)
                                            : impl_->renders->cancel(jid));
+        } else if (method == "getLiveChanges") {
+            result = impl_->liveChanges(Object(impl_->db.get(), arguments,
+                {"sessionId", "storeId", "afterSequence", "limit"}));
+        } else if (method == "getLiveSpeciesCounts") {
+            Object args(impl_->db.get(), arguments, {"sessionId", "cursor", "limit"});
+            const auto limit = args.number("limit", 250);
+            if (limit < 1)
+                throw std::invalid_argument("positive page limit required");
+            const auto offset = args.has("cursor") && !args.null("cursor")
+                ? integer(args.text("cursor", 20), INT64_MAX) : 0;
+            result = impl_->liveSpeciesRanking.page(impl_->db.get(), impl_->liveSession,
+                                       args.text("sessionId", 128),
+                                       static_cast<std::size_t>(offset),
+                                       static_cast<std::size_t>(limit));
         } else if (method == "getChanges") {
             result =
                 impl_->changes(Object(impl_->db.get(), arguments,

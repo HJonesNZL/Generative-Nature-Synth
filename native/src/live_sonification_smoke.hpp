@@ -26,6 +26,27 @@ inline constexpr auto liveSonificationSmoke = R"JS(
      } while (Date.now()<end);
      throw Error('Timed out waiting for '+description);
    };
+   // Starting collection may reopen the managed library and reload WebKit.
+   if (!(await call('getLiveSources')).collecting) {
+     const collect = document.querySelector('[aria-label="Start live collection"]');
+     if (!collect) throw Error('Collect button missing at session start.');
+     collect.click();
+     const choices = () => [...document.querySelectorAll('.live-sources__choices label')];
+     const start = () => [...document.querySelectorAll('.live-sources__menu button')].find(b=>b.textContent==='Start live updates');
+     await waitFor(()=>start() && !start().disabled && choices().length>=3, 'collection controls');
+     for (const label of choices()) {
+       const want = label.textContent.trim()==='NZ bird detections';
+       const input = label.querySelector('input');
+       if (input.checked!==want) {
+         input.click();
+         await new Promise(resolve=>setTimeout(resolve,30));
+       }
+     }
+     start().click();
+   }
+   const collection=await until(()=>call('getLiveSources'),s=>!!s.session && s.collecting,'Collect receipt');
+   const scoped=()=>call('getLiveChanges',{sessionId:collection.session.id,storeId:collection.session.storeId,afterSequence:collection.session.baselineRevision,limit:16});
+   if ((await scoped()).events.length) throw Error('Old library populated a new session.');
    const statusButton = document.querySelector('[aria-label="Live listening status"]');
    if (!statusButton) throw Error('Live listening status control missing.');
    statusButton.click();
@@ -33,6 +54,9 @@ inline constexpr auto liveSonificationSmoke = R"JS(
    const density = () => document.querySelector('select[aria-label="Live density"]');
    await waitFor(()=>mode() && !mode().disabled && !mode().closest('fieldset')?.disabled,
      'live mode control');
+   const dialog=mode().closest('[role="dialog"]').getBoundingClientRect();
+   if (dialog.left<0 || dialog.right>window.innerWidth || dialog.top<0 || dialog.bottom>window.innerHeight)
+     throw Error('Listening menu extends outside the window.');
    if (![...mode().options].some(option=>option.value===selectedMode))
      throw Error('Requested live mode is unavailable in React.');
    mode().value=selectedMode; mode().dispatchEvent(new Event('change',{bubbles:true}));
@@ -109,9 +133,10 @@ inline constexpr auto liveSonificationSmoke = R"JS(
      throw Error('Selected event outcome lost species provenance.');
    result.feedStage='admitted';
    await until(()=>call('getChanges',{storeId:before.storeId,afterSequence:before.nextSequence,limit:16}),
-     page=>page.events.some(r=>r.change==='corrected') && page.events.some(r=>r.change==='baseline'),
+     page=>page.events.some(r=>r.change==='corrected') && page.events.some(r=>r.event.id.endsWith('fixture-backfill')),
      'committed correction and backfill');
    await new Promise(resolve=>setTimeout(resolve,500));
+   if ((await scoped()).events.some(r=>r.event.id.endsWith('fixture-backfill'))) throw Error('Delayed pre-session observation entered the map feed.');
    const quiet = await live();
    const audio = await call('getAudioState');
    if (quiet.received!==1 || quiet.admitted!==1 || quiet.dropped || audio.status!=='running' ||
@@ -144,6 +169,8 @@ inline constexpr auto liveSonificationSmoke = R"JS(
        dense.admitted>5 || dense.grouped<=0 || dense.dropped<=0)
      throw Error('Dense phrase did not stay within its musical grouping budget.');
    await new Promise(resolve=>setTimeout(resolve,1800));
+   window.scrollTo(0,document.documentElement.scrollHeight);
+   if (window.scrollY!==0) throw Error('Atlas scrolled beyond its workspace.');
    const settled=await live();
    if (settled.admitted!==dense.admitted || settled.grouped!==dense.grouped ||
        settled.dropped!==dense.dropped || settled.received!==501)
@@ -187,7 +214,7 @@ inline constexpr auto liveSonificationSmoke = R"JS(
    const off=await until(live,s=>!s.enabled,'explicit mute');
    const offAudio=await call('getAudioState');
    if (offAudio.status!=='disabled' || offAudio.peakDbfs!==null) throw Error('Output remained enabled or meter did not clear.');
-   result.sonification={retiredPolls,mode:selectedMode,pendingObserved,denseMapObserved:true,liveTriggeredNotes:denseAudio.liveTriggeredNotes,device:device.name,listening,off,callbackFrames:audio.callbackFrames,mapObserved:true,duplicatesQuiet:true,polls,headerErrorFree:true,selectedOutcome,dense:settled,
+   result.sonification={sessionFiltered:true,retiredPolls,mode:selectedMode,pendingObserved,denseMapObserved:true,liveTriggeredNotes:denseAudio.liveTriggeredNotes,device:device.name,listening,off,callbackFrames:audio.callbackFrames,mapObserved:true,duplicatesQuiet:true,polls,headerErrorFree:true,selectedOutcome,dense:settled,
      outputPeakDbfs,denseCallbackFrames:denseAudio.callbackFrames,denseCountersRendered:true,muteMeterCleared:true};
  }
 )JS";
