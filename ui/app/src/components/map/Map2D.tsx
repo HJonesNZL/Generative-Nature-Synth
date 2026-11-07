@@ -3,11 +3,13 @@
  * when WebGL is unavailable, lost, or the user chooses the 2D view. It needs no
  * GPU and keeps every station selectable by keyboard.
  */
+import type { SoundingOrigin } from "./soundingOrigins";
 import { memo, useMemo, type KeyboardEvent } from "react";
 import { MAP_WIDTH as WIDTH, mapProjection, type MapViewport } from "./loupeGeometry";
 import { BOUNDS_NZ, LAND_110M, NZ_50M, unwrapLongitude, type Bounds, type MapMarker, type MapRegion, type Ring } from "./geo";
 
 interface Props {
+  soundingOrigins?: readonly SoundingOrigin[];
   latestMarkerKey?: string | null;
   recentMarkerKeys?: ReadonlySet<string>;
   bounds: Bounds;
@@ -59,7 +61,7 @@ const Land = memo(function Land({ bounds }: { bounds: Bounds }) {
   return <path d={d} className="map2d__land" />;
 });
 
-export function Map2D({ bounds, markers, regions, selectedKey, latestMarkerKey, recentMarkerKeys, onPick, title, showLabels = false, interactiveMarkers = true, viewport }: Props) {
+export function Map2D({ soundingOrigins = [], bounds, markers, regions, selectedKey, latestMarkerKey, recentMarkerKeys, onPick, title, showLabels = false, interactiveMarkers = true, viewport }: Props) {
   const { project, projectPoint, height, metresToUnits } = useProjection(bounds);
   const scale = bounds === BOUNDS_NZ ? 1 : 0.7;
   const graticule = useMemo(() => {
@@ -119,6 +121,15 @@ export function Map2D({ bounds, markers, regions, selectedKey, latestMarkerKey, 
           </g>
         );
       })}
+      <g className="map2d__sounding" aria-label="Actual playback origins">
+        {soundingOrigins.map(origin => {
+          const [x,y] = projectPoint(origin.longitude,origin.latitude);
+          return <g key={origin.key} className="map2d__sounding-origin" role="img" aria-label={`${origin.label}, ${origin.activeVoices ? `${origin.activeVoices} sounding` : "sound fading"}`} data-tokens={origin.tokens.join(" ")} data-active-voices={origin.activeVoices} opacity={origin.level}>
+            <circle cx={x} cy={y} r={22*scale} className="map2d__sound-halo" />
+            <circle cx={x} cy={y} r={8*scale} className="map2d__sound-core" />
+          </g>;
+        })}
+      </g>
     </svg>
   );
 }

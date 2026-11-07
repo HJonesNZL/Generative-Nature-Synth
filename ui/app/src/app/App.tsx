@@ -8,6 +8,7 @@ import type { ExtendedHost } from "../host/client";
 import type { AtlasHost } from "../host/contracts";
 import { AtlasScreen } from "../screens/atlas/AtlasScreen";
 import { SoundStudioScreen } from "../screens/studio/SoundStudioScreen";
+import { LiveActivityProvider } from "./LiveActivityContext";
 import { LiveSpeciesCountsProvider } from "./LiveSpeciesCountsContext";
 import { LiveCollectionProvider } from "./LiveCollectionContext";
 import { LiveSettingsProvider } from "./LiveSettingsContext";
@@ -25,7 +26,7 @@ export function App({ host, demoMenu }: { host: ExtendedHost | AtlasHost; demoMe
   return (
     <HostProvider host={host}>
       <AppStateProvider demo={Boolean("isMock" in host && host.isMock)}>
-        <LiveCollectionProvider><LiveSpeciesCountsProvider><LiveSettingsProvider><SpatialProvider><Shell demoMenu={demoMenu} /></SpatialProvider></LiveSettingsProvider></LiveSpeciesCountsProvider></LiveCollectionProvider>
+        <LiveCollectionProvider><LiveSpeciesCountsProvider><LiveSettingsProvider><SpatialProvider><LiveActivityProvider><Shell demoMenu={demoMenu} /></LiveActivityProvider></SpatialProvider></LiveSettingsProvider></LiveSpeciesCountsProvider></LiveCollectionProvider>
       </AppStateProvider>
     </HostProvider>
   );

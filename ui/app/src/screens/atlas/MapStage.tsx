@@ -3,10 +3,12 @@
  * full SVG map when WebGL is unavailable/lost or the user prefers 2D.
  * Selecting a station picks its most recent (highlighted-species-first) event.
  */
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useHost, useHostQuery, valueOf } from "../../app/HostContext";
 import type { EventView } from "../../host/contracts";
-import { useEventStore } from "../../app/eventStore";
+import { useLiveActivity, useLiveActivityNow } from "../../app/LiveActivityContext";
+import { soundingOrigins, soundingSourceType } from "../../components/map/soundingOrigins";
+import "../../components/map/sounding-map.css";
 import { useAppState, useDispatch } from "../../app/store";
 import type { Catalog } from "../../app/catalog";
 import { Icon } from "../../components/Icon";
@@ -17,7 +19,7 @@ import { SegmentedControl } from "../../components/SegmentedControl";
 const GlobeView = lazy(() => import("../../components/map/GlobeView").then((m) => ({ default: m.GlobeView })));
 import { Map2D } from "../../components/map/Map2D";
 import { NZLoupe } from "../../components/map/NZLoupe";
-import { BOUNDS_WORLD, type MapRegion, type MapLocateRequest, type Ring } from "../../components/map/geo";
+import { BOUNDS_WORLD, type MapRegion, type MapMarker, type MapLocateRequest, type Ring } from "../../components/map/geo";
 import { markerKeyForEvent, type MaterialView } from "../shared/useMaterialView";
 import { buildMarkers, boundMarkers, newestObservation, isReceiverDetection, type SourceType } from "../shared/mapMarkers";
 import "../../styles/map-stage.css";
@@ -36,8 +38,12 @@ function webglAvailable(): boolean {
 export function MapStage({ view, catalog, latest, locateRequest, sourceTypes, onSourceTypes }: { sourceTypes: SourceType[]; onSourceTypes: (types: SourceType[]) => void; view: MaterialView; catalog: Catalog; latest: readonly EventView[]; locateRequest: MapLocateRequest | null }) {
   const state = useAppState();
   const dispatch = useDispatch();
-  const { liveStore, caps } = useHost();
-  const pulseVersion = useEventStore(liveStore);
+  const { caps } = useHost();
+  const activity = useLiveActivity();
+  const activityNow = useLiveActivityNow();
+  const sampleSounding = useCallback(() => state.mode === "live" ? soundingOrigins(activity.snapshot?.voices ?? [], activity.sampleNowUs(), sourceTypes) : {origins: [], unmapped: 0}, [state.mode, activity.snapshot, activity.sampleNowUs, sourceTypes]);
+  const sounding = useMemo(() => sampleSounding(), [sampleSounding, activityNow]);
+  const soundingVersion = sounding.origins.map(origin => `${origin.key}:${origin.level}:${origin.activeVoices}:${origin.tokens.join(",")}`).join(";");
   const [glOk] = useState(webglAvailable);
   const [contextLost, setContextLost] = useState(false);
   const [zoom, setZoom] = useState<{ seq: number; action: "in" | "out" | "reset" } | null>(null);
@@ -57,15 +63,26 @@ export function MapStage({ view, catalog, latest, locateRequest, sourceTypes, on
     }
     return keys;
   }, [latest]);
-  const visibleEventIds = useMemo(() => new Set(view.allEvents.map(event => event.id)), [view.allEvents]);
   const mapEvents = scope === "loaded" ? view.allEvents : view.events;
-  const allMarkers = useMemo(() => buildMarkers(view, catalog, state.highlightSpeciesId, scope === "loaded").filter(marker => state.mode !== "live" || sourceTypes.includes(marker.kind === "station" ? "acoustic" : marker.kind === "reported" ? "reported" : "tracking")), [view, catalog, state.highlightSpeciesId, scope, sourceTypes, state.mode]);
+  const selectedActual = state.mode === "live" ? activity.snapshot?.voices.find(voice => voice.token === activity.selectedToken && voice.position && sourceTypes.includes(soundingSourceType(voice))) : null;
+  const selectedActualMarkerKey = selectedActual ? soundingSourceType(selectedActual) === "acoustic" && selectedActual.stationId ? `station:${selectedActual.stationId}` : `${soundingSourceType(selectedActual) === "reported" ? "reported" : "fix"}:${selectedActual.eventId}` : null;
+  const allMarkers = useMemo(() => {
+    const result = buildMarkers(view, catalog, state.highlightSpeciesId, scope === "loaded").filter(marker => state.mode !== "live" || sourceTypes.includes(marker.kind === "station" ? "acoustic" : marker.kind === "reported" ? "reported" : "tracking"));
+    if (selectedActual?.position && !result.some(marker => marker.key === selectedActualMarkerKey && marker.latitude === selectedActual.position!.latitude && marker.longitude === selectedActual.position!.longitude)) {
+      const type = soundingSourceType(selectedActual);
+      const marker: MapMarker = {key: `actual:${selectedActual.token}`,kind: type === "acoustic" ? "station" : type === "reported" ? "reported" : "fix",...selectedActual.position,emphasis: "normal",label: `${selectedActual.commonName || "Animal voice"} playback origin, ${selectedActual.locationLabel || "Reported position"}`,uncertaintyMetres:null};
+      result.push(marker);
+    }
+    return result;
+  }, [view, catalog, state.highlightSpeciesId, scope, sourceTypes, state.mode, selectedActual, selectedActualMarkerKey]);
   const selected = view.allEvents.find(event => event.id === state.selectedEventId) ?? null;
-  const selectedKey = markerKeyForEvent(selected);
+  const selectedKey = selectedActual?.position ? allMarkers.find(marker => marker.key === `actual:${selectedActual.token}` || marker.key === selectedActualMarkerKey)?.key ?? null : markerKeyForEvent(selected);
   const markers = useMemo(() => boundMarkers(allMarkers, Math.min(400, caps?.maxVisibleMarkers ?? 400), selectedKey, recentMarkerKeys, latestMarkerKey), [allMarkers, caps, selectedKey, recentMarkerKeys, latestMarkerKey]);
   const newest = newestObservation(mapEvents)?.observedAtUtc;
 
   const pick = (key: string) => {
+    if (key.startsWith("actual:")) { activity.selectToken(key.slice(7)); return; }
+    activity.selectToken(null);
     if (key.startsWith("fix:") || key.startsWith("reported:")) { dispatch({ type: "selectEvent", eventId: key.slice(key.indexOf(":") + 1) }); return; }
     const stationId = key.slice("station:".length);
     const here = mapEvents.filter((e) => e.stationId === stationId && isReceiverDetection(e));
@@ -115,7 +132,7 @@ export function MapStage({ view, catalog, latest, locateRequest, sourceTypes, on
 
       <div className="map-stage__canvas">
         {use2D ? (
-          <Map2D bounds={BOUNDS_WORLD} markers={markers} regions={regions} selectedKey={selectedKey} latestMarkerKey={latestMarkerKey} recentMarkerKeys={recentMarkerKeys} onPick={pick} title="World map" showLabels />
+          <Map2D bounds={BOUNDS_WORLD} soundingOrigins={sounding.origins} markers={markers} regions={regions} selectedKey={selectedKey} latestMarkerKey={latestMarkerKey} recentMarkerKeys={recentMarkerKeys} onPick={pick} title="World map" showLabels />
         ) : (
           <>
             <Suspense fallback={<p className="small muted">Loading globe…</p>}>
@@ -125,15 +142,16 @@ export function MapStage({ view, catalog, latest, locateRequest, sourceTypes, on
               selectedKey={selectedKey} latestMarkerKey={latestMarkerKey} recentMarkerKeys={recentMarkerKeys} locateRequest={locateRequest}
               orientation={state.globeOrientation}
               reducedMotion={state.reducedMotion}
-              getPulses={(age) => (live ? liveStore.activePulses(age).filter(pulse => visibleEventIds.has(pulse.eventId)) : [])}
-              pulseVersion={pulseVersion}
+              soundingOrigins={sounding.origins}
+              sampleSoundingOrigins={() => sampleSounding().origins}
+              soundingVersion={soundingVersion}
               onPick={pick}
               onOrientationChange={(o) => dispatch({ type: "globeOrientation", orientation: o })}
               onContextLost={() => setContextLost(true)}
               zoomCommand={zoom}
             />
             </Suspense>
-            <NZLoupe markers={markers} regions={regions} selectedKey={selectedKey} latestMarkerKey={latestMarkerKey} recentMarkerKeys={recentMarkerKeys} locateRequest={locateRequest} onPick={pick}
+            <NZLoupe soundingOrigins={sounding.origins} markers={markers} regions={regions} selectedKey={selectedKey} latestMarkerKey={latestMarkerKey} recentMarkerKeys={recentMarkerKeys} locateRequest={locateRequest} onPick={pick}
               pan={state.nzLoupePan} onPanChange={(pan) => dispatch({ type: "nzLoupePan", pan })} />
           </>
         )}
@@ -142,6 +160,8 @@ export function MapStage({ view, catalog, latest, locateRequest, sourceTypes, on
       <div className="map-stage__footer">
         <div className="map-legend small" aria-label="Legend">
           {live && recentMarkerKeys.size > 0 ? <span title="Locations of the eight most recent observations. The larger ring marks the newest."><span className="latest-ring-key" aria-hidden="true" /> Latest detections</span> : null}
+          {live ? <span title="Lights start on actual playback and fade for two seconds after each voice ends."><span className="sounding-key" aria-hidden="true" /> Sounding origins</span> : null}
+          {live && sounding.unmapped > 0 ? <span>{sounding.unmapped} sounding without reported position</span> : null}
           <span><Icon name="station" size={12} /> Receiver</span>
           <span className="legend-filled"><span className="dot" aria-hidden="true" /> Highlighted species</span>
           <span><Icon name="satellite-fix" size={10} /> Measured fix</span>

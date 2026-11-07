@@ -12,7 +12,7 @@ interface SpeciesRanking {
 const Context = createContext<SpeciesRanking | null>(null);
 export function LiveSpeciesCountsProvider({ children }: { children: ReactNode }) {
   const { client, caps, connection } = useHost();
-  const { session } = useLiveCollection();
+  const { session, invalidateView } = useLiveCollection();
   const sessionId = session?.id ?? null;
   const supported = !!caps && client.supports("getLiveSpeciesCounts");
   const [result, setResult] = useState<{ sessionId: string; rows: LiveSpeciesCount[] } | null>(null);
@@ -30,20 +30,24 @@ export function LiveSpeciesCountsProvider({ children }: { children: ReactNode })
       try {
         const rows = await collectSpeciesPages(sessionId, async (cursor) => {
           const reply = await client.call("getLiveSpeciesCounts", { sessionId, limit: 250, ...(cursor === undefined ? {} : { cursor }) }, { signal: controller.signal });
-          if (!reply.ok) throw Error(reply.error.message);
+          if (!reply.ok) {
+            if (!cancelled && reply.error.code === "internal") invalidateView();
+            throw Error(reply.error.message);
+          }
+          if (!cancelled && (!reply.value.sessionActive || reply.value.sessionId !== sessionId)) { setResult(null); invalidateView(); }
           return reply.value;
         }, () => cancelled);
         if (cancelled) return;
         if (rows !== null) { setResult({ sessionId, rows }); setError(null); }
         else setResult(null);
       } catch (reason) {
-        if (!cancelled) setError(reason instanceof Error ? reason.message : "Species counts unavailable");
+        if (!cancelled) { setResult(null); setError(reason instanceof Error ? reason.message : "Species counts unavailable"); }
       }
       if (!cancelled) { setLoading(false); timer = window.setTimeout(() => void pull(), 1000); }
     };
     void pull();
     return () => { cancelled = true; controller.abort(); window.clearTimeout(timer); };
-  }, [client, supported, connection, sessionId]);
+  }, [client, supported, connection, sessionId, invalidateView]);
   const rows = result?.sessionId === sessionId ? result.rows : null;
   return <Context.Provider value={{ rows, loading, error, supported, sessionId }}>{children}</Context.Provider>;
 }

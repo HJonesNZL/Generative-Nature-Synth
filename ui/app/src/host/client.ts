@@ -42,6 +42,34 @@ function validBaselineTotal(method: string, value: unknown): boolean {
     Array.isArray(reply.events) && (reply.baselineTotal as number) >= reply.events.length &&
     reply.events.every(row => row && row.change === "baseline" && row.liveEligible === false);
 }
+function validLiveActivityReply(method: string, value: unknown, args: unknown): boolean {
+  if (method !== "getLiveActivity") return true;
+  if (!value || typeof value !== "object") return false;
+  const page = value as Record<string, unknown>;
+  const request = args as {sessionId: string; afterSequence?: string; limit?: number};
+  if (typeof page.sessionId !== "string" || page.sessionId.length > 256 || typeof page.sessionActive !== "boolean" ||
+      page.sessionActive && page.sessionId !== request.sessionId || !unsignedDecimal(page.clockUs) || !unsignedDecimal(page.nextSequence) ||
+      page.hasMore === true && page.reset === false && page.nextSequence === (request.afterSequence ?? "0") ||
+      typeof page.hasMore !== "boolean" || typeof page.reset !== "boolean" || !Number.isSafeInteger(page.dropped) || (page.dropped as number) < 0 ||
+      !Array.isArray(page.voices) || page.voices.length > Math.min(request.limit ?? 250, 250) ||
+      !page.sessionActive && (page.voices.length > 0 || page.hasMore) ||
+      !page.reset && BigInt(page.nextSequence as string) < BigInt(request.afterSequence ?? "0")) return false;
+  const text = (v: unknown, max: number) => typeof v === "string" && v.length <= max;
+  const nullable = (v: unknown, max: number) => v === null || text(v, max);
+  return page.voices.every(voice => {
+    if (!voice || !identity(voice.token) || !text(voice.eventId, 2048) || !voice.eventId || !nullable(voice.speciesId, 512) ||
+        !text(voice.commonName, 2048) || !text(voice.voiceName, 2048) ||
+        !["struck", "whistle", "reed", "bell", "air", "pulse", "pluck", "resonance"].includes(voice.voiceType) ||
+        !nullable(voice.stationId, 2048) || !text(voice.eventKind, 128) || !text(voice.locationKind, 128) ||
+        !text(voice.locationLabel, 2048) || !nullable(voice.region, 2048) || !unsignedDecimal(voice.onsetUs) ||
+        !(voice.endUs === null || unsignedDecimal(voice.endUs) && BigInt(voice.endUs) >= BigInt(voice.onsetUs)) ||
+        !(voice.releaseUs === undefined || unsignedDecimal(voice.releaseUs) && BigInt(voice.releaseUs) >= BigInt(voice.onsetUs))) return false;
+    const p = voice.position;
+    return p === null || p && typeof p.latitude === "number" && Number.isFinite(p.latitude) && p.latitude >= -90 && p.latitude <= 90 &&
+      typeof p.longitude === "number" && Number.isFinite(p.longitude) && p.longitude >= -180 && p.longitude <= 180 &&
+      (p.uncertaintyMetres === undefined || p.uncertaintyMetres === null || typeof p.uncertaintyMetres === "number" && Number.isFinite(p.uncertaintyMetres) && p.uncertaintyMetres >= 0);
+  });
+}
 function validLiveSessionReply(method: string, value: unknown, args: unknown): boolean {
   if (!["getLiveChanges", "getLiveSpeciesCounts"].includes(method)) return true;
   if (!value || typeof value !== "object") return false;
@@ -417,7 +445,7 @@ export class HostClient {
       const request = { protocolVersion: 1 as const, requestId, method, args };
       const reply = (this.host as ExtendedHost).request(request, controller.signal).then((r): HostResult<AllMethods[M]["response"]> => {
         if (!r || typeof r !== "object" || typeof r.ok !== "boolean" || r.requestId !== requestId) return { ok: false, error: { code: "internal", message: "Reply did not match request id" } };
-        if (r.ok) return "result" in r && validBaselineTotal(method, r.result) && validLiveSessionReply(method, r.result, args) && validLiveListeningReply(method, r.result) && validPlaybackReply(method, r.result) && validVoiceReply(method, r.result, args) && validSoundscapeReply(method, r.result, args) && validCompositionReply(method, r.result) && validSpatialReply(method, r.result) && validPieceReply(method, r.result, args) && (method !== "listSessionsPage" || validSessionPage(r.result, args)) && (!["getLiveSources", "setLiveSources"].includes(method) || validLiveSources(r.result, method, args)) && (!["getAudioDevices", "setAudioDevice"].includes(method) || validAudioDeviceCatalog(r.result)) ? { ok: true, value: r.result } : { ok: false, error: { code: "internal", message: "Malformed host result" } };
+        if (r.ok) return "result" in r && validBaselineTotal(method, r.result) && validLiveActivityReply(method, r.result, args) && validLiveSessionReply(method, r.result, args) && validLiveListeningReply(method, r.result) && validPlaybackReply(method, r.result) && validVoiceReply(method, r.result, args) && validSoundscapeReply(method, r.result, args) && validCompositionReply(method, r.result) && validSpatialReply(method, r.result) && validPieceReply(method, r.result, args) && (method !== "listSessionsPage" || validSessionPage(r.result, args)) && (!["getLiveSources", "setLiveSources"].includes(method) || validLiveSources(r.result, method, args)) && (!["getAudioDevices", "setAudioDevice"].includes(method) || validAudioDeviceCatalog(r.result)) ? { ok: true, value: r.result } : { ok: false, error: { code: "internal", message: "Malformed host result" } };
         if (!r.error || typeof r.error.message !== "string" || !["unsupported", "invalid_request", "unavailable", "stale_generation", "internal"].includes(r.error.code))
           return { ok: false, error: { code: "internal", message: "Malformed host error" } };
         return { ok: false, error: r.error };

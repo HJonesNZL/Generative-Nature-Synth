@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import type { SoundingOrigin } from "./soundingOrigins";
 import { Icon } from "../Icon";
 import { Map2D } from "./Map2D";
 import { BOUNDS_NZ, unwrapLongitude, type MapLocateRequest, type MapMarker, type MapRegion } from "./geo";
 import { clampLoupePan, dragLoupePan, loupeViewport, mapProjection, LOUPE_DRAG_THRESHOLD_PX, type LoupePan } from "./loupeGeometry";
 
 interface Props {
+  soundingOrigins?: readonly SoundingOrigin[];
   latestMarkerKey?: string | null;
   recentMarkerKeys?: ReadonlySet<string>;
   locateRequest?: MapLocateRequest | null;
@@ -26,7 +28,7 @@ interface Drag {
   moved: boolean;
 }
 
-export function NZLoupe({ markers, regions, selectedKey, latestMarkerKey, recentMarkerKeys, locateRequest, onPick, pan, onPanChange }: Props) {
+export function NZLoupe({ soundingOrigins = [], markers, regions, selectedKey, latestMarkerKey, recentMarkerKeys, locateRequest, onPick, pan, onPanChange }: Props) {
   const drag = useRef<Drag | null>(null);
   const locatedSequence = useRef<number | null>(null);
   const suppressClick = useRef(false);
@@ -109,7 +111,7 @@ export function NZLoupe({ markers, regions, selectedKey, latestMarkerKey, recent
         onKeyDown={onKey} onClickCapture={(event) => {
           if (suppressClick.current && event.detail !== 0) { event.preventDefault(); event.stopPropagation(); }
         }}>
-        <Map2D bounds={BOUNDS_NZ} viewport={viewport} markers={visibleMarkers} regions={regions} selectedKey={selectedKey} latestMarkerKey={latestMarkerKey} recentMarkerKeys={recentMarkerKeys}
+        <Map2D bounds={BOUNDS_NZ} viewport={viewport} markers={visibleMarkers} soundingOrigins={soundingOrigins.filter(origin => { const [x,y] = projection.project(unwrapLongitude(origin.longitude,BOUNDS_NZ),origin.latitude); return Math.hypot(x-viewport.x-viewport.width/2,y-viewport.y-viewport.height/2)<=viewport.width/2-20; })} regions={regions} selectedKey={selectedKey} latestMarkerKey={latestMarkerKey} recentMarkerKeys={recentMarkerKeys}
           onPick={onPick} title="New Zealand detail map. Locations are buttons." />
       </div>
       <button type="button" className="loupe__reset pill pill--quiet" onClick={reset} aria-label="Reset New Zealand view">

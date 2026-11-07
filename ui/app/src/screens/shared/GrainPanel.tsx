@@ -5,20 +5,42 @@
  * host-reported playhead. Lines that were filtered or suppressed are drawn
  * half-height so the distinction is not colour-only.
  */
-import { useMemo, type MouseEvent, type ReactNode } from "react";
+import { useMemo, useRef, type MouseEvent, type ReactNode } from "react";
 import type { CoverageInterval, EventView } from "../../host/contracts";
 import { useHost } from "../../app/HostContext";
 import { useAppState, useDispatch } from "../../app/store";
 import type { Catalog } from "../../app/catalog";
 import { formatHm, zoneAbbreviation } from "../../app/time";
 import { useLiveSpeciesCounts } from "../../app/LiveSpeciesCountsContext";
+import { useLiveActivity } from "../../app/LiveActivityContext";
+import { TimeRibbon } from "./TimeRibbon";
 import { grainLanes } from "./grainLanes";
 import "./GrainPanel.css";
 import type { MaterialView } from "./useMaterialView";
 
 const LANE_COLORS = ["var(--c-sp-1)", "var(--c-sp-2)", "var(--c-sp-3)", "var(--c-sp-4)", "var(--c-sp-5)", "var(--c-sp-6)"];
 
-export function GrainPanel({ view, catalog, aside }: { view: MaterialView; catalog: Catalog; aside?: ReactNode }) {
+export function GrainPanel(props: { view: MaterialView; catalog: Catalog; aside?: ReactNode }) {
+  const {mode} = useAppState();
+  const activity = useLiveActivity();
+  const tabs = useRef<Array<HTMLButtonElement | null>>([]);
+  if (mode !== "live") return <DetectionGrainPanel {...props} />;
+  const selected = activity.panelTab ?? (activity.supported ? "playback" : "species");
+  return <section className="live-activity-panel" aria-label="Live playback and species">
+    <div className="live-activity-panel__tabs" role="tablist" aria-label="Live activity view" onKeyDown={event => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault(); const tab = event.key === "Home" ? "playback" : event.key === "End" ? "species" : selected === "playback" ? "species" : "playback";
+      activity.setPanelTab(tab); tabs.current[tab === "playback" ? 0 : 1]?.focus();
+    }}>
+      {(["playback", "species"] as const).map((tab, index) => <button type="button" role="tab" key={tab} ref={node => { tabs.current[index] = node; }}
+        id={`activity-tab-${tab}`} aria-controls={`activity-panel-${tab}`} aria-selected={selected === tab} tabIndex={selected === tab ? 0 : -1}
+        className={`tab${selected === tab ? " is-on" : ""}`} onClick={() => activity.setPanelTab(tab)}>{tab === "playback" ? "Playback · 30 seconds" : "Species · session ranking"}</button>)}
+    </div>
+    <div role="tabpanel" id="activity-panel-playback" aria-labelledby="activity-tab-playback" className="live-activity-panel__pane" hidden={selected !== "playback"}>{selected === "playback" ? <TimeRibbon view={props.view} /> : null}</div>
+    <div role="tabpanel" id="activity-panel-species" aria-labelledby="activity-tab-species" className="live-activity-panel__pane" hidden={selected !== "species"}><DetectionGrainPanel {...props} /></div>
+  </section>;
+}
+function DetectionGrainPanel({ view, catalog, aside }: { view: MaterialView; catalog: Catalog; aside?: ReactNode }) {
   const state = useAppState();
   const dispatch = useDispatch();
   const { client } = useHost();

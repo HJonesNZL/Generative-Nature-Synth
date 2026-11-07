@@ -3,7 +3,7 @@
  *
  * Budgets: one 96×64 sphere, one land texture (≤ 4096 px), MAX_MARKERS
  * instanced station discs + rings, MAX_MARKERS instanced fix diamonds,
- * PULSE_POOL arrival rings, region outlines as dashed lines. Frame rate is
+ * one bounded playback-origin point layer, region outlines as dashed lines. Frame rate is
  * capped at 30 fps and rendering stops entirely when nothing changes, when
  * the document is hidden, or when the component unmounts (Sound Studio).
  * Pixel ratio is capped at 2. All GPU resources are disposed on teardown.
@@ -14,11 +14,9 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { paintLandTexture } from "./landTexture";
 import type { MapLocateRequest, MapMarker, MapRegion } from "./geo";
-import type { Pulse } from "../../app/eventStore";
+import { MAX_SOUND_ORIGINS, type SoundingOrigin } from "./soundingOrigins";
 
 const MAX_MARKERS = 400;
-const PULSE_POOL = 24;
-const PULSE_MS = 1200;
 const FRAME_MS = 1000 / 30;
 
 const COLORS = {
@@ -51,8 +49,9 @@ export interface GlobeProps {
   selectedKey: string | null;
   orientation: { longitude: number; latitude: number; distance: number };
   reducedMotion: boolean;
-  getPulses: (maxAgeMs: number) => Pulse[];
-  pulseVersion: number;
+  soundingOrigins: readonly SoundingOrigin[];
+  sampleSoundingOrigins: () => readonly SoundingOrigin[];
+  soundingVersion: string;
   onPick: (key: string) => void;
   onOrientationChange: (o: { longitude: number; latitude: number; distance: number }) => void;
   onContextLost: () => void;
@@ -71,7 +70,7 @@ interface GlobeRuntime {
   selection: THREE.Mesh;
   latest: THREE.Mesh;
   recent: THREE.InstancedMesh;
-  pulses: THREE.Mesh[];
+  soundPoints: THREE.Points;
   regionGroup: THREE.Group;
   globe: THREE.Mesh;
   markerKeys: { discs: string[]; fixes: string[]; reported: string[] };
@@ -150,14 +149,29 @@ export function GlobeView(props: GlobeProps) {
     recent.frustumCulled = false;
     scene.add(recent);
 
-    const pulseGeometry = new THREE.RingGeometry(0.86, 1, 40);
-    const pulses: THREE.Mesh[] = [];
-    for (let i = 0; i < PULSE_POOL; i += 1) {
-      const mesh = new THREE.Mesh(pulseGeometry, new THREE.MeshBasicMaterial({ color: COLORS.accent, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false }));
-      mesh.visible = false;
-      pulses.push(mesh);
-      scene.add(mesh);
-    }
+    const soundGeometry = new THREE.BufferGeometry();
+    const soundPositions = new THREE.BufferAttribute(new Float32Array(MAX_SOUND_ORIGINS * 3), 3);
+    const soundOpacity = new THREE.BufferAttribute(new Float32Array(MAX_SOUND_ORIGINS), 1);
+    soundPositions.setUsage(THREE.DynamicDrawUsage);
+    soundOpacity.setUsage(THREE.DynamicDrawUsage);
+    soundGeometry.setAttribute("position",soundPositions);
+    soundGeometry.setAttribute("soundOpacity",soundOpacity);
+    soundGeometry.setDrawRange(0,0);
+    const soundMaterial = new THREE.ShaderMaterial({
+      uniforms: {pointSize: {value: 36 * renderer.getPixelRatio()}},
+      transparent: true, depthWrite: false,
+      vertexShader: `attribute float soundOpacity; varying float opacity; uniform float pointSize;
+        void main(){opacity=soundOpacity;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);gl_PointSize=pointSize;}`,
+      fragmentShader: `varying float opacity;
+        void main(){float r=distance(gl_PointCoord,vec2(0.5));if(r>0.5)discard;
+          float halo=(1.0-smoothstep(0.26,0.5,r))*0.25;
+          float core=(1.0-smoothstep(0.12,0.17,r))*0.65;
+          float ring=smoothstep(0.30,0.33,r)*(1.0-smoothstep(0.37,0.40,r))*0.55;
+          gl_FragColor=vec4(0.95,0.74,0.29,(halo+core+ring)*opacity);}`,
+    });
+    const soundPoints = new THREE.Points(soundGeometry,soundMaterial);
+    soundPoints.frustumCulled=false;
+    scene.add(soundPoints);
     const regionGroup = new THREE.Group();
     scene.add(regionGroup);
 
@@ -179,31 +193,29 @@ export function GlobeView(props: GlobeProps) {
       if (time - lastFrame < FRAME_MS) { frame = requestAnimationFrame(tick); return; }
       lastFrame = time;
       const moving = controls.update();
-      const pulsing = updatePulses();
+      const fading = updateSounding();
       updateLabelPosition();
       renderer.render(scene, camera);
-      animating = moving || pulsing;
+      animating = moving || fading;
       if (animating) frame = requestAnimationFrame(tick);
     };
     const requestRender = () => { if (!frame) frame = requestAnimationFrame(tick); };
 
-    const up = new THREE.Vector3(0, 0, 1);
-    const updatePulses = (): boolean => {
-      if (propsRef.current.reducedMotion) { for (const p of pulses) p.visible = false; return false; }
-      const active = propsRef.current.getPulses(PULSE_MS);
-      const now = performance.now();
-      pulses.forEach((mesh, i) => {
-        const pulse = active[active.length - 1 - i];
-        if (!pulse) { mesh.visible = false; return; }
-        const age = (now - pulse.createdWallMs) / PULSE_MS;
-        const position = latLonToVector(pulse.latitude, pulse.longitude, 1.006);
-        mesh.position.copy(position);
-        mesh.quaternion.setFromUnitVectors(up, position.clone().normalize());
-        mesh.scale.setScalar(0.012 + age * 0.05);
-        (mesh.material as THREE.MeshBasicMaterial).opacity = 0.8 * (1 - age);
-        mesh.visible = true;
-      });
-      return active.length > 0;
+    const updateSounding = (): boolean => {
+      const origins=propsRef.current.sampleSoundingOrigins();
+      const count=Math.min(origins.length,MAX_SOUND_ORIGINS);
+      let fading=false;
+      for(let i=0;i<count;++i){
+        const origin=origins[i]!;
+        const point=latLonToVector(origin.latitude,origin.longitude,1.012);
+        soundPositions.setXYZ(i,point.x,point.y,point.z);
+        soundOpacity.setX(i,origin.level);
+        fading ||= origin.level<1;
+      }
+      soundGeometry.setDrawRange(0,count);
+      soundPositions.needsUpdate=true;
+      soundOpacity.needsUpdate=true;
+      return fading && !propsRef.current.reducedMotion;
     };
 
     const label = document.createElement("span");
@@ -269,9 +281,9 @@ export function GlobeView(props: GlobeProps) {
     const onVisibility = () => { if (!document.hidden) requestRender(); };
     document.addEventListener("visibilitychange", onVisibility);
 
-    const disposables: Array<{ dispose: () => void }> = [texture, globeGeometry, globeMaterial, rimGeometry, rimMaterial, discGeometry, ringGeometry, fixGeometry, reportedGeometry, markerMaterial, ringMaterial, pulseGeometry, selection.geometry, selection.material as THREE.Material, latest.geometry, latest.material as THREE.Material, recent.geometry, recent.material as THREE.Material, ...pulses.map((p) => p.material as THREE.Material), controls];
+    const disposables: Array<{ dispose: () => void }> = [texture, globeGeometry, globeMaterial, rimGeometry, rimMaterial, discGeometry, ringGeometry, fixGeometry, reportedGeometry, markerMaterial, ringMaterial, soundGeometry, soundMaterial, selection.geometry, selection.material as THREE.Material, latest.geometry, latest.material as THREE.Material, recent.geometry, recent.material as THREE.Material, controls];
     runtime.current = {
-      renderer, scene, camera, controls, discs, rings, fixes, reported, selection, latest, recent, pulses, regionGroup, globe,
+      renderer, scene, camera, controls, discs, rings, fixes, reported, selection, latest, recent, soundPoints, regionGroup, globe,
       markerKeys: { discs: [], fixes: [], reported: [] },
       requestRender,
       dispose: () => {
@@ -399,7 +411,7 @@ export function GlobeView(props: GlobeProps) {
     rt.requestRender();
   }, [props.regions]);
 
-  useEffect(() => { runtime.current?.requestRender(); }, [props.pulseVersion]);
+  useEffect(() => { runtime.current?.requestRender(); }, [props.soundingVersion]);
   useEffect(() => { if (runtime.current) runtime.current.controls.enableDamping = !props.reducedMotion; }, [props.reducedMotion]);
 
   useEffect(() => {
@@ -451,7 +463,8 @@ export function GlobeView(props: GlobeProps) {
   };
 
   return (
-    <div ref={host} className="globe" tabIndex={0} role="application" aria-roledescription="globe" aria-label={`Globe. Drag or use arrow keys to rotate; use the station list or 2D map to select by keyboard.${latestMarkerLabel ? ` Latest detection: ${latestMarkerLabel}.` : ""}`} onKeyDown={onKeyDown}>
+    <div ref={host} className="globe" data-sounding-origins={props.soundingOrigins.length} data-sounding-tokens={props.soundingOrigins.flatMap(origin => origin.tokens).join(" ")} tabIndex={0} role="application" aria-roledescription="globe" aria-label={`Globe. Drag or use arrow keys to rotate; use the station list or 2D map to select by keyboard.${latestMarkerLabel ? ` Latest detection: ${latestMarkerLabel}.` : ""}`} onKeyDown={onKeyDown}>
+      <span className="sr-only">{props.soundingOrigins.map(origin => `${origin.label}, ${origin.activeVoices ? `${origin.activeVoices} sounding` : "sound fading"}`).join("; ")}</span>
     </div>
   );
 }

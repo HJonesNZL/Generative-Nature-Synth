@@ -132,6 +132,36 @@ export interface LiveSourceState {
   gap: boolean;
   nextPollSeconds: number;
 }
+/** Actual native callback-confirmed notes; origins and timbre are frozen per token. */
+export interface LiveActivityVoice {
+  token: string;
+  eventId: string;
+  speciesId: string | null;
+  commonName: string;
+  voiceName: string;
+  voiceType: VoiceType;
+  position: { latitude: number; longitude: number; uncertaintyMetres?: number | null } | null;
+  stationId: string | null;
+  eventKind: string;
+  locationKind: string;
+  locationLabel: string;
+  region: string | null;
+  onsetUs: Int64String;
+  endUs: Int64String | null;
+  releaseUs?: Int64String;
+}
+export interface LiveActivitySnapshot {
+  sessionId: string;
+  sessionActive: boolean;
+  clockUs: Int64String;
+  voices: LiveActivityVoice[];
+  dropped: number;
+}
+export interface LiveActivityPage extends LiveActivitySnapshot {
+  nextSequence: Int64String;
+  hasMore: boolean;
+  reset: boolean;
+}
 export interface LiveSpeciesCount {
   speciesId: string;
   commonName: string;
@@ -371,6 +401,10 @@ export interface HostMethods {
   getLiveChanges: {
     request: { sessionId: string; storeId: string; afterSequence: Int64String; limit: number };
     response: HostMethods["getChanges"]["response"] & { sessionId: string; sessionActive: boolean; removedEventIds: string[]; hasMore: boolean };
+  };
+  getLiveActivity: {
+    request: { sessionId: string; afterSequence?: Int64String; limit?: number };
+    response: LiveActivityPage;
   };
   getLiveSpeciesCounts: {
     request: { sessionId: string; cursor?: string; limit?: number };

@@ -1,0 +1,94 @@
+// Isolated native-session fixture, no owner library/provider/audio access.
+import assert from 'node:assert/strict';
+const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const origin = process.env.ATLAS_TEST_URL || 'http://127.0.0.1:5187';
+const browser = await chromium.launch({ headless: true, channel: 'chrome', args: ['--enable-unsafe-swiftshader'] });
+const page = await browser.newPage({viewport:{width:1440,height:900},reducedMotion:process.env.ATLAS_REDUCED_MOTION==='false'?'no-preference':'reduce'});
+const errors=[];
+page.on('pageerror',error=>errors.push(error.message));
+await page.addInitScript(()=>{
+  const stamp=new Date(Date.now()-30000).toISOString();
+  const session={id:'grain-session',storeId:'grain-store',baselineRevision:'10',observedFromUtc:new Date(Date.now()-60000).toISOString()};
+  const rows=Array.from({length:300},(_,i)=>({speciesId:`species-${String(i).padStart(3,'0')}`,commonName:`Fixture species ${String(i).padStart(3,'0')}`,count:300-i}));
+  const fixture=window.grainFixture={rows,revision:'12',countCalls:0,collecting:true,sequence:0,updates:[],clock:()=>String(Math.round(performance.now()*1000)+1_000_000_000),put:voice=>{fixture.updates.push({seq:++fixture.sequence,voice});},end:token=>{const original=[...fixture.updates].reverse().find(update=>update.voice.token===token).voice;fixture.put({...original,endUs:fixture.clock()});}};
+  const events=[0,299].map((i,index)=>({id:`event-${i}`,revisionSequence:String(11+index),sourceId:'birdweather',speciesId:rows[i].speciesId,commonName:rows[i].commonName,stationId:'fixture-station',eventKind:'acoustic_species_detection',locationKind:'station_detection',position:{latitude:-41,longitude:174,uncertaintyMetres:null},observedAtUtc:stamp,firstSeenAtUtc:stamp,confidence:null,attribution:'Synthetic regression fixture',qualityFlags:[],provenance:'live_source'}));
+  const methods=['getCapabilities','getLiveSources','getLiveChanges','getLiveSpeciesCounts','getCatalog','getLiveState','setLiveEnabled','getAudioState','getLiveActivity'];
+  window.atlasHost={request:async request=>{
+    const {method,args}=request;let result;
+    if(method==='getCapabilities') result={protocolVersion:1,implementation:'native',supportedMethods:methods,audioAvailable:true,libraryAvailable:true,maxEventBatch:500,maxVisibleMarkers:400};
+    else if(method==='getLiveActivity') { const changed=fixture.updates.filter(update=>update.seq>Number(args.afterSequence??0)); const page=changed.slice(0,args.limit??250); result={sessionId:session.id,sessionActive:true,clockUs:fixture.clock(),voices:page.map(update=>update.voice),dropped:0,nextSequence:page.length?String(page.at(-1).seq):String(fixture.sequence),hasMore:changed.length>page.length,reset:false}; }
+    else if(method==='getLiveState'||method==='setLiveEnabled') result={enabled:false,status:'off',received:300,admitted:0,dropped:0,skippedRevisions:0,grouped:0,error:'',mode:'smoothed',density:3,pending:0,catchingUp:false};
+    else if(method==='getAudioState') result={status:'disabled',deviceName:null,masterGainDb:-18,peakDbfs:null,meterIsSimulated:false,clipping:false,activeSynthVoices:0,maxSynthVoices:8};
+    else if(method==='getLiveSources') result={collecting:fixture.collecting,libraryActive:true,session:fixture.collecting?session:null,sources:[{id:'nzsharks',enabled:false,polling:false,lastAttemptUtc:null,lastSuccessUtc:null,lastObservationUtc:null,error:null,records:'0',complete:false,gap:false,nextPollSeconds:0},{id:'birdweather',enabled:fixture.collecting,polling:false,lastAttemptUtc:stamp,lastSuccessUtc:stamp,lastObservationUtc:stamp,error:null,records:'100000',complete:true,gap:false,nextPollSeconds:60}]};
+    else if(method==='getLiveChanges') result={storeId:'grain-store',sessionId:session.id,sessionActive:fixture.collecting,nextSequence:'12',events:args.afterSequence==='10'?events.map(event=>({event,liveEligible:true,change:'new'})):[]};
+    else if(method==='getLiveSpeciesCounts') {
+      fixture.countCalls++;
+      const ranked=[...fixture.rows].sort((a,b)=>b.count-a.count||a.speciesId.localeCompare(b.speciesId));
+      const start=Number(args.cursor??0),end=Math.min(ranked.length,start+(args.limit??250));
+      result={sessionId:session.id,sessionActive:fixture.collecting,revision:fixture.revision,species:ranked.slice(start,end),nextCursor:end<ranked.length?String(end):null};
+    } else if(method==='getCatalog') result={species:[rows[0],rows[299]].map(row=>({id:row.speciesId,commonName:row.commonName,scientificName:'',group:'bird'})),stations:[{id:'fixture-station',name:'Fixture station',latitude:-41,longitude:174,sourceId:'birdweather',positionDescription:'Synthetic fixture'}],sources:[{id:'nzsharks',enabled:false,polling:false,lastAttemptUtc:null,lastSuccessUtc:null,lastObservationUtc:null,error:null,records:'0',complete:false,gap:false,nextPollSeconds:0},{id:'birdweather',name:'BirdWeather fixture'}],limited:true};
+    else throw Error('Unexpected Grain fixture method: '+method);
+    return {requestId:request.requestId,ok:true,result:structuredClone(result)};
+  }};
+});
+try {
+  await page.goto(origin);
+  await page.getByRole('radio',{name:'2D map',exact:true}).click();
+  const world=page.getByRole('group',{name:'World map',exact:true});
+  await world.waitFor();
+  assert.equal(await world.locator('.map2d__sounding-origin').count(),0,'arriving detections alone never produce sounding lights');
+  const latestCount=await world.locator('.is-latest,.is-recent').count();
+  await page.evaluate(()=>{
+    const f=window.grainFixture;
+    const note=(token,position,fields={})=>({token,eventId:`unretained-actual-${token}`,speciesId:'species-299',commonName:'Actual fixture species',voiceName:'Whistle fixture',voiceType:'whistle',position,stationId:'unretained-actual-receiver',eventKind:'acoustic_species_detection',locationKind:'station_detection',locationLabel:'Actual receiver outside retained sample',region:null,onsetUs:f.clock(),endUs:null,...fields});
+    f.put(note('1',{latitude:-38,longitude:176}));
+    f.put(note('2',{latitude:-38,longitude:176}));
+    f.put(note('3',{latitude:-39,longitude:175},{stationId:null,eventKind:'gps_fix',locationKind:'animal_location'}));
+    f.put(note('4',null,{stationId:null,eventKind:'gps_fix',locationKind:'animal_location'}));
+  });
+  await page.waitForFunction(()=>document.querySelectorAll('.map2d__sounding-origin').length===2);
+  const originPoint=world.locator('.map2d__sounding-origin[data-tokens="1 2"]');
+  assert.equal(await originPoint.getAttribute('data-active-voices'),'2','same-origin actual notes remain independently accounted');
+  assert.equal(await originPoint.getAttribute('opacity'),'1');
+  assert.equal(await world.locator('.is-latest,.is-recent').count(),latestCount,'sounding does not alter recent-arrival symbols');
+  await page.getByText('1 sounding without reported position',{exact:true}).waitFor();
+  assert.equal(await world.locator('.map2d__marker[aria-label*="Actual receiver outside retained sample"]').count(),0,'actual light exists beyond retained marker sample');
+  await page.evaluate(()=>window.grainFixture.end('1'));
+  await page.waitForFunction(()=>document.querySelector('.map2d__sounding-origin[data-tokens="1 2"]')?.getAttribute('data-active-voices')==='1');
+  assert.equal(await originPoint.getAttribute('opacity'),'1','ending one overlapping note cannot dim another sounding voice');
+  await page.evaluate(()=>window.grainFixture.end('2'));
+  await page.waitForFunction(()=>Number(document.querySelector('.map2d__sounding-origin[data-tokens="1 2"]')?.getAttribute('opacity'))<1);
+  await page.getByRole('button',{name:'Map details and coverage',exact:true}).click();
+  await page.getByLabel('Acoustic detections',{exact:true}).uncheck();
+  assert.equal(await world.locator('.map2d__sounding-origin[data-tokens="1 2"]').count(),0,'source display filter also masks matching playback origins');
+  assert.equal(await world.locator('.map2d__sounding-origin[data-tokens="3"]').count(),1,'other source activity remains');
+  await page.getByLabel('Acoustic detections',{exact:true}).check();
+  await page.keyboard.press('Escape');
+  await page.getByRole('radio',{name:'Globe',exact:true}).click();
+  const globe=page.locator('.globe');
+  await globe.waitFor();
+  await page.waitForFunction(()=>document.querySelector('.globe')?.getAttribute('data-sounding-tokens')?.split(' ').includes('3'));
+  await page.waitForFunction(()=>[...document.querySelectorAll('.loupe .map2d__sounding-origin')].some(node=>node.getAttribute('data-tokens')==='3'));
+  assert.ok(await globe.getAttribute('data-sounding-origins')!=='0','globe receives real origin activity');
+  const canvasRect=await page.locator('.globe__canvas').boundingBox();
+  const insetRect=await page.locator('.loupe').boundingBox();
+  const globeClip={x:canvasRect.x,y:canvasRect.y,width:Math.max(1,insetRect.x-canvasRect.x-4),height:canvasRect.height};
+  const beforeStop=await page.screenshot({clip:globeClip,path:'/tmp/atlas-sounding-globe-active.png'});
+  await page.evaluate(()=>{window.grainFixture.end('3');window.grainFixture.end('4');});
+  await page.waitForFunction(()=>document.querySelector('.globe')?.getAttribute('data-sounding-origins')==='0');
+  assert.equal(await page.locator('.loupe .map2d__sounding-origin').count(),0,'actual stop ends clear inset with shared two-second fade');
+  const afterStop=await page.screenshot({clip:globeClip,path:'/tmp/atlas-sounding-globe-ended.png'});
+  assert.equal(beforeStop.equals(afterStop),false,'real globe output changes when actual playback light fades');
+  assert.equal(await page.getByText('1 sounding without reported position',{exact:true}).count(),0);
+  await page.getByRole('radio',{name:'2D map',exact:true}).click();
+  assert.equal(await world.locator('.map2d__sounding-origin').count(),0,'2D shares actual end expiry with globe and inset');
+  assert.equal(await world.locator('.is-latest,.is-recent').count(),latestCount,'arrival symbols survive actual audio stop');
+  await page.locator('[data-activity-token="4"]').focus();
+  await page.keyboard.press("ArrowLeft");
+  await page.waitForFunction(()=>document.querySelector('.map2d__marker[aria-label*="playback origin"]')?.getAttribute('aria-pressed')==='true');
+  assert.equal(await world.locator('.map2d__sounding-origin').count(),0,'selecting an ended ribbon token adds only a static origin outline, never relights it');
+  await page.getByRole('button',{name:'Clear selected playback note',exact:true}).click();
+  assert.equal(await world.locator('.map2d__marker[aria-label*="playback origin"]').count(),0,'clearing actual note selection retires the extra metadata origin');
+  assert.deepEqual(errors,[]);
+  console.log(JSON.stringify({checks:['arrivals never light playback','simultaneous and overlapping actual tokens','exact origins beyond retained markers','actual-end two-second fade','unmappable origin disclosed','source filters','2D +globe +NZ inset','reduced motion retains lights','globe pixels change on actual stop'],errors}));
+} finally {await browser.close();}

@@ -1,0 +1,4 @@
+.map2d__sounding { pointer-events: none; }
+.map2d__sound-halo { fill: #efbb48; fill-opacity: .25; stroke: #dba52e; stroke-width: 2; vector-effect: non-scaling-stroke; }
+.map2d__sound-core { fill: #f1bd49; stroke: #fff4c4; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.sounding-key { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #f1bd49; box-shadow: 0 0 0 3px #efbb4840; margin: 0 3px; }
