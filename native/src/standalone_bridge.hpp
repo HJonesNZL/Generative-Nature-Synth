@@ -5,6 +5,7 @@ inline constexpr std::string_view bridgeScript = R"ATLASJS(
 (() => {
   'use strict';
   const backend = window.__JUCE__.backend;
+  window.__ATLAS_NATIVE_FILES__ = true;
   const pending = new Map();
   let next = 0;
   const failure = (id, code, message) => ({requestId: id, ok: false, error: {code, message}});
@@ -47,6 +48,20 @@ inline constexpr std::string_view bridgeScript = R"ATLASJS(
     subscribe() { return () => {}; }
   };
   document.addEventListener('click', event => {
+    const reveal = event.target?.closest?.('[data-reveal-artifact-id]');
+    if (reveal) {
+      event.preventDefault();
+      const artifactId = reveal.dataset.revealArtifactId;
+      if (/^[0-9a-f]{32}$/.test(artifactId ?? '')) backend.emitEvent('atlasRevealExport', {artifactId});
+      return;
+    }
+    const scene = event.target?.closest?.('a[data-scene-id]');
+    if (scene) {
+      event.preventDefault();
+      const sceneId = scene.dataset.sceneId;
+      if (/^[0-9a-f]{32}$/.test(sceneId ?? '')) backend.emitEvent('atlasSceneExport', {sceneId});
+      return;
+    }
     const link = event.target?.closest?.('a[data-artifact-id]');
     if (!link) return;
     event.preventDefault();

@@ -34,7 +34,7 @@ bool validHash(std::string_view hash) {
 }
 } // namespace
 std::string soundscapeRenderRecipe(const Soundscape &scene,
-                                  std::string_view sourceHash) {
+                                   std::string_view sourceHash) {
     if (!validHash(sourceHash))
         fail(Code::invalidArgument,
              "Render engine source SHA-256 must be lowercase hex");
@@ -47,9 +47,9 @@ std::string soundscapeRenderRecipe(const Soundscape &scene,
            std::to_string(capture.schemaRevision >= 3 ? 3 : 2) +
            ",\"engine\":\"atlas-additive\",\"scene_hash\":" +
            detail::quoteJson(scene.contentHash()) +
+           ",\"scene_name\":" + detail::quoteJson(capture.name) +
            ",\"scene_schema_revision\":" +
-           std::to_string(capture.schemaRevision) +
-           ",\"synthesis_revision\":" +
+           std::to_string(capture.schemaRevision) + ",\"synthesis_revision\":" +
            std::to_string(capture.synthesisRevision) +
            ",\"mapping_revision\":" + std::to_string(capture.mappingRevision) +
            ",\"time_basis\":" +
@@ -61,7 +61,8 @@ std::string soundscapeRenderRecipe(const Soundscape &scene,
            ",\"sample_rate\":" + std::to_string(capture.audio.sampleRate) +
            ",\"engine_source_sha256\":" + detail::quoteJson(sourceHash) +
            ",\"channel_count\":2,\"pcm_bits\":24,\"tail_policy\":\"editable_"
-           "voice_maximum\"" + std::string(regional) +
+           "voice_maximum\"" +
+           std::string(regional) +
            ",\"authoritative_recipe\":\"self-contained-atlas-"
            "scene\"}";
 }
@@ -145,7 +146,8 @@ struct RenderJobs::Impl {
             job->snapshot.sampleRate = capture.audio.sampleRate;
         }
         const auto output = directory / job->snapshot.outputFilename;
-        renderWave(plan, output, soundscapeRenderRecipe(scene, engineSourceHash), 512,
+        renderWave(plan, output,
+                   soundscapeRenderRecipe(scene, engineSourceHash), 512,
                    {stop, &job->framesWritten, &job->totalFrames});
     }
     void render(std::stop_token stop, const std::shared_ptr<Job> &job,

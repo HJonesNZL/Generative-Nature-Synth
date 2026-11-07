@@ -1,5 +1,7 @@
 # Animal Atlas
 
+The [project recovery milestone](evidence/project-recovery/qualification.md) adds draggable NZ detail, portable scene export, verified project backup/restore and WAV history that survives restarts. Use **Releases/Project Recovery/Animal Atlas.app**; see the [quick start](docs/STANDALONE.md). All project operations remain local and free of paid services.
+
 The [standalone beta milestone](docs/milestones/STANDALONE_PLAN.md) packages the native instrument and local React interface in a macOS app, with output-device selection, scene import and native WAV saving. See the [standalone quick start](docs/STANDALONE.md) and [qualification evidence](evidence/standalone/qualification.md). This local arm64 beta requires macOS 15 or later and needs no Node, web server or repository at runtime.
 
 The [composition engineering checkpoint](evidence/composition/qualification.md) adds deterministic species phrases, key/scale/tempo/density/variation/seed controls, full scene recall and legacy compatibility. See [composition controls](docs/milestones/COMPOSITION_UI.md) and the completed [regional mixing checkpoint](evidence/spatial/qualification.md). Sound Studio now edits up to eight geographic sound regions with stereo placement and echo/ambience; scenes preserve all controls and export through the same native engine.

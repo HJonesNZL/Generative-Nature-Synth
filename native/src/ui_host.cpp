@@ -2,6 +2,7 @@
 #include "json_text.hpp"
 #include "sqlite_statement.hpp"
 #include <algorithm>
+#include <atlas/exports.hpp>
 #include <atlas/playback.hpp>
 #include <atlas/presets.hpp>
 #include <atlas/render_jobs.hpp>
@@ -992,6 +993,15 @@ UiHost::UiHost(const std::filesystem::path &library, PlaybackRuntime *playback,
     : impl_(std::make_unique<Impl>(library, playback, voices,
                                    std::move(storage))) {}
 UiHost::~UiHost() = default;
+void UiHost::setLibrary(const std::filesystem::path &library) {
+    if (!library.empty() && !std::filesystem::is_regular_file(library))
+        throw std::invalid_argument("library must be an existing regular file");
+    auto next = std::make_unique<Impl>(library, impl_->playback, impl_->voices,
+                                       impl_->storage);
+    next->renders = std::move(impl_->renders);
+    next->renderScenes = std::move(impl_->renderScenes);
+    impl_.swap(next);
+}
 
 std::string UiHost::request(std::string_view envelope) {
     std::string id;
@@ -1028,14 +1038,14 @@ std::string UiHost::request(std::string_view envelope) {
                     R"(,"listSoundscapes","saveSoundscape","recallSoundscape")";
             if (impl_->renders)
                 result +=
-                    R"(,"startSoundscapeRender","getRenderJob","cancelRender")";
+                    R"(,"startSoundscapeRender","getRenderJob","cancelRender","listExports")";
             if (impl_->voices)
                 result += R"(,"listVoicePresets","applyVoicePreset")";
-            result += std::string("],\"audioAvailable\":") +
-                      (impl_->playback ? "true" : "false") +
-                      ",\"libraryAvailable\":" +
-                      (impl_->library ? "true" : "false") +
-                      ",\"maxEventBatch\":500,\"maxVisibleMarkers\":500}";
+            result +=
+                std::string("],\"audioAvailable\":") +
+                (impl_->playback ? "true" : "false") +
+                ",\"libraryAvailable\":" + (impl_->library ? "true" : "false") +
+                ",\"maxEventBatch\":500,\"maxVisibleMarkers\":500}";
         } else if (impl_->playback &&
                    (method == "getTransport" || method == "getAudioState")) {
             Object args(impl_->db.get(), arguments);
@@ -1422,6 +1432,43 @@ std::string UiHost::request(std::string_view envelope) {
                            scene.capture(), std::move(update));
             result = "{\"soundscape\":" + response +
                      ",\"preparation\":" + impl_->preparation() + "}";
+        } else if (impl_->renders && method == "listExports") {
+            Object args(impl_->db.get(), arguments, {"limit"});
+            const auto history = listExports(
+                impl_->storage.exports,
+                static_cast<std::size_t>(args.number("limit", 100)));
+            std::string items = "[";
+            for (const auto &item : history.items) {
+                append(
+                    items,
+                    "{\"artifactId\":" + quoteJson(item.artifactId) +
+                        ",\"sceneName\":" + quoteJson(item.sceneName) +
+                        ",\"sceneHash\":" + quoteJson(item.sceneHash) +
+                        ",\"engineSourceSha256\":" +
+                        quoteJson(item.engineSourceSha256) + ",\"bytes\":" +
+                        quoteJson(std::to_string(item.bytes)) + ",\"frames\":" +
+                        quoteJson(std::to_string(item.frames)) +
+                        ",\"durationUs\":" +
+                        quoteJson(std::to_string(item.durationUs)) +
+                        ",\"sampleRate\":" + std::to_string(item.sampleRate) +
+                        "}");
+            }
+            std::string activeRender = "null";
+            for (const auto &[id, sceneId] : impl_->renderScenes) {
+                (void)sceneId;
+                const auto job = impl_->renders->get(id);
+                if (job.state == RenderJobState::running) {
+                    activeRender = impl_->renderView(job);
+                    break;
+                }
+            }
+            result = "{\"items\":" + items +
+                     "],\"activeRender\":" + activeRender +
+                     ",\"limited\":" + (history.limited ? "true" : "false") +
+                     ",\"unavailableFiles\":" +
+                     std::to_string(history.unavailableFiles) +
+                     ",\"incompleteRenders\":" +
+                     std::to_string(history.incompleteRenders) + "}";
         } else if (impl_->renders && method == "startSoundscapeRender") {
             Object args(impl_->db.get(), arguments, {"soundscapeId"});
             const auto sid = args.text("soundscapeId", 32);

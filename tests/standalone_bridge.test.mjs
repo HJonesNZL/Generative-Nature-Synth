@@ -26,7 +26,20 @@ test('embedded bridge bounds requests, matches replies, and retires abort/timeou
 });
 test('WAV link uses a native export event only for opaque artifact ids', () => {
  const b = bridge(); let prevented = false;
- b.documentEvents.get('click')({target: {closest: () => ({dataset: {artifactId: 'a'.repeat(32)}})}, preventDefault: () => {prevented = true;}});
+ b.documentEvents.get('click')({target: {closest: selector => selector === 'a[data-artifact-id]' ? ({dataset: {artifactId: 'a'.repeat(32)}}) : null}, preventDefault: () => {prevented = true;}});
  assert.equal(prevented, true); assert.equal(b.sent[0].key, 'atlasExport'); assert.equal(b.sent[0].value.artifactId, 'a'.repeat(32));
- b.documentEvents.get('click')({target: {closest: () => ({dataset: {artifactId: '../../private'}})}, preventDefault() {}}); assert.equal(b.sent.length, 1);
+ b.documentEvents.get('click')({target: {closest: selector => selector === 'a[data-artifact-id]' ? ({dataset: {artifactId: '../../private'}}) : null}, preventDefault() {}}); assert.equal(b.sent.length, 1);
+});
+test('verified scene export links route only opaque scene identities', () => {
+ const b = bridge(); let prevented = 0;
+ const click = sceneId => b.documentEvents.get('click')({target: {closest: selector => selector.includes('scene') ? {dataset: {sceneId}} : null}, preventDefault() {prevented++;}});
+ click('c'.repeat(32)); click('../private');
+ assert.equal(prevented, 2);
+ assert.deepEqual(JSON.parse(JSON.stringify(b.sent)), [{key: 'atlasSceneExport', value: {sceneId: 'c'.repeat(32)}}]);
+});
+test('native reveal links admit only opaque artifact identities', () => {
+ const b = bridge();
+ const click = artifactId => b.documentEvents.get('click')({target: {closest: selector => selector === '[data-reveal-artifact-id]' ? {dataset: {revealArtifactId: artifactId}} : null}, preventDefault() {}});
+ click('d'.repeat(32)); click('../../private');
+ assert.deepEqual(JSON.parse(JSON.stringify(b.sent)), [{key: 'atlasRevealExport', value: {artifactId: 'd'.repeat(32)}}]);
 });

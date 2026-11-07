@@ -293,3 +293,12 @@
   .header-clock .mono { font-size: 13px; }
   .master__db { min-width: 44px; }
 }
+
+.export-history { margin-top: 12px; border-top: 1px solid var(--c-rule); padding-top: 10px; }
+.export-history summary { cursor: pointer; font-size: 12px; }
+.export-history__body { padding-top: 8px; }
+.export-history__item { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--c-rule); font-size: 12px; }
+.export-history__item > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.export-history__item small { display: block; color: var(--c-ink-muted); margin-top: 3px; }
+
+.export-history a { color: var(--c-rule-strong); }

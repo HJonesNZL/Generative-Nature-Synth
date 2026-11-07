@@ -1,3 +1,4 @@
+import { ExportHistory } from "./ExportHistory";
 import { useEffect, useRef, useState } from "react";
 import { useHost, useHostQuery, valueOf } from "./HostContext";
 import { useAppState, useDispatch } from "./store";
@@ -79,6 +80,7 @@ export function SoundscapePanel({ onAttention }: { onAttention?: () => void }) {
       </select>
       <button type="button" className="btn btn--outline btn--sm" disabled={busy || !selected?.valid || !client.supports("recallSoundscape")} onClick={() => void recall()}>{state.soundscape.operation === "recall" ? "Opening…" : "Open soundscape"}</button>
       <button type="button" className="btn btn--outline btn--sm" disabled={busy || !selected?.valid || active || state.render.pending || !client.supports("startSoundscapeRender")} onClick={() => void render()}>{state.render.pending ? "Starting export…" : "Export saved WAV"}</button>
+      {selected?.valid && client.implementation === "native" && (window.__ATLAS_NATIVE_FILES__ || import.meta.env.DEV) ? <a className="btn btn--outline btn--sm" href={`/__atlas/scenes/${selected.id}`} data-scene-id={selected.id} download={`Animal-Atlas-${selected.id}.atlas-scene`}>Export scene</a> : null}
     </div>
     <div className="soundscape-panel__details small muted">
       <span>{selected ? `“${selected.name}” · ${selected.eventCount} records. Export uses this saved version.` : "Open a soundscape, or select a piece in Replay to save a new one."}</span>
@@ -94,5 +96,6 @@ export function SoundscapePanel({ onAttention }: { onAttention?: () => void }) {
       {job?.state === "cancelled" ? <span role="status">WAV export cancelled.</span> : null}
       {active && jobQuery.status === "error" ? <span role="alert">Export status unavailable: {jobQuery.error.message}</span> : null}
     </div>
+    <ExportHistory />
   </section>;
 }

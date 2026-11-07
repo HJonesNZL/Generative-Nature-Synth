@@ -192,6 +192,24 @@ export interface SoundscapeView {
   speedDenominator: Int64String | null;
 }
 
+export interface ExportArtifact {
+  artifactId: string;
+  sceneName: string;
+  sceneHash: string;
+  engineSourceSha256: string;
+  bytes: Int64String;
+  frames: Int64String;
+  durationUs: Int64String;
+  sampleRate: number;
+}
+export interface ExportHistory {
+  items: ExportArtifact[];
+  limited: boolean;
+  unavailableFiles: number;
+  incompleteRenders: number;
+  activeRender?: RenderJob | null;
+}
+
 export interface RenderJob {
   jobId: string;
   state: "queued" | "rendering" | "complete" | "failed" | "cancelled";
@@ -260,6 +278,7 @@ export interface HostMethods {
   setComposition: { request: { settings: CompositionSettings; preparationId: string; generation: Int64String }; response: CompositionState };
   listVoicePresets: { request: { voiceId: string }; response: { items: VoicePresetView[]; listeningApproved: false } };
   applyVoicePreset: { request: { voiceId: string; presetId: string }; response: VoiceDefinition };
+  listExports: { request: { limit: number }; response: ExportHistory };
   listSoundscapes: { request: { limit: number }; response: { items: SoundscapeView[]; limited: boolean; unmanagedFiles?: number } };
   saveSoundscape: { request: { name: string }; response: SoundscapeView };
   recallSoundscape: { request: { soundscapeId: string }; response: { soundscape: SoundscapeView; preparation: HostMethods["prepareReplay"]["response"] } };

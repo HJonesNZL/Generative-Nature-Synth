@@ -28,10 +28,15 @@ def main():
         folder = Path(temporary)
         receipt = folder / 'receipt.json'
         exported = folder / 'exported.wav'
+        scene_export = folder / 'exported.atlas-scene'
+        backup = folder / 'backup.atlas-project'
+        restored = folder / 'restored-state'
         command = [str(args.binary.resolve()), '--state-dir', str(folder / 'state'),
                    '--smoke-test', str(receipt), '--smoke-seconds', str(args.seconds)]
         if args.scene:
-            command += ['--smoke-scene', str(args.scene.resolve()), '--smoke-export', str(exported)]
+            command += ['--smoke-scene', str(args.scene.resolve()), '--smoke-export', str(exported),
+                        '--smoke-scene-export', str(scene_export), '--smoke-backup', str(backup),
+                        '--smoke-restore', str(restored)]
         # Inherited owner paths cannot influence this shell; explicit state is
         # authoritative. Remove old development bridge options for clarity.
         environment = {key: value for key, value in os.environ.items()
@@ -72,6 +77,20 @@ def main():
             scenes = list((folder / 'state' / 'soundscapes').glob('*.atlas-scene'))
             assert len(scenes) == 1
             assert args.scene.resolve().read_bytes() == scenes[0].read_bytes()
+            assert evidence['sceneExported'] and evidence['projectRestored'], evidence
+            assert scene_export.read_bytes() == scenes[0].read_bytes()
+            assert backup.is_file() and backup.stat().st_size > 0
+            restored_scenes = list((restored / 'soundscapes').glob('*.atlas-scene'))
+            assert len(restored_scenes) == 1
+            assert restored_scenes[0].name != scenes[0].name
+            assert restored_scenes[0].read_bytes() == scenes[0].read_bytes()
+            assert (restored / 'voices.sqlite3').is_file()
+            assert not (restored / 'settings.json').exists()
+            assert not (restored / 'exports').exists() or not list((restored / 'exports').iterdir())
+            evidence['projectFiles'] = {'backupBytes': backup.stat().st_size,
+                                        'sceneBytes': scene_export.stat().st_size,
+                                        'restoredSceneCount': len(restored_scenes),
+                                        'freshSceneIdentity': True}
         if args.evidence:
             args.evidence.parent.mkdir(parents=True, exist_ok=True)
             args.evidence.write_text(json.dumps(evidence, indent=2) + '\n')

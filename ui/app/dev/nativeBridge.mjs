@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { resolve } from 'node:path';
+import { resolve, dirname } from 'node:path';
 import { existsSync, constants } from 'node:fs';
 import { lstat, open } from 'node:fs/promises';
 
@@ -9,6 +9,7 @@ import { lstat, open } from 'node:fs/promises';
 export function nativeBridge() {
   // One absolute directory is shared by native publication and HTTP delivery.
   const exportDirectory = resolve(process.env.ATLAS_EXPORT_DIRECTORY || '../../Exports');
+  const sceneDirectory = resolve(process.env.ATLAS_SOUNDSCAPE_DIRECTORY || resolve(dirname(process.env.ATLAS_LIBRARY || '../../.state/library.sqlite3'), 'soundscapes'));
   let worker;
   let output = '';
   let activeId = null;
@@ -34,7 +35,7 @@ export function nativeBridge() {
     const audioBinary = resolve('../../build/native-playback/atlas-audio-host');
     const binary = process.env.ATLAS_AUDIO_HOST_BINARY || process.env.ATLAS_NATIVE_BINARY ||
       (existsSync(audioBinary) ? audioBinary : '../../build/native/atlas-native');
-    const child = spawn(resolve(binary), ['ui-host', '--db', resolve(process.env.ATLAS_LIBRARY)], { stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, ATLAS_VOICE_LIBRARY: process.env.ATLAS_VOICE_LIBRARY || resolve('../../.state/voices.sqlite3'), ATLAS_EXPORT_DIRECTORY: exportDirectory } });
+    const child = spawn(resolve(binary), ['ui-host', '--db', resolve(process.env.ATLAS_LIBRARY)], { stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, ATLAS_VOICE_LIBRARY: process.env.ATLAS_VOICE_LIBRARY || resolve('../../.state/voices.sqlite3'), ATLAS_EXPORT_DIRECTORY: exportDirectory, ATLAS_SOUNDSCAPE_DIRECTORY: sceneDirectory } });
     worker = child;
     child.stdout.setEncoding('utf8');
     child.stdout.on('data', (chunk) => {
@@ -68,7 +69,10 @@ export function nativeBridge() {
       server.httpServer?.once('close', () => {
         process.removeListener('exit', shutdown); process.removeListener('SIGINT', signal); process.removeListener('SIGTERM', signal);
       });
-      server.middlewares.use('/__atlas/exports', async (req, res) => {
+      for (const [route, directory, extension, contentType] of [
+        ['/__atlas/exports', exportDirectory, 'wav', 'audio/wav'],
+        ['/__atlas/scenes', sceneDirectory, 'atlas-scene', 'application/octet-stream'],
+      ]) server.middlewares.use(route, async (req, res) => {
         res.setHeader('Cache-Control', 'no-store');
         res.setHeader('X-Content-Type-Options', 'nosniff');
         const reject = status => { res.statusCode = status; res.end(); req.resume(); };
@@ -82,16 +86,15 @@ export function nativeBridge() {
         if (req.method !== 'GET') { reject(405); return; }
         const match = /^\/([0-9a-f]{32})$/.exec(req.url || '');
         if (!match) { reject(404); return; }
-        const directory = exportDirectory;
         let file;
         try {
           const folder = await lstat(directory);
           if (!folder.isDirectory() || folder.isSymbolicLink()) { reject(404); return; }
-          file = await open(resolve(directory, `${match[1]}.wav`), constants.O_RDONLY | constants.O_NOFOLLOW);
+          file = await open(resolve(directory, `${match[1]}.${extension}`), constants.O_RDONLY | constants.O_NOFOLLOW);
           const stat = await file.stat();
           if (!stat.isFile()) { await file.close(); reject(404); return; }
-          res.setHeader('Content-Type', 'audio/wav');
-          res.setHeader('Content-Disposition', `attachment; filename="Animal-Atlas-${match[1]}.wav"`);
+          res.setHeader('Content-Type', contentType);
+          res.setHeader('Content-Disposition', `attachment; filename="Animal-Atlas-${match[1]}.${extension}"`);
           res.setHeader('Content-Length', String(stat.size));
           const stream = file.createReadStream();
           stream.once('error', () => res.destroy());
@@ -145,7 +148,7 @@ export function nativeBridge() {
                   // Reads and preparation may finish into a discarded response;
                   // preserve FIFO correlation for the replacement selection.
                   // An abandoned audible mutation retires the process immediately.
-                  if (!['getCapabilities', 'getChanges', 'getCatalog', 'listSessions', 'getMaterialEvents', 'getTransport', 'getAudioState', 'getAudioDevices', 'getVoiceLibrary', 'getVoice', 'getComposition', 'getSpatial', 'prepareReplay', 'listSoundscapes', 'getRenderJob'].includes(request.method)) fail();
+                  if (!['getCapabilities', 'getChanges', 'getCatalog', 'listSessions', 'getMaterialEvents', 'getTransport', 'getAudioState', 'getAudioDevices', 'getVoiceLibrary', 'getVoice', 'getComposition', 'getSpatial', 'prepareReplay', 'listSoundscapes', 'listExports', 'getRenderJob'].includes(request.method)) fail();
                   return;
                 }
                 const entry = pending.get(request.requestId);

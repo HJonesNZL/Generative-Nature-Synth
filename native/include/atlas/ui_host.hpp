@@ -21,6 +21,9 @@ class UiHost {
     ~UiHost();
     UiHost(const UiHost &) = delete;
     UiHost &operator=(const UiHost &) = delete;
+    // Replaces library/selection state while preserving independently running
+    // exports.
+    void setLibrary(const std::filesystem::path &library);
     std::string request(std::string_view envelope);
 
   private:

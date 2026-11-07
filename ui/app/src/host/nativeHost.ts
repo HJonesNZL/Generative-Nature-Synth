@@ -3,7 +3,7 @@ import type { ExtendedHost, ExtendedRequest } from "./client";
 import type { AllMethods, HostNotification, MethodName } from "./provisional";
 
 declare global {
-  interface Window { atlasHost?: ExtendedHost }
+  interface Window { atlasHost?: ExtendedHost; __ATLAS_NATIVE_FILES__?: boolean }
 }
 
 /** Production receives an injected native transport. HTTP exists only in development. */

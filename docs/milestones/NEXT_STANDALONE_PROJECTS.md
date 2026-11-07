@@ -1,4 +1,6 @@
-# Next milestone: soundscape library, backup and recovery
+# Soundscape library, backup and recovery — implemented
+
+Completed as a local engineering milestone on 7 November 2026; [qualification and limits](../../evidence/project-recovery/qualification.md). The next planned milestone is [scalable saved-material browsing](NEXT_LIBRARY_BROWSING.md).
 
 This follows the completed local standalone beta. Its goal is a reliable everyday project workflow without requiring users to manage app-owned folders manually. It does not expand data collection or introduce a paid service.
 
@@ -23,3 +25,15 @@ Keep scene/voice serialization and verification in portable C++; the shell owns 
 ## Acceptance
 
 A user can open the app, import/create a scene, save/edit its musical settings, render audio, find that export after restart, back up selected work, and restore it into a new empty app state without the original wildlife library. Restored audio/recipe identity matches the saved source. Existing state, collector data and owner files remain untouched by failed or conflicting imports. No new source feed, live-input latency target or public-distribution claim is bundled into this milestone.
+
+## Execution contract — 7 November 2026
+
+This milestone also includes the owner's fixed-circle NZ detail map. Dragging changes only the projected viewport, at the original enlarged scale. Coastlines, regions, uncertainty and selectable markers share the translation; geographic records and the globe orientation do not change. Clamp to recoverable country bounds, retain the viewport between screens, offer arrow-key navigation and Home/reset, and distinguish deliberate drags from marker clicks. Verify mouse, touch/cancel, clipping, reset, keyboard and both desktop layouts with synthetic records.
+
+The project container is a single version-1 SQLite `.atlas-project`, containing selected sealed scene bytes and a SQLite-backup snapshot of saved voices. It excludes unsaved drafts, source wildlife databases, application/device settings and rendered WAVs. Limits are 100 scenes, 64 MiB per scene, 16 MiB voices and 256 MiB embedded total. A bounded manifest/checksum and semantic verification precedes preview and is repeated before restore. Restore uses a new nonexistent state folder, publishes exclusively, assigns usable local scene IDs and opens a separate application window. Existing projects never merge or overwrite. Details: `docs/engineering/PROJECT_ARCHIVE.md`.
+
+Completed-export history is recovered from managed final WAV files, with no second persistence database. The worker scans at most 2,048 entries, validates exact WAV structure and embedded recipe while seeking over PCM, returns at most 100 items sorted by modification time, and reports exclusions/limits. Partial staging directories remain unfinished; corrupt/truncated files are not completed exports. This is structural validation, not a PCM authenticity claim. React shows history on demand inside Project. Native save/reveal paths accept opaque managed IDs only.
+
+File operations use the shell's existing serial worker; dialogs stay on its message thread. Heavy backup/restore work explicitly disables listening. Library changes retain the independently owned render worker. New permanent feature rows are prohibited: File / Project and the existing Project popover carry these operations. All evidence uses disposable data; physical listening, hardware sleep/wake, public signing and other-platform runtime qualification remain separate.
+
+Acceptance additionally requires the restored scene to be visible and recallable through UiHost, renderable without the source library, and to retain its source content hash and PCM. Restarted export history must recover a previously completed render. Invalid-library switches must leave the running render available; valid library/scene-only switches must preserve it. A checkpoint commit precedes final packaged verification and a final evidence commit.

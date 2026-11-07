@@ -37,9 +37,9 @@ async function start() {
 async function exportSaved(page) {
   await project(page);
   const previous = replies.filter(r => r.method === 'startSoundscapeRender').length;
-  const previousArtifact = await page.locator('a[download]').count() ? await page.locator('a[download]').getAttribute('data-artifact-id') : null;
+  const previousArtifact = await page.getByRole('link', { name: 'Download WAV', exact: true }).count() ? await page.getByRole('link', { name: 'Download WAV', exact: true }).getAttribute('data-artifact-id') : null;
   await button(page, 'Export saved WAV').click();
-  await page.waitForFunction(previousArtifact => { const link = document.querySelector('a[download]'); return link && link.getAttribute('data-artifact-id') !== previousArtifact; }, previousArtifact, { timeout: 30000 });
+  await page.waitForFunction(previousArtifact => { const link = document.querySelector('.soundscape-panel__details a[data-artifact-id][download]'); return link && link.getAttribute('data-artifact-id') !== previousArtifact; }, previousArtifact, { timeout: 30000 });
   await page.waitForTimeout(50);
   const started = replies.filter(r => r.method === 'startSoundscapeRender'); assert.equal(started.length, previous + 1);
   const download = page.getByRole('link', { name: 'Download WAV', exact: true });
@@ -146,6 +146,10 @@ try {
   await page.getByText(/Saved “Scene captured at \+12” with/).waitFor();
   const saved = replies.filter(r => r.method === 'saveSoundscape').at(-1).result;
   assert.equal(saved.valid, true); assert.equal(saved.eventCount, 2005);
+  const sceneLink = page.getByRole('link', { name: 'Export scene', exact: true });
+  const sceneResponse = await page.request.get(new URL(await sceneLink.getAttribute('href'), origin).href);
+  assert.equal(sceneResponse.status(), 200);
+  assert.deepEqual(await sceneResponse.body(), await readFile(join(folder, 'scenes', `${saved.id}.atlas-scene`)), 'portable scene export retains exact saved bytes');
   if (composition) {
     const accepted = replies.filter(r => r.method === 'setComposition').at(-1).result;
     compositionSettings = accepted.settings;
@@ -213,9 +217,22 @@ try {
     await page.waitForFunction(() => !document.querySelector('fieldset.composition-panel__controls')?.disabled);
     assert.equal(await page.getByRole('spinbutton', { name: 'Composition tempo BPM', exact: true }).inputValue(), '117', 'same-piece speed change preserves composition');
   }
+  // Restart the development bridge/native worker against the same disposable state.
+  server.kill('SIGTERM'); await closed; server = null;
+  await start(); await page.reload(); await project(page);
+  await page.getByRole('combobox', { name: 'Saved soundscape', exact: true }).selectOption(saved.id);
+  const history = page.locator('details.export-history');
+  await history.locator('summary').click();
+  await page.getByRole('link', { name: 'Save WAV', exact: true }).first().waitFor();
+  assert.equal(await page.getByRole('link', { name: 'Save WAV', exact: true }).count(), 2);
+  const recovered = page.getByRole('link', { name: 'Save WAV', exact: true }).first();
+  const recoveredResponse = await page.request.get(new URL(await recovered.getAttribute('href'), origin).href);
+  assert.equal(recoveredResponse.status(), 200); assert.deepEqual(await recoveredResponse.body(), beforeRecall);
+  assert.equal(await history.getByRole('button', { name: 'Show file', exact: true }).count(), 0, 'native reveal hidden in HTTP preview');
+  await page.screenshot({ path: process.env.ATLAS_PROJECTS_SCREENSHOT || '/private/tmp/atlas-project-history.png' });
   assert.deepEqual(errors, []); assert.deepEqual(rejected, []);
-  console.log(JSON.stringify({ checks: [...(composition ? ['sequential tempo and uint32 seed keyboard entry', 'invalid numeric text draft blocks native mutation and capture', 'atomic full composition draft across pages', 'save waits for delayed composition acknowledgement', 'invalid/stale composition rejection without mutation', 'composition exact recall and immutable WAV export', 'composition preserved during speed changes'] : []), ...(knownPreset ? ['known-species preset discovery/application without save/play'] : []), 'unmanaged filename notice coexists with valid scene', 'full native capture after voice edits', 'scene-only WAV export despite later draft edits', 'app-owned WAV download', 'atomic recall restoring voice and copied scene context', 'recall remains silent', 'same-scene speed preparation preserves current draft'], knownSpeciesPresetApplied: knownPreset, savedId: saved.id, wavBytes: beforeRecall.length, pageErrors: errors, rejected }));
-} catch (error) { console.error(JSON.stringify({ rejected, recent: replies.slice(-5), mutations })); throw error; }
+  console.log(JSON.stringify({ checks: [...(composition ? ['sequential tempo and uint32 seed keyboard entry', 'invalid numeric text draft blocks native mutation and capture', 'atomic full composition draft across pages', 'save waits for delayed composition acknowledgement', 'invalid/stale composition rejection without mutation', 'composition exact recall and immutable WAV export', 'composition preserved during speed changes'] : []), ...(knownPreset ? ['known-species preset discovery/application without save/play'] : []), 'unmanaged filename notice coexists with valid scene', 'full native capture after voice edits', 'scene-only WAV export despite later draft edits', 'app-owned WAV download', 'exact portable scene export', 'completed export history survives native worker restart with byte-identical download', 'atomic recall restoring voice and copied scene context', 'recall remains silent', 'same-scene speed preparation preserves current draft'], knownSpeciesPresetApplied: knownPreset, savedId: saved.id, wavBytes: beforeRecall.length, pageErrors: errors, rejected }));
+} catch (error) { console.error(JSON.stringify({ rejected, recent: replies.filter(r => !["getChanges", "getMaterialEvents"].includes(r.method)).slice(-5), mutations })); throw error; }
 finally {
   await browser?.close();
   if (server) { server.kill('SIGTERM'); const stopped = await Promise.race([closed.then(() => true), new Promise(done => setTimeout(() => done(false), 2000))]); if (!stopped) { server.kill('SIGKILL'); await closed; } }

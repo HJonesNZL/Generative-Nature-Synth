@@ -144,9 +144,27 @@ function validSoundscape(value: unknown): boolean {
     (!scene.valid || scene.durationUs !== null && scene.basis !== null && scene.speedNumerator !== null && scene.speedDenominator !== null);
 }
 function validSoundscapeReply(method: string, value: unknown, args: unknown): boolean {
-  if (!["listSoundscapes", "saveSoundscape", "recallSoundscape", "startSoundscapeRender", "getRenderJob", "cancelRender"].includes(method)) return true;
+  if (!["listExports", "listSoundscapes", "saveSoundscape", "recallSoundscape", "startSoundscapeRender", "getRenderJob", "cancelRender"].includes(method)) return true;
   if (!value || typeof value !== "object") return false;
   const result = value as Record<string, unknown>;
+  if (method === "listExports") {
+    if (!Array.isArray(result.items) || result.items.length > 100 || typeof result.limited !== "boolean" ||
+        ![result.unavailableFiles, result.incompleteRenders].every(v => Number.isInteger(v) && (v as number) >= 0 && (v as number) <= 2048)) return false;
+    const active = result.activeRender as Record<string, unknown> | null | undefined;
+    if (active !== undefined && active !== null &&
+        (!opaqueId(active.jobId) || !opaqueId(active.soundscapeId) || !["queued", "rendering"].includes(active.state as string) ||
+         !validSoundscapeReply("getRenderJob", active, { jobId: active.jobId }))) return false;
+    const ids = new Set<string>();
+    const hash = (v: unknown) => typeof v === "string" && /^[0-9a-f]{64}$/.test(v);
+    return result.items.every(item => {
+      if (!item || !opaqueId(item.artifactId) || ids.has(item.artifactId) ||
+          typeof item.sceneName !== "string" || item.sceneName.length > 512 || !hash(item.sceneHash) || !hash(item.engineSourceSha256) ||
+          ![item.bytes, item.frames, item.durationUs].every(unsignedDecimal) ||
+          !Number.isInteger(item.sampleRate) || item.sampleRate < 8000 || item.sampleRate > 192000 ||
+          BigInt(item.bytes) < BigInt(item.frames) * 6n || BigInt(item.durationUs) !== BigInt(item.frames) * 1000000n / BigInt(item.sampleRate)) return false;
+      ids.add(item.artifactId); return true;
+    });
+  }
   if (method === "saveSoundscape") return validSoundscape(value) && result.valid === true && result.contentVerified === true;
   if (method === "listSoundscapes") {
     if (!Array.isArray(result.items) || result.items.length > 100 || typeof result.limited !== "boolean" ||

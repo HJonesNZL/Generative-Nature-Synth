@@ -1,5 +1,6 @@
 #include "standalone_support.hpp"
 #include <algorithm>
+#include <atlas/projects.hpp>
 #include <cerrno>
 #include <fcntl.h>
 #include <fstream>
@@ -111,6 +112,20 @@ bool fields(const juce::var &value,
     return true;
 }
 } // namespace
+fs::path selectedPath(const fs::path &file) {
+    if (!file.is_absolute())
+        throw std::runtime_error("Selected paths must be absolute.");
+    auto target = file;
+    while (target.filename().empty() && target != target.root_path())
+        target = target.parent_path();
+    if (target.filename().empty() || target.filename() == "." ||
+        target.filename() == "..")
+        throw std::runtime_error("Choose a named file or folder.");
+    if (fs::is_symlink(fs::symlink_status(target)))
+        throw std::runtime_error(
+            "Selected files and folders must not be symlinks.");
+    return fs::weakly_canonical(target.parent_path()) / target.filename();
+}
 void prepareStateDirectory(const fs::path &directory) {
     fs::create_directories(directory);
     if (!fs::is_directory(fs::symlink_status(directory)))
@@ -236,12 +251,54 @@ std::string importScene(const fs::path &source, const fs::path &directory) {
     saveSoundscape(directory / (id + ".atlas-scene"), scene);
     return scene.capture().name;
 }
-void copyExport(const fs::path &directory, const std::string &artifactId,
-                const fs::path &destination) {
+fs::path managedScenePath(const fs::path &directory, const std::string &id) {
+    if (!opaqueId(id))
+        throw std::runtime_error("Invalid soundscape identifier.");
+    const auto source = directory / (id + ".atlas-scene");
+    regular(source);
+    return source;
+}
+std::vector<ManagedScene> managedScenes(const fs::path &directory) {
+    std::vector<ManagedScene> scenes;
+    std::size_t entries{};
+    for (const auto &entry : fs::directory_iterator(directory)) {
+        if (++entries > 1000)
+            throw std::runtime_error(
+                "Soundscape folder exceeds entry capacity.");
+        if (entry.path().extension() != ".atlas-scene")
+            continue;
+        const auto id = entry.path().stem().string();
+        const auto source = managedScenePath(directory, id);
+        if (scenes.size() == 100)
+            throw std::runtime_error(
+                "Project selection supports at most 100 scenes.");
+        scenes.push_back({id, loadSoundscape(source).capture().name});
+    }
+    std::sort(scenes.begin(), scenes.end(), [](const auto &a, const auto &b) {
+        return a.name == b.name ? a.id < b.id : a.name < b.name;
+    });
+    return scenes;
+}
+void copyScene(const fs::path &directory, const std::string &id,
+               const fs::path &destination) {
+    if (fs::weakly_canonical(destination.parent_path()) ==
+        fs::weakly_canonical(directory))
+        throw std::runtime_error(
+            "Choose a destination outside managed soundscapes.");
+    exportSoundscape(selectedPath(managedScenePath(directory, id)),
+                     selectedPath(destination));
+}
+fs::path managedExportPath(const fs::path &directory,
+                           const std::string &artifactId) {
     if (!opaqueId(artifactId))
         throw std::runtime_error("Invalid WAV artifact identifier.");
     const auto source = directory / (artifactId + ".wav");
     regular(source);
+    return source;
+}
+void copyExport(const fs::path &directory, const std::string &artifactId,
+                const fs::path &destination) {
+    const auto source = managedExportPath(directory, artifactId);
     if (fs::weakly_canonical(destination.parent_path()) ==
         fs::weakly_canonical(directory))
         throw std::runtime_error(

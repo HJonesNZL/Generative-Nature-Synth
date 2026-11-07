@@ -47,3 +47,22 @@ test('scene replies reject wrong recall identity, incomplete data and unsafe art
   }
   payload = job; assert.equal((await client.call('startSoundscapeRender', { soundscapeId: id })).ok, true);
 });
+
+test('export history validates persistent artifact identities and PCM duration', async () => {
+  let payload;
+  const client = new HostClient({ request: async request => ({ requestId: request.requestId, ok: true, result: request.method === 'getCapabilities' ? { ...caps, supportedMethods: [...caps.supportedMethods, 'listExports'] } : payload }) });
+  await client.connect();
+  const artifact = { artifactId: jobId, sceneName: 'Forest', sceneHash: 'c'.repeat(64), engineSourceSha256: 'd'.repeat(64), bytes: '288600', frames: '48000', durationUs: '1000000', sampleRate: 48000 };
+  payload = { items: [artifact], limited: false, unavailableFiles: 0, incompleteRenders: 1 };
+  assert.equal((await client.call('listExports', { limit: 100 })).ok, true);
+  payload.activeRender = { jobId, soundscapeId: id, state: 'rendering', progress: .5, message: null };
+  assert.equal((await client.call('listExports', { limit: 100 })).ok, true);
+  for (const bad of [{ artifactId: '../file' }, { bytes: '4' }, { durationUs: '999999' }, { sampleRate: 0 }, { sceneHash: 'invalid' }, { frames: '-1' }]) {
+    payload = { items: [{ ...artifact, ...bad }], limited: false, unavailableFiles: 0, incompleteRenders: 0 };
+    assert.equal((await client.call('listExports', { limit: 100 })).ok, false);
+  }
+  for (const bad of [{ items: [artifact, artifact] }, { unavailableFiles: -1 }, { incompleteRenders: 2049 }, { activeRender: {} }, { activeRender: { jobId, soundscapeId: id, state: 'complete', progress: 1, message: null } }]) {
+    payload = { items: [artifact], limited: false, unavailableFiles: 0, incompleteRenders: 0, ...bad };
+    assert.equal((await client.call('listExports', { limit: 100 })).ok, false);
+  }
+});

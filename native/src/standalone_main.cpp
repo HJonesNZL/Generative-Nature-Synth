@@ -2,7 +2,9 @@
 #include "json_text.hpp"
 #include "standalone_bridge.hpp"
 #include "standalone_support.hpp"
+#include <algorithm>
 #include <atlas/playback.hpp>
+#include <atlas/projects.hpp>
 #include <atlas/ui_host.hpp>
 #include <atlas/voices.hpp>
 #include <atomic>
@@ -20,7 +22,8 @@ using atlas::standalone::path;
 using atlas::standalone::string;
 using Clock = std::chrono::steady_clock;
 struct Launch {
-    fs::path state, library, smokeReceipt, smokeScene, smokeExport;
+    fs::path state, library, smokeReceipt, smokeScene, smokeExport,
+        smokeSceneExport, smokeBackup, smokeRestore;
     int smokeSeconds{3};
     bool libraryOverride{};
 };
@@ -46,6 +49,12 @@ Launch parse(const juce::StringArray &arguments) {
             launch.smokeScene = path(value);
         else if (option == "--smoke-export")
             launch.smokeExport = path(value);
+        else if (option == "--smoke-scene-export")
+            launch.smokeSceneExport = path(value);
+        else if (option == "--smoke-backup")
+            launch.smokeBackup = path(value);
+        else if (option == "--smoke-restore")
+            launch.smokeRestore = path(value);
         else if (option == "--smoke-seconds") {
             if (!value.containsOnly("0123456789") || value.isEmpty())
                 throw std::invalid_argument(
@@ -61,10 +70,19 @@ Launch parse(const juce::StringArray &arguments) {
         (!launch.library.empty() && !launch.library.is_absolute()) ||
         (!launch.smokeReceipt.empty() && !launch.smokeReceipt.is_absolute()))
         throw std::invalid_argument("Application paths must be absolute.");
-    if ((!launch.smokeScene.empty() || !launch.smokeExport.empty()) &&
+    for (const auto &file :
+         {launch.smokeScene, launch.smokeExport, launch.smokeSceneExport,
+          launch.smokeBackup, launch.smokeRestore})
+        if (!file.empty() && !file.is_absolute())
+            throw std::invalid_argument("Smoke paths must be absolute.");
+    if ((!launch.smokeScene.empty() || !launch.smokeExport.empty() ||
+         !launch.smokeSceneExport.empty() || !launch.smokeBackup.empty() ||
+         !launch.smokeRestore.empty()) &&
         launch.smokeReceipt.empty())
         throw std::invalid_argument(
             "Smoke scene/export requires --smoke-test.");
+    if (launch.smokeBackup.empty() != launch.smokeRestore.empty())
+        throw std::invalid_argument("Smoke backup and restore must be paired.");
     return launch;
 }
 atlas::AudioDeviceConfiguration configuration(const juce::var &json) {
@@ -115,30 +133,40 @@ class Browser final : public juce::WebBrowserComponent {
     }
 };
 struct Work {
-    enum Kind { request, library, scene, exportWav } kind{};
+    enum Kind {
+        request,
+        library,
+        scene,
+        exportWav,
+        exportScene,
+        projectScenes,
+        backup,
+        inspectProject,
+        restoreProject,
+        revealWav
+    } kind{};
     juce::int64 token{};
     std::string text;
     fs::path file;
     unsigned epoch{};
+    std::vector<fs::path> files;
+    Work(Kind operation, juce::int64 requestToken = 0, std::string value = {},
+         fs::path target = {}, unsigned pageEpoch = 0,
+         std::vector<fs::path> selected = {})
+        : kind(operation), token(requestToken), text(std::move(value)),
+          file(std::move(target)), epoch(pageEpoch),
+          files(std::move(selected)) {}
 };
 class Shell final : public juce::Component, private juce::Timer {
   public:
     Shell(Launch launch, std::function<void()> finished)
         : launch_(std::move(launch)), finished_(std::move(finished)) {
-        for (auto *button : {&choose_, &sceneOnly_, &import_, &reveal_})
-            addAndMakeVisible(button);
+        addAndMakeVisible(fileMenu_);
         addAndMakeVisible(status_);
         status_.setText("Opening the local instrument…",
                         juce::dontSendNotification);
         status_.setColour(juce::Label::textColourId, juce::Colour(0xffe8e5dd));
-        choose_.onClick = [this] { chooseFile(false); };
-        sceneOnly_.onClick = [this] {
-            submitControl({Work::library, 0, {}, {}});
-        };
-        import_.onClick = [this] { chooseFile(true); };
-        reveal_.onClick = [this] {
-            juce::File(string(launch_.state)).revealToUser();
-        };
+        fileMenu_.onClick = [this] { showFileMenu(); };
         setSize(1400, 920);
         auto safe = juce::Component::SafePointer<Shell>(this);
         worker_ = std::thread([this, safe] { run(safe); });
@@ -154,13 +182,7 @@ class Shell final : public juce::Component, private juce::Timer {
     void resized() override {
         auto bounds = getLocalBounds();
         auto toolbar = bounds.removeFromTop(46).reduced(8, 6);
-        choose_.setBounds(toolbar.removeFromLeft(145));
-        toolbar.removeFromLeft(6);
-        sceneOnly_.setBounds(toolbar.removeFromLeft(105));
-        toolbar.removeFromLeft(6);
-        import_.setBounds(toolbar.removeFromLeft(140));
-        toolbar.removeFromLeft(6);
-        reveal_.setBounds(toolbar.removeFromLeft(130));
+        fileMenu_.setBounds(toolbar.removeFromLeft(125));
         toolbar.removeFromLeft(8);
         status_.setBounds(toolbar);
         if (browser_)
@@ -187,10 +209,9 @@ class Shell final : public juce::Component, private juce::Timer {
   private:
     Launch launch_;
     std::function<void()> finished_;
-    juce::TextButton choose_{"Choose wildlife library"},
-        sceneOnly_{"Scene only"}, import_{"Import soundscape"},
-        reveal_{"Show app data"};
+    juce::TextButton fileMenu_{"File / Project"};
     juce::Label status_;
+    std::string libraryStatus_;
     std::unique_ptr<Browser> browser_;
     std::unique_ptr<juce::FileChooser> chooser_;
     atlas::standalone::Assets assets_;
@@ -201,17 +222,15 @@ class Shell final : public juce::Component, private juce::Timer {
     std::atomic<bool> closing_{}, done_{};
     std::atomic<unsigned> requests_{}, rejected_{};
     bool ready_{}, smokeLaunched_{}, smokeEvaluating_{}, smokeComplete_{},
-        smokeExported_{}, finishedOnce_{};
+        smokeExported_{}, smokeSceneExported_{}, smokeProjectDone_{},
+        smokeProjectStarted_{}, finishedOnce_{};
+    std::vector<atlas::standalone::ManagedScene> backupScenes_;
+    std::vector<bool> backupSelection_;
     juce::var smokeResult_;
     Clock::time_point smokeStarted_, frontendStarted_;
     std::string stateNotice_;
     unsigned browserEpoch_{};
-    void setControls(bool enabled) {
-        choose_.setEnabled(enabled);
-        sceneOnly_.setEnabled(enabled);
-        import_.setEnabled(enabled);
-        reveal_.setEnabled(enabled);
-    }
+    void setControls(bool enabled) { fileMenu_.setEnabled(enabled); }
     bool enqueue(Work work) {
         const std::lock_guard lock(mutex_);
         if (closing_.load(std::memory_order_acquire) || queue_.size() >= 16) {
@@ -225,11 +244,17 @@ class Shell final : public juce::Component, private juce::Timer {
     void submitControl(Work work) {
         if (!ready_)
             return;
+        const auto pausesPlayback =
+            work.kind == Work::backup || work.kind == Work::inspectProject ||
+            work.kind == Work::restoreProject ||
+            work.kind == Work::projectScenes || work.kind == Work::exportScene;
         if (enqueue(std::move(work))) {
             ready_ = false;
             setControls(false);
-            status_.setText("Updating local instrument…",
-                            juce::dontSendNotification);
+            status_.setText(
+                pausesPlayback ? "Pausing playback and verifying project files…"
+                               : "Updating local instrument…",
+                juce::dontSendNotification);
         } else
             status_.setText("The request queue is full. Try again.",
                             juce::dontSendNotification);
@@ -249,6 +274,169 @@ class Shell final : public juce::Component, private juce::Timer {
                         {scene ? Work::scene : Work::library,
                          0,
                          {},
+                         path(chooser.getResult().getFullPathName())});
+            });
+    }
+    void showFileMenu() {
+        juce::PopupMenu menu;
+        menu.addItem(1, "Choose wildlife library…");
+        menu.addItem(2, "Scene only");
+        menu.addItem(3, "Import soundscape…");
+        menu.addSeparator();
+        menu.addItem(4, "Back up project…");
+        menu.addItem(5, "Restore project into a new folder…");
+        menu.addSeparator();
+        menu.addItem(6, "Show app storage");
+        menu.addItem(7, "Storage and library status…");
+        auto safe = juce::Component::SafePointer<Shell>(this);
+        menu.showMenuAsync(
+            juce::PopupMenu::Options().withTargetComponent(&fileMenu_),
+            [safe](int action) {
+                if (!safe || !safe->ready_)
+                    return;
+                if (action == 1)
+                    safe->chooseFile(false);
+                else if (action == 2)
+                    safe->submitControl({Work::library});
+                else if (action == 3)
+                    safe->chooseFile(true);
+                else if (action == 4)
+                    safe->submitControl({Work::projectScenes});
+                else if (action == 5)
+                    safe->chooseProject();
+                else if (action == 6)
+                    juce::File(string(safe->launch_.state)).revealToUser();
+                else if (action == 7)
+                    juce::AlertWindow::showMessageBoxAsync(
+                        juce::MessageBoxIconType::InfoIcon,
+                        "App storage and library",
+                        "App storage: " + string(safe->launch_.state) + "\n\n" +
+                            juce::String(safe->libraryStatus_ +
+                                         safe->stateNotice_) +
+                            "\n\nLast action: " + safe->status_.getText() +
+                            "\n\nScene only works without a wildlife library. "
+                            "Project backups include selected verified scenes "
+                            "and saved voices. Wildlife libraries, device "
+                            "settings and rendered WAVs stay separate.");
+            });
+    }
+    void showBackupSelection() {
+        juce::PopupMenu menu;
+        menu.addSectionHeader("Scenes to back up (saved voices are included)");
+        menu.addItem(1, "Back up selected scenes…");
+        menu.addItem(2, "Select all");
+        menu.addItem(3, "Select none (voices only)");
+        menu.addSeparator();
+        for (std::size_t i = 0; i < backupScenes_.size(); ++i)
+            menu.addItem(static_cast<int>(100 + i),
+                         juce::String(backupScenes_[i].name), true,
+                         backupSelection_[i]);
+        auto safe = juce::Component::SafePointer<Shell>(this);
+        menu.showMenuAsync(
+            juce::PopupMenu::Options().withTargetComponent(&fileMenu_),
+            [safe](int action) {
+                if (!safe || !safe->ready_ || action == 0)
+                    return;
+                if (action == 1) {
+                    safe->chooseBackupDestination();
+                    return;
+                }
+                if (action == 2 || action == 3)
+                    std::fill(safe->backupSelection_.begin(),
+                              safe->backupSelection_.end(), action == 2);
+                else if (action >= 100 &&
+                         static_cast<std::size_t>(action - 100) <
+                             safe->backupSelection_.size()) {
+                    const auto index = static_cast<std::size_t>(action - 100);
+                    safe->backupSelection_[index] =
+                        !safe->backupSelection_[index];
+                }
+                safe->showBackupSelection();
+            });
+    }
+    void chooseBackupDestination() {
+        chooser_ = std::make_unique<juce::FileChooser>(
+            "Back up project to a new file",
+            juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
+                .getChildFile("Animal Atlas.atlas-project"),
+            "*.atlas-project");
+        auto safe = juce::Component::SafePointer<Shell>(this);
+        chooser_->launchAsync(
+            juce::FileBrowserComponent::saveMode |
+                juce::FileBrowserComponent::canSelectFiles,
+            [safe](const juce::FileChooser &chooser) {
+                if (!safe || chooser.getResult() == juce::File())
+                    return;
+                std::vector<fs::path> scenes;
+                for (std::size_t i = 0; i < safe->backupScenes_.size(); ++i)
+                    if (safe->backupSelection_[i])
+                        scenes.push_back(
+                            safe->launch_.state / "soundscapes" /
+                            (safe->backupScenes_[i].id + ".atlas-scene"));
+                safe->submitControl(
+                    {Work::backup,
+                     0,
+                     {},
+                     path(chooser.getResult().getFullPathName()),
+                     0,
+                     std::move(scenes)});
+            });
+    }
+    void chooseProject() {
+        chooser_ = std::make_unique<juce::FileChooser>(
+            "Inspect an Animal Atlas project backup", juce::File(),
+            "*.atlas-project");
+        auto safe = juce::Component::SafePointer<Shell>(this);
+        chooser_->launchAsync(
+            juce::FileBrowserComponent::openMode |
+                juce::FileBrowserComponent::canSelectFiles,
+            [safe](const juce::FileChooser &chooser) {
+                if (safe && chooser.getResult() != juce::File())
+                    safe->submitControl(
+                        {Work::inspectProject,
+                         0,
+                         {},
+                         path(chooser.getResult().getFullPathName())});
+            });
+    }
+    void previewRestore(const fs::path &backup,
+                        const atlas::ProjectSummary &summary) {
+        juce::String names;
+        for (const auto &name : summary.sceneNames)
+            names += "\n• " + juce::String(name);
+        const auto message =
+            juce::String(static_cast<juce::int64>(summary.sceneCount)) +
+            " verified scenes, " +
+            juce::String(static_cast<juce::int64>(summary.voiceCount)) +
+            " saved voices · " +
+            juce::String(static_cast<juce::int64>(summary.totalBytes)) +
+            " bytes" + names +
+            "\n\nNext, choose a NEW app state folder name. An existing folder, "
+            "even empty, is a conflict and will be refused. Restore verifies "
+            "the backup again and opens a separate app window. Your current "
+            "project stays open.";
+        auto safe = juce::Component::SafePointer<Shell>(this);
+        juce::AlertWindow::showOkCancelBox(
+            juce::MessageBoxIconType::InfoIcon, "Restore project preview",
+            message, "Choose new folder…", "Cancel", nullptr,
+            juce::ModalCallbackFunction::create([safe, backup](int accepted) {
+                if (safe && accepted != 0)
+                    safe->chooseRestoreDestination(backup);
+            }));
+    }
+    void chooseRestoreDestination(const fs::path &backup) {
+        chooser_ = std::make_unique<juce::FileChooser>(
+            "Name a new app state folder (existing paths are refused)",
+            juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
+                .getChildFile("Animal Atlas Restored"));
+        auto safe = juce::Component::SafePointer<Shell>(this);
+        chooser_->launchAsync(
+            juce::FileBrowserComponent::saveMode |
+                juce::FileBrowserComponent::canSelectFiles,
+            [safe, backup](const juce::FileChooser &chooser) {
+                if (safe && chooser.getResult() != juce::File())
+                    safe->submitControl(
+                        {Work::restoreProject, 0, backup.string(),
                          path(chooser.getResult().getFullPathName())});
             });
     }
@@ -280,6 +468,30 @@ class Shell final : public juce::Component, private juce::Timer {
                 if (safe && chooser.getResult() != juce::File())
                     safe->submitExport(
                         id, path(chooser.getResult().getFullPathName()));
+            });
+    }
+    void exportSceneFile(const std::string &id) {
+        if (!ready_ || !atlas::standalone::opaqueId(id))
+            return;
+        if (!launch_.smokeReceipt.empty() &&
+            !launch_.smokeSceneExport.empty()) {
+            submitControl({Work::exportScene, 0, id, launch_.smokeSceneExport});
+            return;
+        }
+        chooser_ = std::make_unique<juce::FileChooser>(
+            "Export verified scene to a new file",
+            juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
+                .getChildFile("Animal Atlas.atlas-scene"),
+            "*.atlas-scene");
+        auto safe = juce::Component::SafePointer<Shell>(this);
+        chooser_->launchAsync(
+            juce::FileBrowserComponent::saveMode |
+                juce::FileBrowserComponent::canSelectFiles,
+            [safe, id](const juce::FileChooser &chooser) {
+                if (safe && chooser.getResult() != juce::File())
+                    safe->submitControl(
+                        {Work::exportScene, 0, id,
+                         path(chooser.getResult().getFullPathName())});
             });
     }
     void reply(juce::int64 token, const std::string &json) {
@@ -328,6 +540,20 @@ class Shell final : public juce::Component, private juce::Timer {
                         exportFile(
                             event["artifactId"].toString().toStdString());
                     })
+                .withEventListener(
+                    "atlasSceneExport",
+                    [this](juce::var event) {
+                        exportSceneFile(
+                            event["sceneId"].toString().toStdString());
+                    })
+                .withEventListener(
+                    "atlasRevealExport",
+                    [this](juce::var event) {
+                        const auto id =
+                            event["artifactId"].toString().toStdString();
+                        if (ready_ && atlas::standalone::opaqueId(id))
+                            submitControl({Work::revealWav, 0, id});
+                    })
                 .withResourceProvider([this](const juce::String &requested)
                                           -> std::optional<Browser::Resource> {
                     const auto key = requested == "/"
@@ -367,17 +593,18 @@ class Shell final : public juce::Component, private juce::Timer {
                 });
         };
         try {
+            const auto state = atlas::standalone::selectedPath(launch_.state);
             const auto resources =
                 path(juce::File::getSpecialLocation(
                          juce::File::currentApplicationFile)
                          .getChildFile("Contents/Resources/ui")
                          .getFullPathName());
             auto assets = atlas::standalone::loadAssets(resources);
-            atlas::standalone::prepareStateDirectory(launch_.state);
+            atlas::standalone::prepareStateDirectory(state);
             const auto lockName =
                 "animal-atlas-state-" +
                 juce::String::toHexString(
-                    string(fs::canonical(launch_.state)).hashCode64());
+                    string(fs::canonical(state)).hashCode64());
             juce::InterProcessLock stateLock(lockName);
             if (!stateLock.enter(0))
                 throw std::runtime_error(
@@ -387,7 +614,7 @@ class Shell final : public juce::Component, private juce::Timer {
             bool settingsWritable{true};
             std::string notice;
             try {
-                settings = atlas::standalone::loadSettings(launch_.state);
+                settings = atlas::standalone::loadSettings(state);
             } catch (const std::exception &error) {
                 settingsWritable = false;
                 notice = std::string(" ") + error.what();
@@ -396,9 +623,9 @@ class Shell final : public juce::Component, private juce::Timer {
                 settings.library = launch_.library;
             atlas::PlaybackRuntime playback(atlas::makeJuceOutputDriver(),
                                             configuration(settings.output));
-            atlas::VoiceStore voices(launch_.state / "voices.sqlite3");
-            atlas::UiHostStorage storage{launch_.state / "soundscapes",
-                                         launch_.state / "exports",
+            atlas::VoiceStore voices(state / "voices.sqlite3");
+            atlas::UiHostStorage storage{state / "soundscapes",
+                                         state / "exports",
                                          atlas::nativeSourceSha256};
             const auto makeHost = [&](const fs::path &library) {
                 if (!library.empty() &&
@@ -414,10 +641,16 @@ class Shell final : public juce::Component, private juce::Timer {
                 settings.library.empty()
                     ? "Scene only · import a soundscape to begin"
                     : "Library: " + settings.library.filename().string();
+            std::string libraryStatus =
+                settings.library.empty()
+                    ? "Scene only · no wildlife library selected"
+                    : "Wildlife library: " + settings.library.string();
             try {
                 host = makeHost(settings.library);
             } catch (const std::exception &error) {
                 initial = error.what();
+                libraryStatus = "Scene only · selected library unavailable: " +
+                                settings.library.string() + " · " + initial;
                 host = makeHost({});
             }
             if (!launch_.smokeScene.empty()) {
@@ -425,10 +658,12 @@ class Shell final : public juce::Component, private juce::Timer {
                                                storage.soundscapes);
                 initial = "Smoke soundscape imported; scene only";
             }
-            post([assets = std::move(assets), initial,
-                  notice](Shell &shell) mutable {
+            post([assets = std::move(assets), initial, notice, state,
+                  libraryStatus](Shell &shell) mutable {
+                shell.launch_.state = state;
                 shell.assets_ = std::move(assets);
                 shell.stateNotice_ = notice;
+                shell.libraryStatus_ = libraryStatus;
                 shell.updateStatus(initial, true);
             });
             unsigned expectedPageEpoch = 1;
@@ -474,7 +709,7 @@ class Shell final : public juce::Component, private juce::Timer {
                             configurationJson(playback.outputConfiguration());
                         if (settingsWritable) {
                             try {
-                                atlas::standalone::saveSettings(launch_.state,
+                                atlas::standalone::saveSettings(state,
                                                                 settings);
                             } catch (const std::exception &error) {
                                 post([message = std::string(error.what())](
@@ -494,15 +729,31 @@ class Shell final : public juce::Component, private juce::Timer {
                 std::string message;
                 bool reload{};
                 try {
-                    if (work->kind == Work::library) {
-                        auto next = makeHost(work->file);
+                    if (work->kind == Work::backup ||
+                        work->kind == Work::inspectProject ||
+                        work->kind == Work::restoreProject ||
+                        work->kind == Work::projectScenes ||
+                        work->kind == Work::exportScene)
                         playback.enable(false);
-                        host = std::move(next);
+                    if (work->kind == Work::library) {
+                        if (!work->file.empty() &&
+                            !fs::is_regular_file(
+                                fs::symlink_status(work->file)))
+                            throw std::runtime_error(
+                                "Choose a regular wildlife library file.");
+                        host->setLibrary(work->file);
+                        playback.enable(false);
                         settings.library = work->file;
+                        post([path = work->file](Shell &shell) {
+                            shell.libraryStatus_ =
+                                path.empty()
+                                    ? "Scene only · no wildlife library "
+                                      "selected"
+                                    : "Wildlife library: " + path.string();
+                        });
                         reload = true;
                         if (settingsWritable)
-                            atlas::standalone::saveSettings(launch_.state,
-                                                            settings);
+                            atlas::standalone::saveSettings(state, settings);
                         message =
                             work->file.empty()
                                 ? "Scene only · import a soundscape to begin"
@@ -515,15 +766,133 @@ class Shell final : public juce::Component, private juce::Timer {
                                   "” · choose it in Soundscapes";
                         playback.enable(false);
                         reload = true;
-                    } else {
+                    } else if (work->kind == Work::exportWav) {
                         atlas::standalone::copyExport(storage.exports,
                                                       work->text, work->file);
                         message =
                             "WAV saved: " + work->file.filename().string();
                         post([](Shell &shell) { shell.smokeExported_ = true; });
+                    } else if (work->kind == Work::exportScene) {
+                        atlas::standalone::copyScene(storage.soundscapes,
+                                                     work->text, work->file);
+                        message = "Verified scene exported: " +
+                                  work->file.filename().string();
+                        post([](Shell &shell) {
+                            shell.smokeSceneExported_ = true;
+                        });
+                    } else if (work->kind == Work::revealWav) {
+                        const auto file = atlas::standalone::managedExportPath(
+                            storage.exports, work->text);
+                        post([file](Shell &) {
+                            juce::File(string(file)).revealToUser();
+                        });
+                        message = "Rendered WAV shown in Finder";
+                    } else if (work->kind == Work::projectScenes) {
+                        auto scenes = atlas::standalone::managedScenes(
+                            storage.soundscapes);
+                        message = "Choose scenes for project backup · playback "
+                                  "paused";
+                        post([scenes =
+                                  std::move(scenes)](Shell &shell) mutable {
+                            shell.backupScenes_ = std::move(scenes);
+                            shell.backupSelection_.assign(
+                                shell.backupScenes_.size(), true);
+                            shell.updateStatus("Choose scenes for project "
+                                               "backup · playback paused",
+                                               false);
+                            if (!shell.launch_.smokeReceipt.empty() &&
+                                !shell.launch_.smokeBackup.empty()) {
+                                std::vector<fs::path> selected;
+                                for (const auto &scene : shell.backupScenes_)
+                                    selected.push_back(
+                                        shell.launch_.state / "soundscapes" /
+                                        (scene.id + ".atlas-scene"));
+                                shell.submitControl({Work::backup,
+                                                     0,
+                                                     {},
+                                                     shell.launch_.smokeBackup,
+                                                     0,
+                                                     std::move(selected)});
+                            } else
+                                shell.showBackupSelection();
+                        });
+                        continue;
+                    } else if (work->kind == Work::backup) {
+                        std::vector<fs::path> selected;
+                        for (const auto &file : work->files)
+                            selected.push_back(
+                                atlas::standalone::selectedPath(file));
+                        const auto summary = atlas::createProjectBackup(
+                            state / "voices.sqlite3", selected,
+                            atlas::standalone::selectedPath(work->file));
+                        message = "Project backed up: " +
+                                  work->file.filename().string() + " · " +
+                                  std::to_string(summary.sceneCount) +
+                                  " scenes · playback paused";
+                        if (!launch_.smokeReceipt.empty() &&
+                            work->file == launch_.smokeBackup) {
+                            // The smoke follows the same full inspection and
+                            // restore worker operations; only native dialog
+                            // destinations differ.
+                            post([file = work->file](Shell &shell) {
+                                shell.updateStatus(
+                                    "Smoke backup saved; inspecting restore…",
+                                    false);
+                                shell.submitControl(
+                                    {Work::inspectProject, 0, {}, file});
+                            });
+                            continue;
+                        }
+                    } else if (work->kind == Work::inspectProject) {
+                        const auto summary = atlas::inspectProjectBackup(
+                            atlas::standalone::selectedPath(work->file));
+                        post([file = work->file, summary](Shell &shell) {
+                            shell.updateStatus(
+                                "Backup verified · playback paused", false);
+                            if (!shell.launch_.smokeReceipt.empty() &&
+                                file == shell.launch_.smokeBackup)
+                                shell.submitControl(
+                                    {Work::restoreProject, 0, file.string(),
+                                     shell.launch_.smokeRestore});
+                            else
+                                shell.previewRestore(file, summary);
+                        });
+                        continue;
+                    } else if (work->kind == Work::restoreProject) {
+                        const auto destination =
+                            atlas::standalone::selectedPath(work->file);
+                        const auto summary = atlas::restoreProjectBackup(
+                            atlas::standalone::selectedPath(work->text),
+                            destination);
+                        message = "Restored " +
+                                  std::to_string(summary.sceneCount) +
+                                  " scenes into " + destination.string();
+                        if (launch_.smokeReceipt.empty()) {
+                            juce::ChildProcess application;
+                            const juce::StringArray arguments{
+                                juce::File::getSpecialLocation(
+                                    juce::File::currentExecutableFile)
+                                    .getFullPathName(),
+                                "--state-dir", string(destination)};
+                            if (!application.start(arguments, 0))
+                                message += " · new window could not launch; "
+                                           "restored folder retained";
+                            else
+                                message += " · opened in a new window";
+                        }
+                        post([](Shell &shell) {
+                            shell.smokeProjectDone_ = true;
+                        });
                     }
                 } catch (const std::exception &error) {
                     message = error.what();
+                    if (!launch_.smokeReceipt.empty())
+                        post([message](Shell &shell) {
+                            shell.smokeResult_ = juce::JSON::parse(
+                                "{\"ok\":false,\"error\":" +
+                                juce::JSON::toString(juce::var(message)) + "}");
+                            shell.close();
+                        });
                 }
                 if (reload)
                     ++expectedPageEpoch;
@@ -564,8 +933,11 @@ class Shell final : public juce::Component, private juce::Timer {
         if (!launch_.smokeReceipt.empty()) {
             juce::DynamicObject::Ptr receipt = new juce::DynamicObject;
             receipt->setProperty(
-                "ok", smokeComplete_ && smokeResult_["ok"] == juce::var(true) &&
-                          (launch_.smokeExport.empty() || smokeExported_));
+                "ok",
+                smokeComplete_ && smokeResult_["ok"] == juce::var(true) &&
+                    (launch_.smokeExport.empty() || smokeExported_) &&
+                    (launch_.smokeSceneExport.empty() || smokeSceneExported_) &&
+                    (launch_.smokeBackup.empty() || smokeProjectDone_));
             receipt->setProperty("webview", smokeResult_);
             receipt->setProperty("nativeStatus", status_.getText());
             receipt->setProperty("nativeRequests",
@@ -574,6 +946,8 @@ class Shell final : public juce::Component, private juce::Timer {
                                  static_cast<int>(rejected_.load()));
             receipt->setProperty("audioEnabled", false);
             receipt->setProperty("shutdownComplete", done());
+            receipt->setProperty("sceneExported", smokeSceneExported_);
+            receipt->setProperty("projectRestored", smokeProjectDone_);
             receipt->setProperty(
                 "elapsedSeconds",
                 std::chrono::duration<double>(Clock::now() - smokeStarted_)
@@ -668,14 +1042,25 @@ class Shell final : public juce::Component, private juce::Timer {
      await call('getTransport'); result.rounds++;
      await new Promise(resolve => setTimeout(resolve, 100));
    }
+   SCENE_EXPORT_SMOKE
    result.ok = true;
  } catch (error) { result.error = String(error); }
  result.finished = true;
 })();
 )JS");
             browser_->evaluateJavascript(
-                script.replace("SMOKE_DURATION_MS",
-                               juce::String(launch_.smokeSeconds * 1000)));
+                script
+                    .replace("SMOKE_DURATION_MS",
+                             juce::String(launch_.smokeSeconds * 1000))
+                    .replace("SCENE_EXPORT_SMOKE",
+                             launch_.smokeSceneExport.empty()
+                                 ? juce::String()
+                                 : juce::String(R"JS(
+   const exportedScene = result.scenes.items.find(item => item.valid);
+   if (!exportedScene) throw Error('No verified scene to export.');
+   const sceneLink = document.createElement('a'); sceneLink.dataset.sceneId = exportedScene.id;
+   sceneLink.href = '#export-scene'; document.body.append(sceneLink); sceneLink.click(); sceneLink.remove();
+)JS")));
             return;
         }
         smokeEvaluating_ = true;
@@ -692,12 +1077,25 @@ class Shell final : public juce::Component, private juce::Timer {
                         static_cast<bool>(parsed["finished"])) {
                         safe->smokeResult_ = parsed;
                         safe->smokeComplete_ = true;
+                        if (static_cast<bool>(parsed["ok"]) &&
+                            !safe->launch_.smokeBackup.empty() &&
+                            !safe->smokeProjectStarted_ &&
+                            (safe->launch_.smokeSceneExport.empty() ||
+                             safe->smokeSceneExported_)) {
+                            safe->smokeProjectStarted_ = true;
+                            safe->submitControl({Work::projectScenes});
+                            return;
+                        }
                         if (!static_cast<bool>(parsed["ok"]) ||
                             (Clock::now() - safe->frontendStarted_ >=
                                  std::chrono::seconds(
                                      safe->launch_.smokeSeconds) &&
                              (safe->launch_.smokeExport.empty() ||
-                              safe->smokeExported_)))
+                              safe->smokeExported_) &&
+                             (safe->launch_.smokeSceneExport.empty() ||
+                              safe->smokeSceneExported_) &&
+                             (safe->launch_.smokeBackup.empty() ||
+                              safe->smokeProjectDone_)))
                             safe->close();
                     }
                 }
