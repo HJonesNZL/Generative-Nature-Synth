@@ -1,0 +1,20 @@
+{
+  "dataset": "atn_174822_spotted-seal_trajectory_20180414-20181103",
+  "library": "ATN spotted seal 2018.sqlite3",
+  "session_id": "d774207b-342c-49bd-a328-5649f9de84ce",
+  "raw_records": 263,
+  "accepted_records": 224,
+  "omitted": {
+    "non_pass_qartod": 39
+  },
+  "observation_start": "2018-04-14T04:48:22.000000Z",
+  "observation_end": "2018-11-03T08:01:10.000000Z",
+  "source_url": "https://atn.ioos.us/erddap/tabledap/atn_174822_spotted-seal_trajectory_20180414-20181103.html",
+  "license": "These data may be used and redistributed for free, but are not intended for legal use, since they may contain inaccuracies. No person or group associated with these data makes any warranty, expressed or implied, including warranties of merchantability and fitness for a particular purpose, or assumes any legal liability for the accuracy, completeness or usefulness of this information. This disclaimer applies to both individual use of these data and aggregate use with other data. It is strongly recommended that users read and fully comprehend associated metadata prior to use. Please acknowledge the U.S. Animal Telemetry Network (ATN) or the specified citation as the source from which these data were obtained in any publications and/or representations of these data. Communication and collaboration with dataset authors are strongly encouraged.",
+  "raw_sha256": {
+    "locations.json": "b8e5668fe1c19e244ed48228a2f4398cbb4d9bf012b098520730797f511d9aed",
+    "metadata.json": "6816a425bc23a2246959c09edfe7bac52b645d9149b701198c6df5d9fbd575d1"
+  },
+  "context": "Historical identified animal fixes, not live. No interpolation. Native replay requires no Python.",
+  "excerpt_session_id": "980d87e8-27f1-454d-b4df-5a3a7c13388d"
+}
