@@ -169,6 +169,14 @@ inline constexpr auto liveSonificationSmoke = R"JS(
        dense.admitted>5 || dense.grouped<=0 || dense.dropped<=0)
      throw Error('Dense phrase did not stay within its musical grouping budget.');
    await new Promise(resolve=>setTimeout(resolve,1800));
+   const ranking=await call('getLiveSpeciesCounts',{sessionId:collection.session.id,limit:16});
+   const counts=ranking.species.map(row=>row.count);
+   if (!ranking.sessionActive || counts.length!==8 || counts.reduce((a,b)=>a+b,0)!==501 ||
+       counts.some((value,i)=>i>0 && value>counts[i-1]) ||
+       ranking.species.some(row=>row.speciesId.endsWith(':818181')))
+     throw Error('Historical or incomplete species ranking.');
+   await waitFor(()=>[...document.querySelectorAll('.grain__scroll .grain__count')]
+     .map(span=>Number(span.textContent)).join(',')===counts.join(','),'live species ranking on screen');
    window.scrollTo(0,document.documentElement.scrollHeight);
    if (window.scrollY!==0) throw Error('Atlas scrolled beyond its workspace.');
    const settled=await live();
@@ -214,7 +222,7 @@ inline constexpr auto liveSonificationSmoke = R"JS(
    const off=await until(live,s=>!s.enabled,'explicit mute');
    const offAudio=await call('getAudioState');
    if (offAudio.status!=='disabled' || offAudio.peakDbfs!==null) throw Error('Output remained enabled or meter did not clear.');
-   result.sonification={sessionFiltered:true,retiredPolls,mode:selectedMode,pendingObserved,denseMapObserved:true,liveTriggeredNotes:denseAudio.liveTriggeredNotes,device:device.name,listening,off,callbackFrames:audio.callbackFrames,mapObserved:true,duplicatesQuiet:true,polls,headerErrorFree:true,selectedOutcome,dense:settled,
+   result.sonification={sessionFiltered:true,rankedCounts:counts,retiredPolls,mode:selectedMode,pendingObserved,denseMapObserved:true,liveTriggeredNotes:denseAudio.liveTriggeredNotes,device:device.name,listening,off,callbackFrames:audio.callbackFrames,mapObserved:true,duplicatesQuiet:true,polls,headerErrorFree:true,selectedOutcome,dense:settled,
      outputPeakDbfs,denseCallbackFrames:denseAudio.callbackFrames,denseCountersRendered:true,muteMeterCleared:true};
  }
 )JS";

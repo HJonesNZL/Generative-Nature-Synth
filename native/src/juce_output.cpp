@@ -1,3 +1,4 @@
+#include "coreaudio_output_safety.hpp"
 #include <algorithm>
 #include <atlas/playback.hpp>
 #include <atomic>
@@ -55,6 +56,66 @@ std::string deviceId(const std::string &type, const std::string &name) {
         id += digits[(hash >> shift) & 15];
     return id;
 }
+#if JUCE_MAC
+// Match the pinned JUCE CoreAudio scanner's device order and duplicate-name
+// numbering, so one broken aggregate cannot hide unrelated virtual outputs.
+std::optional<std::map<std::string, AudioObjectID>> coreAudioOutputs() {
+    const AudioObjectPropertyAddress devicesAddress{
+        kAudioHardwarePropertyDevices, kAudioObjectPropertyScopeGlobal,
+        kAudioObjectPropertyElementMain};
+    UInt32 size{};
+    if (AudioObjectGetPropertyDataSize(kAudioObjectSystemObject, &devicesAddress,
+                                       0, nullptr, &size) != noErr ||
+        size % sizeof(AudioObjectID) != 0 || size / sizeof(AudioObjectID) > 1024)
+        return {};
+    std::vector<AudioObjectID> devices(size / sizeof(AudioObjectID));
+    if (AudioObjectGetPropertyData(kAudioObjectSystemObject, &devicesAddress,
+                                   0, nullptr, &size, devices.data()) != noErr)
+        return {};
+    if (size % sizeof(AudioObjectID) != 0 ||
+        size / sizeof(AudioObjectID) > devices.size())
+        return {};
+    devices.resize(size / sizeof(AudioObjectID));
+    juce::StringArray names;
+    std::vector<AudioObjectID> outputs;
+    for (const auto device : devices) {
+        const auto name = detail::coreAudioString(device, kAudioDevicePropertyDeviceNameCFString);
+        if (!name || juce::String(*name).startsWith("_JucePrivateAggregateDevice_"))
+            continue;
+        const AudioObjectPropertyAddress streams{
+            kAudioDevicePropertyStreamConfiguration, kAudioObjectPropertyScopeOutput,
+            kAudioObjectPropertyElementMain};
+        UInt32 bytes{};
+        if (AudioObjectGetPropertyDataSize(device, &streams, 0, nullptr, &bytes) != noErr ||
+            bytes < offsetof(AudioBufferList, mBuffers) || bytes > 65536)
+            continue;
+        std::vector<std::uint64_t> storage((bytes + sizeof(std::uint64_t) - 1) /
+                                            sizeof(std::uint64_t));
+        if (AudioObjectGetPropertyData(device, &streams, 0, nullptr, &bytes,
+                                       storage.data()) != noErr)
+            continue;
+        if (bytes < offsetof(AudioBufferList, mBuffers) ||
+            bytes > storage.size() * sizeof(std::uint64_t))
+            continue;
+        const auto *buffers = reinterpret_cast<const AudioBufferList *>(storage.data());
+        if (buffers->mNumberBuffers >
+            (bytes - offsetof(AudioBufferList, mBuffers)) / sizeof(AudioBuffer))
+            continue;
+        bool hasOutput{};
+        for (UInt32 i = 0; i < buffers->mNumberBuffers; ++i)
+            hasOutput = hasOutput || buffers->mBuffers[i].mNumberChannels > 0;
+        if (hasOutput) {
+            names.add(juce::String(*name));
+            outputs.push_back(device);
+        }
+    }
+    names.appendNumbersToDuplicates(false, true);
+    std::map<std::string, AudioObjectID> result;
+    for (int i = 0; i < names.size(); ++i)
+        result.emplace(names[i].toStdString(), outputs[static_cast<std::size_t>(i)]);
+    return result;
+}
+#endif
 class JuceOutput final : public OutputDriver,
                          private juce::AudioIODeviceCallback,
                          private juce::AudioIODeviceType::Listener {
@@ -102,6 +163,19 @@ class JuceOutput final : public OutputDriver,
                     selectedType_ = type;
                     break;
                 }
+#if JUCE_MAC
+            if (selectedType_ && selected->type == "CoreAudio") {
+                const auto outputs = coreAudioOutputs();
+                const auto found = outputs ? outputs->find(selected->name)
+                                           : std::map<std::string, AudioObjectID>::const_iterator{};
+                if (!outputs || found == outputs->end() ||
+                    !detail::juceAggregateMetadataReadable(found->second)) {
+                    error = "selected output metadata changed or aggregate clock is unavailable";
+                    close();
+                    return;
+                }
+            }
+#endif
             if (selectedType_)
                 device_.reset(selectedType_->createDevice(
                     juce::String(selected->name), {}));
@@ -189,7 +263,24 @@ class JuceOutput final : public OutputDriver,
             type->scanForDevices();
             const auto names = type->getDeviceNames(false);
             const auto defaultIndex = type->getDefaultDeviceIndex(false);
+#if JUCE_MAC
+            const auto coreOutputs = type->getTypeName() == "CoreAudio"
+                                         ? coreAudioOutputs()
+                                         : std::optional<std::map<std::string, AudioObjectID>>{};
+            if (type->getTypeName() == "CoreAudio" && !coreOutputs) {
+                result.error = "CoreAudio output metadata is unavailable";
+                return result;
+            }
+#endif
             for (int index = 0; index < names.size(); ++index) {
+#if JUCE_MAC
+                if (coreOutputs) {
+                    const auto device = coreOutputs->find(names[index].toStdString());
+                    if (device == coreOutputs->end() ||
+                        !detail::juceAggregateMetadataReadable(device->second))
+                        continue;
+                }
+#endif
                 AudioDeviceInfo info;
                 info.name = names[index].toStdString();
                 info.type = type->getTypeName().toStdString();
