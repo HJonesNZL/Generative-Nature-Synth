@@ -1,6 +1,6 @@
 # Standalone beta quick start
 
-The graphical instrument is **Releases/Live Sessions/Animal Atlas.app**. It is distinct from the older root-level Animal Atlas.app that opens the Python collection menu. This local beta supports Apple Silicon on macOS 15 or later. It includes its interface, fonts, map assets, native engine and SQLite; running it needs no Terminal, Node, Vite, hosted service or subscription.
+The graphical instrument is **Releases/Time Ribbon/Animal Atlas.app**. It is distinct from the older root-level Animal Atlas.app that opens the Python collection menu. This local beta supports Apple Silicon on macOS 15 or later. It includes its interface, fonts, map assets, native engine and SQLite; running it needs no Terminal, Node, Vite, hosted service or subscription.
 
 ## Hear new detections
 
@@ -14,6 +14,12 @@ In **Atlas → Live**, choose **Collect → Start live updates**. Choose your st
 - The output meter measures the rendered stereo signal and holds peaks for a second. **Live listening status** shows received, admitted, grouped and dropped counts. In Smoothed mode, **sounded** counts starts confirmed by the audio callback, **pending** counts notes already read that are waiting to sound, and **catching up** means the library has more arrivals to read. Sustained heavy traffic increases playback delay. In Direct and Musical modes, skipped revisions indicate that the 512-revision read window was exceeded.
 
 Turning listening off, pausing collection, changing library or output, entering Replay, or pressing **All off** retires live playback. Stopping listening cancels the waiting notes. Starting again listens from the current library head. While output stays active, Smoothed mode keeps its place through a service delay. Direct and Musical rebaseline after a service interruption longer than five seconds. [Smoothed Live release checks](../evidence/smoothed-live/qualification.md) [Musical Live release checks and listening examples](../evidence/musical-live/qualification.md)
+
+## Read the playback ribbon
+
+In Live, the bottom **Playback · 30 seconds** tab shows the notes the audio engine has started. The **Sounding** chips identify overlapping voices. Select a chip or a mark in the ribbon to read the species, synth voice and detection location. Use the left and right arrows on a note to move through its lane. Selecting a past note outlines its location without playing it again.
+
+On the globe, 2D map and NZ inset, a sounding point stays bright until the last voice from that location ends, then fades over two seconds. A receiver label identifies a listening station, not the animal’s exact position. Notes with undisclosed locations still appear in the ribbon without a map point. Pending detections do not light a sounding point. The separate **Species · session ranking** tab keeps counting detections since Collect, even after their notes leave the ribbon.
 
 ## Play a saved soundscape
 

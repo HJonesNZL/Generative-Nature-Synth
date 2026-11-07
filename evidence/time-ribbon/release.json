@@ -1,0 +1,105 @@
+{
+  "version": "0.11.0",
+  "platform": "Apple Silicon macOS",
+  "codeCommit": "ac681271f1a77488faf9659e1f30ba50b9cf3f11",
+  "nativeSourceSha256": "eb77678a45175a37da18ea212a3346d0c2413cb06805efdf6064b63a5bb0be55",
+  "zipSha256": "33d5b72b24332edfee773d7d00e73f7245fdb519bc37c03d4bae3ff38e940ac1",
+  "signedAppAndExtractedZipMatch": true,
+  "releaseSuites": 44,
+  "uiTests": 100,
+  "packaged": {
+    "mode": "smoothed",
+    "audioDevice": "ZoomAudioDevice",
+    "callbackConfirmedStarts": "501",
+    "ribbon": {
+      "token": "1:1",
+      "eventId": "birdweather:fixture-current",
+      "species": "Fixture live bird",
+      "voice": "Struck tone",
+      "origin": "Receiver · 41° S, 174° E",
+      "fadingSeen": true,
+      "cleared": true
+    },
+    "sessionFiltered": true,
+    "dense": {
+      "received": 501,
+      "admitted": 501,
+      "pending": 0,
+      "grouped": 0,
+      "dropped": 0
+    },
+    "displayedCountsDescending": [
+      64,
+      63,
+      63,
+      63,
+      62,
+      62,
+      62,
+      62
+    ],
+    "shutdownComplete": true
+  },
+  "limits": {
+    "disposableOnly": true,
+    "providerRequests": false,
+    "ownerStateAccess": false,
+    "device": "ZoomAudioDevice",
+    "physicalSpeakers": false,
+    "heardAudioVerified": false
+  },
+  "browser": {
+    "status": "passed",
+    "checks": [
+      {
+        "screen": "Atlas",
+        "width": 1440,
+        "height": 900,
+        "bounds": {
+          "x": 32,
+          "y": 737,
+          "width": 1376,
+          "height": 163
+        }
+      },
+      {
+        "screen": "Sound Studio",
+        "width": 1440,
+        "height": 900,
+        "bounds": {
+          "x": 32,
+          "y": 737,
+          "width": 1376,
+          "height": 163
+        }
+      },
+      {
+        "screen": "Atlas",
+        "width": 1280,
+        "height": 800,
+        "bounds": {
+          "x": 24,
+          "y": 637,
+          "width": 1232,
+          "height": 163
+        }
+      },
+      {
+        "screen": "Sound Studio",
+        "width": 1280,
+        "height": 800,
+        "bounds": {
+          "x": 24,
+          "y": 637,
+          "width": 1232,
+          "height": 163
+        }
+      }
+    ],
+    "leaks": [],
+    "activityCalls": 18,
+    "errors": [],
+    "synthetic": true,
+    "audioDeviceOpened": false
+  }
+}

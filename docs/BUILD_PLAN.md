@@ -2,6 +2,8 @@
 
 Audit baseline: 6 November 2026 UTC; final consistency review: 7 November NZDT. Status: **development plan, not a release qualification**. This replaces earlier suggested delivery sequences and unqualified estimates. It incorporates three GPT-6 Astra audits, isolated counterexamples, the owner's portable-C++ and zero-cost requirements, and Direction H. Findings and remediation evidence are indexed in [the audit](audits/AUDIT_AND_REVISED_BUILD_PLAN.md).
 
+The 0.11.0 standalone implements the selected time ribbon: the audio callback drives the recent note history and the map highlights playback origins. See the [release checks and screen capture](../evidence/time-ribbon/qualification.md).
+
 The 0.10.0 standalone scopes Live to observations made since Collect, tracks per-species counts across the session and keeps the species ranking scrollable within the window. [Playback visualization concepts](../design/live-session-concepts/README.md)
 
 The 0.9.0 standalone added Smoothed live playback, which retains a note for each eligible detection through collection bursts and uses observation or source timing to space them. [Smoothed Live qualification](../evidence/smoothed-live/qualification.md)

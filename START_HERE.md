@@ -1,6 +1,6 @@
 # Generative Nature Synth / Animal Atlas
 
-Open **Releases/Live Sessions/Animal Atlas.app** for the current instrument. In Atlas, choose **Collect → Start live updates**, open **Live listening status** to choose **Smoothed** for one species note per eligible detection, then enable **Live listening**. [Standalone guide](docs/STANDALONE.md)
+Open **Releases/Time Ribbon/Animal Atlas.app** for the current instrument. In Atlas, choose **Collect → Start live updates**, open **Live listening status** to choose **Smoothed** for one species note per eligible detection, then enable **Live listening**. The bottom **Playback · 30 seconds** tab shows what you are hearing; select a note for its voice and detection location. [Standalone guide](docs/STANDALONE.md)
 
 Development continues on `beta-1`. The packaged instrument uses portable C++20 for collection, species voices, synthesis and audio export. JUCE hosts the local React/TypeScript interface. The root-level Animal Atlas.app and Start Animal Atlas.command launch the earlier Python collection menu.
 
