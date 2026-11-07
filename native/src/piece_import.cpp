@@ -1,0 +1,328 @@
+#include "sqlite_statement.hpp"
+#include <atlas/piece_import.hpp>
+#include <atlas/piece_writer.hpp>
+#include <memory>
+#include <sqlite3.h>
+namespace atlas {
+namespace {
+void report(const PieceImportProgress &progress, std::string_view stage,
+            std::size_t completed, std::size_t total) {
+    if (progress && !progress(stage, completed, total))
+        throw PieceCancelled();
+}
+struct Connection {
+    sqlite3 *db{};
+    explicit Connection(const std::filesystem::path &path) {
+        const auto utf8 = path.u8string();
+        const std::string filename(reinterpret_cast<const char *>(utf8.data()),
+                                   utf8.size());
+        if (sqlite3_open_v2(filename.c_str(), &db,
+                            SQLITE_OPEN_READONLY | SQLITE_OPEN_FULLMUTEX,
+                            nullptr) != SQLITE_OK) {
+            if (db)
+                sqlite3_close(db);
+            db = nullptr;
+            throw std::runtime_error("Cannot read attached import library.");
+        }
+        sqlite3_busy_timeout(db, 5000);
+        sqlite3_limit(db, SQLITE_LIMIT_LENGTH, 65536);
+        if (sqlite3_exec(db, "BEGIN", nullptr, nullptr, nullptr) != SQLITE_OK) {
+            sqlite3_close(db);
+            db = nullptr;
+            throw std::runtime_error("Cannot begin import snapshot.");
+        }
+    }
+    ~Connection() {
+        if (db)
+            sqlite3_close(db);
+    }
+};
+void execute(sqlite3 *db, const char *sql) {
+    if (sqlite3_exec(db, sql, nullptr, nullptr, nullptr) != SQLITE_OK)
+        throw std::runtime_error("Import staging operation failed.");
+}
+void write(sqlite3 *db, const char *sql,
+           const std::vector<std::string> &values) {
+    sqlite3_stmt *statement{};
+    if (sqlite3_prepare_v2(db, sql, -1, &statement, nullptr) != SQLITE_OK)
+        throw std::runtime_error("Import staging query failed.");
+    struct Finalize {
+        sqlite3_stmt *value;
+        ~Finalize() { sqlite3_finalize(value); }
+    } finalize{statement};
+    for (std::size_t i = 0; i < values.size(); ++i)
+        if (sqlite3_bind_text(statement, static_cast<int>(i + 1),
+                              values[i].data(),
+                              static_cast<int>(values[i].size()),
+                              SQLITE_TRANSIENT) != SQLITE_OK)
+            throw std::runtime_error("Import staging bind failed.");
+    if (sqlite3_step(statement) != SQLITE_DONE)
+        throw std::runtime_error("Import staging write failed.");
+}
+constexpr std::uintmax_t libraryBudget = 512ULL * 1024 * 1024;
+constexpr std::uintmax_t stagingBudget = 80ULL * 1024 * 1024;
+std::uintmax_t sizeIfPresent(const std::filesystem::path &path) {
+    std::error_code error;
+    const auto size = std::filesystem::file_size(path, error);
+    return error ? 0 : size;
+}
+void checkBudget(const std::filesystem::path &destination,
+                 const std::filesystem::path &staging,
+                 std::uintmax_t remainingBytes) {
+    const auto stageBytes = sizeIfPresent(staging);
+    if (stageBytes > stagingBudget ||
+        sizeIfPresent(destination) +
+                sizeIfPresent(destination.string() + "-wal") + stageBytes +
+                sizeIfPresent(staging.string() + "-journal") + remainingBytes >
+            libraryBudget)
+        throw std::runtime_error(
+            "Managed library import exceeds the 512 MiB storage budget.");
+}
+void requireManaged(const std::filesystem::path &destination) {
+    if (!std::filesystem::is_regular_file(
+            std::filesystem::symlink_status(destination)))
+        throw std::invalid_argument(
+            "Import destination must be an existing managed library.");
+    sqlite3 *raw{};
+    if (sqlite3_open_v2(destination.string().c_str(), &raw,
+                        SQLITE_OPEN_READWRITE, nullptr) != SQLITE_OK) {
+        if (raw)
+            sqlite3_close(raw);
+        throw std::runtime_error("Cannot inspect managed import destination.");
+    }
+    struct Close {
+        sqlite3 *db;
+        ~Close() { sqlite3_close(db); }
+    } close{raw};
+    detail::Statement marker(
+        raw, "SELECT value FROM metadata WHERE key='native_collection_owner'");
+    detail::Statement version(raw, "PRAGMA user_version");
+    if (!marker.next() || marker.text(0) != "animal_atlas_native_v1" ||
+        !version.next() || version.integer(0) != 3)
+        throw std::invalid_argument(
+            "Import destination is not a managed library.");
+}
+class Stage {
+  public:
+    sqlite3 *db{};
+    std::filesystem::path path;
+    std::size_t count{};
+    Stage(const std::filesystem::path &destination,
+          const std::filesystem::path &source, const VerifiedPiece &piece)
+        : path(destination.string() + ".atlas-import-stage.sqlite3") {
+        checkBudget(destination, path, 0);
+        const bool exists = std::filesystem::exists(path);
+        if (exists) {
+            if (!std::filesystem::is_regular_file(
+                    std::filesystem::symlink_status(path)))
+                throw std::runtime_error(
+                    "Import staging path is not a regular file.");
+            Connection check(path);
+            detail::Statement marker(check.db,
+                                     "SELECT marker FROM import_identity");
+            if (!marker.next() ||
+                marker.text(0) != "animal_atlas_import_stage_v1")
+                throw std::runtime_error(
+                    "Refusing unrelated import staging file.");
+        }
+        if (sqlite3_open_v2(path.string().c_str(), &db,
+                            SQLITE_OPEN_READWRITE |
+                                (exists ? 0 : SQLITE_OPEN_CREATE),
+                            nullptr) != SQLITE_OK) {
+            if (db)
+                sqlite3_close(db);
+            db = nullptr;
+            throw std::runtime_error("Cannot open import checkpoint.");
+        }
+        try {
+            sqlite3_busy_timeout(db, 5000);
+            execute(db, "PRAGMA journal_mode=DELETE; PRAGMA synchronous=FULL; "
+                        "PRAGMA max_page_count=20480; BEGIN IMMEDIATE");
+            if (!exists)
+                execute(
+                    db,
+                    "CREATE TABLE import_identity(marker TEXT,source TEXT,id "
+                    "TEXT,content_hash TEXT,envelope_hash TEXT); CREATE TABLE "
+                    "import_rows(ordinal INTEGER PRIMARY KEY,original_seq "
+                    "INTEGER NOT NULL,event_json TEXT NOT NULL)");
+            const auto canonical =
+                std::filesystem::weakly_canonical(source).string();
+            // Paths can exceed the replay adapter's ID binding capacity.
+            detail::Statement identity(
+                db, "SELECT source,id,content_hash,envelope_hash FROM "
+                    "import_identity");
+            const bool same = identity.next() &&
+                              identity.text(0) == canonical &&
+                              identity.text(1) == piece.id &&
+                              identity.text(2) == piece.contentHash &&
+                              identity.text(3) == piece.envelopeHash;
+            if (!same) {
+                execute(db,
+                        "DELETE FROM import_rows; DELETE FROM import_identity");
+                write(db,
+                      "INSERT INTO import_identity "
+                      "VALUES('animal_atlas_import_stage_v1',?1,?2,?3,?4)",
+                      {canonical, piece.id, piece.contentHash,
+                       piece.envelopeHash});
+            }
+            detail::Statement rows(
+                db,
+                "SELECT count(*),coalesce(max(ordinal),-1) FROM import_rows");
+            if (!rows.next() || rows.integer(0) < 0 ||
+                rows.integer(0) > 50000 ||
+                rows.integer(1) != rows.integer(0) - 1)
+                throw std::runtime_error("Import checkpoint order is invalid.");
+            count = static_cast<std::size_t>(rows.integer(0));
+            execute(db, "COMMIT; BEGIN IMMEDIATE");
+        } catch (...) {
+            sqlite3_close(db);
+            db = nullptr;
+            throw;
+        }
+    }
+    ~Stage() {
+        if (db)
+            sqlite3_close(db);
+    }
+    void append(std::size_t ordinal, const VerifiedPieceEvent &event) {
+        if (ordinal < count) {
+            detail::Statement row(db, ("SELECT original_seq,event_json FROM "
+                                       "import_rows WHERE ordinal=" +
+                                       std::to_string(ordinal))
+                                          .c_str());
+            if (!row.next() || row.integer(0) != event.originalSequence ||
+                row.text(1) != event.eventJson)
+                throw std::runtime_error(
+                    "Import checkpoint differs from verified source.");
+            return;
+        }
+        write(db,
+              "INSERT INTO import_rows VALUES(CAST(?1 AS INTEGER),CAST(?2 AS "
+              "INTEGER),?3)",
+              {std::to_string(ordinal), std::to_string(event.originalSequence),
+               event.eventJson});
+    }
+    void checkpoint(std::size_t completed) {
+        execute(db, "COMMIT; BEGIN IMMEDIATE");
+        count = completed;
+    }
+    void finish() {
+        execute(db, "ROLLBACK");
+        sqlite3_close(db);
+        db = nullptr;
+        std::error_code error;
+        std::filesystem::remove(path, error);
+        if (error)
+            throw std::runtime_error(
+                "Piece imported but checkpoint cleanup failed.");
+    }
+};
+} // namespace
+SavedSession importSavedPiece(const std::filesystem::path &source,
+                              const std::filesystem::path &destination,
+                              std::string_view sessionId,
+                              const PieceImportProgress &progress) {
+    if (sessionId.empty() || sessionId == "latest" || sessionId.size() > 128 ||
+        sessionId.find('\0') != std::string_view::npos)
+        throw std::invalid_argument(
+            "Choose one explicit saved piece to import.");
+    std::error_code error;
+    if (std::filesystem::equivalent(source, destination, error) ||
+        std::filesystem::weakly_canonical(source) ==
+            std::filesystem::weakly_canonical(destination))
+        throw std::invalid_argument(
+            "Import requires a separate attached source library.");
+    requireManaged(destination);
+    report(progress, "verifying", 0, 1);
+    ReadOnlyLibrary reader(source);
+    if (reader.session(sessionId).eventCount > 50000)
+        throw std::runtime_error("Import piece exceeds native event capacity.");
+    SavedSession verified;
+    reader.load(sessionId, TimeBasis::observed, {}, &verified);
+    Connection connection(source);
+    auto *db = connection.db;
+    detail::Statement version(db, "PRAGMA user_version");
+    if (!version.next())
+        throw std::runtime_error("Import schema unavailable.");
+    const bool sealedSchema = version.integer(0) == 3;
+    const std::string columns =
+        "SELECT "
+        "id,name,state,created_at,ended_at,start_seq,end_seq,intended_end_at,"
+        "origin,options_json,event_count,content_hash";
+    detail::Statement metadata(
+        db,
+        (columns +
+         (sealedSchema ? ",envelope_version,envelope_json,envelope_hash" : "") +
+         " FROM sessions WHERE id=?")
+            .c_str());
+    metadata.bind(sessionId);
+    if (!metadata.next())
+        throw std::runtime_error("Import piece no longer exists.");
+    VerifiedPiece piece;
+    piece.id = metadata.text(0);
+    piece.name = metadata.text(1);
+    piece.state = metadata.text(2);
+    piece.createdAt = metadata.text(3);
+    piece.endedAt = metadata.optionalText(4);
+    piece.startSequence = metadata.integer(5);
+    if (metadata.null(6))
+        throw std::runtime_error("Import piece is not finalized.");
+    piece.endSequence = metadata.integer(6);
+    piece.intendedEndAt = metadata.optionalText(7);
+    piece.origin = metadata.text(8);
+    piece.optionsJson = metadata.text(9);
+    const auto count = metadata.integer(10);
+    piece.contentHash = metadata.text(11);
+    if (count < 0 || count > 50000 ||
+        static_cast<std::size_t>(count) != verified.eventCount ||
+        piece.contentHash != verified.contentHash ||
+        piece.state != verified.state)
+        throw std::runtime_error(
+            "Import source changed; choose the piece again.");
+    if (sealedSchema) {
+        piece.envelopeVersion = static_cast<int>(metadata.integer(12));
+        piece.envelopeJson = metadata.optionalText(13).value_or("");
+        piece.envelopeHash = metadata.optionalText(14).value_or("");
+    }
+    Stage stage(destination, source, piece);
+    if (stage.count > static_cast<std::size_t>(count))
+        throw std::runtime_error("Import checkpoint exceeds piece length.");
+    const auto resumed = stage.count;
+    report(progress, "reading", resumed, static_cast<std::size_t>(count));
+    piece.events.reserve(static_cast<std::size_t>(count));
+    detail::Statement rows(
+        db, "SELECT ordinal,original_seq,event_json FROM session_events WHERE "
+            "session_id=? ORDER BY ordinal LIMIT 50001");
+    rows.bind(sessionId);
+    std::size_t bytes{};
+    while (rows.next()) {
+        if (piece.events.size() >= 50000 ||
+            rows.integer(0) != static_cast<std::int64_t>(piece.events.size()))
+            throw std::runtime_error(
+                "Import piece order exceeds capacity or is invalid.");
+        auto json = rows.text(2);
+        bytes += json.size();
+        if (json.size() > 16384 || bytes > 64 * 1024 * 1024)
+            throw std::runtime_error("Import piece exceeds native capacity.");
+        piece.events.push_back({rows.integer(1), std::move(json)});
+        stage.append(piece.events.size() - 1, piece.events.back());
+        if (piece.events.size() > resumed && piece.events.size() % 256 == 0) {
+            checkBudget(destination, stage.path, bytes);
+            stage.checkpoint(piece.events.size());
+            report(progress, "reading", piece.events.size(),
+                   static_cast<std::size_t>(count));
+        }
+    }
+    if (piece.events.size() != static_cast<std::size_t>(count))
+        throw std::runtime_error("Import piece count changed.");
+    stage.checkpoint(piece.events.size());
+    checkBudget(destination, stage.path,
+                bytes + piece.events.size() * 256 + 16 * 1024 * 1024);
+    report(progress, "saving", piece.events.size(), piece.events.size());
+    // Writer independently verifies this complete snapshot, preserves its seal,
+    // validates managed ownership, and commits atomically with exact-ID retry.
+    const auto saved = saveVerifiedPiece(destination, piece, progress);
+    stage.finish();
+    return saved;
+}
+} // namespace atlas
