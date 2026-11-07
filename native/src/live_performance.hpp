@@ -1,4 +1,5 @@
 #pragma once
+#include "live_activity.hpp"
 #include <atlas/live_admission.hpp>
 #include <atlas/live_arrangement.hpp>
 #include <atlas/playback.hpp>
@@ -18,10 +19,6 @@ struct LiveSettings {
     CompositionSettings composition{.enabled = true};
     SpatialSettings spatial{};
 };
-struct LiveObservation {
-    std::string id, species, name;
-    std::optional<Position> position;
-};
 struct LiveOutcome {
     std::string eventId, speciesId, region, representativeId;
     std::string_view status, voiceCharacter{};
@@ -34,7 +31,8 @@ class LivePerformance {
                 std::span<const LiveSmoothTiming> timing = {});
     void playDue(Clock::time_point, sqlite3 *, PlaybackRuntime &, VoiceStore *,
                  const LiveSettings &, unsigned rootMidi,
-                 const LiveSessionBoundary *session = nullptr);
+                 const LiveSessionBoundary *session = nullptr,
+                 LiveActivityJournal *activity = nullptr);
     void acknowledge(const PlaybackSnapshot &);
     void retryHandedOff();
     std::size_t pendingCount() const {
@@ -68,7 +66,8 @@ class LivePerformance {
     void queueSmoothed(std::vector<LiveObservation> &,
                        std::span<const LiveSmoothTiming>, Clock::time_point);
     void submitSmoothed(Clock::time_point, sqlite3 *, PlaybackRuntime &,
-                        VoiceStore *, unsigned, const LiveSessionBoundary *);
+                        VoiceStore *, const LiveSettings &, unsigned, const LiveSessionBoundary *,
+                        LiveActivityJournal *);
     std::deque<Note> pending_;
     std::deque<HandedOff> inFlight_;
     std::map<std::string, SourceWindow> sourceWindows_;

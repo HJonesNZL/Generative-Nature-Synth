@@ -314,6 +314,15 @@ int main() {
             check(page.find(oldId) == std::string::npos &&
                   page.find("birdweather:baseline") == std::string::npos,
                   "live view leaked historical or delayed observation");
+            const auto activityPage = request(host, "getLiveActivity",
+                "{\"sessionId\":\"" + boundary.id + "\",\"afterSequence\":\"0\",\"limit\":250}");
+            contains(activityPage, currentId);
+            contains(activityPage, "\"voiceType\":");
+            contains(activityPage, "\"onsetUs\":");
+            contains(activityPage, "\"endUs\":");
+            contains(activityPage, "\"stationId\":\"birdweather:station:fixture\"");
+            check(activityPage.find(oldId) == std::string::npos,
+                  "activity feed invented an onset for a filtered observation");
             const auto ranking = request(host, "getLiveSpeciesCounts",
                 "{\"sessionId\":\"" + boundary.id + "\",\"limit\":250}");
             contains(ranking, "\"count\":1");
@@ -348,6 +357,9 @@ int main() {
         contains(request(host, "getLiveChanges",
             "{\"sessionId\":\"stale\",\"storeId\":\"\",\"afterSequence\":\"0\",\"limit\":500}"),
             "\"sessionActive\":false");
+        contains(request(host, "getLiveActivity",
+            "{\"sessionId\":\"stale\",\"afterSequence\":\"0\",\"limit\":250}"),
+            "\"voices\":[]");
         sqlite3_close(sessionDb);
         // First-ever source collection may label its initial snapshot baseline.
         // Genuinely post-Collect rows still sound if Listening was armed first.
@@ -379,6 +391,18 @@ int main() {
         audio.run([&] { return request(firstHost, "setLiveEnabled", "{\"enabled\":true}"); });
         audio.run([&] { firstHost.serviceLive(); });
         contains(request(firstHost, "getLiveState"), "\"admitted\":0");
+        sqlite3 *activityReset{};
+        check(sqlite3_open(firstDb.string().c_str(), &activityReset) == SQLITE_OK,
+              "open activity privacy fixture");
+        check(sqlite3_exec(activityReset, "UPDATE metadata SET value='activity-privacy-reset' "
+                                         "WHERE key='store_id'", nullptr, nullptr, nullptr) == SQLITE_OK,
+              "rotate activity privacy identity");
+        sqlite3_close(activityReset);
+        const auto privateActivity = request(firstHost, "getLiveActivity",
+            "{\"sessionId\":\"" + firstBoundary.id + "\",\"afterSequence\":\"0\",\"limit\":250}");
+        contains(privateActivity, "\"sessionActive\":false");
+        contains(privateActivity, "\"voices\":[]");
+        contains(request(firstHost, "getLiveState"), "\"enabled\":false");
         audio.run([&] { firstHost.setLiveSession(std::nullopt); });
         sqlite3_close(firstRead);
         std::cout << "Live UiHost callback integration checks passed\n";

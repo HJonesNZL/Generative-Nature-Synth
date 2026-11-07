@@ -563,6 +563,7 @@ struct UiHost::Impl {
     LiveSpeciesCounts liveSpeciesRanking;
     LiveSettings liveSettings;
     LivePerformance performance;
+    LiveActivityJournal activity;
     bool liveEnabled{}, liveCatchingUp{};
     std::uint64_t liveReceived{}, liveInvalid{}, liveSkipped{};
     std::string liveError, liveStoreId;
@@ -591,16 +592,20 @@ struct UiHost::Impl {
                ",\"error\":" + quoteJson(liveError) + "}";
     }
     void retireLive() {
-        if (playback)
+        if (playback) {
+            activity.stop(*playback);
             performance.acknowledge(playback->snapshot());
+        }
         performance.cancel();
         liveCatchingUp = false;
         liveEnabled = false;
         liveAdmission.reset();
     }
     void stopLive() {
-        if (liveEnabled && playback)
+        if (liveEnabled && playback) {
+            activity.service(*playback);
             playback->enable(false);
+        }
         retireLive();
     }
     bool liveAvailable() const {
@@ -707,7 +712,9 @@ struct UiHost::Impl {
         liveSettings = std::move(next);
         if (liveEnabled && rebuild) {
             try {
+                activity.service(*playback);
                 playback->enable(false);
+                activity.stop(*playback);
                 performance.acknowledge(playback->snapshot());
                 if (!modeChanged && liveSettings.mode == LiveMode::smoothed)
                     performance.retryHandedOff();
@@ -757,6 +764,7 @@ struct UiHost::Impl {
                 return;
             }
             playback->heartbeat();
+            activity.service(*playback);
             performance.acknowledge(snapshot);
             const bool smooth = liveSettings.mode == LiveMode::smoothed;
             if (!smooth && now - liveLastService > std::chrono::seconds(5))
@@ -795,6 +803,22 @@ struct UiHost::Impl {
                 if (!event.null("latitude") && !event.null("longitude"))
                     observation.position = Position{event.real("latitude"),
                                                     event.real("longitude")};
+                observation.stationId = event.optionalText("station_id");
+                observation.eventKind = event.text("event_kind", 128);
+                observation.locationKind = event.text("location_kind", 128);
+                if (!observation.position) {
+                    observation.locationLabel = "Location unavailable or withheld";
+                } else if (observation.locationKind == "station_detection" ||
+                           observation.locationKind == "receiver_detection") {
+                    observation.locationLabel = "Acoustic receiver location";
+                } else {
+                    observation.locationLabel = observation.locationKind == "individual_fix"
+                        ? "Reported individual fix" : "Reported location";
+                    if (!event.null("uncertainty_m") && event.real("uncertainty_m") > 0)
+                        observation.locationLabel += " (approximate)";
+                }
+                if (!event.null("uncertainty_m"))
+                    observation.uncertaintyMetres = event.real("uncertainty_m");
                 observations.push_back(std::move(observation));
             }
             const auto clock = std::chrono::steady_clock::now();
@@ -802,7 +826,8 @@ struct UiHost::Impl {
                                batch.smoothTiming);
             performance.playDue(clock, db.get(), *playback, voices,
                                 liveSettings, context.audio.rootMidi,
-                                liveSession ? &*liveSession : nullptr);
+                                liveSession ? &*liveSession : nullptr, &activity);
+            activity.service(*playback);
         } catch (const std::exception &) {
             liveError =
                 "Live listening failed while reading committed detections";
@@ -1084,6 +1109,7 @@ struct UiHost::Impl {
     std::string parameterSpecs();
     void load(std::string_view id, TimeBasis basis = TimeBasis::observed,
               Speed speed = {}) {
+        stopLive();
         if (playback)
             playback->enable(false);
         SavedSession metadata;
@@ -1489,6 +1515,7 @@ void UiHost::setLiveSession(std::optional<LiveSessionBoundary> session) {
         return;
     impl_->stopLive();
     impl_->liveSession = std::move(session);
+    impl_->activity.reset();
     impl_->liveError.clear();
     impl_->liveReceived = impl_->liveInvalid = impl_->liveSkipped = 0;
     impl_->performance = {};
@@ -1517,7 +1544,7 @@ std::string UiHost::request(std::string_view envelope) {
             if (args.size())
                 throw std::invalid_argument("unexpected arguments");
             result =
-                R"({"protocolVersion":1,"implementation":"native","supportedMethods":["getCapabilities","getChanges","getLiveChanges","getLiveSpeciesCounts","getCatalog","listSessions","listSessionsPage","prepareReplay","getMaterialEvents")";
+                R"({"protocolVersion":1,"implementation":"native","supportedMethods":["getCapabilities","getChanges","getLiveChanges","getLiveSpeciesCounts","getLiveActivity","getCatalog","listSessions","listSessionsPage","prepareReplay","getMaterialEvents")";
             if (impl_->pieces)
                 result +=
                     R"(,"startPieceFreeze","startPieceImport","getPieceJob","cancelPieceJob","openManagedPiece")";
@@ -1951,6 +1978,7 @@ std::string UiHost::request(std::string_view envelope) {
                    method == "recallSoundscape") {
             Object args(impl_->db.get(), arguments, {"soundscapeId"});
             const auto sid = args.text("soundscapeId", 32);
+            impl_->stopLive();
             if (impl_->playback)
                 impl_->playback->enable(false);
             const auto scene = loadSoundscape(impl_->scenePath(sid));
@@ -2037,6 +2065,31 @@ std::string UiHost::request(std::string_view envelope) {
             result = impl_->renderView(method == "getRenderJob"
                                            ? impl_->renders->get(jid)
                                            : impl_->renders->cancel(jid));
+        } else if (method == "getLiveActivity") {
+            Object args(impl_->db.get(), arguments, {"sessionId", "afterSequence", "limit"});
+            const auto sessionId = args.text("sessionId", 128);
+            const auto after = args.has("afterSequence")
+                ? static_cast<std::uint64_t>(integer(args.text("afterSequence", 20), INT64_MAX)) : 0;
+            const auto limit = args.has("limit") ? args.number("limit", 250) : 250;
+            if (!limit)
+                throw std::invalid_argument("Activity page limit must be positive");
+            const bool requestedSession = impl_->liveSession && impl_->liveSession->id == sessionId;
+            bool active = requestedSession;
+            if (active) {
+                Statement identity(impl_->db.get(), "SELECT value,(SELECT COALESCE(MAX(seq),0) "
+                                                    "FROM revisions) FROM metadata WHERE key='store_id'");
+                active = identity.next() && identity.text(0) == impl_->liveSession->storeId &&
+                         identity.integer(1) >= impl_->liveSession->baselineRevision;
+            }
+            if (requestedSession && !active) {
+                impl_->stopLive();
+                impl_->activity.reset();
+                impl_->liveError = "Live library changed. Restart Collect to resume Listening.";
+            } else if (impl_->playback) {
+                impl_->activity.service(*impl_->playback);
+            }
+            result = impl_->activity.page(sessionId, active, after,
+                                           static_cast<std::size_t>(limit));
         } else if (method == "getLiveChanges") {
             result = impl_->liveChanges(Object(impl_->db.get(), arguments,
                 {"sessionId", "storeId", "afterSequence", "limit"}));

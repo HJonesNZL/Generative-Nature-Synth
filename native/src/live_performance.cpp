@@ -33,6 +33,13 @@ liveRegion(const LiveSettings &settings,
                        std::to_string(west + 60) + "° longitude";
     return {label, label};
 }
+std::string activityRegion(const LiveSettings &settings,
+                           const std::optional<Position> &position) {
+    if (!position || settings.mode == LiveMode::direct || !settings.spatial.enabled)
+        return {};
+    const auto slot = prepareSpatialRoute(settings.spatial, position).regionSlot;
+    return slot ? settings.spatial.regions[slot - 1].name : std::string{};
+}
 bool currentEligible(sqlite3 *db, const std::string &eventId,
                      const LiveSessionBoundary *session) {
     detail::Statement revision(
@@ -158,8 +165,9 @@ void LivePerformance::retryHandedOff() {
 }
 void LivePerformance::submitSmoothed(Clock::time_point now, sqlite3 *db,
                                      PlaybackRuntime &playback,
-                                     VoiceStore *voices, unsigned rootMidi,
-                                     const LiveSessionBoundary *session) {
+                                     VoiceStore *voices, const LiveSettings &settings, unsigned rootMidi,
+                                     const LiveSessionBoundary *session,
+                                     LiveActivityJournal *activity) {
     const auto snap = playback.snapshot();
     acknowledge(snap);
     // Keep decisions near the output, so changes and withdrawals can retire
@@ -196,6 +204,10 @@ void LivePerformance::submitSmoothed(Clock::time_point now, sqlite3 *db,
     const auto reply = playback.submitLiveBatch(
         std::span<const LiveNoteInput>{notes.data(), n});
     for (std::size_t i = 0; i < reply.accepted; ++i) {
+        if (activity)
+            activity->submitted(snap.preparationId, notes[i].id,
+                                pending_.front().observation, notes[i].voice,
+                                activityRegion(settings, pending_.front().observation.position));
         inFlight_.push_back({std::move(pending_.front()), notes[i].id,
                              voiceCharacterIds[static_cast<std::size_t>(
                                  notes[i].voice.character)]});
@@ -225,9 +237,10 @@ void LivePerformance::finish(const Note &note, std::string_view character) {
 void LivePerformance::playDue(Clock::time_point now, sqlite3 *db,
                               PlaybackRuntime &playback, VoiceStore *voices,
                               const LiveSettings &settings, unsigned rootMidi,
-                              const LiveSessionBoundary *session) {
+                              const LiveSessionBoundary *session,
+                              LiveActivityJournal *activity) {
     if (settings.mode == LiveMode::smoothed) {
-        submitSmoothed(now, db, playback, voices, rootMidi, session);
+        submitSmoothed(now, db, playback, voices, settings, rootMidi, session, activity);
         return;
     }
     while (!pending_.empty() && pending_.front().due <= now) {
@@ -245,9 +258,14 @@ void LivePerformance::playDue(Clock::time_point now, sqlite3 *db,
                                    ? musicalSpeciesNote(rootMidi, event.species,
                                                         settings.composition)
                                    : directSpeciesNote(rootMidi, event.species);
-            if (playback.submitLive(voice, pitch, 1, 0, event.position).ok)
-                character = voiceCharacterIds[static_cast<std::size_t>(
-                    voice.character)];
+            const auto preparation = playback.snapshot().preparationId;
+            if (playback.submitLive(voice, pitch, 1, 0, event.position, nextId_).ok) {
+                if (activity)
+                    activity->submitted(preparation, nextId_, event, voice,
+                                        activityRegion(settings, event.position));
+                ++nextId_;
+                character = voiceCharacterIds[static_cast<std::size_t>(voice.character)];
+            }
         }
         if (!character.empty() && settings.mode == LiveMode::musical) {
             if (recent_.size() == 64)
