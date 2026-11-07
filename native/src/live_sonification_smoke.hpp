@@ -28,8 +28,31 @@ inline constexpr auto liveSonificationSmoke = R"JS(
    await waitFor(()=>toggle() && !toggle().disabled,'Live listening switch');
    if ((await live()).enabled || toggle().getAttribute('aria-checked') !== 'false')
      throw Error('Live listening was already enabled.');
+   // Observe the production React requests, excluding this smoke's raw bridge
+   // calls. A raw successful host reply alone does not prove client validation.
+   const polls = {getTransport:0,getAudioState:0};
+   const originalRequest = window.atlasHost.request;
+   let pollError = '', observing = false;
+   window.atlasHost.request = async function(request, ...args) {
+     const track = observing && !request.requestId.startsWith('shell-smoke-') && Object.hasOwn(polls,request.method);
+     const reply = await originalRequest.call(this,request,...args);
+     if (track) {
+       ++polls[request.method];
+       if (!reply.ok || !reply.result || (request.method === 'getAudioState' && reply.result.status !== 'running'))
+         pollError = request.method+' failed during live playback';
+     }
+     return reply;
+   };
+   const checkHeader = () => {
+     const error = document.querySelector('.app-header .header-error')?.textContent;
+     if (observing && error) pollError = error;
+   };
+   const observer = new MutationObserver(checkHeader);
+   observer.observe(document.querySelector('.app-header'),{subtree:true,childList:true,characterData:true});
    toggle().click();
    const armed = await until(live,s=>s.enabled,'explicit start');
+   observing = true;
+   checkHeader();
    if (armed.admitted !== 0) throw Error('Startup backlog sounded.');
    if ((await call('getAudioDevices')).active?.deviceId !== device.id) throw Error('Unexpected output route.');
    result.feedStage='armed';
@@ -51,10 +74,21 @@ inline constexpr auto liveSonificationSmoke = R"JS(
    if (quiet.received!==1 || quiet.admitted!==1 || quiet.dropped || audio.status!=='running' ||
        BigInt(audio.callbackFrames)<=0n) throw Error('Correction, duplicate or device accounting failed.');
    await waitFor(()=>toggle()?.getAttribute('aria-checked')==='true','listening status');
+   await waitFor(()=>polls.getTransport>=3 && polls.getAudioState>=3,
+     'production React transport and audio polling while listening');
+   // Let React consume the observed replies and render validation failures.
+   await new Promise(resolve=>setTimeout(resolve,300));
+   checkHeader();
+   if (pollError) throw Error('Live listening header: '+pollError);
+   if (!/^-?[0-9.]+ dB$/.test(document.querySelector('.app-header .master__db')?.textContent ?? ''))
+     throw Error('React did not render the running output level.');
+   observing = false;
+   observer.disconnect();
+   window.atlasHost.request = originalRequest;
    toggle().click();
    const off=await until(live,s=>!s.enabled,'explicit mute');
    if ((await call('getAudioState')).status!=='disabled') throw Error('Output remained enabled.');
-   result.sonification={device:device.name,listening,off,callbackFrames:audio.callbackFrames,mapObserved:true,duplicatesQuiet:true};
+   result.sonification={device:device.name,listening,off,callbackFrames:audio.callbackFrames,mapObserved:true,duplicatesQuiet:true,polls,headerErrorFree:true};
  }
 )JS";
 } // namespace atlas::standalone

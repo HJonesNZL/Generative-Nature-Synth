@@ -1,5 +1,6 @@
 /** Saved-piece preparation and polling live above both screens. C++ owns all audio/time. */
 import { useEffect, useRef } from "react";
+import { transportPollUpdate } from "./transportPoll.ts";
 import { playbackContext } from "./playbackContext";
 import { useHost } from "./HostContext";
 import { useAppState, useDispatch } from "./store";
@@ -64,15 +65,8 @@ export function usePlayback() {
       if (cancelled) return;
       if (operation.current) { timer = window.setTimeout(() => void poll(), 500); return; }
       if (revision !== client.playbackRevision) { timer = window.setTimeout(() => void poll(), 500); return; }
-      if (!result.ok) dispatch({ type: "transportAck", preparationId: expected.preparationId, generation: expected.generation, transport: { error: result.error.message } });
-      else if (expected.preparationId) {
-        const value = result.value;
-        if (value.preparationId === expected.preparationId && BigInt(value.generation) >= BigInt(expected.generation)) {
-          dispatch({ type: "transportAck", preparationId: expected.preparationId, generation: expected.generation, transport: { ...value, error: null } });
-        } else if (value.preparationId !== expected.preparationId && latest.current.preparationId === expected.preparationId) {
-          dispatch({ type: "transportAck", preparationId: expected.preparationId, generation: expected.generation, transport: { preparationId: null, state: "stopped", error: "Playback preparation changed. Select the saved piece again." } });
-        }
-      }
+      const update = transportPollUpdate(expected, result);
+      if (update) dispatch({ type: "transportAck", preparationId: expected.preparationId, generation: expected.generation, transport: update });
       timer = window.setTimeout(() => void poll(), 500);
     };
     void poll();

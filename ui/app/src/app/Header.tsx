@@ -150,6 +150,8 @@ export function Header({ demoMenu, projectTools }: { demoMenu?: ReactNode; proje
 
   const audioOn = audio?.status === "running" && (caps?.implementation !== "native" || (!!state.transport.preparationId && enabledPreparation === state.transport.preparationId));
   const audioUsable = !!caps && (caps.implementation === "mock" || caps.audioAvailable) && (audio?.status === "running" || audio?.status === "disabled" || audio?.status === "device_lost");
+  const headerError = transportError || state.transport.error || state.transport.pollError || audio?.error ||
+    (audioQ.status === "error" ? audioQ.error.message : null) || gain.error;
   const collecting = collection?.state === "collecting";
   const elapsedMinutes = collection ? Number(BigInt(collection.elapsedUs) / 60_000_000n) : 0;
 
@@ -265,7 +267,7 @@ export function Header({ demoMenu, projectTools }: { demoMenu?: ReactNode; proje
 
       <AudioDeviceSettings audio={audio} busy={busy} apply={setDevice} />
       {demoMenu}
-      {transportError || state.transport.error || audio?.error || (audioQ.status === "error" ? audioQ.error.message : null) || gain.error ? <span className="header-error" role="alert">{transportError ?? state.transport.error ?? audio?.error ?? (audioQ.status === "error" ? audioQ.error.message : null) ?? gain.error}</span> : null}
+      {headerError ? <span className="header-error" role="alert">{headerError}</span> : null}
     </header>
   );
 }

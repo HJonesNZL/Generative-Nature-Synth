@@ -320,15 +320,19 @@ std::string transportView(const PlaybackSnapshot &snapshot) {
                                snapshot.state == AudioState::draining
                            ? "playing"
                            : "stopped";
+    // Live listening has no bounded saved-piece timeline. Its callback clock
+    // keeps advancing beyond the empty preparation used to own the voices.
+    const auto positionFrames = snapshot.live ? 0 : snapshot.positionFrames;
+    const auto totalFrames = snapshot.live ? 0 : snapshot.totalFrames;
     return "{\"preparationId\":" +
            (snapshot.prepared ? quoteJson(preparationId(snapshot)) : "null") +
            ",\"generation\":" + quoteJson(std::to_string(snapshot.generation)) +
            ",\"state\":" + quoteJson(state) + ",\"positionUs\":" +
-           quoteJson(std::to_string(frameMicroseconds(snapshot.positionFrames,
-                                                      snapshot.sampleRate))) +
+           quoteJson(std::to_string(
+               frameMicroseconds(positionFrames, snapshot.sampleRate))) +
            ",\"durationUs\":" +
            quoteJson(std::to_string(
-               frameMicroseconds(snapshot.totalFrames, snapshot.sampleRate))) +
+               frameMicroseconds(totalFrames, snapshot.sampleRate))) +
            "}";
 }
 const char *playbackMessage(PlaybackError error) noexcept {

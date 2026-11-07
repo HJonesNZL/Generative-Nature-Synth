@@ -25,7 +25,7 @@ export interface TransportState {
   generation: Int64String;
   state: "playing" | "paused" | "stopped";
   positionUs: Int64String;
-  /** Native playback timeline, including bounded voice/effect tails. */
+  /** Saved-piece timeline including bounded tails; position/duration are zero during live listening. */
   durationUs: Int64String;
 }
 

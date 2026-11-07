@@ -39,6 +39,7 @@ export interface TransportView {
   durationUs: string | null;
   preparationId: string | null;
   error?: string | null;
+  pollError?: string | null;
   preparing?: boolean;
   preparedContext?: string;
 }

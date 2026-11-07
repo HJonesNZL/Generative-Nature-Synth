@@ -126,6 +126,16 @@ int main() {
         for (int i = 0; i < 80; ++i)
             audio.tick();
         const auto quiet = audio.energy;
+        // An unbounded listening clock must not escape the bounded replay wire contract.
+        for (int i = 0; i < 1000; ++i)
+            audio.tick();
+        check(audio.runtime.snapshot().positionFrames >
+                  audio.runtime.snapshot().totalFrames,
+              "live callback clock exceeds empty preparation timeline");
+        const auto liveTransport = request(host, "getTransport");
+        contains(liveTransport, "\"state\":\"playing\"");
+        contains(liveTransport, "\"positionUs\":\"0\"");
+        contains(liveTransport, "\"durationUs\":\"0\"");
         voices.setParameter("species:birdweather:species:42", "gain", 1,
                             VoiceGesture::begin);
         voices.setParameter("species:birdweather:species:42", "gain", 1,
@@ -174,6 +184,10 @@ int main() {
         audio.energy = 0;
         audio.tick();
         check(audio.energy == 0, "off silences active notes");
+        const auto stoppedLiveTransport = request(host, "getTransport");
+        contains(stoppedLiveTransport, "\"state\":\"stopped\"");
+        contains(stoppedLiveTransport, "\"positionUs\":\"0\"");
+        contains(stoppedLiveTransport, "\"durationUs\":\"0\"");
         collector.collect("birdweather", "2026-11-07T01:09:00Z",
                           fetch(bird("off", "2026-11-07T01:08:30Z")));
         audio.run([&] {

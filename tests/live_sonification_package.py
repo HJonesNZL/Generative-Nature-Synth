@@ -148,6 +148,10 @@ def main():
                     'No actual output callbacks were observed')
             require(sonification['mapObserved'] is True and sonification['duplicatesQuiet'] is True,
                     'Map observation or duplicate/correction suppression failed')
+            require(sonification.get('headerErrorFree') is True,
+                    'Live listening header error regression was not checked')
+            for method in ('getTransport', 'getAudioState'):
+                require(sonification['polls'][method] >= 3, 'Missing React live polls: ' + method)
             evidence = dict(schema='animal-atlas-live-sonification-package-v1', status='passed',
                 binary=str(args.binary.resolve()), fixture=str(args.fixture.resolve()),
                 fixturePhases=[baseline, inserted, duplicates], database=provenance(state / 'live.sqlite3'),
