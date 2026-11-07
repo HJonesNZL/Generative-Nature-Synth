@@ -5,11 +5,11 @@ globalThis.window = {setTimeout, clearTimeout};
 const composition = {enabled:true,tempoBpm:90,tonicPitchClass:0,scale:'majorPentatonic',density:1,variation:.25,seed:1,quantize:true};
 const spatial = {enabled:false,amount:.25,regions:[]};
 const live = {enabled:false,status:'off',received:0,admitted:0,dropped:0,skippedRevisions:0,error:'',mode:'musical',density:3,grouped:0,composition,spatial};
-async function fixture(methods=['getLiveState','setLiveSettings','getLiveOutcome']) {
+async function fixture(methods=['getLiveState','setLiveSettings','getLiveOutcome'], supportsSmoothedLive) {
   const state={reply:live,calls:[]};
   const client=new HostClient({request:async request => {
     state.calls.push(request);
-    return {ok:true,requestId:request.requestId,result:request.method==='getCapabilities' ? {protocolVersion:1,implementation:'native',supportedMethods:['getCapabilities',...methods],audioAvailable:true,maxEventBatch:500,maxVisibleMarkers:400} : state.reply};
+    return {ok:true,requestId:request.requestId,result:request.method==='getCapabilities' ? {protocolVersion:1,implementation:'native',supportedMethods:['getCapabilities',...methods],audioAvailable:true,supportsSmoothedLive,maxEventBatch:500,maxVisibleMarkers:400} : state.reply};
   }});
   assert.equal((await client.connect()).ok,true);
   return {client,state};
@@ -60,5 +60,20 @@ test('live outcomes retain exact species voice and full backend identity bounds'
   for(const patch of [{eventId:'e'.repeat(2049)},{speciesId:'s'.repeat(513)},{representativeId:'r'.repeat(2049)},{voiceCharacter:'unknown'},{voiceCharacter:3}]) {
     state.reply={outcome:{...outcome,...patch}};
     assert.equal((await client.call('getLiveOutcome',{eventId:outcome.eventId})).ok,false,JSON.stringify(patch));
+  }
+});
+
+
+test('Smoothed requires its explicit capability, even on Musical-capable hosts',async()=>{
+  const legacy=await fixture();
+  const before=legacy.state.calls.length;
+  assert.equal((await legacy.client.call('setLiveSettings',{mode:'smoothed'})).error.code,'unsupported');
+  assert.equal(legacy.state.calls.length,before);
+  const {client,state}=await fixture(undefined,true);
+  state.reply={...live,mode:'smoothed',pending:7,catchingUp:true,admitted:2};
+  assert.deepEqual(await client.call('setLiveSettings',{mode:'smoothed'}),{ok:true,value:state.reply});
+  for(const patch of [{pending:-1},{pending:1.5},{catchingUp:1}]) {
+    state.reply={...live,...patch};
+    assert.equal((await client.call('getLiveState',{})).ok,false);
   }
 });

@@ -21,7 +21,7 @@ try {
     const methods=['getCapabilities','getCatalog','getChanges','getLiveState','setLiveEnabled','setLiveSettings','getLiveOutcome','getAudioState'];
     window.atlasHost={request:async request=>{
       const {method,args}=request;f.calls.push({method,args});let result;
-      if(method==='getCapabilities')result={protocolVersion:1,implementation:'native',supportedMethods:methods,audioAvailable:true,libraryAvailable:true,maxEventBatch:500,maxVisibleMarkers:400};
+      if(method==='getCapabilities')result={protocolVersion:1,implementation:'native',supportedMethods:methods,audioAvailable:true,supportsSmoothedLive:true,libraryAvailable:true,maxEventBatch:500,maxVisibleMarkers:400};
       else if(method==='getCatalog')result={species:[{id:'fixture-bird',commonName:'Fixture bird',scientificName:'Synthetic species',group:'bird'}],stations:[{id:'receiver',name:'Fixture receiver',sourceId:'fixture',latitude:-38,longitude:176,positionDescription:'Test'}],sources:[{id:'fixture',name:'Synthetic fixture'}],limited:false};
       else if(method==='getChanges')result={storeId:'musical-ui',nextSequence:'1',events:args.afterSequence==='0'?[{event,liveEligible:false,change:'baseline'}]:[]};
       else if(method==='getAudioState')result={status:f.live.enabled?'running':'disabled',deviceName:null,masterGainDb:-18,peakDbfs:f.live.enabled?f.peak:null,meterIsSimulated:false,clipping:false,activeSynthVoices:0,maxSynthVoices:24};
@@ -32,6 +32,13 @@ try {
   });
   await page.goto(origin);await page.getByRole('switch',{name:'Live listening (off)',exact:true}).waitFor();
   await page.getByRole('button',{name:'Live listening status',exact:true}).click();
+  assert.equal(await page.getByLabel('Live mode',{exact:true}).inputValue(),'direct','startup stays Direct');
+  await page.getByRole('option',{name:'Smoothed (recommended)',exact:true}).waitFor({state:'attached'});
+  await page.getByLabel('Live mode',{exact:true}).selectOption('smoothed');
+  await page.waitForFunction(()=>musicalFixture.live.mode==='smoothed');
+  await page.evaluate(()=>Object.assign(musicalFixture.live,{pending:5,admitted:1,catchingUp:true}));
+  await page.getByText(/1 sounded · 5 pending · catching up with arrivals/).waitFor();
+  assert.equal(await page.getByLabel('Live density',{exact:true}).count(),0);
   await page.getByLabel('Live mode',{exact:true}).selectOption('musical');
   await page.waitForFunction(()=>musicalFixture.live.mode==='musical');
   await page.getByLabel('Live density',{exact:true}).selectOption('6');
@@ -78,6 +85,10 @@ try {
   const livePolls=await page.evaluate(()=>musicalFixture.calls.filter(c=>c.method==='getLiveState').length)-livePollStart;
   assert.ok(livePolls<=3,`one consolidated live poll: ${livePolls}`);
   assert.ok(next-count<=4,`bounded outcome polling, observed ${next-count}`);
+  await page.getByRole('button',{name:'Live listening status',exact:true}).click();
+  await page.getByLabel('Live mode',{exact:true}).selectOption('smoothed');
+  await page.waitForFunction(()=>musicalFixture.live.mode==='smoothed');
+  await page.getByRole('button',{name:'Live listening status',exact:true}).click();
   await mkdir(output,{recursive:true});const checks=[];
   for(const viewport of [{width:1440,height:900},{width:1280,height:800}]){
     await page.setViewportSize(viewport);
@@ -86,7 +97,13 @@ try {
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`${screen} fits ${viewport.width}`);
       const header=await page.locator('header').evaluate(e=>({scroll:e.scrollWidth,width:e.clientWidth}));
       assert.ok(header.scroll<=header.width+1,`header fits ${viewport.width}`);
-      if(screen==='Sound Studio') await page.getByText('Live key & scale',{exact:true}).click();
+      if(screen==='Sound Studio') {
+        await page.getByText('Live key & scale',{exact:true}).click();
+        await page.locator('.studio').getByText('Smoothed uses each species voice and pitch.',{exact:false}).waitFor();
+        assert.equal(await page.getByLabel('Live tempo BPM',{exact:true}).count(),0);
+        assert.equal(await page.getByLabel('Live tonic',{exact:true}).count(),0);
+        assert.equal(await page.locator('.studio').getByLabel('Enable spatial mixing',{exact:true}).count(),1);
+      }
       await page.screenshot({path:resolve(output,`${screen==='Atlas'?'atlas':'studio'}-${viewport.width}.png`)});
       checks.push({screen,...viewport,header});
     }

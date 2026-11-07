@@ -109,8 +109,10 @@ function validLiveListeningReply(method: string, value: unknown): boolean {
   const state = value as Record<string, unknown>;
   return typeof state.enabled === "boolean" && ["off", "listening", "error"].includes(state.status as string) &&
     [state.received, state.admitted, state.dropped, state.skippedRevisions].every(count => Number.isSafeInteger(count) && (count as number) >= 0) &&
-    (state.mode === undefined || state.mode === "direct" || state.mode === "musical") &&
+    (state.mode === undefined || state.mode === "direct" || state.mode === "musical" || state.mode === "smoothed") &&
     (state.density === undefined || Number.isInteger(state.density) && (state.density as number) >= 1 && (state.density as number) <= 8) &&
+    (state.pending === undefined || Number.isSafeInteger(state.pending) && (state.pending as number) >= 0) &&
+    (state.catchingUp === undefined || typeof state.catchingUp === "boolean") &&
     (state.grouped === undefined || Number.isSafeInteger(state.grouped) && (state.grouped as number) >= 0) &&
     (state.composition === undefined || validCompositionReply("getComposition", { settings: state.composition, preparation: null })) &&
     (state.spatial === undefined || validSpatialSettings(state.spatial)) &&
@@ -325,6 +327,7 @@ export class HostClient {
       if (!value || value.protocolVersion !== 1 || !["native", "mock"].includes(value.implementation) ||
           !Array.isArray(value.supportedMethods) || value.supportedMethods.length > 100 ||
           !value.supportedMethods.every((method) => typeof method === "string") || typeof value.audioAvailable !== "boolean" ||
+          value.supportsSmoothedLive !== undefined && typeof value.supportsSmoothedLive !== "boolean" ||
           value.libraryAvailable !== undefined && typeof value.libraryAvailable !== "boolean" ||
           !Number.isInteger(value.maxEventBatch) || value.maxEventBatch < 1 || value.maxEventBatch > 500 ||
           !Number.isInteger(value.maxVisibleMarkers) || value.maxVisibleMarkers < 1 || value.maxVisibleMarkers > 2000) {
@@ -359,6 +362,9 @@ export class HostClient {
     if (!options.skipCapabilityCheck && !this.supports(method)) {
       return { ok: false, error: { code: "unsupported", message: `${method} is not offered by this host` } };
     }
+    if (method === "setLiveSettings" && (args as Partial<import("./contracts").LiveSettings>).mode === "smoothed" && this.capabilities?.supportsSmoothedLive !== true) {
+      return { ok: false, error: { code: "unsupported", message: "Smoothed live mode is not offered by this host" } };
+    }
     if (options.signal?.aborted) return { ok: false, error: { code: "aborted", message: "Aborted before sending" } };
     const requestId = nextRequestId();
     const timeoutMs = options.timeoutMs ?? 8000;
@@ -386,7 +392,10 @@ export class HostClient {
         return { ok: false, error: r.error };
       });
       const result = await Promise.race([reply, interrupted]);
-      if (options.signal?.aborted) return { ok: false, error: { code: "aborted", message: "Superseded by a newer request" } };
+      if (method === "setLiveSettings" && (args as Partial<import("./contracts").LiveSettings>).mode === "smoothed" && this.capabilities?.supportsSmoothedLive !== true) {
+      return { ok: false, error: { code: "unsupported", message: "Smoothed live mode is not offered by this host" } };
+    }
+    if (options.signal?.aborted) return { ok: false, error: { code: "aborted", message: "Superseded by a newer request" } };
       return result;
     } catch (error) {
       return { ok: false, error: { code: "internal", message: error instanceof Error ? error.message : String(error) } };

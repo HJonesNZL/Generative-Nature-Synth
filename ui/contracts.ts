@@ -14,6 +14,7 @@ export interface HostCapabilities {
   implementation: "mock" | "native";
   supportedMethods: string[];
   audioAvailable: boolean;
+  supportsSmoothedLive?: boolean;
   /** False is intentional scene-only operation; absent preserves older hosts. */
   libraryAvailable?: boolean;
   maxEventBatch: number;
@@ -30,7 +31,7 @@ export interface TransportState {
 }
 
 export interface LiveSettings {
-  mode: "direct" | "musical";
+  mode: "direct" | "musical" | "smoothed";
   density: number; // whole notes per phrase, 1..8
   composition: CompositionSettings;
   spatial: SpatialSettings;
@@ -45,6 +46,8 @@ export interface LiveOutcome {
 }
 export interface LiveListeningState extends Partial<LiveSettings> {
   grouped?: number;
+  pending?: number;
+  catchingUp?: boolean;
   enabled: boolean;
   status: "off" | "listening" | "error";
   received: number;
