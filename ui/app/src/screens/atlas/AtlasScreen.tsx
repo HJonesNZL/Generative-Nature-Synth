@@ -2,7 +2,7 @@
 import { useMemo, useState } from "react";
 import type { EventView } from "../../host/contracts";
 import type { MapLocateRequest } from "../../components/map/geo";
-import { latestObservations } from "../shared/mapMarkers";
+import { latestObservations, sourceType, type SourceType } from "../shared/mapMarkers";
 import { useCatalog } from "../../app/catalog";
 import { useAppState, useDispatch } from "../../app/store";
 import { CoverageLegend, GrainPanel } from "../shared/GrainPanel";
@@ -16,10 +16,14 @@ export function AtlasScreen() {
   const catalog = useCatalog();
   const { mode } = useAppState();
   const dispatch = useDispatch();
-  const latest = useMemo(() => mode === "live" ? latestObservations(view.allEvents) : [], [mode, view.allEvents]);
+  const [sourceTypes, setSourceTypes] = useState<SourceType[]>(["acoustic", "tracking", "reported"]);
+  const filteredView = useMemo(() => mode === "live" ? { ...view, events: view.events.filter(event => sourceTypes.includes(sourceType(event))), allEvents: view.allEvents.filter(event => sourceTypes.includes(sourceType(event))) } : view, [mode, view, sourceTypes]);
+  const exactLatest = useMemo(() => latestObservations(filteredView.allEvents, false).slice(0, 8), [filteredView.allEvents]);
+  const latest = useMemo(() => mode === "live" ? latestObservations(filteredView.allEvents) : [], [mode, filteredView.allEvents]);
   const [locateRequest, setLocateRequest] = useState<MapLocateRequest | null>(null);
   const locate = (event: EventView) => {
     dispatch({ type: "selectEvent", eventId: event.id });
+    if (!sourceTypes.includes(sourceType(event))) setSourceTypes(types => [...types, sourceType(event)]);
     const key = markerKeyForEvent(event);
     if (!key || !event.position) return;
     const { latitude, longitude } = event.position;
@@ -28,8 +32,8 @@ export function AtlasScreen() {
   return (
     <main className="screen atlas" id="main" aria-label="Atlas">
       <LeftColumn view={view} catalog={catalog} />
-      <MapStage view={view} catalog={catalog} latest={latest} locateRequest={mode === "live" ? locateRequest : null} />
-      <RightColumn view={view} catalog={catalog} latest={latest} onLocate={locate} />
+      <MapStage view={filteredView} catalog={catalog} latest={exactLatest} sourceTypes={sourceTypes} onSourceTypes={setSourceTypes} locateRequest={mode === "live" ? locateRequest : null} />
+      <RightColumn view={filteredView} catalog={catalog} latest={latest} onLocate={locate} />
       <GrainPanel view={view} catalog={catalog} aside={mode === "history" ? <CoverageLegend /> : null} />
     </main>
   );

@@ -128,3 +128,14 @@ test('older hosts cannot receive unsupported new library/live requests', async (
   for (const method of methods) assert.equal((await client.call(method, {})).error.code, 'unsupported');
   assert.deepEqual(calls, ['getCapabilities']);
 });
+
+test('worldwide collection acknowledges an exclusive bird scope and bounded regional health', async () => {
+  const { client, state } = await harness();
+  const world = source('birdweather_world', true);
+  world.regions = [{id:'asia', lastAttemptUtc:null, lastObservationUtc:null, complete:false, gap:false, error:null}];
+  const sources = [source('birdweather'), source('nzsharks'), world, source('inaturalist', true)];
+  state.payload = {...live(), sources};
+  assert.equal((await client.call('setLiveSources', {sourceIds:['birdweather_world','inaturalist']})).ok, true);
+  await rejects(client, state, 'getLiveSources', {}, {...live(), sources:[source('birdweather', true), ...sources.slice(1)]}, 'overlapping bird modes');
+  await rejects(client, state, 'getLiveSources', {}, {...live(), sources:[...sources.slice(0,2), {...world, regions:Array(9).fill(world.regions[0])}, sources[3]]}, 'regional status overflow');
+});

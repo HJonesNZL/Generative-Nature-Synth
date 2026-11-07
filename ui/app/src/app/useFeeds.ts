@@ -56,6 +56,7 @@ export function useLiveFeed() {
         liveStore.clear();
       }
       liveStore.cursor = { storeId: value.storeId, nextSequence: value.nextSequence };
+      if (value.baselineTotal !== undefined) liveStore.setFeed({ baselineOmitted: Math.max(0, value.baselineTotal - value.events.length) });
       liveStore.upsert(value.events.map(({ event, liveEligible, change }) => ({ event, pulse: liveEligible && change === "new" })));
       liveStore.requestOutcomes(client, value.events.map((e) => e.event.id));
       liveStore.setFeed({ status: "running", error: null, lastBatchWallMs: value.events.length ? Date.now() : liveStore.feed.lastBatchWallMs });

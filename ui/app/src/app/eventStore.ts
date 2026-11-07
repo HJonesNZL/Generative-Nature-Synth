@@ -5,9 +5,10 @@
  * animation frame via a version counter (useSyncExternalStore). This keeps a
  * burst of detections from causing one React render per event.
  *
- * Capacity: CAPACITY events (oldest evicted first). Pulse pool: PULSE_CAPACITY
+ * Capacity: CAPACITY events (newest observations and source/sector coverage retained). Pulse pool: PULSE_CAPACITY
  * recent live-eligible arrivals for map pings. Outcomes are cached per id.
  */
+import { observedMicroseconds, sampleCoverage } from "./displayCoverage.ts";
 import { useSyncExternalStore } from "react";
 import type { EventView } from "../host/contracts";
 import type { MusicalOutcome } from "../host/provisional";
@@ -34,7 +35,7 @@ export class EventStore {
   private pendingOutcomeIds = new Set<string>();
   private outcomeTimer: number | null = null;
   cursor: { storeId: string; nextSequence: string } = { storeId: "", nextSequence: "0" };
-  feed: { status: "idle" | "loading" | "running" | "retrying" | "error" | "unsupported"; error: string | null; lastBatchWallMs: number | null; totalRecords: number | null; displayOmitted: number } = { status: "idle", error: null, lastBatchWallMs: null, totalRecords: null, displayOmitted: 0 };
+  feed: { status: "idle" | "loading" | "running" | "retrying" | "error" | "unsupported"; error: string | null; lastBatchWallMs: number | null; totalRecords: number | null; baselineOmitted: number; displayOmitted: number } = { status: "idle", error: null, lastBatchWallMs: null, totalRecords: null, baselineOmitted: 0, displayOmitted: 0 };
 
   constructor(private readonly label: string) {}
 
@@ -78,7 +79,7 @@ export class EventStore {
   clear() {
     this.dispose();
     this.outcomes.clear();
-    this.feed = { status: "idle", error: null, lastBatchWallMs: null, totalRecords: null, displayOmitted: 0 };
+    this.feed = { status: "idle", error: null, lastBatchWallMs: null, totalRecords: null, baselineOmitted: 0, displayOmitted: 0 };
     this.byId.clear();
     this.order = [];
     this.pulses = [];
@@ -101,7 +102,15 @@ export class EventStore {
       }
     }
     if (this.order.length > CAPACITY) {
-      const evicted = this.order.splice(0, this.order.length - CAPACITY);
+      const newest = [...this.order].reverse().map(id => this.byId.get(id)!);
+      newest.sort((a, b) => {
+        const at = observedMicroseconds(a.observedAtUtc) ?? 0n;
+        const bt = observedMicroseconds(b.observedAtUtc) ?? 0n;
+        return at === bt ? 0 : at > bt ? -1 : 1;
+      });
+      const retained = new Set(sampleCoverage(newest, CAPACITY).map(event => event.id));
+      const evicted = this.order.filter(id => !retained.has(id));
+      this.order = this.order.filter(id => retained.has(id));
       this.feed.displayOmitted += evicted.length;
       for (const id of evicted) { this.byId.delete(id); this.outcomes.delete(id); }
     }

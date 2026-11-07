@@ -67,6 +67,7 @@ export function useMaterialView(): MaterialView {
 
 export function markerKeyForEvent(e: EventView | null): string | null {
   if (!e) return null;
+  if (e.eventKind === "human_observation" || e.locationKind === "reported_location") return `reported:${e.id}`;
   if (e.eventKind === "satellite_fix" || e.eventKind === "gps_fix") return `fix:${e.id}`;
   return e.stationId ? `station:${e.stationId}` : null;
 }

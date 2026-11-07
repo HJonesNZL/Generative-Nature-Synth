@@ -19,7 +19,7 @@ import { Map2D } from "../../components/map/Map2D";
 import { NZLoupe } from "../../components/map/NZLoupe";
 import { BOUNDS_WORLD, type MapRegion, type MapLocateRequest, type Ring } from "../../components/map/geo";
 import { markerKeyForEvent, type MaterialView } from "../shared/useMaterialView";
-import { buildMarkers, boundMarkers, newestObservation, isReceiverDetection } from "../shared/mapMarkers";
+import { buildMarkers, boundMarkers, newestObservation, isReceiverDetection, type SourceType } from "../shared/mapMarkers";
 import "../../styles/map-stage.css";
 
 function webglAvailable(): boolean {
@@ -33,7 +33,7 @@ function webglAvailable(): boolean {
   }
 }
 
-export function MapStage({ view, catalog, latest, locateRequest }: { view: MaterialView; catalog: Catalog; latest: readonly EventView[]; locateRequest: MapLocateRequest | null }) {
+export function MapStage({ view, catalog, latest, locateRequest, sourceTypes, onSourceTypes }: { sourceTypes: SourceType[]; onSourceTypes: (types: SourceType[]) => void; view: MaterialView; catalog: Catalog; latest: readonly EventView[]; locateRequest: MapLocateRequest | null }) {
   const state = useAppState();
   const dispatch = useDispatch();
   const { liveStore, caps } = useHost();
@@ -58,14 +58,14 @@ export function MapStage({ view, catalog, latest, locateRequest }: { view: Mater
     return keys;
   }, [latest]);
   const mapEvents = scope === "loaded" ? view.allEvents : view.events;
-  const allMarkers = useMemo(() => buildMarkers(view, catalog, state.highlightSpeciesId, scope === "loaded"), [view, catalog, state.highlightSpeciesId, scope]);
+  const allMarkers = useMemo(() => buildMarkers(view, catalog, state.highlightSpeciesId, scope === "loaded").filter(marker => state.mode !== "live" || sourceTypes.includes(marker.kind === "station" ? "acoustic" : marker.kind === "reported" ? "reported" : "tracking")), [view, catalog, state.highlightSpeciesId, scope, sourceTypes, state.mode]);
   const selected = view.store.get(state.selectedEventId);
   const selectedKey = markerKeyForEvent(selected);
   const markers = useMemo(() => boundMarkers(allMarkers, Math.min(400, caps?.maxVisibleMarkers ?? 400), selectedKey, recentMarkerKeys, latestMarkerKey), [allMarkers, caps, selectedKey, recentMarkerKeys, latestMarkerKey]);
   const newest = newestObservation(mapEvents)?.observedAtUtc;
 
   const pick = (key: string) => {
-    if (key.startsWith("fix:")) { dispatch({ type: "selectEvent", eventId: key.slice(4) }); return; }
+    if (key.startsWith("fix:") || key.startsWith("reported:")) { dispatch({ type: "selectEvent", eventId: key.slice(key.indexOf(":") + 1) }); return; }
     const stationId = key.slice("station:".length);
     const here = mapEvents.filter((e) => e.stationId === stationId && isReceiverDetection(e));
     const preferred = here.filter((e) => e.speciesId === state.highlightSpeciesId);
@@ -82,12 +82,15 @@ export function MapStage({ view, catalog, latest, locateRequest }: { view: Mater
         <span className="badge badge--context">{state.mode.toUpperCase()} · {state.timeBasis === "observed" ? "OBSERVED TIME" : "ARRIVAL TIME"}</span>
         <Popover className="map-details" align="start" label="Map details and coverage" trigger={<span className="pill pill--quiet">{caps?.implementation === "mock" ? "Demo map" : "Map details"}<Icon name="chevron-down" size={11} /></span>}>
           {() => <div className="map-overview small">
-            <strong>{caps?.implementation === "mock" ? "Illustrative demo data" : "Reported receivers and measured fixes"}</strong>
+            <strong>{caps?.implementation === "mock" ? "Illustrative demo data" : "Reported receivers, measured fixes and observations"}</strong>
             <SegmentedControl<"loaded" | "window"> label="Map records" size="sm" value={scope} onChange={setScope} options={[{ value: "loaded", label: "All loaded records" }, { value: "window", label: view.label }]} />
-            <p>{mapEvents.length} records · {markers.length} of {allMarkers.length} locations shown.</p>
+            {live ? <fieldset><legend>Source types · map and latest list</legend>{([["acoustic", "Acoustic detections"], ["tracking", "Individual tracking"], ["reported", "Reported observations"]] as const).map(([type, label]) => <label key={type} style={{display: "block"}}><input type="checkbox" checked={sourceTypes.includes(type)} onChange={event => onSourceTypes(event.target.checked ? [...sourceTypes, type] : sourceTypes.filter(value => value !== type))} /> {label}</label>)}</fieldset> : null}
+            <p>{mapEvents.length} matching records · {markers.length} of {allMarkers.length} locations shown{allMarkers.length > markers.length ? ` · ${allMarkers.length - markers.length} locations omitted` : ""}.</p>
+            <p>At display capacity, source and geographic-sector coverage is sampled while retaining the exact newest observations. Source filters change this display only.</p>
             <p>Newest loaded observation: {newest ?? "unknown"}</p>
-            <details><summary>Coverage and display limits</summary><p className="muted">{caps?.implementation === "mock" ? "Illustrative demo. " : state.mode === "live" ? "Initially up to 200 records, reserving room for reported animal positions; up to 2,000 retained records. " : "Up to 2,000 loaded material records. "}Catalogue sampled from 2,000 records. Coverage is limited to available sources. Receivers locate detections, not individual animals; fixes are observations at their stated times.</p></details>
-            {view.feed.displayOmitted ? <p>{view.feed.displayOmitted} records omitted from this display; stored material is unchanged.</p> : null}
+            <details><summary>Coverage and display limits</summary><p className="muted">{caps?.implementation === "mock" ? "Illustrative demo. " : state.mode === "live" ? "Initially up to 200 records, reserving room for reported animal positions; up to 2,000 retained records. " : "Up to 2,000 loaded material records. "}Catalogue lists up to 500 species, 500 receivers and 128 sources from the selected material or current library. Coverage is limited to available sources. Receivers locate detections, not individual animals; fixes are observations at their stated times.</p></details>
+            {live && view.feed.baselineOmitted ? <p>At connection, {view.feed.baselineOmitted} current records were omitted from the initial baseline. Later updates may include some of them.</p> : null}
+            {view.feed.displayOmitted ? <p>{view.feed.displayOmitted} {live ? "record evictions since connection" : "records omitted from this display"}; stored material is unchanged.</p> : null}
             <p>Filled receiver markers show the highlighted species in the selected map records. Coastlines: Natural Earth.</p>
             <button type="button" className={`pill pill--quiet${state.reducedMotion ? " is-current" : ""}`} aria-pressed={state.reducedMotion} onClick={() => dispatch({ type: "reducedMotion", value: !state.reducedMotion })}>Reduce motion</button>
           </div>}
@@ -141,6 +144,7 @@ export function MapStage({ view, catalog, latest, locateRequest }: { view: Mater
           <span><Icon name="station" size={12} /> Receiver</span>
           <span className="legend-filled"><span className="dot" aria-hidden="true" /> Highlighted species</span>
           <span><Icon name="satellite-fix" size={10} /> Measured fix</span>
+          <span>△ Reported observation</span>
           <span><span className="dash" aria-hidden="true" /> Effect region</span>
         </div>
         <details className="map-locations small">

@@ -66,3 +66,27 @@ test('latest rows use observed microseconds, revision ties and a forty-row limit
   assert.deepEqual(result.slice(0, 3), [newest, rows[41], rows[40]]);
   assert.equal(result.at(-1), rows[3]);
 });
+
+
+test('crowded latest feed reserves quiet sources and sectors while retaining exact eight newest', () => {
+  const busy = Array.from({length: 70}, (_, i) => ({id: `busy-${i}`, sourceId: 'busy', revisionSequence: String(i + 10), observedAtUtc: new Date(200000 + i * 1000).toISOString(), position: {latitude: -41, longitude: 174}}));
+  const quiet = [{id: 'quiet-nz', sourceId: 'quiet', revisionSequence: '1', observedAtUtc: new Date(100000).toISOString(), position: {latitude: -41, longitude: 174}}, {id: 'quiet-europe', sourceId: 'quiet', revisionSequence: '2', observedAtUtc: new Date(101000).toISOString(), position: {latitude: 51, longitude: 0}}];
+  const sampled = latestObservations([...quiet, ...busy]);
+  assert.equal(sampled.length, 40);
+  assert.deepEqual(sampled.slice(0, 8).map(e => e.id), latestObservations(busy, false).slice(0, 8).map(e => e.id));
+  assert.ok(sampled.includes(quiet[0]) && sampled.includes(quiet[1]));
+  const markers = busy.map(e => ({key:e.id, kind:'station', emphasis:'normal', sourceId:e.sourceId, ...e.position}));
+  markers.push(...quiet.map(e => ({key:e.id, kind:'reported', emphasis:'normal', sourceId:e.sourceId, ...e.position})));
+  const mapped = boundMarkers(markers, 20, null);
+  assert.ok(mapped.some(m => m.key === 'quiet-nz') && mapped.some(m => m.key === 'quiet-europe'));
+});
+
+test('reported observations have their own identity, symbol and reported accuracy without inventing an individual', () => {
+  const report = {...fix('report'), individualId:null, sourceId:'reports', eventKind:'human_observation', locationKind:'reported_location'};
+  const markers = buildMarkers({events:[report],allEvents:[report]}, {...catalog,data:{stations:[]}},null);
+  assert.equal(markers.length,1);
+  assert.equal(markers[0].kind,'reported');
+  assert.equal(markers[0].key,'reported:report');
+  assert.match(markers[0].label,/Individual identity unavailable reported observation/);
+  assert.equal(markers[0].uncertaintyMetres,50);
+});

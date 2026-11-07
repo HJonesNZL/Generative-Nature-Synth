@@ -10,13 +10,14 @@ export type Ring = Array<[number, number]>;
 export const LAND_110M: Ring[] = (land110 as unknown as { rings: Ring[] }).rings;
 export const NZ_50M: Ring[] = (nz50 as unknown as { rings: Ring[] }).rings;
 
-export type MarkerKind = "station" | "fix";
+export type MarkerKind = "station" | "fix" | "reported";
 export type MarkerEmphasis = "highlight" | "normal" | "dim";
 
 /** One map symbol. Stations aggregate many detections; fixes are single measured positions. */
 export interface MapMarker {
   key: string;              // "station:<id>" or "fix:<eventId>"
   kind: MarkerKind;
+  sourceId?: string;
   latitude: number;
   longitude: number;
   emphasis: MarkerEmphasis;

@@ -91,7 +91,8 @@ export interface EventView {
 }
 
 export interface LiveSourceState {
-  id: "birdweather" | "nzsharks";
+  id: "birdweather" | "nzsharks" | "birdweather_world" | "inaturalist";
+  regions?: {id: string; lastAttemptUtc: string | null; lastObservationUtc: string | null; complete: boolean; gap: boolean; error: string | null}[];
   enabled: boolean;
   polling: boolean;
   lastAttemptUtc: string | null;
@@ -309,7 +310,7 @@ export interface HostMethods {
   getSourceHealth: { request: Record<string, never>; response: SourceHealth[] };
   getChanges: {
     request: { storeId: string; afterSequence: Int64String; limit: number };
-    response: { storeId: string; nextSequence: Int64String; events: Array<{ event: EventView; liveEligible: boolean; change: "baseline" | "new" | "corrected" }> };
+    response: { storeId: string; nextSequence: Int64String; baselineTotal?: number; events: Array<{ event: EventView; liveEligible: boolean; change: "baseline" | "new" | "corrected" }> };
   };
   listSessionsPage: { request: { limit: number; cursor: string | null }; response: { items: SessionView[]; nextCursor: string | null; sourceId: string; revision: string } };
   listSessions: { request: { limit: number }; response: SessionView[] };

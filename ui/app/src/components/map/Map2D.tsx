@@ -93,7 +93,9 @@ export function Map2D({ bounds, markers, regions, selectedKey, latestMarkerKey, 
         const latest = m.key === latestMarkerKey;
         const recent = !latest && recentMarkerKeys?.has(m.key);
         const r = (m.emphasis === "highlight" ? 13 : 10) * scale;
-        const symbol = m.kind === "fix"
+        const symbol = m.kind === "reported"
+          ? <path d={`M${x} ${y - r}L${x + r} ${y + r}L${x - r} ${y + r}Z`} className={`map2d__fix map2d__reported is-${m.emphasis}`} />
+          : m.kind === "fix"
           ? <path d={`M${x} ${y - r}L${x + r} ${y}L${x} ${y + r}L${x - r} ${y}Z`} className={`map2d__fix is-${m.emphasis}`} />
           : <circle cx={x} cy={y} r={r} className={`map2d__station is-${m.emphasis}`} />;
         return (

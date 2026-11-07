@@ -870,30 +870,48 @@ struct UiHost::Impl {
         const auto storeId = head.text(0);
         const auto high = head.integer(1);
         const bool baseline = requestedStore != storeId || after > high;
-        // Reserve at most half the baseline (up to 100) for current animal-
-        // position fixes, so high-volume detections do not erase older fixes.
-        // The remaining slots retain newest changes; all rows remain baseline.
+        std::int64_t baselineTotal = 0;
+        if (baseline) {
+            // The still-active head statement pins the same read snapshot.
+            Statement total(db.get(), "SELECT COUNT(*) FROM events");
+            if (!total.next())
+                throw std::runtime_error("library baseline count unavailable");
+            baselineTotal = total.integer(0);
+        }
+        // Baseline-only coverage sampling: reserve current measured fixes,
+        // then representative source/geographic-sector records. The remaining
+        // slots keep newest observations plus the newest revision. Incremental
+        // cursor delivery is unchanged.
         const auto sql =
             baseline
-                ? "WITH fixes AS (SELECT r.seq,r.event_json,r.change_kind,"
-                  "r.live_eligible FROM events e JOIN revisions r ON "
-                  "r.seq=e.revision_seq WHERE r.seq<=" +
+                ? "WITH current AS (SELECT r.seq,r.observed_at,r.source_id AS source,"
+                  "json_extract(r.event_json,'$.location_kind') AS location,"
+                  "CAST((json_extract(r.event_json,'$.latitude')+90)/30 AS INTEGER) AS lat_sector,"
+                  "CAST((json_extract(r.event_json,'$.longitude')+180)/60 AS INTEGER) AS lon_sector "
+                  "FROM events e JOIN revisions r ON r.seq=e.revision_seq WHERE r.seq<=" +
                       std::to_string(high) +
-                      " AND json_extract(r.event_json,'$.location_kind')="
-                      "'individual_fix' AND json_extract(r.event_json,"
-                      "'$.latitude') IS NOT NULL AND json_extract("
-                      "r.event_json,'$.longitude') IS NOT NULL "
-                      "ORDER BY r.seq DESC LIMIT " +
+                      "), ranked AS (SELECT *,ROW_NUMBER() OVER (PARTITION BY "
+                      "source,location,lat_sector,lon_sector ORDER BY seq DESC) AS coverage_rank "
+                      "FROM current), numbered AS (SELECT *,ROW_NUMBER() OVER (PARTITION BY "
+                      "source ORDER BY coverage_rank,seq DESC) AS source_rank FROM ranked), "
+                      "fixes AS (SELECT seq "
+                      "FROM numbered WHERE location='individual_fix' AND lat_sector IS NOT NULL "
+                      "AND lon_sector IS NOT NULL ORDER BY source_rank,coverage_rank,seq DESC LIMIT " +
                       std::to_string(std::min<std::int64_t>(100, limit / 2)) +
-                      "), recent AS (SELECT seq,event_json,change_kind,"
-                      "live_eligible FROM revisions WHERE seq<=" +
-                      std::to_string(high) +
-                      " AND seq NOT IN (SELECT seq FROM fixes) "
-                      "ORDER BY seq DESC LIMIT (" +
+                      "), coverage AS (SELECT seq "
+                      "FROM numbered WHERE coverage_rank=1 AND seq NOT IN (SELECT seq FROM fixes) "
+                      "ORDER BY source_rank,seq DESC LIMIT " +
+                      std::to_string(std::min<std::int64_t>(50, limit / 4)) +
+                      "), recent AS (SELECT seq "
+                      "FROM current WHERE seq NOT IN (SELECT seq FROM fixes UNION ALL "
+                      "SELECT seq FROM coverage) ORDER BY (seq=" + std::to_string(high) +
+                      ") DESC,observed_at DESC,seq DESC LIMIT (" +
                       std::to_string(limit) +
-                      "-(SELECT count(*) FROM fixes))) "
-                      "SELECT * FROM (SELECT * FROM fixes UNION ALL "
-                      "SELECT * FROM recent) ORDER BY seq"
+                      "-(SELECT count(*) FROM fixes)-(SELECT count(*) FROM coverage))) "
+                      "SELECT r.seq,r.event_json,r.change_kind,r.live_eligible FROM "
+                      "(SELECT seq FROM fixes UNION ALL SELECT seq FROM coverage "
+                      "UNION ALL SELECT seq FROM recent) selected JOIN revisions r "
+                      "ON r.seq=selected.seq ORDER BY r.seq"
                 : "SELECT seq,event_json,change_kind,live_eligible FROM "
                   "revisions WHERE seq>" +
                       std::to_string(after) +
@@ -920,10 +938,11 @@ struct UiHost::Impl {
         }
         return "{\"storeId\":" + quoteJson(storeId) +
                ",\"nextSequence\":" + quoteJson(std::to_string(next)) +
+               (baseline ? ",\"baselineTotal\":" + std::to_string(baselineTotal) : "") +
                ",\"events\":" + events + "]}";
     }
     std::string catalog(const Object &args, bool registerVoices = false) {
-        std::vector<std::string> payloads;
+        std::vector<std::pair<std::string, std::string>> payloads;
         if (!args.null("material")) {
             Object selection(db.get(), args.object("material"),
                              {"kind", "sessionId"});
@@ -931,64 +950,106 @@ struct UiHost::Impl {
                 throw std::invalid_argument("only saved material is supported");
             const auto id = selection.text("sessionId", 128);
             loadMaterial(id);
-            for (const auto &e : material->events()) {
-                if (payloads.size() == 2000)
-                    break;
-                payloads.push_back(e.normalizedJson);
-            }
         } else {
             if (!library)
                 throw std::runtime_error("Wildlife library is unavailable");
-            Statement rows(
-                db.get(),
-                "SELECT r.event_json FROM events e JOIN revisions r ON "
-                "r.seq=e.revision_seq ORDER BY r.seq DESC LIMIT 2000");
-            while (rows.next())
-                payloads.push_back(rows.text(0));
+            // Return one newest current record per distinct identity, with
+            // one extra identity to distinguish a full catalogue from overflow.
+            // SQL owns the scan; C++ retains at most 1,131 representative rows.
+            const auto collect = [&](std::string_view key,
+                                     std::string_view condition,
+                                     std::size_t capacity) {
+                const auto field = "json_extract(r.event_json,'$." +
+                                   std::string(key) + "')";
+                const auto sql =
+                    "SELECT r.event_json,MAX(r.seq) FROM events e JOIN "
+                    "revisions r ON r.seq=e.revision_seq WHERE " + field +
+                    " IS NOT NULL AND " + field + "<>'' " +
+                    std::string(condition) + " GROUP BY " + field +
+                    " ORDER BY MAX(r.seq) DESC LIMIT " +
+                    std::to_string(capacity + 1);
+                Statement rows(db.get(), sql.c_str());
+                while (rows.next())
+                    payloads.emplace_back(key, rows.text(0));
+            };
+            collect("species_id", "", 500);
+            collect("station_id",
+                    "AND json_extract(r.event_json,'$.location_kind') IN "
+                    "('station_detection','receiver_detection') AND "
+                    "json_extract(r.event_json,'$.latitude') IS NOT NULL "
+                    "AND json_extract(r.event_json,'$.longitude') IS NOT NULL",
+                    500);
+            collect("source_id", "", 128);
         }
-        if (registerVoices)
-            registerPayloads(payloads);
         std::map<std::string, std::string> species, stations, sources;
-        bool limited = payloads.size() == 2000;
-        for (const auto &payload : payloads) {
+        bool limited = false;
+        const auto add = [&](auto &entries, const std::string &id,
+                             std::string json, std::size_t capacity) {
+            if (entries.contains(id))
+                return;
+            if (entries.size() == capacity) {
+                limited = true;
+                return;
+            }
+            entries.emplace(id, std::move(json));
+        };
+        const auto inspect = [&](const std::string &payload, std::string_view category) {
             detail::validateStoredEvent(db.get(), payload);
             const Object e(db.get(), payload);
             const auto source = e.text("source_id", 128),
                        speciesId = e.optionalText("species_id"),
                        station = e.optionalText("station_id");
-            if (!speciesId.empty() && species.size() < 500) {
+            if ((category.empty() || category == "species_id") &&
+                !speciesId.empty()) {
                 const auto common = e.optionalText("common_name");
-                species.try_emplace(
-                    speciesId,
+                const auto scientific = e.optionalText("scientific_name");
+                const auto name =
+                    common.empty() ? (scientific.empty() ? speciesId : scientific)
+                                   : common;
+                add(species, speciesId,
                     "{\"id\":" + quoteJson(speciesId) + ",\"commonName\":" +
-                        quoteJson(common.empty() ? speciesId : common) +
-                        ",\"scientificName\":" +
-                        quoteJson(e.optionalText("scientific_name")) +
-                        ",\"group\":\"unclassified\"}");
+                        quoteJson(name) + ",\"scientificName\":" +
+                        quoteJson(scientific) +
+                        ",\"group\":\"unclassified\"}", 500);
             }
             const auto locationKind = e.text("location_kind");
             const bool receiver = locationKind == "station_detection" ||
                                   locationKind == "receiver_detection";
-            if (receiver && !station.empty() && !e.null("latitude") &&
-                stations.size() < 500)
-                stations.try_emplace(
-                    station, "{\"id\":" + quoteJson(station) +
-                                 ",\"name\":" + quoteJson(station) +
-                                 ",\"sourceId\":" + quoteJson(source) +
-                                 ",\"latitude\":" + e.json("latitude") +
-                                 ",\"longitude\":" + e.json("longitude") +
-                                 ",\"positionDescription\":\"Reported station "
-                                 "position; individual position unknown\"}");
-            if (sources.size() < 128)
-                sources.try_emplace(
-                    source, "{\"id\":" + quoteJson(source) +
-                                ",\"name\":" + quoteJson(source) +
-                                ",\"measurement\":\"Provider records; inspect "
-                                "event kind\",\"attribution\":" +
-                                quoteJson(e.optionalText("attribution")) + "}");
+            if ((category.empty() || category == "station_id") && receiver &&
+                !station.empty() && !e.null("latitude") && !e.null("longitude"))
+                add(stations, station,
+                    "{\"id\":" + quoteJson(station) +
+                        ",\"name\":" + quoteJson(station) +
+                        ",\"sourceId\":" + quoteJson(source) +
+                        ",\"latitude\":" + e.json("latitude") +
+                        ",\"longitude\":" + e.json("longitude") +
+                        ",\"positionDescription\":\"Reported station "
+                        "position; individual position unknown\"}", 500);
+            if (category.empty() || category == "source_id")
+                add(sources, source,
+                    "{\"id\":" + quoteJson(source) +
+                        ",\"name\":" + quoteJson(source) +
+                        ",\"measurement\":\"Provider records; inspect "
+                        "event kind\",\"attribution\":" +
+                        quoteJson(e.optionalText("attribution")) + "}", 128);
+        };
+        if (!args.null("material")) {
+            // The verified material already owns its events. Inspect in place
+            // without copying an arbitrarily large session into this catalogue.
+            for (auto event = material->events().rbegin();
+                 event != material->events().rend(); ++event)
+                inspect(event->normalizedJson, "");
+        } else {
+            for (const auto &[category, payload] : payloads)
+                inspect(payload, category);
         }
-        limited = limited || species.size() == 500 || stations.size() == 500 ||
-                  sources.size() == 128;
+        if (registerVoices && voices) {
+            std::vector<VoiceSpecies> available;
+            for (const auto &[id, json] : species)
+                available.push_back(
+                    {id, Object(db.get(), json).text("commonName", 2048)});
+            voices->registerSpecies(available);
+        }
         const auto array = [](const auto &entries) {
             std::string result = "[";
             for (const auto &[id, json] : entries) {

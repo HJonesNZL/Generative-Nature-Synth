@@ -46,7 +46,7 @@ function SpeciesPanel({ view, catalog }: { view: MaterialView; catalog: Catalog 
       {caps?.libraryAvailable === false ? <p className="small muted">No live library connected. {caps.supportedMethods.includes("getLiveSources") ? "Open Collect to choose live sources and start updates." : "Choose a wildlife library in the app toolbar."}</p> : null}
       <span className="label" title="Counts include all loaded records. Select a species to highlight its reported locations.">SPECIES · {species.length} AVAILABLE</span>
       {catalog.status === "unsupported" ? <Notice tone="caution" title="Species list unavailable">This host does not provide a catalogue.</Notice> : null}
-      {catalog.data?.limited ? <Notice tone="caution" title="Catalogue display limited">Names and stations are sampled from at most 2,000 records.</Notice> : null}
+      {catalog.data?.limited ? <Notice tone="caution" title="Catalogue display limited">More names or stations are available than can be displayed (500 species, 500 receivers, 128 sources).</Notice> : null}
       <label className="sr-only" htmlFor="species-search">Find species</label>
       <input id="species-search" type="search" className="input" placeholder="Find species…" value={search} onChange={(event) => setSearch(event.target.value)} />
       <button type="button" className="btn btn--quiet btn--sm" aria-pressed={highlightSpeciesId === null} onClick={() => dispatch({ type: "highlightSpecies", speciesId: null })}>All available species</button>

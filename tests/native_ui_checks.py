@@ -89,6 +89,68 @@ class NativeUiTests(unittest.TestCase):
         self.assertEqual(catalog['species'][0]['group'],'unclassified')
         self.assertEqual(catalog['stations'][0]['latitude'],-41)
 
+    def catalogue_event(self, identity, species='fixture:recent', station='fixture:recent-station', common='Recent bird'):
+        return event('fixture',identity,'2026-01-01T00:30:00Z','acoustic_species_detection',
+                     'station_detection',-42,175,station_id=station,species_id=species,
+                     common_name=common,scientific_name='Prosthemadera novaeseelandiae')
+
+    def test_catalogue_covers_old_identities_without_false_record_limit(self):
+        values=[(self.catalogue_event('recent-'+str(i)),{}) for i in range(2100)]
+        self.store.ingest('fixture',values,True)
+        catalog=self.request('getCatalog')
+        self.assertFalse(catalog['limited'])
+        self.assertEqual({s['id'] for s in catalog['species']}, {'fixture:species:tui','fixture:recent'})
+        self.assertEqual({s['id'] for s in catalog['stations']}, {'fixture:station:one','fixture:recent-station'})
+        saved=self.sessions.snapshot('Long fixture',observed_from='2026-01-01T00:00:00Z',observed_to='2026-01-01T01:00:00Z')
+        historical=self.request('getCatalog',dict(material=dict(kind='session',sessionId=saved['id'])))
+        self.assertFalse(historical['limited'])
+        self.assertEqual({s['id'] for s in historical['species']}, {s['id'] for s in catalog['species']})
+
+    def test_catalogue_capacity_means_actual_omission_and_latest_metadata(self):
+        values=[(self.catalogue_event('species-'+str(i),species='fixture:s'+str(i)),{}) for i in range(499)]
+        self.store.ingest('fixture',values,True)
+        full=self.request('getCatalog')
+        self.assertEqual(len(full['species']),500)
+        self.assertFalse(full['limited'])
+        latest=self.catalogue_event('latest',species='fixture:s0',common=None)
+        self.store.ingest('fixture',[(latest,{})],True)
+        updated=self.request('getCatalog')
+        named=next(s for s in updated['species'] if s['id']=='fixture:s0')
+        self.assertEqual(named['commonName'],'Prosthemadera novaeseelandiae')
+        self.store.ingest('fixture',[(self.catalogue_event('overflow',species='fixture:overflow'),{})],True)
+        overflow=self.request('getCatalog')
+        self.assertEqual(len(overflow['species']),500)
+        self.assertTrue(overflow['limited'])
+
+    def test_receiver_catalogue_exact_capacity_and_overflow(self):
+        values=[(self.catalogue_event('receiver-'+str(i),species='fixture:species:tui',
+                                     station='fixture:receiver'+str(i)),{}) for i in range(499)]
+        self.store.ingest('fixture',values,True)
+        full=self.request('getCatalog')
+        self.assertEqual(len(full['stations']),500)
+        self.assertFalse(full['limited'])
+        self.store.ingest('fixture',[(self.catalogue_event('extra-receiver',
+                          species='fixture:species:tui',station='fixture:extra-receiver'),{})],True)
+        overflow=self.request('getCatalog')
+        self.assertEqual(len(overflow['stations']),500)
+        self.assertTrue(overflow['limited'])
+
+    def test_source_catalogue_exact_capacity_and_overflow(self):
+        for i in range(127):
+            source='fixture-source-'+str(i)
+            value=event(source,'event','2026-01-01T00:30:00Z','gps_fix','individual_fix',
+                        -41,174,individual_id=source+':individual')
+            self.store.ingest(source,[(value,{})],True)
+        full=self.request('getCatalog')
+        self.assertEqual(len(full['sources']),128)
+        self.assertFalse(full['limited'])
+        value=event('overflow-source','event','2026-01-01T00:30:00Z','gps_fix',
+                    'individual_fix',-41,174,individual_id='overflow-source:individual')
+        self.store.ingest('overflow-source',[(value,{})],True)
+        overflow=self.request('getCatalog')
+        self.assertEqual(len(overflow['sources']),128)
+        self.assertTrue(overflow['limited'])
+
     def test_individual_fix_station_metadata_does_not_create_receiver(self):
         value=event('fixture','gps-site','2026-01-01T00:20:00Z','gps_fix','individual_fix',40,-70,
                     station_id='fixture:site',individual_id='fixture:tag',provenance_mode='demo')

@@ -85,6 +85,8 @@ class MapSourceCoverageTests(unittest.TestCase):
 
     def assert_baseline(self, page, limit):
         self.assertLessEqual(len(page["events"]), limit)
+        with self.store.connect() as db:
+            self.assertEqual(page["baselineTotal"], db.execute("SELECT COUNT(*) FROM events").fetchone()[0])
         sequences = [int(item["event"]["revisionSequence"]) for item in page["events"]]
         self.assertEqual(sequences, sorted(set(sequences)))
         self.assertEqual(page["nextSequence"], str(self.store.high_water()))
@@ -145,10 +147,34 @@ class MapSourceCoverageTests(unittest.TestCase):
                 self.assertEqual(len(fixes), min(100, limit // 2))
                 self.assertEqual(len(page["events"]), limit)
 
+    def test_source_and_sector_reserves_include_reported_observations(self):
+        observations = [
+            (event("synthetic_reports", "nz", "2026-01-01T00:00:00Z",
+                   "human_observation", "reported_location", -41, 174,
+                   common_name="Synthetic report", uncertainty_m=250), {}),
+            (event("synthetic_reports", "europe", "2026-01-01T00:00:00Z",
+                   "human_observation", "reported_location", 51, 0,
+                   common_name="Synthetic report", uncertainty_m=500), {}),
+        ]
+        self.store.ingest("synthetic_reports", observations, True)
+        self.store.ingest("synthetic_bird", [
+            (event("synthetic_bird", "busy-" + str(i), "2026-01-01T03:00:00Z",
+                   "acoustic_species_detection", "station_detection", -42, 173), {})
+            for i in range(600)
+        ], True)
+        page = self.request()
+        self.assert_baseline(page, 200)
+        reports = [item["event"] for item in page["events"] if item["event"]["sourceId"] == "synthetic_reports"]
+        self.assertEqual({row["position"]["latitude"] for row in reports}, {-41, 51})
+        self.assertEqual({row["position"]["uncertaintyMetres"] for row in reports}, {250, 500})
+        self.assertTrue(all(row["individualId"] is None for row in reports))
+        self.assertEqual(page["events"][-1]["event"]["revisionSequence"], str(self.store.high_water()))
+
     def test_live_cursor_continues_after_baseline_without_replaying_old_fixes(self):
         baseline = self.request()
         empty = self.request(baseline["storeId"], baseline["nextSequence"])
         self.assertEqual(empty["events"], [])
+        self.assertNotIn("baselineTotal", empty)
         arrival = event("synthetic_bird", "arrival", "2026-01-01T03:00:00Z",
                         "acoustic_species_detection", "station_detection", -42, 173)
         self.store.ingest("synthetic_bird", [(arrival, {})], True)

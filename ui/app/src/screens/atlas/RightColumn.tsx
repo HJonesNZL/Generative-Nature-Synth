@@ -160,10 +160,11 @@ function EventPanel({ view, catalog, latest, onLocate }: Props) {
       </div>
       {tab === "selected" ? (
         <div role="tabpanel" id="panel-selected" aria-labelledby="tab-selected" className="event-panel__body">
-          {selected ? <Inspector event={selected} outcome={view.store.outcome(selected.id)} catalog={catalog} /> : <EmptyState title="No event selected">Pick a station on the map, a line in Grain, or an item under {state.mode === "live" ? "Latest detections" : "Events"}.</EmptyState>}
+          {selected ? <Inspector onLocate={onLocate} event={selected} outcome={view.store.outcome(selected.id)} catalog={catalog} /> : <EmptyState title="No event selected">Pick a station on the map, a line in Grain, or an item under {state.mode === "live" ? "Latest detections" : "Events"}.</EmptyState>}
         </div>
       ) : (
         <div role="tabpanel" id="panel-incoming" aria-labelledby="tab-incoming" className="event-panel__body">
+          {state.mode === "live" && view.allEvents.length > incoming.length ? <p className="small muted">Showing {incoming.length} of {view.allEvents.length} matching records; {view.allEvents.length - incoming.length} omitted. Sampled across sources and geographic sectors, ordered by observed time.</p> : null}
           {incoming.length === 0 ? <EmptyState title="Nothing here yet">{state.mode === "live" ? "Collected detections appear here, ordered by observation time." : "No events in this material."}</EmptyState> : (
             <ul className={state.mode === "live" ? "incoming latest-detections" : "incoming"} aria-label={state.mode === "live" ? "Latest detections by observation time" : "Events"}>
               {incoming.map((e, index) => state.mode === "live" ? (
@@ -200,7 +201,7 @@ const KIND_TEXT: Record<EventView["eventKind"], string> = {
   human_observation: "Human observation",
 };
 
-function Inspector({ event, outcome, catalog }: { event: EventView; outcome: MusicalOutcome | undefined; catalog: Catalog }) {
+function Inspector({ event, outcome, catalog, onLocate }: { onLocate: (event: EventView) => void; event: EventView; outcome: MusicalOutcome | undefined; catalog: Catalog }) {
   const dispatch = useDispatch();
   const { client } = useHost();
   const [libQ] = useHostQuery("getVoiceLibrary", {}, []);
@@ -208,7 +209,7 @@ function Inspector({ event, outcome, catalog }: { event: EventView; outcome: Mus
   const voiceId = outcome && "voiceId" in outcome ? outcome.voiceId : lib?.entries.flatMap((g) => g.species.map((s) => ({ s, g }))).find(({ s }) => s.speciesId === event.speciesId)?.s.voiceId ?? null;
   const o = outcomeText(outcome);
   const identity = event.individualId ? `Individual ${event.individualId}${event.deploymentId ? ` (deployment ${event.deploymentId})` : ""}` : "Species only — individual unknown";
-  const location = !event.position ? "No usable position" : ["station_detection", "receiver_detection"].includes(event.locationKind) && event.stationId ? `${catalog.stationName(event.stationId)} receiver position (not the animal’s position)` : `Estimated position ±${event.position.uncertaintyMetres != null ? `${(event.position.uncertaintyMetres / 1000).toFixed(1)} km` : "unknown"}`;
+  const location = !event.position ? "No usable position" : ["station_detection", "receiver_detection"].includes(event.locationKind) && event.stationId ? `${catalog.stationName(event.stationId)} receiver position (not the animal’s position)` : `${event.locationKind === "reported_location" || event.eventKind === "human_observation" ? "Reported observation location" : "Measured fix"}; reported accuracy ${event.position.uncertaintyMetres != null ? `±${event.position.uncertaintyMetres} m` : "unknown"}`;
   return (
     <div className="inspector">
       <div className="row-between">
@@ -223,6 +224,7 @@ function Inspector({ event, outcome, catalog }: { event: EventView; outcome: Mus
         <dt>Location</dt><dd>{location}</dd>
         <dt>Source</dt><dd>{catalog.sourceName(event.sourceId)}{event.attribution ? ` · ${event.attribution}` : ""}</dd>
       </dl>
+      {event.position && markerKeyForEvent(event) ? <button type="button" className="btn btn--quiet btn--sm" onClick={() => onLocate(event)}>Locate observation on map</button> : null}
       <p className="small"><span aria-hidden="true">→ </span>{o.short}</p>
       <details className="panel-details small"><summary>Record details</summary>
         <dl className="kv kv--tight">

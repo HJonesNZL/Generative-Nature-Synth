@@ -67,13 +67,14 @@ interface GlobeRuntime {
   discs: THREE.InstancedMesh;
   rings: THREE.InstancedMesh;
   fixes: THREE.InstancedMesh;
+  reported: THREE.InstancedMesh;
   selection: THREE.Mesh;
   latest: THREE.Mesh;
   recent: THREE.InstancedMesh;
   pulses: THREE.Mesh[];
   regionGroup: THREE.Group;
   globe: THREE.Mesh;
-  markerKeys: { discs: string[]; fixes: string[] };
+  markerKeys: { discs: string[]; fixes: string[]; reported: string[] };
   requestRender: () => void;
   dispose: () => void;
 }
@@ -127,12 +128,14 @@ export function GlobeView(props: GlobeProps) {
     const discGeometry = new THREE.CircleGeometry(1, 24);
     const ringGeometry = new THREE.RingGeometry(0.72, 1, 24);
     const fixGeometry = new THREE.CircleGeometry(1, 4);
+    const reportedGeometry = new THREE.CircleGeometry(1, 3);
     const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
     const ringMaterial = new THREE.MeshBasicMaterial({ color: COLORS.accent, side: THREE.DoubleSide });
     const discs = new THREE.InstancedMesh(discGeometry, markerMaterial, MAX_MARKERS);
     const rings = new THREE.InstancedMesh(ringGeometry, ringMaterial, MAX_MARKERS);
     const fixes = new THREE.InstancedMesh(fixGeometry, markerMaterial, MAX_MARKERS);
-    for (const m of [discs, rings, fixes]) { m.count = 0; m.frustumCulled = false; scene.add(m); }
+    const reported = new THREE.InstancedMesh(reportedGeometry, markerMaterial, MAX_MARKERS);
+    for (const m of [discs, rings, fixes, reported]) { m.count = 0; m.frustumCulled = false; scene.add(m); }
 
     const selection = new THREE.Mesh(new THREE.RingGeometry(0.8, 1, 40), new THREE.MeshBasicMaterial({ color: COLORS.accent, side: THREE.DoubleSide }));
     selection.visible = false;
@@ -251,10 +254,10 @@ export function GlobeView(props: GlobeProps) {
       const rect = canvas.getBoundingClientRect();
       const pointer = new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
       raycaster.setFromCamera(pointer, camera);
-      const hits = raycaster.intersectObjects([discs, fixes, globe], false);
+      const hits = raycaster.intersectObjects([discs, fixes, reported, globe], false);
       const hit = hits[0];
       if (!hit || hit.object === globe || hit.instanceId === undefined) return;
-      const keys = hit.object === discs ? runtime.current!.markerKeys.discs : runtime.current!.markerKeys.fixes;
+      const keys = hit.object === discs ? runtime.current!.markerKeys.discs : hit.object === reported ? runtime.current!.markerKeys.reported : runtime.current!.markerKeys.fixes;
       const key = keys[hit.instanceId];
       if (key) propsRef.current.onPick(key);
     };
@@ -266,10 +269,10 @@ export function GlobeView(props: GlobeProps) {
     const onVisibility = () => { if (!document.hidden) requestRender(); };
     document.addEventListener("visibilitychange", onVisibility);
 
-    const disposables: Array<{ dispose: () => void }> = [texture, globeGeometry, globeMaterial, rimGeometry, rimMaterial, discGeometry, ringGeometry, fixGeometry, markerMaterial, ringMaterial, pulseGeometry, selection.geometry, selection.material as THREE.Material, latest.geometry, latest.material as THREE.Material, recent.geometry, recent.material as THREE.Material, ...pulses.map((p) => p.material as THREE.Material), controls];
+    const disposables: Array<{ dispose: () => void }> = [texture, globeGeometry, globeMaterial, rimGeometry, rimMaterial, discGeometry, ringGeometry, fixGeometry, reportedGeometry, markerMaterial, ringMaterial, pulseGeometry, selection.geometry, selection.material as THREE.Material, latest.geometry, latest.material as THREE.Material, recent.geometry, recent.material as THREE.Material, ...pulses.map((p) => p.material as THREE.Material), controls];
     runtime.current = {
-      renderer, scene, camera, controls, discs, rings, fixes, selection, latest, recent, pulses, regionGroup, globe,
-      markerKeys: { discs: [], fixes: [] },
+      renderer, scene, camera, controls, discs, rings, fixes, reported, selection, latest, recent, pulses, regionGroup, globe,
+      markerKeys: { discs: [], fixes: [], reported: [] },
       requestRender,
       dispose: () => {
         cancelAnimationFrame(frame);
@@ -282,7 +285,7 @@ export function GlobeView(props: GlobeProps) {
         document.removeEventListener("visibilitychange", onVisibility);
         for (const child of regionGroup.children) { const line = child as THREE.Line; line.geometry.dispose(); (line.material as THREE.Material).dispose(); }
         for (const d of disposables) d.dispose();
-        discs.dispose(); rings.dispose(); fixes.dispose(); recent.dispose();
+        discs.dispose(); rings.dispose(); fixes.dispose(); reported.dispose(); recent.dispose();
         label.remove();
         renderer.dispose();
         canvas.remove();
@@ -303,7 +306,8 @@ export function GlobeView(props: GlobeProps) {
     const up = new THREE.Vector3(0, 0, 1);
     let d = 0;
     let f = 0;
-    rt.markerKeys = { discs: [], fixes: [] };
+    let o = 0;
+    rt.markerKeys = { discs: [], fixes: [], reported: [] };
     for (const m of props.markers.slice(0, MAX_MARKERS)) {
       const pos = latLonToVector(m.latitude, m.longitude, 1.004);
       quaternion.setFromUnitVectors(up, pos.clone().normalize());
@@ -311,7 +315,12 @@ export function GlobeView(props: GlobeProps) {
       scale.setScalar(size);
       matrix.compose(pos, quaternion, scale);
       const color = m.emphasis === "highlight" ? COLORS.accent : m.emphasis === "dim" ? COLORS.dim : COLORS.normal;
-      if (m.kind === "fix") {
+      if (m.kind === "reported") {
+        rt.reported.setMatrixAt(o, matrix);
+        rt.reported.setColorAt(o, color);
+        rt.markerKeys.reported.push(m.key);
+        o += 1;
+      } else if (m.kind === "fix") {
         rt.fixes.setMatrixAt(f, matrix);
         rt.fixes.setColorAt(f, m.emphasis === "dim" ? COLORS.dim : COLORS.fix);
         rt.markerKeys.fixes.push(m.key);
@@ -354,8 +363,9 @@ export function GlobeView(props: GlobeProps) {
     rt.discs.count = d;
     rt.rings.count = d;
     rt.fixes.count = f;
+    rt.reported.count = o;
     rt.selection.visible = props.markers.some((m) => m.key === props.selectedKey);
-    for (const mesh of [rt.discs, rt.rings, rt.fixes]) {
+    for (const mesh of [rt.discs, rt.rings, rt.fixes, rt.reported]) {
       mesh.instanceMatrix.needsUpdate = true;
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     }

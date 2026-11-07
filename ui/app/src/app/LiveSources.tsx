@@ -10,7 +10,7 @@ type LiveSourceState = HostMethods["getLiveSources"]["response"];
 type LiveSource = LiveSourceState["sources"][number];
 type SourceId = LiveSource["id"];
 
-const SOURCE_NAMES: Record<SourceId, string> = { birdweather: "NZ bird detections", nzsharks: "NZ shark reports" };
+const SOURCE_NAMES: Record<SourceId, string> = { birdweather: "NZ bird detections", nzsharks: "NZ shark reports", birdweather_world: "Worldwide bird detections", inaturalist: "Worldwide reported sightings" };
 const DEFAULT_SOURCES: SourceId[] = ["birdweather", "nzsharks"];
 
 /** Status polling is read-only and bounded. Applying an explicit source selection
@@ -69,7 +69,8 @@ export function LiveSourcesControl() {
   const [draft, setDraft] = useState<SourceId[] | null>(null);
   const [applyError, setApplyError] = useState<string | null>(null);
   const enabled = status?.sources.filter(source => source.enabled).map(source => source.id) ?? [];
-  const selected = draft ?? (enabled.length ? enabled : DEFAULT_SOURCES);
+  const defaults: SourceId[] = status?.sources.some(source => source.id === "birdweather_world") ? ["birdweather_world", "nzsharks"] : DEFAULT_SOURCES;
+  const selected = draft ?? (enabled.length ? enabled : defaults);
   const collecting = status?.collecting === true;
   const disabled = pending || !connected || !status || !client.supports("setLiveSources");
   const changeSources = async (sourceIds: SourceId[], close: () => void) => {
@@ -86,8 +87,8 @@ export function LiveSourcesControl() {
       <p className="menu__note">Updates run only while this app is open. Each launch starts paused; choose sources and start again.</p>
       <fieldset className="live-sources__choices" disabled={disabled}>
         <legend className="sr-only">Sources to collect</legend>
-        {DEFAULT_SOURCES.map(id => <label className="menu__check" key={id}>
-          <input type="checkbox" checked={selected.includes(id)} onChange={event => setDraft(event.target.checked ? [...selected, id] : selected.filter(sourceId => sourceId !== id))} />
+        {(status?.sources.map(source => source.id) ?? DEFAULT_SOURCES).map(id => <label className="menu__check" key={id}>
+          <input type="checkbox" checked={selected.includes(id)} onChange={event => setDraft(event.target.checked ? [...selected.filter(other => !(id === "birdweather" && other === "birdweather_world" || id === "birdweather_world" && other === "birdweather")), id] : selected.filter(sourceId => sourceId !== id))} />
           {SOURCE_NAMES[id]}
         </label>)}
       </fieldset>
@@ -113,7 +114,7 @@ export function LiveSourcesStatus() {
     <span className="label">SOURCES</span>
     {status ? <>
       {!status.libraryActive ? <p className="small muted">{status.collecting ? "Live updates use the app’s live library; this view is browsing another library." : caps?.libraryAvailable === false ? "Live updates paused." : "Library browsing only. Live updates paused."} Open Collect to choose sources.</p> : !status.collecting ? <p className="small muted">Live updates paused. Open Collect to start again.</p> : null}
-      {status.sources.map(source => <LiveSourceRow key={source.id} source={source} now={now} />)}
+      {status.sources.filter(source => status.collecting ? source.enabled : source.lastAttemptUtc || source.id === "nzsharks" || (status.sources.length === 2 ? source.id === "birdweather" : source.id === "birdweather_world")).map(source => <LiveSourceRow key={source.id} source={source} now={now} />)}
     </> : !error ? <p className="small muted" role="status">Reading live-source status…</p> : null}
     {error ? <Notice tone="problem" title="Could not read live sources" action={<button type="button" className="btn btn--quiet btn--sm" onClick={refresh}>Retry</button>}>{error}</Notice> : null}
     <SourceDetails />
@@ -127,7 +128,7 @@ function LiveSourceRow({ source, now }: { source: LiveSource; now: number }) {
     <span className="source-row__name">{SOURCE_NAMES[source.id]}</span>
     <span className="source-row__line">{update}</span>
     {source.lastSuccessUtc && (!source.enabled || source.error || source.polling) ? <span className="source-row__line">Last update {formatAge(source.lastSuccessUtc, now)} ago</span> : null}
-    <span className="source-row__line">{source.id === "birdweather" ? "Newest detection" : "Newest reported fix"} {source.lastObservationUtc ? `${formatAge(source.lastObservationUtc, now)} old` : "unknown"}</span>
+    <span className="source-row__line">{source.id === "nzsharks" ? "Newest reported fix" : source.id === "inaturalist" ? "Newest sighting" : "Newest detection"} {source.lastObservationUtc ? `${formatAge(source.lastObservationUtc, now)} old` : "unknown"}</span>
     {source.error ? <span className={`source-row__line${partialReason ? " is-stale" : " is-problem"}`}>{partialReason ?? `Source error: ${source.error.replaceAll("_", " ")}`}</span> : null}
     {source.gap ? <span className="source-row__line is-stale">Collection gap reported</span> : null}
     {source.lastSuccessUtc && !source.complete && (!partialReason || !source.enabled || source.polling) ? <span className="source-row__line is-stale">Partial source update · coverage incomplete</span> : null}
@@ -135,6 +136,7 @@ function LiveSourceRow({ source, now }: { source: LiveSource; now: number }) {
       <summary>Collection details</summary>
       <p>{source.records} collected records. {source.lastAttemptUtc ? `Last attempt ${formatAge(source.lastAttemptUtc, now)} ago.` : "No collection attempt this launch."}</p>
       {source.enabled && !source.polling ? <p>Next check in about {source.nextPollSeconds} seconds; source limits or retries may delay it.</p> : null}
+      {source.regions?.length ? <ul aria-label="Bird region coverage">{source.regions.map(region => <li key={region.id}>{region.id.replaceAll("_", " ")} · {region.error || region.gap ? "partial coverage" : region.lastAttemptUtc ? "checked" : "awaiting check"}{region.lastObservationUtc ? ` · last heard ${formatAge(region.lastObservationUtc, now)} ago` : ""}</li>)}</ul> : null}
       <p>Observation age describes the animal report; update age describes when the app checked the source.</p>
     </details>
   </div>;
@@ -145,6 +147,8 @@ function SourceDetails() {
     <summary>Source scope and timing</summary>
     <p>NZ birds: BirdWeather acoustic species detections at receiver stations. These are not identified individual birds or tracks. Source uploads may be delayed and coverage is best effort.</p>
     <p>NZ sharks: latest reported source-subject snapshots. Subject identity is retained as reported; identified individuals and continuous movement are not guaranteed. Intermediate fixes can be missed.</p>
+    <p>Worldwide birds rotate through listening regions under the same four-request budget as NZ birds. Choose one bird coverage option.</p>
+    <p>Worldwide sightings sample public CC0 and CC BY animal observations from iNaturalist every 15 minutes. Times and accuracy come from the observer. A sighting represents a report at a place.</p>
     <p>Checks run no more often than once per minute for birds and once per 15 minutes for sharks. A successful check does not make an old observation current.</p>
   </details>;
 }

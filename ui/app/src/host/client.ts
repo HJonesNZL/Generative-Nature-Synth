@@ -33,6 +33,15 @@ export type HostResult<T> = { ok: true; value: T } | { ok: false; error: { code:
 const unsignedDecimal = (value: unknown): value is string => typeof value === "string" && /^(0|[1-9][0-9]{0,18})$/.test(value) && BigInt(value) <= 9223372036854775807n;
 const identity = (value: unknown): value is string => typeof value === "string" && value.length > 0 && value.length <= 256;
 const voiceIdentity = (value: unknown): value is string => typeof value === "string" && value.length > 0 && value.length <= 264;
+function validBaselineTotal(method: string, value: unknown): boolean {
+  if (method !== "getChanges") return true;
+  if (!value || typeof value !== "object") return false;
+  const reply = value as Record<string, unknown>;
+  return reply.baselineTotal === undefined ||
+    Number.isSafeInteger(reply.baselineTotal) && (reply.baselineTotal as number) >= 0 &&
+    Array.isArray(reply.events) && (reply.baselineTotal as number) >= reply.events.length &&
+    reply.events.every(row => row && row.change === "baseline" && row.liveEligible === false);
+}
 function validVoiceDefinition(value: unknown): boolean {
   if (!value || typeof value !== "object") return false;
   const voice = value as Record<string, unknown>;
@@ -148,21 +157,27 @@ function validLiveSources(value: unknown, method: string, args: unknown): boolea
   const state = value as Record<string, unknown>;
   if (typeof state.collecting !== "boolean" || typeof state.libraryActive !== "boolean" ||
       state.libraryChanged !== undefined && typeof state.libraryChanged !== "boolean" ||
-      !Array.isArray(state.sources) || state.sources.length !== 2) return false;
+      !Array.isArray(state.sources) || ![2, 4].includes(state.sources.length)) return false;
   const ids = new Set();
   const timestamp = (v: unknown) => v === null || typeof v === "string" && v.length <= 40 && /^\d{4}-\d\d-\d\dT.*Z$/.test(v) && Number.isFinite(Date.parse(v));
   const valid = state.sources.every(source => {
-    if (!source || !["birdweather", "nzsharks"].includes(source.id) || ids.has(source.id) ||
+    if (!source || !["birdweather", "nzsharks", "birdweather_world", "inaturalist"].includes(source.id) || ids.has(source.id) ||
         ![source.enabled, source.polling, source.complete, source.gap].every(v => typeof v === "boolean") ||
         ![source.lastAttemptUtc, source.lastSuccessUtc, source.lastObservationUtc].every(timestamp) ||
         !(source.error === null || typeof source.error === "string" && /^[a-z0-9_]{1,100}$/.test(source.error)) ||
         !unsignedDecimal(source.records) || !Number.isInteger(source.nextPollSeconds) || source.nextPollSeconds < 0 || source.nextPollSeconds > 86400) return false;
+    if (source.regions !== undefined && (source.id !== "birdweather_world" || !Array.isArray(source.regions) || source.regions.length > 8 ||
+        !source.regions.every((r: Record<string, unknown>) => r && typeof r.id === "string" && /^[a-z_]{1,32}$/.test(r.id) &&
+          timestamp(r.lastAttemptUtc) && timestamp(r.lastObservationUtc) && typeof r.complete === "boolean" && typeof r.gap === "boolean" &&
+          (r.error === null || typeof r.error === "string" && /^[a-z0-9_]{1,100}$/.test(r.error))))) return false;
     ids.add(source.id); return true;
-  }) && state.collecting === state.sources.some(source => source.enabled);
+  }) && ids.has("birdweather") && ids.has("nzsharks") &&
+    state.sources.filter(s => s.enabled && (s.id === "birdweather" || s.id === "birdweather_world")).length <= 1 &&
+    state.collecting === state.sources.some(source => source.enabled);
   if (!valid || method !== "setLiveSources") return valid;
   const requested = (args as { sourceIds?: unknown } | null)?.sourceIds;
-  return Array.isArray(requested) && requested.length <= 2 && new Set(requested).size === requested.length &&
-    requested.every(id => ["birdweather", "nzsharks"].includes(id)) &&
+  return Array.isArray(requested) && requested.length <= 3 && new Set(requested).size === requested.length &&
+    requested.every(id => ids.has(id)) &&
     state.sources.every(source => source.enabled === requested.includes(source.id));
 }
 function validSessionPage(value: unknown, args: unknown): boolean {
@@ -307,7 +322,7 @@ export class HostClient {
       const request = { protocolVersion: 1 as const, requestId, method, args };
       const reply = (this.host as ExtendedHost).request(request, controller.signal).then((r): HostResult<AllMethods[M]["response"]> => {
         if (!r || typeof r !== "object" || typeof r.ok !== "boolean" || r.requestId !== requestId) return { ok: false, error: { code: "internal", message: "Reply did not match request id" } };
-        if (r.ok) return "result" in r && validPlaybackReply(method, r.result) && validVoiceReply(method, r.result, args) && validSoundscapeReply(method, r.result, args) && validCompositionReply(method, r.result) && validSpatialReply(method, r.result) && (method !== "listSessionsPage" || validSessionPage(r.result, args)) && (!["getLiveSources", "setLiveSources"].includes(method) || validLiveSources(r.result, method, args)) && (!["getAudioDevices", "setAudioDevice"].includes(method) || validAudioDeviceCatalog(r.result)) ? { ok: true, value: r.result } : { ok: false, error: { code: "internal", message: "Malformed host result" } };
+        if (r.ok) return "result" in r && validBaselineTotal(method, r.result) && validPlaybackReply(method, r.result) && validVoiceReply(method, r.result, args) && validSoundscapeReply(method, r.result, args) && validCompositionReply(method, r.result) && validSpatialReply(method, r.result) && (method !== "listSessionsPage" || validSessionPage(r.result, args)) && (!["getLiveSources", "setLiveSources"].includes(method) || validLiveSources(r.result, method, args)) && (!["getAudioDevices", "setAudioDevice"].includes(method) || validAudioDeviceCatalog(r.result)) ? { ok: true, value: r.result } : { ok: false, error: { code: "internal", message: "Malformed host result" } };
         if (!r.error || typeof r.error.message !== "string" || !["unsupported", "invalid_request", "unavailable", "stale_generation", "internal"].includes(r.error.code))
           return { ok: false, error: { code: "internal", message: "Malformed host error" } };
         return { ok: false, error: r.error };

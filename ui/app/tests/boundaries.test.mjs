@@ -97,3 +97,32 @@ test('playback payload validation rejects malformed native timelines and audio s
   payload = { ...payload, masterGainDb: NaN };
   assert.equal((await client.call('getAudioState', {})).error.code, 'internal');
 });
+
+
+test('display retention protects quiet source sectors and exact newest observations across busy arrivals', () => {
+  const store = new EventStore('coverage');
+  const quiet = ['nz','europe'].map((id,i) => ({...event(id),sourceId:'quiet',observedAtUtc:'2026-01-01T00:00:00Z',position:{latitude:i ? 51 : -41,longitude:i ? 0 : 174}}));
+  const newest = {...event('observed-newest'),sourceId:'busy',observedAtUtc:'2026-01-01T10:00:00.000002Z'};
+  store.upsert([...quiet,newest].map(event=>({event,pulse:false})));
+  store.upsert(Array.from({length:2200},(_,i)=>({event:{...event('busy-'+i),sourceId:'busy',observedAtUtc:'2026-01-01T23:00:00.000001+13:00'},pulse:false})));
+  assert.equal(store.size,2000);
+  assert.equal(store.feed.displayOmitted,203);
+  assert.ok(store.get('nz') && store.get('europe') && store.get('observed-newest'));
+  store.dispose();
+});
+
+
+test('baseline totals validate actual initial omissions and cannot label live arrivals as baseline', async () => {
+  let payload;
+  const client = new HostClient({request:async request=>ok(request,request.method==='getCapabilities'?{...caps,supportedMethods:['getCapabilities','getChanges']}:payload)});
+  await client.connect();
+  const request={storeId:'',afterSequence:'0',limit:200};
+  for(const baselineTotal of [-1,1.5,NaN,'100',Number.MAX_SAFE_INTEGER+1]) {
+    payload={storeId:'fixture',nextSequence:'0',events:[],baselineTotal};
+    assert.equal((await client.call('getChanges',request)).ok,false);
+  }
+  payload={storeId:'fixture',nextSequence:'0',events:[],baselineTotal:200};
+  assert.equal((await client.call('getChanges',request)).ok,true);
+  payload={...payload,events:[{change:'new',liveEligible:true}],baselineTotal:200};
+  assert.equal((await client.call('getChanges',request)).ok,false);
+});
