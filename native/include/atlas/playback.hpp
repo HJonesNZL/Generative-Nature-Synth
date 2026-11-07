@@ -86,6 +86,7 @@ struct PlaybackCommand {
     double velocity{1}, phaseStep{};
     std::uint32_t gateFrames{};
     bool liveVoiceUpdate{};
+    SpatialRoute route{};
 };
 struct PlaybackSnapshot {
     bool prepared{}, enabled{}, live{};
@@ -99,6 +100,7 @@ struct PlaybackSnapshot {
     AudioState state{AudioState::ready};
     PlaybackError error{PlaybackError::none};
     double gainDb{-18};
+    double outputPeakLeft{}, outputPeakRight{};
     std::uint64_t callbackCount{}, callbackFrames{}, faultCount{};
     std::uint32_t deviceSampleRate{};
     int deviceBufferFrames{}, deviceOutputChannels{};
@@ -127,7 +129,8 @@ class PlaybackRuntime {
     // through the existing bounded mailbox; no queued releases are required.
     PlaybackResult prepareLive(AudioSettings = {48000, 60, .008, .650, -18});
     PlaybackResult submitLive(const VoiceSettings &, unsigned midiNote,
-                              double velocity = 1, std::uint32_t gateFrames = 0);
+                              double velocity = 1, std::uint32_t gateFrames = 0,
+                              std::optional<Position> position = {});
     PlaybackResult updateVoice(VoiceSlot, const VoiceSettings &);
     PlaybackResult enable(bool);
     AudioDeviceCatalog audioDevices(bool refresh = true);

@@ -26,6 +26,21 @@ unsigned directSpeciesNote(unsigned rootMidi, std::string_view species) noexcept
     return rootMidi + (species.empty() ? 0 : offsets[hashSpecies(species) % offsets.size()]);
 }
 
+unsigned musicalSpeciesNote(unsigned rootMidi, std::string_view species,
+                            const CompositionSettings &settings) noexcept {
+    const auto base = directSpeciesNote(rootMidi, species);
+    // Prefer the nearest lower note on ties, within the supported live register.
+    for (unsigned distance = 0; distance <= 16; ++distance) {
+        if (base >= rootMidi + distance &&
+            compositionScaleContains(settings, static_cast<int>(base - distance)))
+            return base - distance;
+        if (base + distance <= rootMidi + 16 &&
+            compositionScaleContains(settings, static_cast<int>(base + distance)))
+            return base + distance;
+    }
+    return base;
+}
+
 namespace {
 bool validCharacter(VoiceCharacter character) noexcept {
     switch (character) {
@@ -465,8 +480,11 @@ AudioPlan::AudioPlan(const Timeline &timeline, AudioSettings settings,
                 action.frame + (editableVoices_ ? maximumVoiceFrames : tail));
         }
     }
+    // An editable empty plan admits future live onsets; allocate its bounded
+    // region delays on this worker before callback publication.
     spatialPlan_ =
-        prepareSpatialPlan(settings.spatial, settings.sampleRate, hasWetAction);
+        prepareSpatialPlan(settings.spatial, settings.sampleRate,
+                           hasWetAction || (editableVoices && timeline.events().empty()));
     if (spatialPlan_.wetActive) {
         totalFrames_ =
             std::max(totalFrames_, lastVoiceEnd + 12ULL * settings.sampleRate);
@@ -570,7 +588,7 @@ bool AudioRenderer::seek(std::uint64_t frame,
 }
 bool AudioRenderer::triggerLive(VoiceSlot slot, unsigned midiNote,
                                 double phaseStep, double velocity,
-                                std::uint32_t gateFrames) noexcept {
+                                std::uint32_t gateFrames, SpatialRoute route) noexcept {
     if (!live_ || state_ != AudioState::playing ||
         slot >= std::max(std::size_t{1}, plan_.voiceProfiles_.size()) ||
         midiNote < plan_.settings_.rootMidi ||
@@ -578,10 +596,16 @@ bool AudioRenderer::triggerLive(VoiceSlot slot, unsigned midiNote,
         !std::isfinite(phaseStep) || phaseStep <= 0 ||
         phaseStep > plan_.maximumPhaseStep_ ||
         !std::isfinite(velocity) || velocity <= 0 || velocity > 1 ||
-        gateFrames > plan_.settings_.sampleRate * 4u)
+        gateFrames > plan_.settings_.sampleRate * 4u ||
+        route.regionSlot > plan_.spatialPlan_.regionCount ||
+        !std::isfinite(route.leftGain) || !std::isfinite(route.rightGain) ||
+        !std::isfinite(route.regionGain) || route.leftGain < 0 ||
+        route.leftGain > 1 || route.rightGain < 0 || route.rightGain > 1 ||
+        route.regionGain < 0 || route.regionGain > 1)
         return false;
     MusicalAction action;
     action.frame = frame_;
+    action.route = route;
     action.voiceSlot = slot;
     action.midiNote = midiNote;
     action.phaseStep = phaseStep;

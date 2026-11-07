@@ -29,8 +29,8 @@ struct Harness {
         while (result.wait_for(std::chrono::milliseconds(1)) != std::future_status::ready) tick();
         return result.get();
     }
-    void start() {
-        auto prepared = runtime.prepareLive();
+    void start(AudioSettings settings = {48000, 60, .008, .650, -18}) {
+        auto prepared = runtime.prepareLive(settings);
         check(prepared.ok && prepared.snapshot.live, "prepare continuous live");
         const auto enabled = runtime.enable(true);
         check(enabled.ok, "enable fake output");
@@ -52,6 +52,64 @@ int main() {
         const auto struck = sound(VoiceCharacter::struck);
         const auto bell = sound(VoiceCharacter::bell);
         check(std::abs(struck-bell) > .01, "resolved species character changes PCM");
+        for (unsigned tonic = 0; tonic < 12; ++tonic) {
+            for (auto scale : {CompositionScale::majorPentatonic,
+                               CompositionScale::minorPentatonic,
+                               CompositionScale::major, CompositionScale::naturalMinor}) {
+                CompositionSettings music;
+                music.tonicPitchClass = tonic;
+                music.scale = scale;
+                for (auto species : {"", "bird-a", "bird-b", "whale", "fox"}) {
+                    const auto pitch = musicalSpeciesNote(60, species, music);
+                    check(pitch >= 60 && pitch <= 76 && compositionScaleContains(music, static_cast<int>(pitch)),
+                          "live species pitch follows every key and scale");
+                }
+            }
+        }
+        Harness spatial;
+        AudioSettings settings{48000, 60, .008, .650, -18};
+        settings.spatial.enabled = true;
+        settings.spatial.amount = .8;
+        RegionSettings region;
+        region.id = "west"; region.name = "West"; region.pan = -.7;
+        region.send = .9;
+        settings.spatial.regions.push_back(region);
+        settings.composition.enabled = true;
+        spatial.start(settings);
+        check(spatial.runtime.snapshot().wetActive, "empty live plan preallocates regional tails");
+        VoiceSettings shortVoice;
+        shortVoice.decaySeconds = .1;
+        check(spatial.deliver([&] { return spatial.runtime.submitLive(shortVoice, 60, 1, 0, Position{0, 0}); }).ok,
+              "live onset accepts geographic routing and musical settings");
+        double leftEnergy{}, rightEnergy{}, tailEnergy{};
+        double largestLeftPeak{};
+        for (int block = 0; block < 800; ++block) {
+            spatial.runtime.heartbeat();
+            spatial.tick();
+            for (std::size_t i = 0; i < spatial.left.size(); ++i) {
+                leftEnergy += std::abs(spatial.left[i]);
+                rightEnergy += std::abs(spatial.right[i]);
+                if (block > 80) tailEnergy += std::abs(spatial.left[i]) + std::abs(spatial.right[i]);
+            }
+            const auto meter = spatial.runtime.snapshot();
+            const auto actualLeftPeak = std::abs(*std::max_element(spatial.left.begin(), spatial.left.end(),
+                [](float a, float b) { return std::abs(a) < std::abs(b); }));
+            const auto actualRightPeak = std::abs(*std::max_element(spatial.right.begin(), spatial.right.end(),
+                [](float a, float b) { return std::abs(a) < std::abs(b); }));
+            check(meter.outputPeakLeft >= actualLeftPeak && meter.outputPeakRight >= actualRightPeak,
+                  "stereo meter covers actual output PCM peaks");
+            largestLeftPeak = std::max(largestLeftPeak, meter.outputPeakLeft);
+            if (block == 200)
+                check(spatial.runtime.snapshot().outputPeakLeft >= largestLeftPeak * .99,
+                      "meter holds a short transient for one-second polling");
+        }
+        check(leftEnergy > rightEnergy && rightEnergy > 0 && tailEnergy > .001,
+              "regional live note has stereo pan and audible-length wet tail");
+        check(spatial.runtime.snapshot().outputPeakLeft < largestLeftPeak * .8,
+              "output peak decays after hold");
+        spatial.runtime.enable(false);
+        check(spatial.runtime.snapshot().outputPeakLeft == 0 && spatial.runtime.snapshot().outputPeakRight == 0,
+              "mute clears held output peaks immediately");
         // One callback owns a fixed eight-voice bank and eight retirement tails.
         AudioPlan plan(Timeline({}, TimeBasis::arrival));
         AudioRenderer renderer(plan);

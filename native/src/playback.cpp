@@ -119,6 +119,8 @@ struct PlaybackRuntime::Impl {
     std::uint64_t controlRevision{1};
     std::atomic<std::uint64_t> callbackCount{}, callbackFrames{}, faultCount{};
     std::atomic<unsigned> deviceRate{}, deviceBlock{}, deviceChannels{};
+    std::atomic<float> outputPeakLeft{}, outputPeakRight{};
+    std::uint64_t peakHoldLeft{}, peakHoldRight{};
     std::unique_ptr<AudioPlan> plan;
     std::unique_ptr<AudioRenderer> renderer;
     std::uint64_t preparationId{};
@@ -169,7 +171,7 @@ struct PlaybackRuntime::Impl {
                 !renderer->updateVoice(command.voiceSlot, command.voiceCoefficients))
                 return false;
             return live && renderer->triggerLive(command.voiceSlot, command.midiNote,
-                                                 command.phaseStep, command.velocity, command.gateFrames);
+                                                 command.phaseStep, command.velocity, command.gateFrames, command.route);
         case PlaybackCommandKind::play:
             return renderer->play(current);
         case PlaybackCommandKind::pause:
@@ -197,6 +199,9 @@ struct PlaybackRuntime::Impl {
         deviceRate.store(0, std::memory_order_release);
         deviceBlock.store(0, std::memory_order_release);
         deviceChannels.store(0, std::memory_order_release);
+        outputPeakLeft.store(0, std::memory_order_relaxed);
+        outputPeakRight.store(0, std::memory_order_relaxed);
+        peakHoldLeft = peakHoldRight = 0;
         acknowledged.store(request.load(std::memory_order_relaxed),
                            std::memory_order_release);
         const auto previousError = failure.exchange(
@@ -247,6 +252,8 @@ PlaybackSnapshot PlaybackRuntime::snapshot() const noexcept {
     value.callbackCount = p.callbackCount.load(std::memory_order_relaxed);
     value.callbackFrames = p.callbackFrames.load(std::memory_order_relaxed);
     value.faultCount = p.faultCount.load(std::memory_order_relaxed);
+    value.outputPeakLeft = p.outputPeakLeft.load(std::memory_order_relaxed);
+    value.outputPeakRight = p.outputPeakRight.load(std::memory_order_relaxed);
     if (value.enabled) {
         value.deviceSampleRate = p.deviceRate.load(std::memory_order_acquire);
         value.deviceBufferFrames =
@@ -353,8 +360,6 @@ PlaybackResult PlaybackRuntime::prepare(const Timeline &timeline,
     return {true, PlaybackError::none, snapshot()};
 }
 PlaybackResult PlaybackRuntime::prepareLive(AudioSettings settings) {
-    if (settings.composition.enabled || settings.spatial.enabled)
-        throw std::invalid_argument("live playback currently requires direct voice routing");
     VoiceSettings fallbackSettings;
     fallbackSettings.attackSeconds = settings.attackSeconds;
     fallbackSettings.decaySeconds = settings.decaySeconds;
@@ -365,7 +370,8 @@ PlaybackResult PlaybackRuntime::prepareLive(AudioSettings settings) {
     return {true, PlaybackError::none, snapshot()};
 }
 PlaybackResult PlaybackRuntime::submitLive(const VoiceSettings &settings, unsigned midiNote,
-                                          double velocity, std::uint32_t gateFrames) {
+                                          double velocity, std::uint32_t gateFrames,
+                                          std::optional<Position> position) {
     const auto current = snapshot();
     if (!current.live || !current.enabled || current.state != AudioState::playing)
         return {false, PlaybackError::liveNoteRejected, current};
@@ -379,6 +385,7 @@ PlaybackResult PlaybackRuntime::submitLive(const VoiceSettings &settings, unsign
                      current.sampleRate;
     note.velocity = velocity;
     note.gateFrames = gateFrames;
+    note.route = prepareSpatialRoute(impl_->plan->settings().spatial, position);
     note.liveVoiceUpdate = true;
     if (!impl_->plan->prepareVoiceUpdate(0, settings, note.voiceCoefficients))
         return {false, PlaybackError::invalidVoiceSettings, current};
@@ -539,6 +546,12 @@ void PlaybackRuntime::deviceFailed(PlaybackError error) noexcept {
 void PlaybackRuntime::process(float *const *outputs, int channels,
                               int frames) noexcept {
     auto &p = *impl_;
+    if (!p.enabled.load(std::memory_order_acquire) ||
+        p.error() != PlaybackError::none) {
+        p.outputPeakLeft.store(0, std::memory_order_relaxed);
+        p.outputPeakRight.store(0, std::memory_order_relaxed);
+        p.peakHoldLeft = p.peakHoldRight = 0;
+    }
     p.callbackCount.fetch_add(1, std::memory_order_relaxed);
     if (frames > 0)
         p.callbackFrames.fetch_add(static_cast<std::uint64_t>(frames),
@@ -591,10 +604,38 @@ void PlaybackRuntime::process(float *const *outputs, int channels,
     if (!p.renderer->process(std::span<float>(p.scratch.data(), count * 2))) {
         deviceFailed(PlaybackError::callbackFailure);
     } else if (p.error() == PlaybackError::none) {
+        float peakLeft{}, peakRight{};
         for (std::size_t frame = 0; frame < count; ++frame) {
             outputs[0][frame] = p.scratch[frame * 2];
             outputs[1][frame] = p.scratch[frame * 2 + 1];
+            peakLeft = std::max(peakLeft, std::abs(outputs[0][frame]));
+            peakRight = std::max(peakRight, std::abs(outputs[1][frame]));
         }
+        // Hold transients for slow UI polling, then decay with a one-second
+        // time constant. These values measure PCM actually copied to output.
+        const auto updatePeak = [&](std::atomic<float> &meter,
+                                    std::uint64_t &hold, float peak) {
+            const auto previous = meter.load(std::memory_order_relaxed);
+            const bool silentTransport = p.renderer->state() == AudioState::ready ||
+                p.renderer->state() == AudioState::paused ||
+                p.renderer->state() == AudioState::finished;
+            if (silentTransport) {
+                hold = 0;
+                meter.store(peak, std::memory_order_relaxed);
+            } else if (peak >= previous) {
+                hold = p.plan->settings().sampleRate;
+                meter.store(peak, std::memory_order_relaxed);
+            } else {
+                const auto decayFrames = blockFrames > hold ? blockFrames - hold : 0;
+                hold = blockFrames > hold ? 0 : hold - blockFrames;
+                const auto decayed = previous * std::exp(-static_cast<double>(decayFrames) /
+                                                        p.plan->settings().sampleRate);
+                meter.store(static_cast<float>(std::max(static_cast<double>(peak), decayed)),
+                            std::memory_order_relaxed);
+            }
+        };
+        updatePeak(p.outputPeakLeft, p.peakHoldLeft, peakLeft);
+        updatePeak(p.outputPeakRight, p.peakHoldRight, peakRight);
     }
     p.publish();
     if (hasCommand)

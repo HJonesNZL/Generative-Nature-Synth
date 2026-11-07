@@ -43,8 +43,9 @@ struct SpatialPlan {
     double amount{}, wetAverage{}, outputGain{1};
     std::array<SpatialRegionCoefficients, spatialRegionCapacity> regions{};
 };
-// Worker-only validation/coefficient preparation. hasWetAction means an emitted
-// action routes to a region with a positive send, not a fabricated observation.
+// Worker-only validation/coefficient preparation. hasWetAction reserves regional
+// delay resources for emitted actions or future continuous-mode onsets. It does
+// not represent or create an animal observation.
 SpatialPlan prepareSpatialPlan(const SpatialSettings &,
                                std::uint32_t sampleRate, bool hasWetAction);
 

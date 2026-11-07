@@ -16,6 +16,8 @@ struct VoiceSettings {
 };
 bool validVoiceSettings(const VoiceSettings &) noexcept;
 unsigned directSpeciesNote(unsigned rootMidi, std::string_view species) noexcept;
+unsigned musicalSpeciesNote(unsigned rootMidi, std::string_view species,
+                            const CompositionSettings &) noexcept;
 struct VoiceProfile {
     std::string speciesId;
     VoiceSettings settings;
@@ -136,7 +138,7 @@ class AudioRenderer {
     // callback-owned and bounded to one onset. Existing voice/tail limits apply.
     void setLive(bool live) noexcept { live_ = live; }
     bool triggerLive(VoiceSlot, unsigned midiNote, double phaseStep, double velocity,
-                     std::uint32_t gateFrames = 0) noexcept;
+                     std::uint32_t gateFrames = 0, SpatialRoute route = {}) noexcept;
     bool process(std::span<float> interleavedStereo) noexcept;
     AudioState state() const noexcept { return state_; }
     std::uint64_t generation() const noexcept { return generation_; }
