@@ -29,6 +29,16 @@ export interface TransportState {
   durationUs: Int64String;
 }
 
+export interface LiveListeningState {
+  enabled: boolean;
+  status: "off" | "listening" | "error";
+  received: number;
+  admitted: number;
+  dropped: number;
+  skippedRevisions: number;
+  error: string;
+}
+
 export interface AudioState {
   status: "running" | "disabled" | "unavailable" | "device_lost";
   deviceName: string | null;
@@ -304,6 +314,8 @@ export interface SpatialState {
 }
 
 export interface HostMethods {
+  getLiveState: { request: Record<string, never>; response: LiveListeningState };
+  setLiveEnabled: { request: { enabled: boolean }; response: LiveListeningState };
   getSpatial: { request: Record<string, never>; response: SpatialState };
   setSpatial: { request: { settings: SpatialSettings; preparationId: string; generation: Int64String }; response: SpatialState };
   getComposition: { request: Record<string, never>; response: CompositionState };

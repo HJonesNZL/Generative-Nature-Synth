@@ -90,6 +90,16 @@ function validVoiceReply(method: string, value: unknown, args: unknown): boolean
     (reply.maxDefinitions === undefined || Number.isInteger(reply.maxDefinitions) && (reply.maxDefinitions as number) > 0 && (reply.maxDefinitions as number) <= 513) &&
     (reply.editingBehavior === undefined || reply.editingBehavior === "new_notes");
 }
+function validLiveListeningReply(method: string, value: unknown): boolean {
+  if (!["getLiveState", "setLiveEnabled"].includes(method)) return true;
+  if (!value || typeof value !== "object") return false;
+  const state = value as Record<string, unknown>;
+  return typeof state.enabled === "boolean" && ["off", "listening", "error"].includes(state.status as string) &&
+    [state.received, state.admitted, state.dropped, state.skippedRevisions].every(count => Number.isSafeInteger(count) && (count as number) >= 0) &&
+    typeof state.error === "string" && state.error.length <= 4096 &&
+    (state.status !== "listening" || state.enabled === true) && (state.status !== "off" || state.enabled === false);
+}
+
 function validPlaybackReply(method: string, value: unknown): boolean {
   if (!["getTransport", "setTransport", "prepareReplay", "getAudioState", "setAudioEnabled"].includes(method)) return true;
   if (!value || typeof value !== "object") return false;
@@ -316,7 +326,7 @@ export class HostClient {
   }
 
   call<M extends MethodName>(method: M, args: AllMethods[M]["request"], options: { signal?: AbortSignal; timeoutMs?: number } = {}) {
-    if (["prepareReplay", "setTransport", "setAudioEnabled", "recallSoundscape", "setComposition", "setSpatial", "setAudioDevice", "openManagedPiece"].includes(method)) this.playbackMutation += 1;
+    if (["prepareReplay", "setTransport", "setAudioEnabled", "setLiveEnabled", "recallSoundscape", "setComposition", "setSpatial", "setAudioDevice", "openManagedPiece"].includes(method)) this.playbackMutation += 1;
     const request = this.send(method, args, options);
     return ["setVoiceParameter", "setVoiceType", "setMasterGain", "saveVoice", "revertVoice", "applyVoicePreset", "setComposition", "setSpatial"].includes(method)
       ? this.edits.track(request) : request;
@@ -351,7 +361,7 @@ export class HostClient {
       const request = { protocolVersion: 1 as const, requestId, method, args };
       const reply = (this.host as ExtendedHost).request(request, controller.signal).then((r): HostResult<AllMethods[M]["response"]> => {
         if (!r || typeof r !== "object" || typeof r.ok !== "boolean" || r.requestId !== requestId) return { ok: false, error: { code: "internal", message: "Reply did not match request id" } };
-        if (r.ok) return "result" in r && validBaselineTotal(method, r.result) && validPlaybackReply(method, r.result) && validVoiceReply(method, r.result, args) && validSoundscapeReply(method, r.result, args) && validCompositionReply(method, r.result) && validSpatialReply(method, r.result) && validPieceReply(method, r.result, args) && (method !== "listSessionsPage" || validSessionPage(r.result, args)) && (!["getLiveSources", "setLiveSources"].includes(method) || validLiveSources(r.result, method, args)) && (!["getAudioDevices", "setAudioDevice"].includes(method) || validAudioDeviceCatalog(r.result)) ? { ok: true, value: r.result } : { ok: false, error: { code: "internal", message: "Malformed host result" } };
+        if (r.ok) return "result" in r && validBaselineTotal(method, r.result) && validLiveListeningReply(method, r.result) && validPlaybackReply(method, r.result) && validVoiceReply(method, r.result, args) && validSoundscapeReply(method, r.result, args) && validCompositionReply(method, r.result) && validSpatialReply(method, r.result) && validPieceReply(method, r.result, args) && (method !== "listSessionsPage" || validSessionPage(r.result, args)) && (!["getLiveSources", "setLiveSources"].includes(method) || validLiveSources(r.result, method, args)) && (!["getAudioDevices", "setAudioDevice"].includes(method) || validAudioDeviceCatalog(r.result)) ? { ok: true, value: r.result } : { ok: false, error: { code: "internal", message: "Malformed host result" } };
         if (!r.error || typeof r.error.message !== "string" || !["unsupported", "invalid_request", "unavailable", "stale_generation", "internal"].includes(r.error.code))
           return { ok: false, error: { code: "internal", message: "Malformed host error" } };
         return { ok: false, error: r.error };

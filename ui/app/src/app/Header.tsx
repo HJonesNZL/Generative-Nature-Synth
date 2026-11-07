@@ -12,6 +12,7 @@ import type { CollectionState } from "../host/provisional";
 import { useHost, useHostQuery, valueOf } from "./HostContext";
 import { useAppState, useDispatch, type ViewMode } from "./store";
 import { formatTime, formatUs, zoneAbbreviation } from "./time";
+import { LiveListeningControl } from "./LiveListeningControl";
 import { AudioDeviceSettings } from "./AudioDeviceSettings";
 import { LiveSourcesControl } from "./LiveSources";
 import type { HostMethods } from "../host/contracts";
@@ -30,6 +31,7 @@ export function Header({ demoMenu, projectTools }: { demoMenu?: ReactNode; proje
   const [transportError, setTransportError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [enabledPreparation, setEnabledPreparation] = useState<string | null>(null);
+  const modePending = useRef(false);
   const [confirmStop, setConfirmStop] = useState(false);
 
   const current = useRef(state.transport);
@@ -169,13 +171,24 @@ export function Header({ demoMenu, projectTools }: { demoMenu?: ReactNode; proje
         label="Material"
         size="sm"
         value={state.mode}
-        onChange={(mode) => dispatch({ type: "mode", mode })}
+        onChange={(mode) => {
+          if (mode === state.mode || modePending.current) return;
+          if (state.mode !== "live" || !client.supports("setLiveEnabled")) { dispatch({ type: "mode", mode }); return; }
+          modePending.current = true;
+          setBusy(true); setTransportError(null);
+          void client.call("setLiveEnabled", { enabled: false }).then(reply => {
+            modePending.current = false; setBusy(false);
+            if (!reply.ok) { setTransportError(reply.error.message); return; }
+            if (reply.value.enabled) { setTransportError(reply.value.error || "Live listening has not stopped yet."); return; }
+            dispatch({ type: "mode", mode });
+          });
+        }}
         options={[
           { value: "live", label: "Live", hint: "Newly arriving records" },
           { value: "replay", label: "Replay", hint: "Play a saved piece" },
           { value: "history", label: "History", hint: "Select archived material" },
         ]}
-        disabledValues={client.supports("queryHistory") ? [] : ["history"]}
+        disabledValues={busy ? ["live", "replay", "history"] : client.supports("queryHistory") ? [] : ["history"]}
       />
 
       <div className="header-group" role="group" aria-label="Transport">
@@ -217,13 +230,13 @@ export function Header({ demoMenu, projectTools }: { demoMenu?: ReactNode; proje
       </div>
 
       <div className="header-group master" role="group" aria-label="Output">
-        <Toggle
+        {live && client.supports("getLiveState") && client.supports("setLiveEnabled") ? <LiveListeningControl /> : <Toggle
           label={audioOn ? "Listening (audio on)" : "Listening (audio off)"}
           checked={audioOn}
           disabled={!audioUsable || !client.supports("setAudioEnabled") || busy || (caps?.implementation === "native" && (!state.transport.preparationId || live))}
           onChange={(enabled) => void setAudio(enabled)}
           showState={false}
-        />
+        />}
         <label className="sr-only" htmlFor="master-gain">Master level</label>
         <input
           id="master-gain"
