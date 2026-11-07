@@ -1,0 +1,50 @@
+{
+  "version": "0.10.0",
+  "platform": "Apple Silicon macOS",
+  "codeCommit": "5bb55f90fe5c25f827c4b6d708351aa598fb3877",
+  "zipSha256": "d290d63f6e4ae28dba9b791b4a87484237bf9536dd68e4df4ef19e81b444605b",
+  "signedAppAndExtractedZipMatch": true,
+  "releaseSuites": 43,
+  "uiTests": 90,
+  "packaged": {
+    "sourceEvents": 503,
+    "sourceRevisions": 504,
+    "delayedPreCollectRecordExcluded": true,
+    "audioDevice": "ZoomAudioDevice",
+    "callbackConfirmedStarts": 501,
+    "displayedCountsDescending": [
+      64,
+      63,
+      63,
+      63,
+      62,
+      62,
+      62,
+      62
+    ],
+    "dropped": 0,
+    "grouped": 0,
+    "pendingAtEnd": 0,
+    "shutdownComplete": true
+  },
+  "strictSessionBrowser": {
+    "status": "passed",
+    "calls": {
+      "getCapabilities": 2,
+      "getAudioState": 35,
+      "getCatalog": 3,
+      "getLiveState": 13,
+      "getLiveSources": 3,
+      "setLiveSources": 4,
+      "getLiveChanges": 9,
+      "getLiveSpeciesCounts": 11,
+      "setLiveEnabled": 3,
+      "getLiveOutcome": 16
+    },
+    "leaks": [],
+    "continuationMs": 1,
+    "errors": [],
+    "synthetic": true,
+    "audioDeviceOpened": false
+  }
+}

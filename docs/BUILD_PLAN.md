@@ -2,7 +2,9 @@
 
 Audit baseline: 6 November 2026 UTC; final consistency review: 7 November NZDT. Status: **development plan, not a release qualification**. This replaces earlier suggested delivery sequences and unqualified estimates. It incorporates three GPT-6 Astra audits, isolated counterexamples, the owner's portable-C++ and zero-cost requirements, and Direction H. Findings and remediation evidence are indexed in [the audit](audits/AUDIT_AND_REVISED_BUILD_PLAN.md).
 
-The 0.9.0 standalone adds Smoothed live playback, which retains a note for each eligible detection through collection bursts and uses observation or source timing to space them. [Smoothed Live qualification](../evidence/smoothed-live/qualification.md)
+The 0.10.0 standalone scopes Live to observations made since Collect, tracks per-species counts across the session and keeps the species ranking scrollable within the window. [Playback visualization concepts](../design/live-session-concepts/README.md)
+
+The 0.9.0 standalone added Smoothed live playback, which retains a note for each eligible detection through collection bursts and uses observation or source timing to space them. [Smoothed Live qualification](../evidence/smoothed-live/qualification.md)
 
 The 0.8.0 standalone introduced musical arrangement for new detections, geographic voice routing, a measured output meter and per-observation outcomes alongside Direct playback. Saved-library browsing, freezing/import and the initial Live path have also shipped on beta-1. [Current standalone workflow](STANDALONE.md) · [Musical Live qualification](../evidence/musical-live/qualification.md)
 
