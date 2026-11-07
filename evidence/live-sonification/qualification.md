@@ -15,3 +15,11 @@ python3 -B tests/live_sonification_package.py \
   --binary 'Releases/Live Sonification/Animal Atlas.app/Contents/MacOS/Animal Atlas' \
   --fixture build/standalone/atlas-live-collection-fixture
 ```
+
+## 0.7.1 desktop transport correction
+
+Desktop accessibility inspection reproduced “Malformed host result” in the open 0.7.0 Atlas header while collection and Live listening were active. The callback clock advanced beyond the finite empty preparation used by live playback. The React transport validator rejected the native timeline.
+
+In a separately launched 0.7.1 release app using disposable state and ZoomAudioDevice, turning Live listening on and inserting one test detection produced one received, one admitted, zero dropped and an updated map. The header remained clear. Both the release and a freshly extracted ZIP passed strict signature verification and the full packaged WebKit check. Each recorded six React transport polls and six audio polls without a header fault. All 38 native release suites and 73 frontend tests passed.
+
+Code commit `369694b`. Apple Silicon ZIP SHA-256 `7ba427370004e86c1b2654eeb6cceaeed50d60886b1907e1d6f2ff12f5c91066`.
