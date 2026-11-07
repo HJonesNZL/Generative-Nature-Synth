@@ -1,6 +1,8 @@
 #include "sqlite_statement.hpp"
 #include <atlas/piece_import.hpp>
 #include <atlas/piece_writer.hpp>
+#include <atomic>
+#include <chrono>
 #include <memory>
 #include <sqlite3.h>
 namespace atlas {
@@ -102,6 +104,90 @@ void requireManaged(const std::filesystem::path &destination) {
         throw std::invalid_argument(
             "Import destination is not a managed library.");
 }
+std::filesystem::file_status checkedStatus(const std::filesystem::path &path) {
+    std::error_code error;
+    const auto status = std::filesystem::symlink_status(path, error);
+    if (error && status.type() != std::filesystem::file_type::not_found)
+        throw std::runtime_error("Cannot inspect import checkpoint path.");
+    if (std::filesystem::exists(status) &&
+        !std::filesystem::is_regular_file(status))
+        throw std::runtime_error("Import checkpoint and journal must be "
+                                 "regular files, without symlinks.");
+    return status;
+}
+bool emptyCheckpoint(sqlite3 *db) {
+    detail::Statement schema(db, "SELECT count(*) FROM sqlite_master");
+    if (!schema.next())
+        throw std::runtime_error("Import checkpoint schema unavailable.");
+    if (schema.integer(0) != 0)
+        return false;
+    detail::Statement version(db, "PRAGMA user_version");
+    detail::Statement application(db, "PRAGMA application_id");
+    if (!version.next() || !application.next() || version.integer(0) != 0 ||
+        application.integer(0) != 0)
+        throw std::runtime_error(
+            "Refusing an unowned import checkpoint header.");
+    return true;
+}
+void requireCheckpointOwner(sqlite3 *db) {
+    detail::Statement marker(db, "SELECT marker FROM import_identity");
+    if (!marker.next() || marker.text(0) != "animal_atlas_import_stage_v1" ||
+        marker.next())
+        throw std::runtime_error("Refusing unrelated import staging file.");
+}
+// A read-only ownership probe cannot recover a hot rollback journal. Recover a
+// bounded disposable copy first; never recover an unrelated original database.
+void validateRecoverableCheckpoint(const std::filesystem::path &destination,
+                                   const std::filesystem::path &stage,
+                                   bool journalExists) {
+    const auto journal = std::filesystem::path(stage.string() + "-journal");
+    const auto bytes =
+        std::filesystem::file_size(stage) +
+        (journalExists ? std::filesystem::file_size(journal) : 0);
+    if (bytes > stagingBudget)
+        throw std::runtime_error("Import recovery scratch exceeds capacity.");
+    checkBudget(destination, stage, bytes);
+    const auto root =
+        std::filesystem::canonical(std::filesystem::temp_directory_path());
+    if (std::filesystem::space(root).available < bytes + 64ULL * 1024 * 1024)
+        throw std::runtime_error(
+            "Import recovery has insufficient temporary storage.");
+    static std::atomic<std::uint64_t> sequence{};
+    const auto directory =
+        root /
+        ("atlas-import-recovery-" +
+         std::to_string(
+             std::chrono::steady_clock::now().time_since_epoch().count()) +
+         "-" + std::to_string(++sequence));
+    if (!std::filesystem::create_directory(directory))
+        throw std::runtime_error("Cannot allocate import recovery scratch.");
+    struct Cleanup {
+        std::filesystem::path directory;
+        ~Cleanup() {
+            std::error_code error;
+            std::filesystem::remove_all(directory, error);
+        }
+    } cleanup{directory};
+    const auto copy = directory / "checkpoint.sqlite3";
+    std::filesystem::copy_file(stage, copy);
+    if (journalExists)
+        std::filesystem::copy_file(journal, copy.string() + "-journal");
+    sqlite3 *db{};
+    if (sqlite3_open_v2(copy.string().c_str(), &db,
+                        SQLITE_OPEN_READWRITE | SQLITE_OPEN_NOFOLLOW,
+                        nullptr) != SQLITE_OK) {
+        if (db)
+            sqlite3_close(db);
+        throw std::runtime_error("Cannot inspect import recovery scratch.");
+    }
+    struct Close {
+        sqlite3 *db;
+        ~Close() { sqlite3_close(db); }
+    } close{db};
+    sqlite3_busy_timeout(db, 0);
+    if (!emptyCheckpoint(db))
+        requireCheckpointOwner(db);
+}
 class Stage {
   public:
     sqlite3 *db{};
@@ -111,24 +197,16 @@ class Stage {
           const std::filesystem::path &source, const VerifiedPiece &piece)
         : path(std::filesystem::weakly_canonical(destination).string() +
                ".atlas-import-stage.sqlite3") {
-        std::error_code statusError;
-        const auto status = std::filesystem::symlink_status(path, statusError);
-        if (statusError &&
-            status.type() != std::filesystem::file_type::not_found)
-            throw std::runtime_error("Cannot inspect import staging path.");
+        const auto status = checkedStatus(path);
+        const auto journal = std::filesystem::path(path.string() + "-journal");
+        const auto journalStatus = checkedStatus(journal);
         const bool exists = std::filesystem::exists(status);
-        if (exists) {
-            if (!std::filesystem::is_regular_file(status))
-                throw std::runtime_error(
-                    "Import staging path is not a regular file.");
-            Connection check(path);
-            detail::Statement marker(check.db,
-                                     "SELECT marker FROM import_identity");
-            if (!marker.next() ||
-                marker.text(0) != "animal_atlas_import_stage_v1")
-                throw std::runtime_error(
-                    "Refusing unrelated import staging file.");
-        }
+        const bool journalExists = std::filesystem::exists(journalStatus);
+        if (!exists && journalExists)
+            throw std::runtime_error(
+                "Refusing an orphan import checkpoint journal.");
+        if (exists)
+            validateRecoverableCheckpoint(destination, path, journalExists);
         checkBudget(destination, path, 0);
         if (sqlite3_open_v2(path.string().c_str(), &db,
                             SQLITE_OPEN_READWRITE | SQLITE_OPEN_NOFOLLOW |
@@ -143,13 +221,15 @@ class Stage {
             sqlite3_busy_timeout(db, 5000);
             execute(db, "PRAGMA journal_mode=DELETE; PRAGMA synchronous=FULL; "
                         "PRAGMA max_page_count=20480; BEGIN IMMEDIATE");
-            if (!exists)
+            if (emptyCheckpoint(db))
                 execute(
                     db,
                     "CREATE TABLE import_identity(marker TEXT,source TEXT,id "
                     "TEXT,content_hash TEXT,envelope_hash TEXT); CREATE TABLE "
                     "import_rows(ordinal INTEGER PRIMARY KEY,original_seq "
                     "INTEGER NOT NULL,event_json TEXT NOT NULL)");
+            else
+                requireCheckpointOwner(db);
             const auto canonical =
                 std::filesystem::weakly_canonical(source).string();
             // Paths can exceed the replay adapter's ID binding capacity.

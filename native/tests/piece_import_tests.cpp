@@ -1,5 +1,6 @@
 #include <atlas/collection.hpp>
 #include <atlas/piece_import.hpp>
+#include <atlas/piece_writer.hpp>
 #include <atlas/storage.hpp>
 #include <chrono>
 #include <filesystem>
@@ -78,6 +79,28 @@ std::vector<std::string> rows(const std::filesystem::path &path,
 } // namespace
 int main(int argc, char **argv) {
     try {
+        // The Python crash harness uses separate processes so abrupt SQLite
+        // exits never bypass this runner's disposable-fixture cleanup.
+        if (argc == 3 && std::string_view(argv[1]) == "--initialize") {
+            Collector initialize(argv[2]);
+            return 0;
+        }
+        if (argc == 4 && (std::string_view(argv[1]) == "--stage-only" ||
+                          std::string_view(argv[1]) == "--resume")) {
+            const bool stageOnly = std::string_view(argv[1]) == "--stage-only";
+            try {
+                const auto result = importSavedPiece(
+                    argv[2], argv[3], "d774207b-342c-49bd-a328-5649f9de84ce",
+                    [stageOnly](auto stage, auto, auto) {
+                        return !stageOnly || stage != "saving";
+                    });
+                check(!stageOnly && result.eventCount == 224,
+                      "Crash harness import count mismatch");
+            } catch (const PieceCancelled &) {
+                check(stageOnly, "Unexpected resumed import cancellation");
+            }
+            return 0;
+        }
         check(argc == 2, "Pass bundled ATN library path");
         const std::filesystem::path bundled(argv[1]);
         Directory temporary;

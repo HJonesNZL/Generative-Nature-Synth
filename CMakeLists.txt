@@ -218,6 +218,9 @@ if(ATLAS_BUILD_TESTS)
     target_include_directories(atlas-studio-fixture-host PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
     target_link_libraries(atlas-studio-fixture-host PRIVATE atlas_storage atlas_playback Threads::Threads)
     find_package(Python3 3.9 REQUIRED COMPONENTS Interpreter)
+    add_test(NAME atlas-piece-import-crash COMMAND ${Python3_EXECUTABLE} -B
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/piece_import_crash_recovery.py $<TARGET_FILE:atlas-piece-import-tests>
+        "${CMAKE_CURRENT_SOURCE_DIR}/deliverables/ATN-spotted-seal-2018/ATN spotted seal 2018.sqlite3")
     add_test(NAME atlas-soundscape-ui COMMAND ${Python3_EXECUTABLE} -B
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/native_soundscape_checks.py $<TARGET_FILE:atlas-studio-fixture-host>)
     add_test(NAME atlas-audio-devices COMMAND ${Python3_EXECUTABLE} -B
