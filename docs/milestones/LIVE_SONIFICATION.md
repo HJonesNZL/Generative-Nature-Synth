@@ -7,3 +7,5 @@ The standalone control worker establishes a revision cursor at the end of the li
 The audio callback receives prepared numeric voice parameters and onset instructions. SQLite, event parsing and voice selection stay on the control worker. Muting, changing library or output, switching to Replay, panic and closing must retire old live sound. Device failure must be visible and recovery must require an explicit action.
 
 Verify the full chain with disposable observations, including silent arming, distinct species voices, duplicate/correction suppression, burst accounting, post-stop silence and Replay regression. Exercise the built WebView with an explicitly selected virtual output. Preserve the running owner collection and previous app version.
+
+Completed in the 0.7.0 standalone. [Packaged release qualification](../../evidence/live-sonification/qualification.md)

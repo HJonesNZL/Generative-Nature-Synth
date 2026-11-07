@@ -1,0 +1,40 @@
+{
+  "version": "0.7.0",
+  "architecture": "arm64",
+  "codeCommit": "73c358095b8f307bb0b70f8719545655ac367b39",
+  "nativeSourceSha256": "e29e9a8ce15e1aaa7a71b54c36d8cb14e35ddcdcf7195f5e6c1c150c6162fa8b",
+  "zipSha256": "34a78dd0a5b3f4756e15a2d1796fa14622c989a5c6a3d50329963ca11673ddea",
+  "zipBytes": 6547526,
+  "executableSha256": "71f6b123ca7e6b65801fd8e2449f835428baf7720d75b406efa2990fe5cdbd40",
+  "releaseSuites": 38,
+  "uiTests": 69,
+  "liveSanitizerSuites": 3,
+  "packages": {
+    "installed": {
+      "signatureVerified": true,
+      "shutdownComplete": true,
+      "device": "ZoomAudioDevice",
+      "callbackFrames": 112128,
+      "admitted": 1,
+      "dropped": 0,
+      "mapObserved": true,
+      "duplicatesQuiet": true,
+      "provenancePreserved": true,
+      "events": 3,
+      "revisions": 4
+    },
+    "extracted": {
+      "signatureVerified": true,
+      "shutdownComplete": true,
+      "device": "ZoomAudioDevice",
+      "callbackFrames": 123904,
+      "admitted": 1,
+      "dropped": 0,
+      "mapObserved": true,
+      "duplicatesQuiet": true,
+      "provenancePreserved": true,
+      "events": 3,
+      "revisions": 4
+    }
+  }
+}

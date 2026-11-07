@@ -1,8 +1,16 @@
 # Standalone beta quick start
 
-The graphical instrument is **Releases/Saved Wildlife Pieces/Animal Atlas.app**. It is distinct from the older root-level Animal Atlas.app that opens the Python collection menu. This local beta supports Apple Silicon on macOS 15 or later. It includes its interface, fonts, map assets, native engine and SQLite; running it needs no Terminal, Node, Vite, hosted service or subscription.
+The graphical instrument is **Releases/Live Sonification/Animal Atlas.app**. It is distinct from the older root-level Animal Atlas.app that opens the Python collection menu. This local beta supports Apple Silicon on macOS 15 or later. It includes its interface, fonts, map assets, native engine and SQLite; running it needs no Terminal, Node, Vite, hosted service or subscription.
 
-## Open and play
+## Hear new detections
+
+In **Atlas → Live**, choose **Collect → Start live updates**. Apply your stereo output in **Audio settings**, then enable **Live listening**. Each eligible new observation plays one synthesized note through its species voice as the globe updates. The first poll establishes a baseline. Leave listening on for subsequent provider polls. Open **Live listening status** for counts of received, admitted and dropped detections and skipped revisions.
+
+Edit a species in **Sound Studio** to hear the draft on its next detection. An unedited species uses its saved settings or exact-species preset when available. Other species use a neutral timbre with a species-derived pitch. Live uses the direct voice. Replay adds the composition and geographic effects for prepared pieces.
+
+A busy poll can yield more observations than the instrument can play. The worker examines up to 512 recent revisions and submits up to eight notes per pass. Turning listening off, pausing collection, changing library or output, or entering Replay stops the live performance. Returning to Live requires enabling listening again. After a service interruption longer than five seconds, listening resumes at the current end of the same library.
+
+## Play a saved soundscape
 
 1. Open the graphical app. It starts silently in scene-only mode.
 2. Use **File / Project → Import soundscape** for a verified `.atlas-scene`, then open **Project**, select it under **Soundscapes** and choose **Open soundscape**. The synthetic sparse/dense audition scenes under `Auditions/regional-soundscapes` are engineering examples, not wildlife observations. Alternatively, **File / Project → Choose wildlife library** attaches an explicitly selected existing database read-only, including the project's `.state/atlas.sqlite3` if you want your collected material. External libraries remain read-only. The separate native Collect control is described below.
@@ -37,7 +45,7 @@ In **Atlas → Live**, **Latest detections** lists up to 40 loaded observations 
 
 Use **Collect → Pause updates** to stop. Collection runs only while this app is open and starts paused after each launch. Starting again preserves existing collected records; provider intervals and Retry-After still apply. Choosing a different wildlife library pauses the native collector. No owner-started external collector is altered. Imported soundscapes, existing libraries and voice settings remain separate.
 
-The Replay saved-piece browser has Previous, Next and Refresh controls, with 50 pieces per page. It preserves selection across screen changes, accepts thousands of saved pieces and asks for refresh when a library changes during browsing. It shows interrupted/recording pieces without treating them as frozen. Material preparation reuses one verified piece until the library revision changes; an external mutation invalidates it. Native live collection does not yet create frozen pieces: use an existing historical library for replay, or import a saved soundscape.
+The Replay saved-piece browser has Previous, Next and Refresh controls, with 50 pieces per page. It preserves selection across screen changes, accepts thousands of saved pieces and asks for refresh when a library changes during browsing. It shows interrupted/recording pieces without treating them as frozen. Material preparation reuses one verified piece until the library revision changes; an external mutation invalidates it. Use **Project → Saved pieces → Freeze collected interval** to prepare a Replay piece from the managed library.
 
 ## Your files
 
@@ -86,4 +94,4 @@ The smoke launches the real bundled WebKit interface, discovers devices and exer
 
 ## Evidence and remaining qualification
 
-See the [worldwide qualification](../evidence/worldwide/README.md), [latest detections qualification](../evidence/latest-detections/qualification.md), [live-library qualification](../evidence/library-live/qualification.md), [source evidence and limitations](data/LIVE_SOURCE_MILESTONE.md), [project recovery evidence](../evidence/project-recovery/qualification.md), earlier [qualification](../evidence/standalone/qualification.md), [milestone plan](milestones/STANDALONE_PLAN.md), [shell contract](engineering/standalone-shell.md) and [device UI notes](../ui/app/docs/NATIVE_AUDIO_DEVICES.md). Local ad-hoc signing is an integrity check, not Developer ID signing or notarisation. This local bundle is not a public binary release. Human listening, physical hotplug/sleep/wake testing, another-machine qualification and VST3 hosting remain separate work. Field live-input latency budgets do not apply to this generative instrument.
+See the [live sonification qualification](../evidence/live-sonification/qualification.md), [worldwide qualification](../evidence/worldwide/README.md), [latest detections qualification](../evidence/latest-detections/qualification.md), [live-library qualification](../evidence/library-live/qualification.md), [source evidence and limitations](data/LIVE_SOURCE_MILESTONE.md), [project recovery evidence](../evidence/project-recovery/qualification.md), earlier [qualification](../evidence/standalone/qualification.md), [milestone plan](milestones/STANDALONE_PLAN.md), [shell contract](engineering/standalone-shell.md) and [device UI notes](../ui/app/docs/NATIVE_AUDIO_DEVICES.md). Local ad-hoc signing is an integrity check, not Developer ID signing or notarisation. This local bundle is not a public binary release. Human listening, physical hotplug/sleep/wake testing, another-machine qualification and VST3 hosting remain separate work. Field live-input latency budgets do not apply to this generative instrument.
