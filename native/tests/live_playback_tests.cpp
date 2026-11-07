@@ -120,7 +120,116 @@ int main() {
             check(renderer.triggerLive(0, 60, phaseStep, 1), "bounded onset accepted");
         check(!renderer.triggerLive(0, 60, phaseStep, 1), "overload rejected at fixed capacity");
         check(renderer.statistics().stolen == 8, "voice stealing is bounded");
-        Harness muted; muted.start();
+        Harness timing;
+        timing.start();
+        LiveNoteInput timed;
+        timed.id = 1;
+        timed.midiNote = 60;
+        timed.notBeforeFrame = timing.runtime.snapshot().positionFrames + 1000;
+        check(
+            timing.runtime
+                    .submitLiveBatch(std::span<const LiveNoteInput>(&timed, 1))
+                    .accepted == 1,
+            "sample scheduled onset submitted without callback round trip");
+        for (int i = 0; i < 7; ++i)
+            timing.tick();
+        check(timing.runtime.snapshot().liveAcknowledgedId == 0,
+              "no onset before exact sample target");
+        timing.tick();
+        check(timing.runtime.snapshot().liveAcknowledgedId == 1 &&
+                  timing.runtime.snapshot().liveTriggeredNotes == 1,
+              "onset starts inside callback block containing exact sample "
+              "target");
+        timing.runtime.deviceFailed();
+        LiveNoteInput rejected = timed;
+        rejected.id = 2;
+        check(timing.runtime
+                      .submitLiveBatch(
+                          std::span<const LiveNoteInput>(&rejected, 1))
+                      .accepted == 0,
+              "device failure rejects asynchronous handoff");
+        timing.runtime.service();
+        check(timing.runtime.snapshot().error == PlaybackError::deviceChanged &&
+                  timing.runtime.snapshot().liveAcknowledgedId == 1,
+              "device failure stays observable and retains actual onset "
+              "acknowledgement");
+        Harness batch;
+        batch.start();
+        std::array<LiveNoteInput, 500> notes;
+        for (std::size_t i = 0; i < notes.size(); ++i) {
+            notes[i].id = i + 1;
+            notes[i].midiNote = 60;
+            notes[i].voice.attackSeconds = .002;
+        }
+        auto submitted = batch.runtime.submitLiveBatch(notes);
+        check(submitted.accepted > 0 && submitted.accepted < notes.size(),
+              "batch handoff is bounded");
+        check(batch.runtime.snapshot().liveAcknowledgedId == 0,
+              "submission is not onset acknowledgement");
+        std::size_t sent = submitted.accepted;
+        unsigned blocks{};
+        while (batch.runtime.snapshot().liveAcknowledgedId != notes.size() &&
+               blocks++ < 5000) {
+            batch.runtime.heartbeat();
+            batch.tick();
+            const auto next = batch.runtime.submitLiveBatch(
+                std::span<const LiveNoteInput>(notes).subspan(sent));
+            check(next.error == PlaybackError::none,
+                  "full queue retries remain valid");
+            sent += next.accepted;
+        }
+        check(sent == 500 && batch.runtime.snapshot().liveTriggeredNotes == 500,
+              "500 submitted detections each actually trigger without drops");
+        check(batch.energy > 1, "burst produces finite audible PCM");
+        const auto acknowledged = batch.runtime.snapshot().liveAcknowledgedId;
+        LiveNoteInput future;
+        future.id = 501;
+        future.midiNote = 60;
+        future.notBeforeFrame = batch.runtime.snapshot().positionFrames + 48000;
+        check(
+            batch.runtime
+                    .submitLiveBatch(std::span<const LiveNoteInput>(&future, 1))
+                    .accepted == 1,
+            "future note queued");
+        for (int i = 0; i < 5; ++i)
+            batch.tick();
+        check(batch.runtime.snapshot().liveAcknowledgedId == acknowledged,
+              "future onset respects sample position");
+        check(batch
+                  .deliver([&] {
+                      return batch.runtime.command({PlaybackCommandKind::stop});
+                  })
+                  .ok,
+              "stop cancels queued notes");
+        check(batch.runtime.snapshot().liveAcknowledgedId == acknowledged,
+              "stop retains actual onset acknowledgement");
+        for (int i = 0;
+             i < 16 && batch.runtime.snapshot().state == AudioState::draining;
+             ++i)
+            batch.tick();
+        auto stopped = batch.runtime.snapshot();
+        check(batch
+                  .deliver([&] {
+                      return batch.runtime.command({PlaybackCommandKind::play,
+                                                    stopped.preparationId,
+                                                    stopped.generation});
+                  })
+                  .ok,
+              "restart after cancellation");
+        for (int i = 0; i < 400; ++i) {
+            batch.runtime.heartbeat();
+            batch.tick();
+        }
+        check(batch.runtime.snapshot().liveTriggeredNotes == 500,
+              "cancelled note cannot leak after restart");
+        batch.runtime.enable(false);
+        check(batch.runtime.snapshot().liveAcknowledgedId == acknowledged,
+              "mute retains previous acknowledgements");
+        batch.runtime.prepareLive();
+        check(batch.runtime.snapshot().liveAcknowledgedId == 0,
+              "new preparation resets acknowledgement domain");
+        Harness muted;
+        muted.start();
         VoiceSettings voice;
         check(muted.deliver([&] { return muted.runtime.submitLive(voice, 60); }).ok, "onset before mute");
         muted.runtime.enable(false); muted.energy = 0; muted.tick();

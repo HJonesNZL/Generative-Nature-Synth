@@ -132,6 +132,20 @@ struct PlaybackRuntime::Impl {
     std::atomic<unsigned> state{static_cast<unsigned>(AudioState::ready)};
     // One-slot SPSC mailbox: producer owns command until release request;
     // consumer owns it until release ack.
+    static constexpr std::uint64_t liveCapacity = 64;
+    struct QueuedLiveNote {
+        PlaybackCommand command;
+        std::uint64_t id{};
+    };
+    std::array<QueuedLiveNote, liveCapacity> liveQueue{};
+    std::atomic<std::uint64_t> liveWrite{}, liveRead{}, liveAcknowledged{},
+        liveTriggered{};
+    std::uint64_t lastSubmittedId{}, nextLiveFrame{};
+    void cancelLive() noexcept {
+        liveRead.store(liveWrite.load(std::memory_order_acquire),
+                       std::memory_order_release);
+        nextLiveFrame = 0;
+    }
     PlaybackCommand pending;
     std::atomic<std::uint64_t> request{}, acknowledged{};
     std::atomic<bool> accepted{};
@@ -168,19 +182,25 @@ struct PlaybackRuntime::Impl {
         switch (command.kind) {
         case PlaybackCommandKind::liveNote:
             if (command.liveVoiceUpdate &&
-                !renderer->updateVoice(command.voiceSlot, command.voiceCoefficients))
+                !renderer->updateVoice(command.voiceSlot,
+                                       command.voiceCoefficients))
                 return false;
-            return live && renderer->triggerLive(command.voiceSlot, command.midiNote,
-                                                 command.phaseStep, command.velocity, command.gateFrames, command.route);
+            return live &&
+                   renderer->triggerLive(command.voiceSlot, command.midiNote,
+                                         command.phaseStep, command.velocity,
+                                         command.gateFrames, command.route);
         case PlaybackCommandKind::play:
             return renderer->play(current);
         case PlaybackCommandKind::pause:
             return renderer->pause(current);
         case PlaybackCommandKind::stop:
+            cancelLive();
             return renderer->stop(current);
         case PlaybackCommandKind::seek:
+            cancelLive();
             return renderer->seek(command.frame, current);
         case PlaybackCommandKind::panic:
+            cancelLive();
             return renderer->panic(current);
         case PlaybackCommandKind::updateVoice:
             return renderer->updateVoice(command.voiceSlot,
@@ -194,6 +214,7 @@ struct PlaybackRuntime::Impl {
                         // mailbox, scratch or plan ownership.
         if (renderer)
             renderer->panic(renderer->generation());
+        cancelLive();
         started.store(false, std::memory_order_release);
         activeDevice.reset();
         deviceRate.store(0, std::memory_order_release);
@@ -221,6 +242,8 @@ PlaybackSnapshot PlaybackRuntime::snapshot() const noexcept {
     PlaybackSnapshot value;
     value.prepared = p.plan != nullptr;
     value.live = p.live;
+    value.liveAcknowledgedId = p.liveAcknowledged.load(std::memory_order_acquire);
+    value.liveTriggeredNotes = p.liveTriggered.load(std::memory_order_acquire);
     value.preparationId = p.preparationId;
     if (p.plan) {
         value.sampleRate = p.plan->settings().sampleRate;
@@ -354,6 +377,9 @@ PlaybackResult PlaybackRuntime::prepare(const Timeline &timeline,
         [](const MusicalAction &action) {
             return action.route.regionSlot != 0;
         }));
+    impl_->lastSubmittedId = 0;
+    impl_->liveAcknowledged.store(0, std::memory_order_release);
+    impl_->liveTriggered.store(0, std::memory_order_release);
     impl_->live = false;
     ++impl_->preparationId;
     impl_->publish();
@@ -393,6 +419,49 @@ PlaybackResult PlaybackRuntime::submitLive(const VoiceSettings &settings, unsign
     if (!result.ok && result.error == PlaybackError::invalidTransition)
         result.error = PlaybackError::liveNoteRejected;
     return result;
+}
+LiveBatchResult
+PlaybackRuntime::submitLiveBatch(std::span<const LiveNoteInput> notes) {
+    auto &p = *impl_;
+    const auto current = snapshot();
+    if (!current.live || !current.enabled ||
+        current.state != AudioState::playing)
+        return {0, PlaybackError::liveNoteRejected};
+    std::size_t accepted{};
+    for (const auto &input : notes) {
+        const auto write = p.liveWrite.load(std::memory_order_relaxed);
+        if (write - p.liveRead.load(std::memory_order_acquire) >=
+            Impl::liveCapacity)
+            break;
+        if (input.id <= p.lastSubmittedId ||
+            input.midiNote < p.plan->settings().rootMidi ||
+            input.midiNote > p.plan->settings().rootMidi + 16 ||
+            !std::isfinite(input.velocity) || input.velocity <= 0 ||
+            input.velocity > 1 || input.gateFrames > current.sampleRate * 4u)
+            return {accepted, PlaybackError::liveNoteRejected};
+        PlaybackCommand note;
+        note.kind = PlaybackCommandKind::liveNote;
+        note.frame = input.notBeforeFrame;
+        note.preparationId = current.preparationId;
+        note.generation = current.generation;
+        note.midiNote = input.midiNote;
+        note.phaseStep =
+            2 * std::numbers::pi * 440 *
+            std::exp2((static_cast<double>(input.midiNote) - 69) / 12) /
+            current.sampleRate;
+        note.velocity = input.velocity;
+        note.gateFrames = input.gateFrames;
+        note.route =
+            prepareSpatialRoute(p.plan->settings().spatial, input.position);
+        note.liveVoiceUpdate = true;
+        if (!p.plan->prepareVoiceUpdate(0, input.voice, note.voiceCoefficients))
+            return {accepted, PlaybackError::invalidVoiceSettings};
+        p.liveQueue[write % Impl::liveCapacity] = {note, input.id};
+        p.lastSubmittedId = input.id;
+        p.liveWrite.store(write + 1, std::memory_order_release);
+        ++accepted;
+    }
+    return {accepted, PlaybackError::none};
 }
 PlaybackResult PlaybackRuntime::updateVoice(VoiceSlot slot,
                                             const VoiceSettings &settings) {
@@ -601,7 +670,48 @@ void PlaybackRuntime::process(float *const *outputs, int channels,
     if (hasCommand)
         p.accepted.store(p.apply(p.pending), std::memory_order_relaxed);
     const auto count = static_cast<std::size_t>(frames);
-    if (!p.renderer->process(std::span<float>(p.scratch.data(), count * 2))) {
+    bool rendered = true;
+    std::uint64_t lastRenderedOnset{}, renderedOnsets{};
+    std::size_t offset{};
+    while (offset < count) {
+        std::uint64_t onsetId{};
+        const auto read = p.liveRead.load(std::memory_order_relaxed);
+        const bool queued =
+            read != p.liveWrite.load(std::memory_order_acquire) &&
+            p.renderer->state() == AudioState::playing;
+        if (queued)
+            p.nextLiveFrame =
+                std::max(p.nextLiveFrame,
+                         p.liveQueue[read % Impl::liveCapacity].command.frame);
+        if (queued && p.renderer->position() >= p.nextLiveFrame) {
+            const auto &note = p.liveQueue[read % Impl::liveCapacity];
+            if (p.apply(note.command)) {
+                onsetId = note.id;
+                p.liveRead.store(read + 1, std::memory_order_release);
+            }
+            // Minimum 10 ms between starts prevents same-sample stealing and
+            // gives every admitted voice audible frames before it can be
+            // stolen.
+            p.nextLiveFrame = p.renderer->position() +
+                              std::max(1u, p.plan->settings().sampleRate / 100);
+        }
+        auto chunk = count - offset;
+        if (queued && p.nextLiveFrame > p.renderer->position())
+            chunk =
+                std::min(chunk, static_cast<std::size_t>(
+                                    p.nextLiveFrame - p.renderer->position()));
+        if (!p.renderer->process(
+                std::span<float>(p.scratch.data() + offset * 2, chunk * 2))) {
+            rendered = false;
+            break;
+        }
+        if (onsetId) {
+            ++renderedOnsets;
+            lastRenderedOnset = onsetId;
+        }
+        offset += chunk;
+    }
+    if (!rendered) {
         deviceFailed(PlaybackError::callbackFailure);
     } else if (p.error() == PlaybackError::none) {
         float peakLeft{}, peakRight{};
@@ -610,6 +720,14 @@ void PlaybackRuntime::process(float *const *outputs, int channels,
             outputs[1][frame] = p.scratch[frame * 2 + 1];
             peakLeft = std::max(peakLeft, std::abs(outputs[0][frame]));
             peakRight = std::max(peakRight, std::abs(outputs[1][frame]));
+        }
+        // Publish onsets only after their complete callback buffer reached
+        // output.
+        if (renderedOnsets) {
+            p.liveTriggered.fetch_add(renderedOnsets,
+                                      std::memory_order_relaxed);
+            p.liveAcknowledged.store(lastRenderedOnset,
+                                     std::memory_order_release);
         }
         // Hold transients for slow UI polling, then decay with a one-second
         // time constant. These values measure PCM actually copied to output.

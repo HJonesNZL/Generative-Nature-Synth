@@ -88,8 +88,22 @@ struct PlaybackCommand {
     bool liveVoiceUpdate{};
     SpatialRoute route{};
 };
+struct LiveNoteInput {
+    std::uint64_t id{};
+    VoiceSettings voice;
+    std::uint64_t notBeforeFrame{};
+    unsigned midiNote{};
+    double velocity{1};
+    std::uint32_t gateFrames{};
+    std::optional<Position> position;
+};
+struct LiveBatchResult {
+    std::size_t accepted{};
+    PlaybackError error{PlaybackError::none};
+};
 struct PlaybackSnapshot {
     bool prepared{}, enabled{}, live{};
+    std::uint64_t liveAcknowledgedId{}, liveTriggeredNotes{};
     std::uint64_t preparationId{}, generation{}, positionFrames{},
         totalFrames{};
     std::uint32_t sampleRate{};
@@ -131,6 +145,10 @@ class PlaybackRuntime {
     PlaybackResult submitLive(const VoiceSettings &, unsigned midiNote,
                               double velocity = 1, std::uint32_t gateFrames = 0,
                               std::optional<Position> position = {});
+    // Serial producer: accepts a prefix without waiting for the device. Retry
+    // the unaccepted suffix when capacity is available; IDs increase per
+    // preparation.
+    LiveBatchResult submitLiveBatch(std::span<const LiveNoteInput>);
     PlaybackResult updateVoice(VoiceSlot, const VoiceSettings &);
     PlaybackResult enable(bool);
     AudioDeviceCatalog audioDevices(bool refresh = true);
