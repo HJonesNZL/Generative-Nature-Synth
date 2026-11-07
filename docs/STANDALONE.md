@@ -1,14 +1,18 @@
 # Standalone beta quick start
 
-The graphical instrument is **Releases/Live Sonification 0.7.1/Animal Atlas.app**. It is distinct from the older root-level Animal Atlas.app that opens the Python collection menu. This local beta supports Apple Silicon on macOS 15 or later. It includes its interface, fonts, map assets, native engine and SQLite; running it needs no Terminal, Node, Vite, hosted service or subscription.
+The graphical instrument is **Releases/Musical Live/Animal Atlas.app**. It is distinct from the older root-level Animal Atlas.app that opens the Python collection menu. This local beta supports Apple Silicon on macOS 15 or later. It includes its interface, fonts, map assets, native engine and SQLite; running it needs no Terminal, Node, Vite, hosted service or subscription.
 
 ## Hear new detections
 
-In **Atlas → Live**, choose **Collect → Start live updates**. Apply your stereo output in **Audio settings**, then enable **Live listening**. Each eligible new observation plays one synthesized note through its species voice as the globe updates. The first poll establishes a baseline. Leave listening on for subsequent provider polls. Open **Live listening status** for counts of received, admitted and dropped detections and skipped revisions.
+In **Atlas → Live**, choose **Collect → Start live updates**. Choose your stereo device in **Audio settings**. Open **Live listening status** to pick a playback mode, then turn on **Live listening**. The first poll establishes a baseline. New eligible records from later polls drive the instrument.
 
-Edit a species in **Sound Studio** to hear the draft on its next detection. An unedited species uses its saved settings or exact-species preset when available. Other species use a neutral timbre with a species-derived pitch. Live uses the direct voice. Replay adds the composition and geographic effects for prepared pieces.
+- **Direct** is the startup default. It uses the species voice and its mapped pitch, with up to eight immediate notes per service pass.
+- **Musical** lets you choose one to eight notes per 1.6-second window. A lone detection with an available slot sounds at the next collection service pass. A busy batch produces a short phrase. Less recently represented species and regions get a turn. Repeated detections can share a note. A dense run from a single species and region can form a rhythm from several actual records.
+- **Edit live voices, key & regions** opens Sound Studio. Use **Live key & scale** to apply a tonic, scale and tempo. Edit a species voice or use the region editor for pan, level and geographic effects. Changing mode, key, scale or region routing can retire a pending phrase and its tails. Live arrangement settings belong to the current app session. **Save voice** persists an independently edited species definition.
+- Select a recent detection and expand **Live musical outcome** for its species, voice character and region. A **grouped** observation identifies the record that triggered its shared note. A **skipped** record remains in the wildlife library. The app retains outcomes for the latest 2,048 eligible observations in the current listening session. When the cache has no outcome, the interface reports that explicitly. The globe uses the source observation timestamps.
+- The output meter measures the rendered stereo signal and holds peaks for a second. **Live listening status** shows received, admitted, grouped and dropped counts. Skipped revisions indicate that the 512-revision read window was exceeded.
 
-A busy poll can yield more observations than the instrument can play. The worker examines up to 512 recent revisions and submits up to eight notes per pass. Turning listening off, pausing collection, changing library or output, or entering Replay stops the live performance. Returning to Live requires enabling listening again. After a service interruption longer than five seconds, listening resumes at the current end of the same library.
+Turning listening off, pausing collection, changing library or output, entering Replay, or pressing **All off** retires live playback. After a service interruption longer than five seconds the app discards queued notes and rebaselines. [Musical Live release checks and listening examples](../evidence/musical-live/qualification.md)
 
 ## Play a saved soundscape
 

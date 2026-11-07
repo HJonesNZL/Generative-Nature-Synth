@@ -9,3 +9,5 @@ The audio callback receives prepared numeric voice parameters and onset instruct
 Verify the full chain with disposable observations, including silent arming, distinct species voices, duplicate/correction suppression, burst accounting, post-stop silence and Replay regression. Exercise the built WebView with an explicitly selected virtual output. Preserve the running owner collection and previous app version.
 
 Completed in the 0.7.0 standalone. [Packaged release qualification](../../evidence/live-sonification/qualification.md)
+
+The 0.8.0 [Musical Live release](../../evidence/musical-live/qualification.md) extends this baseline with density-limited phrases, key and scale, regional mixing, measured metering and per-observation outcomes.
