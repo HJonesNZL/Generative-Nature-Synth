@@ -1,0 +1,35 @@
+{
+  "test": "library_browsing_protocol",
+  "checked_at_utc": "2026-11-07T02:16:50.714837Z",
+  "fixture": "LargeLibrary-20000-events-3003-pieces-v1",
+  "fixture_event_count": 20000,
+  "fixture_saved_piece_count": 3003,
+  "fixture_database_bytes": 61214720,
+  "binaries": {
+    "current": {
+      "path": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/atlas-native",
+      "sha256": "077a76bfc765cde25af35acf3ef4b521a8c6917d6da3ba4ef941e1503fd70f2f"
+    }
+  },
+  "checks": {
+    "pieces_reached": 3003,
+    "events_checked": 20000,
+    "restart_and_source_cursor_rejection": true,
+    "malformed_cursors_rejected": true,
+    "revision_fenced_pages": true,
+    "external_commit_invalidates_cache": true,
+    "corrupt_warm_payload_rejected": true,
+    "failed_preparation_generation_preserved": true,
+    "read_only_database_bytes_unchanged_before_controlled_mutation": true
+  },
+  "benchmark": {},
+  "network_requests": 0,
+  "owner_database_access": false,
+  "audio_device_access": false,
+  "limitations": [
+    "Fresh host means a new process; OS file caches were not flushed.",
+    "Timings include JSON protocol serialization/parsing and exclude process startup.",
+    "Peak RSS is whole benchmark child-process maximum, measured only on macOS.",
+    "No timing thresholds or playback/listening qualification are inferred."
+  ]
+}

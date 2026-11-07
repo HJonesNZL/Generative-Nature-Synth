@@ -1,0 +1,15 @@
+Test project /Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/native-sanitized
+    Start  5: atlas-collection
+1/5 Test  #5: atlas-collection .................   Passed    0.54 sec
+    Start  6: atlas-library-browsing
+2/5 Test  #6: atlas-library-browsing ...........   Passed    0.74 sec
+    Start 24: atlas-ui-host
+3/5 Test #24: atlas-ui-host ....................   Passed    0.69 sec
+    Start 25: atlas-map-source-coverage
+4/5 Test #25: atlas-map-source-coverage ........   Passed    1.35 sec
+    Start 26: atlas-library-protocol
+5/5 Test #26: atlas-library-protocol ...........   Passed   57.04 sec
+
+100% tests passed, 0 tests failed out of 5
+
+Total Test time (real) =  60.36 sec

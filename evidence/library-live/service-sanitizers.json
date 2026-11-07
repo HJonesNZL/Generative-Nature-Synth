@@ -1,0 +1,16 @@
+{
+  "asan": {
+    "binarySha256": "c3e1dddebc94f45b79895706b85bc98775c40c0d95ef186998ed6c4878805f36",
+    "exitCode": 0,
+    "stdout": "collection service tests passed (disposable/injected HTTP only)\n",
+    "stderr": "",
+    "scope": "Project test/service/collector/core/validation instrumented; prebuilt JUCE and SQLite uninstrumented; injected HTTP only"
+  },
+  "tsan": {
+    "binarySha256": "419c82d67ae39be20e1e81394eb847d00ebfba5bbe17dd9cd9cf02da1b7f414b",
+    "exitCode": 0,
+    "stdout": "collection service tests passed (disposable/injected HTTP only)\n",
+    "stderr": "",
+    "scope": "Project test/service/collector/core/validation instrumented; prebuilt JUCE and SQLite uninstrumented; injected HTTP only"
+  }
+}

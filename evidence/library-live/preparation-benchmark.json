@@ -1,0 +1,176 @@
+{
+  "test": "library_browsing_protocol",
+  "checked_at_utc": "2026-11-07T02:04:28.449370Z",
+  "fixture": "LargeLibrary-20000-events-3003-pieces-v1",
+  "fixture_event_count": 20000,
+  "fixture_saved_piece_count": 3003,
+  "fixture_database_bytes": 61214720,
+  "binaries": {
+    "current": {
+      "path": "/Users/henryjones/Documents/ChatGPT/Generative Nature Synth/build/standalone/atlas-native",
+      "sha256": "ec887d2721dc5f5b81207f80b440a38ba5b690ba080c70cc34d97f2a21bbeb1b"
+    },
+    "baseline": {
+      "path": "/private/tmp/atlas-library-baseline/atlas-native",
+      "sha256": "3ecbe5376e3c20cf7327e721c16f9679f80368f12d82ed49f9a754deecb8bb6e"
+    }
+  },
+  "checks": {
+    "pieces_reached": 3003,
+    "events_checked": 20000,
+    "restart_and_source_cursor_rejection": true,
+    "malformed_cursors_rejected": true,
+    "revision_fenced_pages": true,
+    "external_commit_invalidates_cache": true,
+    "corrupt_warm_payload_rejected": true,
+    "failed_preparation_generation_preserved": true,
+    "read_only_database_bytes_unchanged_before_controlled_mutation": true
+  },
+  "benchmark": {
+    "baseline": {
+      "runs": [
+        {
+          "fresh_host_catalog_ms": 708.714625,
+          "prepare_after_catalog_ms": 633.364583,
+          "fresh_host_catalog_to_prepare_ms": 1342.079208,
+          "warm_prepare_ms": [
+            639.677584,
+            644.512166,
+            642.940916
+          ],
+          "first_500_event_page_after_prepare_ms": 23.0655,
+          "warm_500_event_page_ms": [
+            23.381458,
+            22.851,
+            23.2105
+          ],
+          "peak_rss_bytes": 118439936
+        },
+        {
+          "fresh_host_catalog_ms": 717.022917,
+          "prepare_after_catalog_ms": 645.32825,
+          "fresh_host_catalog_to_prepare_ms": 1362.351167,
+          "warm_prepare_ms": [
+            666.546541,
+            689.849083,
+            661.403667
+          ],
+          "first_500_event_page_after_prepare_ms": 24.358542,
+          "warm_500_event_page_ms": [
+            23.821917,
+            24.034084,
+            24.409208
+          ],
+          "peak_rss_bytes": 119668736
+        },
+        {
+          "fresh_host_catalog_ms": 741.499417,
+          "prepare_after_catalog_ms": 649.654792,
+          "fresh_host_catalog_to_prepare_ms": 1391.154209,
+          "warm_prepare_ms": [
+            642.879375,
+            645.856917,
+            640.962125
+          ],
+          "first_500_event_page_after_prepare_ms": 23.521834,
+          "warm_500_event_page_ms": [
+            23.376125,
+            23.734,
+            23.5495
+          ],
+          "peak_rss_bytes": 113786880
+        }
+      ],
+      "medians": {
+        "fresh_host_catalog_ms": 717.022917,
+        "prepare_after_catalog_ms": 645.32825,
+        "fresh_host_catalog_to_prepare_ms": 1362.351167,
+        "first_500_event_page_after_prepare_ms": 23.521834,
+        "warm_prepare_ms": 644.512166,
+        "warm_500_event_page_ms": 23.5495,
+        "peak_rss_bytes": 118439936
+      }
+    },
+    "current": {
+      "runs": [
+        {
+          "fresh_host_catalog_ms": 722.040834,
+          "prepare_after_catalog_ms": 7.716625,
+          "fresh_host_catalog_to_prepare_ms": 729.757459,
+          "warm_prepare_ms": [
+            9.486667,
+            8.624541,
+            8.66475
+          ],
+          "first_500_event_page_after_prepare_ms": 23.527083,
+          "warm_500_event_page_ms": [
+            23.500584,
+            23.275667,
+            23.116833
+          ],
+          "peak_rss_bytes": 109707264
+        },
+        {
+          "fresh_host_catalog_ms": 723.030792,
+          "prepare_after_catalog_ms": 6.50325,
+          "fresh_host_catalog_to_prepare_ms": 729.534042,
+          "warm_prepare_ms": [
+            8.101458,
+            8.84875,
+            7.890875
+          ],
+          "first_500_event_page_after_prepare_ms": 23.716083,
+          "warm_500_event_page_ms": [
+            23.540375,
+            22.967958,
+            23.936708
+          ],
+          "peak_rss_bytes": 114475008
+        },
+        {
+          "fresh_host_catalog_ms": 715.659208,
+          "prepare_after_catalog_ms": 6.273625,
+          "fresh_host_catalog_to_prepare_ms": 721.9328330000001,
+          "warm_prepare_ms": [
+            8.257875,
+            8.227042,
+            7.662375
+          ],
+          "first_500_event_page_after_prepare_ms": 23.355917,
+          "warm_500_event_page_ms": [
+            22.800333,
+            23.084458,
+            22.83
+          ],
+          "peak_rss_bytes": 119422976
+        }
+      ],
+      "medians": {
+        "fresh_host_catalog_ms": 722.040834,
+        "prepare_after_catalog_ms": 6.50325,
+        "fresh_host_catalog_to_prepare_ms": 729.534042,
+        "first_500_event_page_after_prepare_ms": 23.527083,
+        "warm_prepare_ms": 8.257875,
+        "warm_500_event_page_ms": 23.116833,
+        "peak_rss_bytes": 114475008
+      }
+    }
+  },
+  "network_requests": 0,
+  "owner_database_access": false,
+  "audio_device_access": false,
+  "limitations": [
+    "Fresh host means a new process; OS file caches were not flushed.",
+    "Timings include JSON protocol serialization/parsing and exclude process startup.",
+    "Peak RSS is whole benchmark child-process maximum, measured only on macOS.",
+    "No timing thresholds or playback/listening qualification are inferred."
+  ],
+  "baseline_over_current_ratio": {
+    "fresh_host_catalog_ms": 0.9930503695030632,
+    "prepare_after_catalog_ms": 99.23165340406719,
+    "fresh_host_catalog_to_prepare_ms": 1.867426451088077,
+    "first_500_event_page_after_prepare_ms": 0.9997768954187817,
+    "warm_prepare_ms": 78.04818624646171,
+    "warm_500_event_page_ms": 1.0187165343972506
+  }
+}

@@ -1196,7 +1196,7 @@ class Shell final : public juce::Component, private juce::Timer {
    LIVE_COLLECTION_SMOKE
    SCENE_EXPORT_SMOKE
    result.ok = true;
- } catch (error) { result.error = String(error); }
+ } catch (error) { result.error = String(error); result.failureDom = {visibility: document.visibilityState, text: document.getElementById('root')?.innerText?.slice(0, 9000)}; }
  result.finished = true;
 })();
 )JS");
@@ -1233,6 +1233,9 @@ class Shell final : public juce::Component, private juce::Timer {
      const changes = await call('getChanges', {storeId: '', afterSequence: '0', limit: 500});
      result.liveMap = {count: changes.events.length, sources: [...new Set(changes.events.map(item => item.event.sourceId))], baselinePulses: changes.events.filter(item => item.liveEligible).length};
      if (!['birdweather', 'nzsharks'].every(id => result.liveMap.sources.includes(id)) || result.liveMap.baselinePulses) throw Error('Map baseline lost a source or replayed old pings.');
+     document.querySelector('button[aria-label="Map details and coverage"]')?.click();
+     await waitFor(() => /[1-9][0-9]* records \u00b7 [1-9][0-9]* of [1-9][0-9]* locations shown/.test(document.querySelector('.map-stage')?.textContent ?? ''), 'loaded event counts in map details');
+     await waitFor(() => document.querySelector('.grain__ticks path[d]'), 'actual detections in Grain before the catalogue refresh');
      const initialBird = result.live.sources.find(source => source.id === 'birdweather');
      const nextDeadline = Date.now() + 75000;
      do {
@@ -1246,8 +1249,6 @@ class Shell final : public juce::Component, private juce::Timer {
      result.liveIncoming = {count: incoming.events.length, pings: incoming.events.filter(item => item.liveEligible).length, sources: [...new Set(incoming.events.map(item => item.event.sourceId))]};
      if (!result.liveIncoming.pings) throw Error('No genuinely new bird activity arrived during the live smoke window.');
      await waitFor(() => parseInt(document.querySelector('.map-locations > summary')?.textContent ?? '0', 10) > 0 && document.querySelectorAll('.species-row').length > 0, 'real observations in the React map and species list');
-     document.querySelector('button[aria-label="Map details and coverage"]')?.click();
-     await waitFor(() => /[1-9][0-9]* records · [1-9][0-9]* of [1-9][0-9]* locations shown/.test(document.querySelector('.map-stage')?.innerText ?? ''), 'loaded event counts in map details');
      result.liveUI = {mapDetails: document.querySelector('.map-stage').innerText.slice(0, 3000), locations: document.querySelector('.map-locations > summary').textContent, speciesRows: document.querySelectorAll('.species-row').length, sourceText: document.querySelector('[aria-label="Live source status"]').innerText, canvas: !!document.querySelector('.map-stage canvas')};
    } finally {
      result.liveStopped = await call('setLiveSources', {sourceIds: []});

@@ -1,0 +1,12 @@
+{
+  "checks": [
+    "first material page displayed before stale second-page response",
+    "stale_generation clears partial events, counts and map locations",
+    "failure remains visible",
+    "explicit retry restarts at offset zero and forwards a new revision",
+    "selected piece remains prepared once"
+  ],
+  "pageErrors": [],
+  "external": [],
+  "bridge": []
+}

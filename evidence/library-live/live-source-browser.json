@@ -1,0 +1,19 @@
+{
+  "checks": [
+    "explicit native source selection with disclosure draft retention",
+    "no legacy duration/listen promises or legacy collection calls",
+    "failed apply observable and retry preserves draft",
+    "managed-library activation reload",
+    "enabled does not imply Connected",
+    "waiting/updating/last update/actual observation age separate",
+    "partial coverage and collection gap visible",
+    "page-cap and excluded-record results are partial updates, not failed fetches",
+    "rate-limited source and 86400s retry supported",
+    "apply both source streams, pause updates and status read recovery",
+    "external archive browsing distinguished from scene-only startup",
+    "1440x900 and 1280x800 Atlas/Collect/Studio layouts"
+  ],
+  "pageErrors": [],
+  "external": [],
+  "bridge": []
+}

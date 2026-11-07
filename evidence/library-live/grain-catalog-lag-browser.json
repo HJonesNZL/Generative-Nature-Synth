@@ -1,0 +1,13 @@
+{
+  "checks": [
+    "nonempty reports immediately draw six Grain lanes with an empty startup catalogue",
+    "event common names used and missing names retain genuine species ID",
+    "repeated reports share a lane with one line per report",
+    "missing identity does not invent a lane",
+    "catalogue order and names take priority when available",
+    "lane highlighting and Atlas/Studio continuity remain available"
+  ],
+  "pageErrors": [],
+  "external": [],
+  "bridge": []
+}

@@ -1,0 +1,15 @@
+{
+  "checks": [
+    "2607-piece synthetic library reaches final page with bounded 50-row display",
+    "beyond-first-100 imported/interrupted/truncated selection and prepare once",
+    "selection and page survive Atlas/Studio",
+    "previous page and selected-outside-page guidance",
+    "truthful unknown total and end state",
+    "late reply cannot overwrite refreshed page",
+    "stale revision and unreadable library visible recovery",
+    "1440x900 and 1280x800 Atlas/Studio layout"
+  ],
+  "pageErrors": [],
+  "external": [],
+  "bridgeRequests": []
+}

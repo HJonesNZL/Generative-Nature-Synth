@@ -25,14 +25,23 @@ export function GrainPanel({ view, catalog, aside }: { view: MaterialView; catal
 
   const lanes = useMemo(() => {
     const bySpecies = new Map<string, EventView[]>();
+    const reportedNames = new Map<string, string>();
     for (const e of view.events) {
       if (!e.speciesId) continue;
       const list = bySpecies.get(e.speciesId) ?? [];
       list.push(e);
       bySpecies.set(e.speciesId, list);
+      if (e.commonName && !reportedNames.has(e.speciesId)) reportedNames.set(e.speciesId, e.commonName);
     }
     const order = (catalog.data?.species ?? []).map((s) => s.id).filter((id) => bySpecies.has(id) || id === state.highlightSpeciesId);
-    return order.slice(0, MAX_LANES).map((speciesId) => ({ speciesId, events: bySpecies.get(speciesId) ?? [] }));
+    // New reports can arrive before the catalogue's next refresh. Keep its
+    // known order, then append actual reported IDs without inventing lanes.
+    const listed = new Set(order);
+    for (const speciesId of bySpecies.keys()) {
+      if (!listed.has(speciesId)) { order.push(speciesId); listed.add(speciesId); }
+    }
+    const catalogueNames = new Map(catalog.data?.species.map(species => [species.id, species.commonName]) ?? []);
+    return order.slice(0, MAX_LANES).map((speciesId) => ({ speciesId, name: catalogueNames.get(speciesId) || reportedNames.get(speciesId) || speciesId, events: bySpecies.get(speciesId) ?? [] }));
   }, [view.events, catalog.data, state.highlightSpeciesId]);
 
   const selected = view.store.get(state.selectedEventId);
@@ -87,7 +96,7 @@ export function GrainPanel({ view, catalog, aside }: { view: MaterialView; catal
           return (
             <div className="grain__lane" key={lane.speciesId}>
               <button type="button" className={`grain__name${highlighted ? " is-highlighted" : ""}`} aria-pressed={highlighted} onClick={() => dispatch({ type: "highlightSpecies", speciesId: highlighted ? null : lane.speciesId })}>
-                {catalog.speciesName(lane.speciesId)}
+                {lane.name}
                 <span className="sr-only">, {lane.events.length} detections{highlighted ? ", highlighted" : ""}</span>
               </button>
               <svg viewBox="0 0 1000 26" preserveAspectRatio="none" className="grain__ticks" aria-hidden="true" onClick={(e) => pick(e, lane.events)}>

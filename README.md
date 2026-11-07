@@ -1,6 +1,8 @@
 # Animal Atlas
 
-The [project recovery milestone](evidence/project-recovery/qualification.md) adds draggable NZ detail, portable scene export, verified project backup/restore and WAV history that survives restarts. Use **Releases/Project Recovery/Animal Atlas.app**; see the [quick start](docs/STANDALONE.md). All project operations remain local and free of paid services.
+The [live library milestone](docs/milestones/NEXT_LIBRARY_BROWSING.md) adds native in-app collection for NZ bird activity and shark location snapshots, source freshness, paginated saved-piece browsing and revision-aware preparation. Use **Releases/Live Library/Animal Atlas.app** and choose **Collect → Start live updates**. Sources start paused on every launch. Bird receivers and shark source subjects retain separate meanings; continuous identified-animal tracking and live sonification are not implied. See the [qualification record](evidence/library-live/qualification.md).
+
+The [project recovery milestone](evidence/project-recovery/qualification.md) adds draggable NZ detail, portable scene export, verified project backup/restore and WAV history that survives restarts. Its earlier package remains under **Releases/Project Recovery/**; see the [quick start](docs/STANDALONE.md). All project operations remain local and free of paid services.
 
 The [standalone beta milestone](docs/milestones/STANDALONE_PLAN.md) packages the native instrument and local React interface in a macOS app, with output-device selection, scene import and native WAV saving. See the [standalone quick start](docs/STANDALONE.md) and [qualification evidence](evidence/standalone/qualification.md). This local arm64 beta requires macOS 15 or later and needs no Node, web server or repository at runtime.
 
@@ -16,7 +18,7 @@ Playback requires explicit Listening enable. Eight native voice controls and six
 
 ## Production direction and C++ migration
 
-The production codebase is moving to portable C++20, with thin JUCE standalone/VST3 adapters. The current UI is React/TypeScript with a Three.js globe; JUCE's embedded browser is the local macOS product container. React and the webview are complementary. The C++ event/replay core, numeric action compiler, bounded voice renderer, WAV writer, playback runtime and read-only native session CLI now build; collector/session writes remain the operational Python prototype below until parity and recovery testing support replacing it. Existing terminal commands and ongoing recordings are unchanged.
+The production codebase is moving to portable C++20, with thin JUCE standalone/VST3 adapters. The current UI is React/TypeScript with a Three.js globe; JUCE's embedded browser is the local macOS product container. React and the webview are complementary. The C++ event/replay core, numeric action compiler, bounded voice renderer, WAV writer, playback runtime and read-only native session CLI now build; the packaged app now collects into its separate managed native live library. Saved-session capture/writes remain in the operational Python prototype below; the native collector does not modify that recording database. Existing terminal commands and ongoing recordings are unchanged.
 
 ```sh
 cmake -S . -B build/native -DCMAKE_BUILD_TYPE=Debug
@@ -36,7 +38,7 @@ Version 0.3 adds sealed metadata, provenance-preserving bundles and full histori
 
 ## Open without entering commands
 
-For the older data-collection menu, open the root-level **Animal Atlas.app** or double-click **Start Animal Atlas.command** in this folder. The new graphical app is under **Releases/Design Refresh/**. It opens a numbered Terminal menu for recording, saved sessions, replay previews and export. This is a local launcher using the installed Python, not the finished graphical application. Shell syntax/app manifest are verified; Finder launching has not been manually exercised.
+For the older data-collection menu, open the root-level **Animal Atlas.app** or double-click **Start Animal Atlas.command** in this folder. The current graphical app is under **Releases/Live Library/**. It opens a numbered Terminal menu for recording, saved sessions, replay previews and export. This is a local launcher using the installed Python, not the finished graphical application. Shell syntax/app manifest are verified; Finder launching has not been manually exercised.
 
 A real recorded session and a saved NZ bird snapshot are available in the local library, with a private portable bundle in `Sessions/`. See `evidence/session-milestone.json` and [recording/replay instructions](docs/sessions-and-replay.md). Those are historical milestone results; they do not describe the current state of an owner-started collector.
 
