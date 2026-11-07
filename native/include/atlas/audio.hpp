@@ -131,6 +131,11 @@ class AudioRenderer {
     bool seek(std::uint64_t frame, std::uint64_t generation) noexcept;
     bool panic(std::uint64_t generation) noexcept;
     bool updateVoice(VoiceSlot, const VoiceCoefficients &) noexcept;
+    // Continuous mode is selected only while quiescent; note delivery is
+    // callback-owned and bounded to one onset. Existing voice/tail limits apply.
+    void setLive(bool live) noexcept { live_ = live; }
+    bool triggerLive(VoiceSlot, unsigned midiNote, double phaseStep, double velocity,
+                     std::uint32_t gateFrames = 0) noexcept;
     bool process(std::span<float> interleavedStereo) noexcept;
     AudioState state() const noexcept { return state_; }
     std::uint64_t generation() const noexcept { return generation_; }
@@ -157,13 +162,14 @@ class AudioRenderer {
     std::size_t nextAction_{};
     std::uint64_t frame_{}, generation_{1};
     AudioState state_{AudioState::ready};
+    bool live_{};
     AudioStatistics statistics_;
     double gain_{1}, rampFrom_{1}, rampTo_{1};
     std::uint32_t rampRemaining_{};
     void clearVoices() noexcept;
     void clearToStart() noexcept;
     void beginRamp(double target) noexcept;
-    void trigger(const MusicalAction &) noexcept;
+    bool trigger(const MusicalAction &) noexcept;
     double tick(Voice &, bool retiring) noexcept;
 };
 } // namespace atlas

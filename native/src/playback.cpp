@@ -4,6 +4,8 @@
 #include <atomic>
 #include <cctype>
 #include <chrono>
+#include <cmath>
+#include <numbers>
 #include <stdexcept>
 #include <thread>
 
@@ -64,6 +66,8 @@ constexpr auto leaseDuration = std::chrono::seconds(5);
 } // namespace
 const char *playbackErrorText(PlaybackError error) noexcept {
     switch (error) {
+    case PlaybackError::liveNoteRejected:
+        return "live_note_rejected";
     case PlaybackError::none:
         return "none";
     case PlaybackError::staleControlRevision:
@@ -118,6 +122,7 @@ struct PlaybackRuntime::Impl {
     std::unique_ptr<AudioPlan> plan;
     std::unique_ptr<AudioRenderer> renderer;
     std::uint64_t preparationId{};
+    bool live{};
     std::size_t suppressedSourceEvents{}, routedNotes{};
     std::atomic<bool> enabled{}, started{};
     std::atomic<unsigned> failure{static_cast<unsigned>(PlaybackError::none)};
@@ -159,6 +164,12 @@ struct PlaybackRuntime::Impl {
             return false;
         const auto current = renderer->generation();
         switch (command.kind) {
+        case PlaybackCommandKind::liveNote:
+            if (command.liveVoiceUpdate &&
+                !renderer->updateVoice(command.voiceSlot, command.voiceCoefficients))
+                return false;
+            return live && renderer->triggerLive(command.voiceSlot, command.midiNote,
+                                                 command.phaseStep, command.velocity, command.gateFrames);
         case PlaybackCommandKind::play:
             return renderer->play(current);
         case PlaybackCommandKind::pause:
@@ -204,6 +215,7 @@ PlaybackSnapshot PlaybackRuntime::snapshot() const noexcept {
     const auto &p = *impl_;
     PlaybackSnapshot value;
     value.prepared = p.plan != nullptr;
+    value.live = p.live;
     value.preparationId = p.preparationId;
     if (p.plan) {
         value.sampleRate = p.plan->settings().sampleRate;
@@ -335,9 +347,45 @@ PlaybackResult PlaybackRuntime::prepare(const Timeline &timeline,
         [](const MusicalAction &action) {
             return action.route.regionSlot != 0;
         }));
+    impl_->live = false;
     ++impl_->preparationId;
     impl_->publish();
     return {true, PlaybackError::none, snapshot()};
+}
+PlaybackResult PlaybackRuntime::prepareLive(AudioSettings settings) {
+    if (settings.composition.enabled || settings.spatial.enabled)
+        throw std::invalid_argument("live playback currently requires direct voice routing");
+    VoiceSettings fallbackSettings;
+    fallbackSettings.attackSeconds = settings.attackSeconds;
+    fallbackSettings.decaySeconds = settings.decaySeconds;
+    const std::array<VoiceProfile, 1> fallback{{{"", fallbackSettings}}};
+    prepare(Timeline({}, TimeBasis::arrival), settings, fallback, true);
+    impl_->live = true;
+    impl_->renderer->setLive(true);
+    return {true, PlaybackError::none, snapshot()};
+}
+PlaybackResult PlaybackRuntime::submitLive(const VoiceSettings &settings, unsigned midiNote,
+                                          double velocity, std::uint32_t gateFrames) {
+    const auto current = snapshot();
+    if (!current.live || !current.enabled || current.state != AudioState::playing)
+        return {false, PlaybackError::liveNoteRejected, current};
+    PlaybackCommand note;
+    note.kind = PlaybackCommandKind::liveNote;
+    note.preparationId = current.preparationId;
+    note.generation = current.generation;
+    note.midiNote = midiNote;
+    note.phaseStep = 2 * std::numbers::pi * 440 *
+                     std::exp2((static_cast<double>(midiNote) - 69) / 12) /
+                     current.sampleRate;
+    note.velocity = velocity;
+    note.gateFrames = gateFrames;
+    note.liveVoiceUpdate = true;
+    if (!impl_->plan->prepareVoiceUpdate(0, settings, note.voiceCoefficients))
+        return {false, PlaybackError::invalidVoiceSettings, current};
+    auto result = command(note);
+    if (!result.ok && result.error == PlaybackError::invalidTransition)
+        result.error = PlaybackError::liveNoteRejected;
+    return result;
 }
 PlaybackResult PlaybackRuntime::updateVoice(VoiceSlot slot,
                                             const VoiceSettings &settings) {

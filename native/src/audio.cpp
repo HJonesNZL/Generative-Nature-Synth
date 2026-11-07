@@ -568,7 +568,29 @@ bool AudioRenderer::seek(std::uint64_t frame,
         frame == plan_.totalFrames_ ? AudioState::finished : AudioState::paused;
     return true;
 }
-void AudioRenderer::trigger(const MusicalAction &action) noexcept {
+bool AudioRenderer::triggerLive(VoiceSlot slot, unsigned midiNote,
+                                double phaseStep, double velocity,
+                                std::uint32_t gateFrames) noexcept {
+    if (!live_ || state_ != AudioState::playing ||
+        slot >= std::max(std::size_t{1}, plan_.voiceProfiles_.size()) ||
+        midiNote < plan_.settings_.rootMidi ||
+        midiNote > plan_.settings_.rootMidi + 16 ||
+        !std::isfinite(phaseStep) || phaseStep <= 0 ||
+        phaseStep > plan_.maximumPhaseStep_ ||
+        !std::isfinite(velocity) || velocity <= 0 || velocity > 1 ||
+        gateFrames > plan_.settings_.sampleRate * 4u)
+        return false;
+    MusicalAction action;
+    action.frame = frame_;
+    action.voiceSlot = slot;
+    action.midiNote = midiNote;
+    action.phaseStep = phaseStep;
+    action.velocity = velocity;
+    action.gateFrames = gateFrames;
+    action.phaseSeed = static_cast<std::uint32_t>(frame_) ^ (static_cast<std::uint32_t>(slot) * 2654435761u);
+    return trigger(action);
+}
+bool AudioRenderer::trigger(const MusicalAction &action) noexcept {
     auto slot = std::find_if(voices_.begin(), voices_.end(),
                              [](const Voice &voice) { return !voice.active; });
     if (slot == voices_.end()) {
@@ -581,7 +603,7 @@ void AudioRenderer::trigger(const MusicalAction &action) noexcept {
                          [](const Voice &voice) { return !voice.active; });
         if (tail == retiring_.end()) {
             ++statistics_.faults;
-            return;
+            return false;
         }
         *tail = *slot;
         tail->fadeAge = 0;
@@ -614,6 +636,7 @@ void AudioRenderer::trigger(const MusicalAction &action) noexcept {
                 (2 * pi * coefficients.phaseSpread);
     }
     ++statistics_.triggered;
+    return true;
 }
 double AudioRenderer::tick(Voice &voice, bool retiring) noexcept {
     if (!voice.active)
@@ -712,7 +735,7 @@ bool AudioRenderer::process(std::span<float> output) noexcept {
         if (state_ == AudioState::ready || state_ == AudioState::paused ||
             state_ == AudioState::finished)
             continue;
-        if (frame_ >= plan_.totalFrames_) {
+        if (!live_ && frame_ >= plan_.totalFrames_) {
             if (state_ == AudioState::draining)
                 clearToStart();
             else {
@@ -721,7 +744,7 @@ bool AudioRenderer::process(std::span<float> output) noexcept {
             }
             continue;
         }
-        if (state_ != AudioState::draining) {
+        if (!live_ && state_ != AudioState::draining) {
             for (unsigned step = 0;
                  step < 8 && nextAction_ < plan_.actions_.size() &&
                  plan_.actions_[nextAction_].frame == frame_;
@@ -755,7 +778,7 @@ bool AudioRenderer::process(std::span<float> output) noexcept {
                     (stereo.right + plan_.spatialPlan_.amount * wet.right) *
                     plan_.spatialPlan_.outputGain;
                 const auto remaining = plan_.totalFrames_ - frame_;
-                if (remaining <= plan_.spatialEndFadeFrames_) {
+                if (!live_ && remaining <= plan_.spatialEndFadeFrames_) {
                     const auto fade = static_cast<double>(remaining - 1) /
                                       plan_.spatialEndFadeFrames_;
                     stereo.left *= fade;
@@ -805,9 +828,9 @@ bool AudioRenderer::process(std::span<float> output) noexcept {
         if (!rampRemaining_ && state_ == AudioState::pausing)
             state_ = AudioState::paused;
         if (state_ == AudioState::draining &&
-            (!rampRemaining_ || frame_ == plan_.totalFrames_)) {
+            (!rampRemaining_ || (!live_ && frame_ == plan_.totalFrames_))) {
             clearToStart();
-        } else if (frame_ == plan_.totalFrames_ &&
+        } else if (!live_ && frame_ == plan_.totalFrames_ &&
                    state_ != AudioState::paused) {
             clearVoices();
             state_ = AudioState::finished;

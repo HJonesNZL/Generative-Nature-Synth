@@ -64,7 +64,8 @@ enum class PlaybackError : unsigned {
     leaseExpired,
     invalidVoiceSettings,
     staleControlRevision,
-    invalidDeviceConfiguration
+    invalidDeviceConfiguration,
+    liveNoteRejected
 };
 const char *playbackErrorText(PlaybackError) noexcept;
 enum class PlaybackCommandKind : unsigned {
@@ -73,16 +74,21 @@ enum class PlaybackCommandKind : unsigned {
     stop,
     seek,
     panic,
-    updateVoice
+    updateVoice,
+    liveNote
 };
 struct PlaybackCommand {
     PlaybackCommandKind kind{};
     std::uint64_t preparationId{}, generation{}, frame{};
     VoiceSlot voiceSlot{};
     VoiceCoefficients voiceCoefficients{};
+    unsigned midiNote{};
+    double velocity{1}, phaseStep{};
+    std::uint32_t gateFrames{};
+    bool liveVoiceUpdate{};
 };
 struct PlaybackSnapshot {
-    bool prepared{}, enabled{};
+    bool prepared{}, enabled{}, live{};
     std::uint64_t preparationId{}, generation{}, positionFrames{},
         totalFrames{};
     std::uint32_t sampleRate{};
@@ -116,6 +122,12 @@ class PlaybackRuntime {
                            AudioSettings = {48000, 60, .008, .650, -18},
                            std::span<const VoiceProfile> = {},
                            bool editableVoices = false);
+    // Serial worker API. Live mode has no historical transport end; event
+    // provenance/deduplication stay with the host. Each onset is acknowledged
+    // through the existing bounded mailbox; no queued releases are required.
+    PlaybackResult prepareLive(AudioSettings = {48000, 60, .008, .650, -18});
+    PlaybackResult submitLive(const VoiceSettings &, unsigned midiNote,
+                              double velocity = 1, std::uint32_t gateFrames = 0);
     PlaybackResult updateVoice(VoiceSlot, const VoiceSettings &);
     PlaybackResult enable(bool);
     AudioDeviceCatalog audioDevices(bool refresh = true);
