@@ -1,0 +1,550 @@
+{
+  "kind": "retrospective_completed_24h_observation_window_sample",
+  "window_start_utc": "2026-11-06T04:00:00Z",
+  "window_end_utc": "2026-11-07T04:00:00Z",
+  "qualification_started_utc": "2026-11-07T04:52:24Z",
+  "qualification_completed_utc": "2026-11-07T04:53:19Z",
+  "continuous_uptime_claim": false,
+  "counts": {
+    "unique_accepted": 236,
+    "providers": {
+      "inaturalist": 235,
+      "nzsharks": 1
+    },
+    "regions": {
+      "Oceania-Pacific": 88,
+      "Africa-area": 12,
+      "Europe-area": 36,
+      "Asia-area": 48,
+      "North-America-area": 34,
+      "South-America-area": 18
+    },
+    "taxa": {
+      "Arachnida": 16,
+      "Aves": 76,
+      "Insecta": 98,
+      "Animalia": 11,
+      "Mollusca": 12,
+      "Mammalia": 11,
+      "Reptilia": 5,
+      "Amphibia": 4,
+      "Actinopterygii": 2,
+      "Chondrichthyes": 1
+    },
+    "distinct_scientific_names": 214,
+    "provider_region": {
+      "inaturalist": {
+        "Oceania-Pacific": 87,
+        "Africa-area": 12,
+        "Europe-area": 36,
+        "Asia-area": 48,
+        "North-America-area": 34,
+        "South-America-area": 18
+      },
+      "nzsharks": {
+        "Oceania-Pacific": 1
+      }
+    }
+  },
+  "observation_age_hours_at_start": {
+    "min": 0.876,
+    "p50": 11.94,
+    "p95": 22.979,
+    "max": 24.098
+  },
+  "hourly_bins": [
+    {
+      "start_utc": "2026-11-06T04:00:00Z",
+      "end_utc": "2026-11-06T05:00:00Z",
+      "provider": "inaturalist",
+      "sample_cap": 10,
+      "returned": 10,
+      "reported_matching": 234,
+      "normalizer_accepted": 10,
+      "accepted_in_bin": 10,
+      "outside_bin": 0,
+      "sample_capped": true
+    },
+    {
+      "start_utc": "2026-11-06T05:00:00Z",
+      "end_utc": "2026-11-06T06:00:00Z",
+      "provider": "inaturalist",
+      "sample_cap": 10,
+      "returned": 10,
+      "reported_matching": 246,
+      "normalizer_accepted": 10,
+      "accepted_in_bin": 10,
+      "outside_bin": 0,
+      "sample_capped": true
+    },
+    {
+      "start_utc": "2026-11-06T06:00:00Z",
+      "end_utc": "2026-11-06T07:00:00Z",
+      "provider": "inaturalist",
+      "sample_cap": 10,
+      "returned": 10,
+      "reported_matching": 238,
+      "normalizer_accepted": 10,
+      "accepted_in_bin": 10,
+      "outside_bin": 0,
+      "sample_capped": true
+    },
+    {
+      "start_utc": "2026-11-06T07:00:00Z",
+      "end_utc": "2026-11-06T08:00:00Z",
+      "provider": "inaturalist",
+      "sample_cap": 10,
+      "returned": 10,
+      "reported_matching": 205,
+      "normalizer_accepted": 10,
+      "accepted_in_bin": 10,
+      "outside_bin": 0,
+      "sample_capped": true
+    },
+    {
+      "start_utc": "2026-11-06T08:00:00Z",
+      "end_utc": "2026-11-06T09:00:00Z",
+      "provider": "inaturalist",
+      "sample_cap": 10,
+      "returned": 10,
+      "reported_matching": 219,
+      "normalizer_accepted": 10,
+      "accepted_in_bin": 10,
+      "outside_bin": 0,
+      "sample_capped": true
+    },
+    {
+      "start_utc": "2026-11-06T09:00:00Z",
+      "end_utc": "2026-11-06T10:00:00Z",
+      "provider": "inaturalist",
+      "sample_cap": 10,
+      "returned": 10,
+      "reported_matching": 288,
+      "normalizer_accepted": 10,
+      "accepted_in_bin": 10,
+      "outside_bin": 0,
+      "sample_capped": true
+    },
+    {
+      "start_utc": "2026-11-06T10:00:00Z",
+      "end_utc": "2026-11-06T11:00:00Z",
+      "provider": "inaturalist",
+      "sample_cap": 10,
+      "returned": 10,
+      "reported_matching": 263,
+      "normalizer_accepted": 10,
+      "accepted_in_bin": 9,
+      "outside_bin": 1,
+      "sample_capped": true
+    },
+    {
+      "start_utc": "2026-11-06T11:00:00Z",
+      "end_utc": "2026-11-06T12:00:00Z",
+      "provider": "inaturalist",
+      "sample_cap": 10,
+      "returned": 10,
+      "reported_matching": 272,
+      "normalizer_accepted": 10,
+      "accepted_in_bin": 10,
+      "outside_bin": 0,
+      "sample_capped": true
+    },
+    {
+      "start_utc": "2026-11-06T12:00:00Z",
+      "end_utc": "2026-11-06T13:00:00Z",
+      "provider": "inaturalist",
+      "sample_cap": 10,
+      "returned": 10,
+      "reported_matching": 268,
+      "normalizer_accepted": 10,
+      "accepted_in_bin": 9,
+      "outside_bin": 1,
+      "sample_capped": true
+    },
+    {
+      "start_utc": "2026-11-06T13:00:00Z",
+      "end_utc": "2026-11-06T14:00:00Z",
+      "provider": "inaturalist",
+      "sample_cap": 10,
+      "returned": 10,
+      "reported_matching": 355,
+      "normalizer_accepted": 10,
+      "accepted_in_bin": 10,
+      "outside_bin": 0,
+      "sample_capped": true
+    },
+    {
+      "start_utc": "2026-11-06T14:00:00Z",
+      "end_utc": "2026-11-06T15:00:00Z",
+      "provider": "inaturalist",
+      "sample_cap": 10,
+      "returned": 10,
+      "reported_matching": 301,
+      "normalizer_accepted": 10,
+      "accepted_in_bin": 9,
+      "outside_bin": 1,
+      "sample_capped": true
+    },
+    {
+      "start_utc": "2026-11-06T15:00:00Z",
+      "end_utc": "2026-11-06T16:00:00Z",
+      "provider": "inaturalist",
+      "sample_cap": 10,
+      "returned": 10,
+      "reported_matching": 261,
+      "normalizer_accepted": 10,
+      "accepted_in_bin": 10,
+      "outside_bin": 0,
+      "sample_capped": true
+    },
+    {
+      "start_utc": "2026-11-06T16:00:00Z",
+      "end_utc": "2026-11-06T17:00:00Z",
+      "provider": "inaturalist",
+      "sample_cap": 10,
+      "returned": 10,
+      "reported_matching": 241,
+      "normalizer_accepted": 10,
+      "accepted_in_bin": 10,
+      "outside_bin": 0,
+      "sample_capped": true
+    },
+    {
+      "start_utc": "2026-11-06T17:00:00Z",
+      "end_utc": "2026-11-06T18:00:00Z",
+      "provider": "inaturalist",
+      "sample_cap": 10,
+      "returned": 10,
+      "reported_matching": 303,
+      "normalizer_accepted": 10,
+      "accepted_in_bin": 8,
+      "outside_bin": 2,
+      "sample_capped": true
+    },
+    {
+      "start_utc": "2026-11-06T18:00:00Z",
+      "end_utc": "2026-11-06T19:00:00Z",
+      "provider": "inaturalist",
+      "sample_cap": 10,
+      "returned": 10,
+      "reported_matching": 288,
+      "normalizer_accepted": 10,
+      "accepted_in_bin": 10,
+      "outside_bin": 0,
+      "sample_capped": true
+    },
+    {
+      "start_utc": "2026-11-06T19:00:00Z",
+      "end_utc": "2026-11-06T20:00:00Z",
+      "provider": "inaturalist",
+      "sample_cap": 10,
+      "returned": 10,
+      "reported_matching": 362,
+      "normalizer_accepted": 10,
+      "accepted_in_bin": 10,
+      "outside_bin": 0,
+      "sample_capped": true
+    },
+    {
+      "start_utc": "2026-11-06T20:00:00Z",
+      "end_utc": "2026-11-06T21:00:00Z",
+      "provider": "inaturalist",
+      "sample_cap": 10,
+      "returned": 10,
+      "reported_matching": 299,
+      "normalizer_accepted": 10,
+      "accepted_in_bin": 10,
+      "outside_bin": 0,
+      "sample_capped": true
+    },
+    {
+      "start_utc": "2026-11-06T21:00:00Z",
+      "end_utc": "2026-11-06T22:00:00Z",
+      "provider": "inaturalist",
+      "sample_cap": 10,
+      "returned": 10,
+      "reported_matching": 217,
+      "normalizer_accepted": 10,
+      "accepted_in_bin": 10,
+      "outside_bin": 0,
+      "sample_capped": true
+    },
+    {
+      "start_utc": "2026-11-06T22:00:00Z",
+      "end_utc": "2026-11-06T23:00:00Z",
+      "provider": "inaturalist",
+      "sample_cap": 10,
+      "returned": 10,
+      "reported_matching": 278,
+      "normalizer_accepted": 10,
+      "accepted_in_bin": 10,
+      "outside_bin": 0,
+      "sample_capped": true
+    },
+    {
+      "start_utc": "2026-11-06T23:00:00Z",
+      "end_utc": "2026-11-07T00:00:00Z",
+      "provider": "inaturalist",
+      "sample_cap": 10,
+      "returned": 10,
+      "reported_matching": 285,
+      "normalizer_accepted": 10,
+      "accepted_in_bin": 10,
+      "outside_bin": 0,
+      "sample_capped": true
+    },
+    {
+      "start_utc": "2026-11-07T00:00:00Z",
+      "end_utc": "2026-11-07T01:00:00Z",
+      "provider": "inaturalist",
+      "sample_cap": 10,
+      "returned": 10,
+      "reported_matching": 136,
+      "normalizer_accepted": 10,
+      "accepted_in_bin": 10,
+      "outside_bin": 0,
+      "sample_capped": true
+    },
+    {
+      "start_utc": "2026-11-07T01:00:00Z",
+      "end_utc": "2026-11-07T02:00:00Z",
+      "provider": "inaturalist",
+      "sample_cap": 10,
+      "returned": 10,
+      "reported_matching": 99,
+      "normalizer_accepted": 10,
+      "accepted_in_bin": 10,
+      "outside_bin": 0,
+      "sample_capped": true
+    },
+    {
+      "start_utc": "2026-11-07T02:00:00Z",
+      "end_utc": "2026-11-07T03:00:00Z",
+      "provider": "inaturalist",
+      "sample_cap": 10,
+      "returned": 10,
+      "reported_matching": 75,
+      "normalizer_accepted": 10,
+      "accepted_in_bin": 10,
+      "outside_bin": 0,
+      "sample_capped": true
+    },
+    {
+      "start_utc": "2026-11-07T03:00:00Z",
+      "end_utc": "2026-11-07T04:00:00Z",
+      "provider": "inaturalist",
+      "sample_cap": 10,
+      "returned": 10,
+      "reported_matching": 55,
+      "normalizer_accepted": 10,
+      "accepted_in_bin": 10,
+      "outside_bin": 0,
+      "sample_capped": true
+    }
+  ],
+  "nzsharks": {
+    "provider": "nzsharks",
+    "accepted_in_window": 1,
+    "normalizer_accepted": 28,
+    "outside_window": 27,
+    "latest_snapshot_only": true
+  },
+  "empty_or_failed_hour_bins": [],
+  "requests": [
+    {
+      "url": "https://api.inaturalist.org/v1/observations?taxon_id=1&license=cc0%2Ccc-by&geo=true&geoprivacy=open&taxon_geoprivacy=open&per_page=10&order=desc&order_by=observed_on&d1=2026-11-06T04%3A00%3A00Z&d2=2026-11-06T05%3A00%3A00Z&page=1",
+      "retrieved_utc": "2026-11-07T04:52:28Z",
+      "bytes": 491303,
+      "sha256": "cd97c39b24cf185658eddd2c7d8a144af9c59428f590a4823fc003d68dc9300d"
+    },
+    {
+      "url": "https://api.inaturalist.org/v1/observations?taxon_id=1&license=cc0%2Ccc-by&geo=true&geoprivacy=open&taxon_geoprivacy=open&per_page=10&order=desc&order_by=observed_on&d1=2026-11-06T05%3A00%3A00Z&d2=2026-11-06T06%3A00%3A00Z&page=1",
+      "retrieved_utc": "2026-11-07T04:52:30Z",
+      "bytes": 480111,
+      "sha256": "4e92121ccf1a2474e9cb60321606446277e905644c5a03aa39073323c16faaf7"
+    },
+    {
+      "url": "https://api.inaturalist.org/v1/observations?taxon_id=1&license=cc0%2Ccc-by&geo=true&geoprivacy=open&taxon_geoprivacy=open&per_page=10&order=desc&order_by=observed_on&d1=2026-11-06T06%3A00%3A00Z&d2=2026-11-06T07%3A00%3A00Z&page=1",
+      "retrieved_utc": "2026-11-07T04:52:32Z",
+      "bytes": 378892,
+      "sha256": "bcb94b38649cc3c2575663ad2397eecd5dec052bafb12e57eef40ac2be4f4617"
+    },
+    {
+      "url": "https://api.inaturalist.org/v1/observations?taxon_id=1&license=cc0%2Ccc-by&geo=true&geoprivacy=open&taxon_geoprivacy=open&per_page=10&order=desc&order_by=observed_on&d1=2026-11-06T07%3A00%3A00Z&d2=2026-11-06T08%3A00%3A00Z&page=1",
+      "retrieved_utc": "2026-11-07T04:52:34Z",
+      "bytes": 373602,
+      "sha256": "a58237f4dc7bfc0390a5c570acfd09c2acbeb66e4faabb5b4555dfad67067bc7"
+    },
+    {
+      "url": "https://api.inaturalist.org/v1/observations?taxon_id=1&license=cc0%2Ccc-by&geo=true&geoprivacy=open&taxon_geoprivacy=open&per_page=10&order=desc&order_by=observed_on&d1=2026-11-06T08%3A00%3A00Z&d2=2026-11-06T09%3A00%3A00Z&page=1",
+      "retrieved_utc": "2026-11-07T04:52:36Z",
+      "bytes": 385226,
+      "sha256": "7c6e2ccaa9679b7502702cd1c708b1549ea2f9c70591329d46a0712750c17cfd"
+    },
+    {
+      "url": "https://api.inaturalist.org/v1/observations?taxon_id=1&license=cc0%2Ccc-by&geo=true&geoprivacy=open&taxon_geoprivacy=open&per_page=10&order=desc&order_by=observed_on&d1=2026-11-06T09%3A00%3A00Z&d2=2026-11-06T10%3A00%3A00Z&page=1",
+      "retrieved_utc": "2026-11-07T04:52:38Z",
+      "bytes": 372294,
+      "sha256": "7731c430295e1fa93bfe2b1c397c7c0f4f8f0cf625f2a5413895a8f5cf7edfc5"
+    },
+    {
+      "url": "https://api.inaturalist.org/v1/observations?taxon_id=1&license=cc0%2Ccc-by&geo=true&geoprivacy=open&taxon_geoprivacy=open&per_page=10&order=desc&order_by=observed_on&d1=2026-11-06T10%3A00%3A00Z&d2=2026-11-06T11%3A00%3A00Z&page=1",
+      "retrieved_utc": "2026-11-07T04:52:40Z",
+      "bytes": 721014,
+      "sha256": "dbf66ad33b0326c366ea1100e3d8c244e14ed1e8ba565f140ea703a8094733e8"
+    },
+    {
+      "url": "https://api.inaturalist.org/v1/observations?taxon_id=1&license=cc0%2Ccc-by&geo=true&geoprivacy=open&taxon_geoprivacy=open&per_page=10&order=desc&order_by=observed_on&d1=2026-11-06T11%3A00%3A00Z&d2=2026-11-06T12%3A00%3A00Z&page=1",
+      "retrieved_utc": "2026-11-07T04:52:42Z",
+      "bytes": 529429,
+      "sha256": "70bb108112a84a2dd630d51ae859f8b29dae05e273a354976d46029501fe14d6"
+    },
+    {
+      "url": "https://api.inaturalist.org/v1/observations?taxon_id=1&license=cc0%2Ccc-by&geo=true&geoprivacy=open&taxon_geoprivacy=open&per_page=10&order=desc&order_by=observed_on&d1=2026-11-06T12%3A00%3A00Z&d2=2026-11-06T13%3A00%3A00Z&page=1",
+      "retrieved_utc": "2026-11-07T04:52:44Z",
+      "bytes": 506211,
+      "sha256": "fd4c5b2caf09da75551807d63345916fb7ac19c30cbed1a0146766644efc4740"
+    },
+    {
+      "url": "https://api.inaturalist.org/v1/observations?taxon_id=1&license=cc0%2Ccc-by&geo=true&geoprivacy=open&taxon_geoprivacy=open&per_page=10&order=desc&order_by=observed_on&d1=2026-11-06T13%3A00%3A00Z&d2=2026-11-06T14%3A00%3A00Z&page=1",
+      "retrieved_utc": "2026-11-07T04:52:46Z",
+      "bytes": 373011,
+      "sha256": "4bfce67dade4f75f56e137a01f2fa542516c969f31b20fc131ac887c57e12e3a"
+    },
+    {
+      "url": "https://api.inaturalist.org/v1/observations?taxon_id=1&license=cc0%2Ccc-by&geo=true&geoprivacy=open&taxon_geoprivacy=open&per_page=10&order=desc&order_by=observed_on&d1=2026-11-06T14%3A00%3A00Z&d2=2026-11-06T15%3A00%3A00Z&page=1",
+      "retrieved_utc": "2026-11-07T04:52:48Z",
+      "bytes": 341317,
+      "sha256": "83c841d855d4b0355743766b90d503f76213f03d7f1e034ff09bf56eec83bb1c"
+    },
+    {
+      "url": "https://api.inaturalist.org/v1/observations?taxon_id=1&license=cc0%2Ccc-by&geo=true&geoprivacy=open&taxon_geoprivacy=open&per_page=10&order=desc&order_by=observed_on&d1=2026-11-06T15%3A00%3A00Z&d2=2026-11-06T16%3A00%3A00Z&page=1",
+      "retrieved_utc": "2026-11-07T04:52:50Z",
+      "bytes": 443216,
+      "sha256": "83d076dbff7e05d8392fa8327db2eaa2387fb450b5f0a359722497b443d00267"
+    },
+    {
+      "url": "https://api.inaturalist.org/v1/observations?taxon_id=1&license=cc0%2Ccc-by&geo=true&geoprivacy=open&taxon_geoprivacy=open&per_page=10&order=desc&order_by=observed_on&d1=2026-11-06T16%3A00%3A00Z&d2=2026-11-06T17%3A00%3A00Z&page=1",
+      "retrieved_utc": "2026-11-07T04:52:52Z",
+      "bytes": 404644,
+      "sha256": "bf4215aad3ad787808f1306b290e00421d6859d3de56aaa69ed6257ab53d7e44"
+    },
+    {
+      "url": "https://api.inaturalist.org/v1/observations?taxon_id=1&license=cc0%2Ccc-by&geo=true&geoprivacy=open&taxon_geoprivacy=open&per_page=10&order=desc&order_by=observed_on&d1=2026-11-06T17%3A00%3A00Z&d2=2026-11-06T18%3A00%3A00Z&page=1",
+      "retrieved_utc": "2026-11-07T04:52:54Z",
+      "bytes": 305263,
+      "sha256": "b80dde620f685db7046f87877b36c1092388082c247b24725944ca0047c13f04"
+    },
+    {
+      "url": "https://api.inaturalist.org/v1/observations?taxon_id=1&license=cc0%2Ccc-by&geo=true&geoprivacy=open&taxon_geoprivacy=open&per_page=10&order=desc&order_by=observed_on&d1=2026-11-06T18%3A00%3A00Z&d2=2026-11-06T19%3A00%3A00Z&page=1",
+      "retrieved_utc": "2026-11-07T04:52:56Z",
+      "bytes": 457380,
+      "sha256": "61e80030abd95d716ba70eee8c4c90f9efcde48cf7f15465c8b8187e3e100b12"
+    },
+    {
+      "url": "https://api.inaturalist.org/v1/observations?taxon_id=1&license=cc0%2Ccc-by&geo=true&geoprivacy=open&taxon_geoprivacy=open&per_page=10&order=desc&order_by=observed_on&d1=2026-11-06T19%3A00%3A00Z&d2=2026-11-06T20%3A00%3A00Z&page=1",
+      "retrieved_utc": "2026-11-07T04:52:58Z",
+      "bytes": 250519,
+      "sha256": "93e520c733e25dc5ecc874e15ff6e6e19c1f9ff531788bee803dcd640975dd29"
+    },
+    {
+      "url": "https://api.inaturalist.org/v1/observations?taxon_id=1&license=cc0%2Ccc-by&geo=true&geoprivacy=open&taxon_geoprivacy=open&per_page=10&order=desc&order_by=observed_on&d1=2026-11-06T20%3A00%3A00Z&d2=2026-11-06T21%3A00%3A00Z&page=1",
+      "retrieved_utc": "2026-11-07T04:53:00Z",
+      "bytes": 262812,
+      "sha256": "278adf3c53f746274cae4f8b7652c64a8341ff8280c2e8da86e16532d40523c4"
+    },
+    {
+      "url": "https://api.inaturalist.org/v1/observations?taxon_id=1&license=cc0%2Ccc-by&geo=true&geoprivacy=open&taxon_geoprivacy=open&per_page=10&order=desc&order_by=observed_on&d1=2026-11-06T21%3A00%3A00Z&d2=2026-11-06T22%3A00%3A00Z&page=1",
+      "retrieved_utc": "2026-11-07T04:53:02Z",
+      "bytes": 390127,
+      "sha256": "25fc1322db240f26344a6dba6843e914b2611cb7ec500899ef2eceed27b1b671"
+    },
+    {
+      "url": "https://api.inaturalist.org/v1/observations?taxon_id=1&license=cc0%2Ccc-by&geo=true&geoprivacy=open&taxon_geoprivacy=open&per_page=10&order=desc&order_by=observed_on&d1=2026-11-06T22%3A00%3A00Z&d2=2026-11-06T23%3A00%3A00Z&page=1",
+      "retrieved_utc": "2026-11-07T04:53:04Z",
+      "bytes": 292426,
+      "sha256": "4c7a29bbdc9e43078d349a879c6a4321c32709d6ff263bfdb3fff35e0a251131"
+    },
+    {
+      "url": "https://api.inaturalist.org/v1/observations?taxon_id=1&license=cc0%2Ccc-by&geo=true&geoprivacy=open&taxon_geoprivacy=open&per_page=10&order=desc&order_by=observed_on&d1=2026-11-06T23%3A00%3A00Z&d2=2026-11-07T00%3A00%3A00Z&page=1",
+      "retrieved_utc": "2026-11-07T04:53:06Z",
+      "bytes": 427848,
+      "sha256": "530cc2291d92b1f7ecae8e68a1c9a283e67312889a1505b576df8a437f8e2944"
+    },
+    {
+      "url": "https://api.inaturalist.org/v1/observations?taxon_id=1&license=cc0%2Ccc-by&geo=true&geoprivacy=open&taxon_geoprivacy=open&per_page=10&order=desc&order_by=observed_on&d1=2026-11-07T00%3A00%3A00Z&d2=2026-11-07T01%3A00%3A00Z&page=1",
+      "retrieved_utc": "2026-11-07T04:53:08Z",
+      "bytes": 416902,
+      "sha256": "49088bb26430ee8a90b82b6d10f7b9d9360768380eafef10471d83a7499a9344"
+    },
+    {
+      "url": "https://api.inaturalist.org/v1/observations?taxon_id=1&license=cc0%2Ccc-by&geo=true&geoprivacy=open&taxon_geoprivacy=open&per_page=10&order=desc&order_by=observed_on&d1=2026-11-07T01%3A00%3A00Z&d2=2026-11-07T02%3A00%3A00Z&page=1",
+      "retrieved_utc": "2026-11-07T04:53:10Z",
+      "bytes": 444891,
+      "sha256": "71bc8168801c246d38a9c6fc208ba86d782ec05053e5e597edc14a36b9c0443b"
+    },
+    {
+      "url": "https://api.inaturalist.org/v1/observations?taxon_id=1&license=cc0%2Ccc-by&geo=true&geoprivacy=open&taxon_geoprivacy=open&per_page=10&order=desc&order_by=observed_on&d1=2026-11-07T02%3A00%3A00Z&d2=2026-11-07T03%3A00%3A00Z&page=1",
+      "retrieved_utc": "2026-11-07T04:53:13Z",
+      "bytes": 441782,
+      "sha256": "8666c627ee317600b919cfbb32ab34a05717144ab98844d03bc29fe0262bcef7"
+    },
+    {
+      "url": "https://api.inaturalist.org/v1/observations?taxon_id=1&license=cc0%2Ccc-by&geo=true&geoprivacy=open&taxon_geoprivacy=open&per_page=10&order=desc&order_by=observed_on&d1=2026-11-07T03%3A00%3A00Z&d2=2026-11-07T04%3A00%3A00Z&page=1",
+      "retrieved_utc": "2026-11-07T04:53:14Z",
+      "bytes": 356491,
+      "sha256": "4ce54cd8f517606d51ae44c794c7f9c09c66a4e025d20028c935d4cf29f4f0d5"
+    },
+    {
+      "url": "https://map.sustainableoceansociety.co.nz/public/bootstrap.json",
+      "retrieved_utc": "2026-11-07T04:53:15Z",
+      "bytes": 91,
+      "sha256": "a36fe7c1c317bdc41f19afb240aa1ff6457cfe357e1afef577062f4d1a69ee15"
+    },
+    {
+      "url": "https://map.sustainableoceansociety.co.nz/public/configs/config.json",
+      "retrieved_utc": "2026-11-07T04:53:17Z",
+      "bytes": 39070,
+      "sha256": "2869a64f3e962f867c140d600ae51096e4839e69ad39f0a0a4cb76f34e0bfe82"
+    },
+    {
+      "url": "https://ermap-server.pamdas.org/nzsharkman/api/v1.0/subjects?[public group redacted]",
+      "retrieved_utc": "2026-11-07T04:53:19Z",
+      "bytes": 23231,
+      "sha256": "8352f1ef9ddd962738c7b2c1396aae0a794e1e377a4ec972cb4dc9e848e0d203"
+    }
+  ],
+  "policy": {
+    "inaturalist": "24 sequential hourly observed-time queries, first 10 rows by observed_on descending, no pagination; exact production C++ normalizer then strict half-open UTC observation-bin filter",
+    "sharks": "One current latest-position snapshot, exact production C++ Collector, strict same observation-window filter; historical hourly recovery unavailable",
+    "cadence": "At least two seconds between request starts, 20-second timeout, 4MiB per response; no retries",
+    "privacy": "No raw sightings, coordinates, observer identifiers or event IDs persisted in this receipt; only aggregates and response hashes",
+    "geometry": "Disjoint coarse rectangles from area() in checked script; area names approximate geography, not political continent assignment",
+    "coverage": "Samples prove actual accepted observations, not all occurrences, complete hourly regional coverage, provider reporting cadence, rights for BirdWeather, or 24h collector uptime"
+  },
+  "acceptance": {
+    "at_least_three_regions": true,
+    "at_least_two_providers": true,
+    "nonbird": true
+  },
+  "normalizer_source_sha256": {
+    "native/src/inaturalist.cpp": "69447bf9330ffd9508d134ebb5ab9088cedb20f942dd06c11b7e626be984530e",
+    "native/src/collection.cpp": "98ea59ea6926ea59deaa2ada6b12b2b71fbcb9d266b133bca8923e8c96d5940d",
+    "native/src/event_validation.cpp": "92496c5b4030fd98b74e06a15ff949f2b7f39e114e9a269247751c08fd694a56",
+    "evidence/worldwide/normalizer_probe.cpp": "13070a8af01b5564a1cde9ffa0641d6fc4ffd382a10432a04d5b668f95450d52"
+  },
+  "normalizer_binary_sha256": "cdd7cd4514b0e4706fb8f1f8e4e76f98235be31cd5e4e41483431e04f6cf8630",
+  "request_count": 27,
+  "qualifying_sightings_after_native_normalizer": 240,
+  "sightings_excluded_by_strict_hour_window": 5,
+  "production_source_revision": "0d76b0822370c35990c6109ee573ab7e51c51d91",
+  "production_source_matches_committed_revision": true,
+  "normalizer_linked_libraries_sha256": {
+    "libatlas_storage.a": "107707b62ee496e9bd654d3b21b1800c133ccbd3d13ceceeaaa824c311c4e794",
+    "libatlas_core.a": "7a6e883dbac2f58658c21330dd6f0b2e088b9f2b81a50c55e614a8099321310b",
+    "libatlas_playback.a": "dc843d1ececd89dcf7010ae151b4efffd65b1d8f6598fb8739d7125420b46d19",
+    "libatlas_audio.a": "3fce5ebbcc8063320ee32393a8639d8ba77f13fe8a8730c5fea743941282fbd8"
+  },
+  "normalizer_build": "Probe linked to completed final build/standalone release libraries only; no CMake rebuild",
+  "supersedes": "Earlier candidate-parser receipt; this receipt was obtained with final privacy and UTC validation"
+}

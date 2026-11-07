@@ -1,6 +1,6 @@
 # Animal Atlas
 
-Open **Releases/Latest Detections/Animal Atlas.app** and choose **Collect → Start live updates** to collect NZ bird detections and shark position reports. The Atlas opens a list of recent observations with persistent rings on the map. Choose a row to locate the observation. Collection starts paused on launch. [Standalone guide](docs/STANDALONE.md) · [Worldwide source expansion plan](docs/milestones/GLOBAL_WILDLIFE_SOURCES.md)
+Open **Releases/Worldwide Wildlife/Animal Atlas.app**, choose **Collect**, and select **Start live updates**. Worldwide bird detections and NZ shark reports are selected initially. Enable **Worldwide reported sightings** to add public iNaturalist animal reports. Choose **NZ bird detections** for deeper local coverage. **Latest detections** locates a report on the globe. [Standalone guide](docs/STANDALONE.md) · [Worldwide qualification](evidence/worldwide/README.md) · [Identified spotted seal archive](deliverables/ATN-spotted-seal-2018/README.md)
 
 The [live library milestone](docs/milestones/NEXT_LIBRARY_BROWSING.md) added source freshness, paginated saved-piece browsing and revision-aware preparation. [Qualification record](evidence/library-live/qualification.md)
 
@@ -40,7 +40,7 @@ Version 0.3 adds sealed metadata, provenance-preserving bundles and full histori
 
 ## Open without entering commands
 
-For the older data-collection menu, open the root-level **Animal Atlas.app** or double-click **Start Animal Atlas.command** in this folder. The current graphical app is under **Releases/Latest Detections/**. It opens a numbered Terminal menu for recording, saved sessions, replay previews and export. This is a local launcher using the installed Python, not the finished graphical application. Shell syntax/app manifest are verified; Finder launching has not been manually exercised.
+For the older data-collection menu, open the root-level **Animal Atlas.app** or double-click **Start Animal Atlas.command** in this folder. The current graphical app is under **Releases/Worldwide Wildlife/**. It opens a numbered Terminal menu for recording, saved sessions, replay previews and export. This is a local launcher using the installed Python, not the finished graphical application. Shell syntax/app manifest are verified; Finder launching has not been manually exercised.
 
 A real recorded session and a saved NZ bird snapshot are available in the local library, with a private portable bundle in `Sessions/`. See `evidence/session-milestone.json` and [recording/replay instructions](docs/sessions-and-replay.md). Those are historical milestone results; they do not describe the current state of an owner-started collector.
 

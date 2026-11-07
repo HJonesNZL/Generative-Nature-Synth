@@ -1,0 +1,137 @@
+{
+  "version": "0.5.0",
+  "architecture": "arm64",
+  "implementationCommit": "0d76b0822370c35990c6109ee573ab7e51c51d91",
+  "archiveSha256": "0329d35597863ffda903f58c32872e13c07518fde1f12bce911a7376bd503243",
+  "archiveMatchesAllInstalledFiles": true,
+  "nativeTestsPassed": 31,
+  "uiTestsPassed": 64,
+  "sanitizedCollectorTestsPassed": 2,
+  "live": {
+    "durationSeconds": 83.479210208,
+    "nativeRequests": 571,
+    "sources": [
+      {
+        "id": "nzsharks",
+        "records": "28",
+        "lastObservationUtc": "2026-11-06T18:58:18.000000Z",
+        "complete": true,
+        "error": null
+      },
+      {
+        "id": "birdweather_world",
+        "records": "1385",
+        "lastObservationUtc": "2026-11-07T04:52:19.000000Z",
+        "complete": false,
+        "error": "pagination_limit_reached"
+      },
+      {
+        "id": "inaturalist",
+        "records": "30",
+        "lastObservationUtc": "2026-11-07T04:50:20.000000Z",
+        "complete": false,
+        "error": "pagination_limit_reached"
+      }
+    ],
+    "regions": [
+      {
+        "id": "nz",
+        "lastAttemptUtc": "2026-11-07T04:51:24.000000Z",
+        "lastObservationUtc": "2026-11-07T04:51:10.000000Z",
+        "error": "pagination_limit_reached",
+        "gap": false,
+        "complete": false
+      },
+      {
+        "id": "oceania_west",
+        "lastAttemptUtc": "2026-11-07T04:51:24.000000Z",
+        "lastObservationUtc": "2026-11-07T04:51:18.000000Z",
+        "error": "invalid_or_future_records",
+        "gap": false,
+        "complete": false
+      },
+      {
+        "id": "asia",
+        "lastAttemptUtc": "2026-11-07T04:51:24.000000Z",
+        "lastObservationUtc": "2026-11-07T04:51:21.000000Z",
+        "error": "pagination_limit_reached",
+        "gap": false,
+        "complete": false
+      },
+      {
+        "id": "africa",
+        "lastAttemptUtc": "2026-11-07T04:51:24.000000Z",
+        "lastObservationUtc": "2026-11-07T04:50:37.000000Z",
+        "error": null,
+        "gap": false,
+        "complete": true
+      },
+      {
+        "id": "europe",
+        "lastAttemptUtc": "2026-11-07T04:52:28.000000Z",
+        "lastObservationUtc": "2026-11-07T04:52:19.000000Z",
+        "error": "pagination_limit_reached",
+        "gap": false,
+        "complete": false
+      },
+      {
+        "id": "north_america",
+        "lastAttemptUtc": "2026-11-07T04:52:28.000000Z",
+        "lastObservationUtc": "2026-11-07T04:52:19.000000Z",
+        "error": "pagination_limit_reached",
+        "gap": false,
+        "complete": false
+      },
+      {
+        "id": "south_america",
+        "lastAttemptUtc": "2026-11-07T04:52:28.000000Z",
+        "lastObservationUtc": "2026-11-07T04:51:38.000000Z",
+        "error": null,
+        "gap": false,
+        "complete": true
+      },
+      {
+        "id": "oceania_east",
+        "lastAttemptUtc": "2026-11-07T04:52:28.000000Z",
+        "lastObservationUtc": null,
+        "error": null,
+        "gap": false,
+        "complete": true
+      }
+    ],
+    "mapLocations": "372 locations",
+    "speciesRows": 172,
+    "deduplicatedBaseline": {
+      "count": 500,
+      "sources": [
+        "nzsharks",
+        "birdweather",
+        "inaturalist"
+      ],
+      "baselinePulses": 0
+    },
+    "secondSweep": {
+      "count": 496,
+      "pings": 0,
+      "sources": [
+        "birdweather"
+      ]
+    },
+    "globeCanvas": true,
+    "pausedAtEnd": true
+  },
+  "offline": {
+    "audioEnabled": false,
+    "nativeRequests": 95,
+    "wav": {
+      "channels": 2,
+      "pcmBits": 24,
+      "sampleRate": 48000,
+      "frames": 1738260,
+      "bytes": 10430254,
+      "engineSourceSha256": "651ec6469539a4c4c3a26cebd9967b9e5cd22e35d4ffdabdbec056ab61464f73",
+      "sceneHash": "af4f52c97fa119e5d76732835a95555349c2ce18c6c2c65b0ab604134e2c5afc"
+    },
+    "projectRestored": true
+  }
+}

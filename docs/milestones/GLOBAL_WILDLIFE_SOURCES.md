@@ -2,6 +2,8 @@
 
 Research checked 7 November 2026 UTC. This is the next product milestone: expand beyond NZ towards a globe receiving diverse species updates. Broad geographic activity and separate identified-animal streams are both required. An acoustic station, a reported sighting and a satellite-tagged animal remain distinct. Worldwide coverage is a direction, not a claim that every region currently supplies data.
 
+**Release update.** The shipped 0.5.0 implementation and test results appear at the end of this plan. The source table below records the original research decisions. [Release evidence](../../evidence/worldwide/README.md)
+
 ## Evidence and source priorities
 
 | Source | Geography/taxa and event semantics | Access, freshness and permission evidence | Integration decision |
@@ -67,4 +69,6 @@ The alternative Wildlife Network API includes BirdWeather under a display-only a
 - Report accepted events, species, regions, source age, gaps and sampling/omission per stream. World coverage is assessed by actual events across distinct geographic regions over a recorded interval, not number of configured regions or animated dots.
 - Before enabling each provider: zero-fee access established, rights/attribution recorded, sensitive-location policy enforced, one bounded live smoke against disposable state, then native regression checks. No owner DB fixtures, no interference with active collection.
 
-Status: research and operating design only; the separate 250-node BirdWeather repair is implemented/tested. New world-region scheduler and new connectors are not implemented by this document. No claim of complete global coverage or newly verified current individual tracking is made.
+## Shipped implementation
+
+The 0.5.0 standalone implements opt-in multi-source collection, eight rotating BirdWeather sampling areas, worldwide public animal sightings, per-region status, separate map symbols and source-type filters. The 24-hour retrospective qualification and the native app tests have different scopes. The archive supplies actual individual tracking history. Marine acoustic qualification remains open because the checked public data lacks verified current observations and suitable access together. [Observed coverage and release checks](../../evidence/worldwide/README.md) · [ATN archive](../../deliverables/ATN-spotted-seal-2018/README.md) · [Marine source qualification](../data/WORLDWIDE_MARINE_QUALIFICATION.md)
