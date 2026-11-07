@@ -5,3 +5,5 @@ Select a UTC observation window in Project, optionally restrict it to a source o
 With an external library attached, select a saved piece to import. Only the shell supplies database paths. Validate the source, preserve its event bytes, original revision numbers and sealed metadata, then publish atomically to the managed library. The source remains read-only. Resume a matching interrupted import from bounded local staging. Repeating a successful operation must not create a duplicate.
 
 One background job at a time reports progress and supports cancellation. Keep the live collector, audio callback and interface independent. A completed piece enters the existing Replay, Sound Studio, soundscape save and WAV export workflow. Verify boundaries, filters, cancellation, restart, tampering and the packaged WebKit bridge using disposable state.
+
+The Apple Silicon standalone ships these workflows in 0.6.0. See the [release checks](../../evidence/saved-wildlife-pieces/qualification.md) and [standalone guide](../STANDALONE.md#save-a-wildlife-piece).

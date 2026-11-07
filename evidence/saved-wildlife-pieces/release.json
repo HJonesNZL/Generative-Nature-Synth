@@ -1,0 +1,67 @@
+{
+  "version": "0.6.0",
+  "codeCommit": "2baf8313fb873ae00e8dfb52210121f1931aba8f",
+  "nativeSourceSha256": "57c012fb05d3e5ae68718fb632f5b08d6a346da29280266f7fa2346f15e0dc25",
+  "zipSha256": "ed321d028e62ad95e498b6878b75d6eb1b6c5ce9a5624ff5b4cea78296a45c28",
+  "zipBytes": 6527916,
+  "packagedWebKit": {
+    "installed": {
+      "checks": {
+        "wholeDeploymentObservedPrepared": true,
+        "exportedPcmNonzero": true,
+        "sourceUnchanged": true,
+        "managedLiveRecords": 0,
+        "sealedImportedEvents": 5,
+        "reactPreparedAfterManagedReload": true,
+        "savedSoundscapeEvents": 5,
+        "exportedWavBytes": 899254,
+        "physicalAudioEnabled": false
+      },
+      "fullDeployment": {
+        "id": "d774207b-342c-49bd-a328-5649f9de84ce",
+        "eventCount": 224,
+        "highlighted": true,
+        "basis": "observed",
+        "fitLabel": "Fit full interval \u00b7 10000\u00d7",
+        "preparation": {
+          "preparationId": "audio-1",
+          "generation": "1",
+          "state": "stopped",
+          "positionUs": "0",
+          "durationUs": "1760829812"
+        }
+      },
+      "rejectedBridgeRequests": 0,
+      "shutdownComplete": true
+    },
+    "extracted": {
+      "checks": {
+        "wholeDeploymentObservedPrepared": true,
+        "exportedPcmNonzero": true,
+        "sourceUnchanged": true,
+        "managedLiveRecords": 0,
+        "sealedImportedEvents": 5,
+        "reactPreparedAfterManagedReload": true,
+        "savedSoundscapeEvents": 5,
+        "exportedWavBytes": 899254,
+        "physicalAudioEnabled": false
+      },
+      "fullDeployment": {
+        "id": "d774207b-342c-49bd-a328-5649f9de84ce",
+        "eventCount": 224,
+        "highlighted": true,
+        "basis": "observed",
+        "fitLabel": "Fit full interval \u00b7 10000\u00d7",
+        "preparation": {
+          "preparationId": "audio-1",
+          "generation": "1",
+          "state": "stopped",
+          "positionUs": "0",
+          "durationUs": "1760829812"
+        }
+      },
+      "rejectedBridgeRequests": 0,
+      "shutdownComplete": true
+    }
+  }
+}
